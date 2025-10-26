@@ -1,0 +1,21 @@
+# Generated code
+**/generated/**
+**/dist/**
+**/build/**
+**/.next/**
+
+# Dependencies
+**/node_modules/**
+
+# Test coverage
+**/coverage/**
+
+# Config files
+**/*.config.js
+**/*.config.ts
+**/vitest.config.ts
+**/vite.config.ts
+
+# Generated SDK
+packages/sdk/src/**
+

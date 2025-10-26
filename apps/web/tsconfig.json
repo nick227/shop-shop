@@ -1,0 +1,46 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "types": ["vite/client", "@testing-library/jest-dom", "jest"],
+    "baseUrl": ".",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "useUnknownInCatchVariables": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@ui": ["./src/components/ui"],
+      "@ui/*": ["./src/components/ui/*"],
+      "@features/*": ["./src/features/*"],
+      "@layouts": ["./src/layouts"],
+      "@layouts/*": ["./src/layouts/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@hooks": ["./src/hooks"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@api": ["./src/api"],
+      "@api/*": ["./src/api/*"],
+      "@types": ["./src/types"],
+      "@types/*": ["./src/types/*"],
+      "@utils": ["./src/utils"],
+      "@utils/*": ["./src/utils/*"],
+      "@stores": ["./src/stores"],
+      "@stores/*": ["./src/stores/*"],
+      "@services": ["./src/services"],
+      "@services/*": ["./src/services/*"],
+      "@packages/schemas": ["../../packages/schemas/src"],
+      "@packages/sdk": ["../../packages/sdk/src"],
+      "@packages/realtime": ["../../packages/realtime/src"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "src/**/*.d.ts"
+  ]
+}

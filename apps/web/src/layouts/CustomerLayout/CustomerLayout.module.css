@@ -1,0 +1,218 @@
+.layout {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.header {
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  padding: var(--space-4) var(--container-padding);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.headerContent {
+  max-width: var(--max-width-2xl);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.backButton {
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.pendingBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, rgba(255, 77, 0, 0.1), rgba(255, 77, 0, 0.05));
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  color: var(--color-primary);
+  font-weight: var(--font-bold);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: all 0.2s;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.pendingBadge:hover {
+  background: linear-gradient(135deg, rgba(255, 77, 0, 0.15), rgba(255, 77, 0, 0.1));
+  transform: scale(1.05);
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 77, 0, 0);
+  }
+}
+
+.pendingIcon {
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pendingText {
+  white-space: nowrap;
+}
+
+.container {
+  max-width: var(--max-width-2xl);
+  margin: 0 auto;
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--container-padding);
+}
+
+.nav {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--color-text);
+  font-weight: var(--font-medium);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.navLink:hover {
+  background: var(--color-bg-secondary);
+}
+
+.navLinkActive {
+  background: linear-gradient(135deg, rgba(255, 77, 0, 0.1), rgba(255, 77, 0, 0.05));
+  color: var(--color-primary);
+  font-weight: var(--font-bold);
+}
+
+.navIcon {
+  font-size: var(--text-xl);
+}
+
+.navLabel {
+  flex: 1;
+}
+
+.navBadge {
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  min-width: 24px;
+  text-align: center;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .nav {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .navLink {
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .navLabel {
+    font-size: var(--text-xs);
+  }
+
+  .navBadge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .backButton {
+    align-self: flex-start;
+  }
+
+  .pendingBadge {
+    align-self: flex-end;
+  }
+
+  .container {
+    padding: var(--space-4) var(--container-padding-mobile);
+  }
+}
+

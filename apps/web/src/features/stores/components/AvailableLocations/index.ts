@@ -1,0 +1,2 @@
+export { AvailableLocations } from './AvailableLocations'
+

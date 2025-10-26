@@ -1,0 +1,36 @@
+rules:
+  - id: typescript-security
+    patterns:
+      - pattern-either:
+          - pattern: eval($EXPR)
+          - pattern: new Function($EXPR)
+          - pattern: setTimeout($EXPR, ...)
+          - pattern: setInterval($EXPR, ...)
+    message: "Potential code injection vulnerability"
+    languages: [typescript]
+    severity: ERROR
+
+  - id: react-xss
+    patterns:
+      - pattern: dangerouslySetInnerHTML={{__html: $EXPR}}
+    message: "Potential XSS vulnerability - avoid dangerouslySetInnerHTML"
+    languages: [tsx]
+    severity: ERROR
+
+  - id: hardcoded-secrets
+    patterns:
+      - pattern-either:
+          - pattern: "password": "..."
+          - pattern: "secret": "..."
+          - pattern: "api_key": "..."
+          - pattern: "token": "..."
+    message: "Hardcoded secrets detected"
+    languages: [typescript]
+    severity: ERROR
+
+  - id: console-log
+    patterns:
+      - pattern: console.log($EXPR)
+    message: "Console.log statements should be removed in production"
+    languages: [typescript]
+    severity: WARNING

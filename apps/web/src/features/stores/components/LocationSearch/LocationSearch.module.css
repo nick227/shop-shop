@@ -1,0 +1,461 @@
+/* Location Search - Using Design System Tokens */
+
+.container {
+  width: 100%;
+  max-width: var(--container-2xl);
+  margin: 0 auto;
+  padding: var(--space-6);
+  background: var(--color-surface-base);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: var(--border-width-1) solid var(--color-border-default);
+}
+
+/* Current Location Display */
+.currentLocation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--color-success-light);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  border: var(--border-width-1) solid var(--color-success);
+}
+
+.locationInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.locationIcon {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+
+.locationText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.locationName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+}
+
+.locationDetails {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.clearButton {
+  padding: var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+  transition: var(--transition-color);
+  min-width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearButton:hover {
+  background: var(--color-hover-overlay);
+  color: var(--color-text-primary);
+}
+
+.clearButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Search Controls */
+.searchControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.geoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-all);
+  min-height: var(--button-height-lg);
+}
+
+.geoButton:hover:not(:disabled) {
+  background: var(--color-primary-700);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.geoButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.geoButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.geoButton:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+.geoButton .icon {
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.spinner {
+  font-size: var(--text-xl);
+  line-height: 1;
+  animation: spin var(--duration-slower) linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+  text-align: center;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: var(--border-width-1);
+  background: var(--color-border-default);
+}
+
+.divider span {
+  padding: 0 var(--space-3);
+  background: var(--color-surface-base);
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+/* ZIP Code Form */
+.zipForm {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* City/State Form */
+.cityForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cityInputs {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.cityInput {
+  flex: 1;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-2) solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: var(--color-surface-base);
+  transition: var(--transition-color);
+  min-height: var(--input-height);
+}
+
+.cityInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.cityInput:hover {
+  border-color: var(--color-border-strong);
+}
+
+.cityInput:focus {
+  outline: none;
+  border-color: var(--color-border-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.stateInput {
+  width: 60px;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-2) solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: var(--color-surface-base);
+  transition: var(--transition-color);
+  min-height: var(--input-height);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.stateInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.stateInput:hover {
+  border-color: var(--color-border-strong);
+}
+
+.stateInput:focus {
+  outline: none;
+  border-color: var(--color-border-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.zipInput {
+  flex: 1;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-2) solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: var(--color-surface-base);
+  transition: var(--transition-color);
+  min-height: var(--input-height);
+}
+
+.zipInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.zipInput:hover {
+  border-color: var(--color-border-strong);
+}
+
+.zipInput:focus {
+  outline: none;
+  border-color: var(--color-border-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.searchButton {
+  padding: 0 var(--button-padding-x-lg);
+  background: var(--color-info);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
+  min-height: var(--button-height-md);
+}
+
+.searchButton:hover {
+  background: var(--color-info-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.searchButton:active {
+  transform: translateY(0);
+}
+
+.searchButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Radius Control */
+.radiusControl {
+  padding: var(--space-4);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-1) solid var(--color-border-subtle);
+}
+
+.radiusLabel {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.radiusLabel strong {
+  color: var(--color-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.radiusSlider {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border-default);
+  border-radius: var(--radius-full);
+  outline: none;
+  -webkit-appearance: none;
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+}
+
+.radiusSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-scale);
+  border: var(--border-width-2) solid var(--color-surface-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.radiusSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 8px var(--color-focus-ring);
+}
+
+.radiusSlider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+.radiusSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  border: var(--border-width-2) solid var(--color-surface-base);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-scale);
+  box-shadow: var(--shadow-sm);
+}
+
+.radiusSlider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 8px var(--color-focus-ring);
+}
+
+.radiusSlider::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
+.radiusSlider:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.radiusMarkers {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  padding: 0 var(--space-1);
+}
+
+/* Error Message */
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-error-light);
+  border-left: var(--border-width-4) solid var(--color-error);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+  color: var(--color-error-dark);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.errorIcon {
+  font-size: var(--text-xl);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.retryButton {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.retryButton:hover {
+  background: var(--color-error-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.retryButton:active {
+  transform: translateY(0);
+}
+
+.retryButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .geoButton,
+  .searchButton {
+    padding: var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .zipForm {
+    flex-direction: column;
+  }
+
+  .searchButton {
+    width: 100%;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

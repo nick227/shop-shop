@@ -1,0 +1,78 @@
+{
+  "name": "@packages/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/db/src/index.js",
+  "types": "./dist/db/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/db/src/index.d.ts",
+      "import": "./dist/db/src/index.js"
+    },
+    "./client": {
+      "types": "./dist/db/src/client.d.ts",
+      "import": "./dist/db/src/client.js"
+    },
+    "./services": {
+      "types": "./dist/db/src/services/index.d.ts",
+      "import": "./dist/db/src/services/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/db/src/adapters/index.d.ts",
+      "import": "./dist/db/src/adapters/index.js"
+    },
+    "./generated/client": "./src/generated/client/index.js",
+    "./generated/zod": {
+      "types": "./dist/schemas/src/generated/zod/index.d.ts",
+      "import": "./dist/schemas/src/generated/zod/index.js"
+    }
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev --name auto_migration",
+    "migrate:deploy": "prisma migrate deploy",
+    "format": "prisma format",
+    "studio": "prisma studio",
+    "reset": "prisma migrate reset",
+    "seed": "tsx prisma/seed.ts",
+    "import-zips": "tsx import-us-zips.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@packages/schemas": "workspace:*",
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "decimal.js": "^10.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.1.6",
+    "stripe": "^16.12.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.913.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/dotenv": "^8.2.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "axios": "^1.12.2",
+    "bcrypt": "^6.0.0",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^17.2.3",
+    "eslint": "^8.57.0",
+    "fastify": "^4.29.1",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1",
+    "zod": "^3.23.8",
+    "zod-prisma-types": "^3.3.5"
+  }
+}

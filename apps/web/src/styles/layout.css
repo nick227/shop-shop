@@ -1,0 +1,81 @@
+/**
+ * Layout Utilities - Container, Grid, Flexbox
+ */
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: var(--max-width-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding-mobile);
+  padding-right: var(--container-padding-mobile);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-left: var(--container-padding-desktop);
+    padding-right: var(--container-padding-desktop);
+  }
+}
+
+/* Flexbox utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.gap-4 {
+  gap: var(--space-4);
+}
+
+.gap-6 {
+  gap: var(--space-6);
+}
+
+/* Grid utilities */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid-cols-sm-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .grid-cols-md-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-cols-lg-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+

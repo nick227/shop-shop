@@ -1,0 +1,47 @@
+{
+  "name": "@packages/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./realtime": {
+      "types": "./dist/realtime/index.d.ts",
+      "import": "./dist/realtime/index.js"
+    }
+  },
+  "scripts": {
+    "gen": "openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./src --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
+    "gen:wrapper": "tsx scripts/generate-api-wrapper.ts",
+    "gen:types": "tsx scripts/generate-type-mappers.ts",
+    "gen:hooks": "tsx scripts/generate-hooks.ts",
+    "gen:barrels": "tsx scripts/generate-barrel-exports.ts",
+    "gen:all": "npm run gen:wrapper && npm run gen:types && npm run gen:hooks && npm run gen:barrels",
+    "gen:all-client": "tsx scripts/gen-and-validate.ts",
+    "gen:all-client:update": "tsx scripts/gen-and-validate.ts --update-snapshots",
+    "validate": "tsx scripts/validate-all.ts",
+    "validate:browser": "tsx scripts/validate-browser-compatibility.ts",
+    "snapshot": "tsx scripts/snapshot-test.ts",
+    "snapshot:update": "tsx scripts/snapshot-test.ts update",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "echo 'SDK is generated - skipping typecheck'",
+    "lint": "echo 'SDK is generated - skipping lint'",
+    "test": "tsx scripts/snapshot-test.ts"
+  },
+  "dependencies": {
+    "@packages/realtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.13.4",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1",
+    "@types/node": "^20.11.30",
+    "eslint": "^9.9.0",
+    "tsx": "^4.19.0"
+  }
+}

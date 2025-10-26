@@ -1,0 +1,2 @@
+export { VendorLayout } from './VendorLayout'
+

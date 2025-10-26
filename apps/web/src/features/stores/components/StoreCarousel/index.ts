@@ -1,0 +1,2 @@
+export { StoreCarousel } from './StoreCarousel'
+

@@ -1,0 +1,163 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # PHASE 1: Package Validation
+      - name: Validate package configurations
+        run: tsx scripts/validate-packages.ts
+
+      - name: Run pre-dev checks
+        run: tsx scripts/pre-dev.ts
+
+      # PHASE 2: Build All Packages
+      - name: Build @packages/*
+        run: pnpm --filter "@packages/*" run build
+
+      - name: Verify package builds
+        run: |
+          test -f packages/db/dist/index.js
+          test -f packages/domain/dist/index.js
+          test -f packages/schemas/dist/index.js
+          test -f packages/realtime/dist/index.js
+          test -f packages/sdk/dist/index.js
+
+      # PHASE 3: Backend Validation
+      - name: Lint backend
+        run: pnpm --filter "@apps/server" run lint
+
+      - name: TypeCheck backend
+        run: pnpm --filter "@apps/server" run typecheck
+
+      - name: Build backend
+        run: pnpm --filter "@apps/server" run build
+
+      - name: Test backend
+        run: pnpm --filter "@apps/server" run test
+
+      # PHASE 4: Frontend Validation  
+      - name: Lint frontend
+        run: pnpm --filter "@apps/web" run lint --max-warnings 0
+
+      - name: TypeCheck frontend
+        run: pnpm --filter "@apps/web" run typecheck
+
+      - name: Build frontend
+        run: pnpm --filter "@apps/web" run build
+
+      # PHASE 5: Integration Tests
+      - name: Start server (background)
+        run: |
+          cd apps/server
+          npm run dev &
+          sleep 10
+
+      - name: Run integration tests
+        run: tsx scripts/test-frontend-integration.ts
+
+      - name: Stop server
+        run: pkill -f "tsx src/index.ts" || true
+
+      # PHASE 6: E2E Tests
+      - name: Install Playwright
+        run: cd apps/web && npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: cd apps/web && pnpm test:e2e
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: apps/web/test-results/
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Security audit
+        run: pnpm audit --audit-level moderate
+
+      - name: Check for outdated dependencies
+        run: pnpm outdated || true
+
+  type-sync-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate OpenAPI spec
+        run: cd packages/schemas && pnpm run gen:openapi
+
+      - name: Regenerate SDK
+        run: cd packages/sdk && pnpm run gen
+
+      - name: Check for type drift
+        run: |
+          git diff --exit-code packages/openapi/openapi.json || {
+            echo "❌ OpenAPI spec has drifted from DTOs!"
+            echo "Run: cd packages/schemas && pnpm run gen:openapi"
+            exit 1
+          }
+
+      - name: Verify SDK in sync
+        run: |
+          git diff --exit-code packages/sdk/src/ || {
+            echo "⚠️  SDK has changed - regenerate if OpenAPI changed"
+          }
+

@@ -1,0 +1,107 @@
+.card {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.heroImage {
+  position: relative;
+  width: 100%;
+  height: 60%;
+}
+
+.heroImageContainer {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+.badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.content {
+  flex: 1;
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.name {
+  font-size: 2.5rem;
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+.description {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: var(--leading-relaxed);
+  flex: 1;
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.metaIcon {
+  font-size: 1.25rem;
+}
+
+.metaText {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+}
+
+.cta {
+  margin-top: auto;
+  height: var(--height-button-hero) !important;
+  font-size: 1.25rem !important;
+  font-weight: var(--font-bold) !important;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .name {
+    font-size: 2rem;
+  }
+
+  .description {
+    font-size: var(--text-base);
+  }
+
+  .content {
+    padding: var(--space-6);
+  }
+
+  .emoji {
+    font-size: 4rem;
+  }
+}
+

@@ -1,0 +1,72 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 8
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: TypeScript type check
+      run: pnpm run typecheck
+      
+    - name: ESLint
+      run: pnpm run lint
+      
+    - name: Knip (unused exports)
+      run: pnpm run knip
+      
+    - name: Dependency cruiser
+      run: pnpm run depcruise
+      
+    - name: Type coverage
+      run: pnpm run type-coverage:ci
+      
+    - name: Madge circular dependencies
+      run: pnpm run madge
+      
+    - name: Unused exports check
+      run: pnpm run ts-unused-exports
+      
+    - name: Install Semgrep
+      run: |
+        python -m pip install --upgrade pip
+        pip install semgrep
+        
+    - name: Semgrep security scan
+      run: pnpm run semgrep:ci
+      
+    - name: Generate dependency graph
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz
+        pnpm run depcruise:graph
+      continue-on-error: true
+      
+    - name: Upload dependency graph
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-graph
+        path: apps/web/dependency-graph.svg

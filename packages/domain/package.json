@@ -1,0 +1,46 @@
+{
+  "name": "@packages/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./policies": {
+      "types": "./dist/policies/index.d.ts",
+      "import": "./dist/policies/index.js"
+    },
+    "./services": {
+      "types": "./dist/services/index.d.ts",
+      "import": "./dist/services/index.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "echo 'Domain package - unit tests coming soon'"
+  },
+  "dependencies": {
+    "@packages/db": "workspace:*",
+    "@prisma/client": "^5.22.0",
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1",
+    "@types/node": "^20.11.30",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0"
+  }
+}

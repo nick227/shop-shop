@@ -1,0 +1,2 @@
+export { StoreCategoryCarousels } from './StoreCategoryCarousels'
+

@@ -1,0 +1,913 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+generator zod {
+  provider                  = "zod-prisma-types"
+  output                    = "../src/generated/zod"
+  createInputTypes          = false
+  createRelationValuesTypes = false
+  createPartialTypes        = false
+  addInputTypeValidation    = false
+  useDecimalJs              = true
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  VENDOR
+  ADMIN
+  AFFILIATE
+  RIDER
+  STAFF
+}
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  REVERSED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+}
+
+enum CartStatus {
+  ACTIVE
+  SUBMITTED
+  ABANDONED
+}
+
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELED
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+enum PaymentProvider {
+  TEST
+  STRIPE
+  SQUARE
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum TipStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_ITEM
+  FREE_DELIVERY
+}
+
+enum PromotionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  role                Role                @default(USER)
+  email               String              @unique
+  passwordHash        String
+  name                String?
+  phone               String?
+  isCompany           Boolean             @default(false)
+  companyName         String?
+  addresses           Address[]
+  carts               Cart[]
+  orders              Order[]
+  storesOwned         Store[]             @relation("StoreOwner")
+  paymentMethods      PaymentMethod[]
+  promotionsCreated   Promotion[]         @relation("PromotionCreator")
+  postLikes           PostLike[]
+  comments            Comment[]
+  affiliate           Affiliate?
+  vendorVerification  VendorVerification?
+  teamMemberships     TeamMember[]
+  invitationsSent     Invitation[]        @relation("InvitationSender")
+  invitationsReceived Invitation[]        @relation("InvitationRecipient")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  FavoriteStore       FavoriteStore[]
+  FavoriteItem        FavoriteItem[]
+}
+
+model Store {
+  id          String  @id @default(uuid()) @db.Char(36)
+  ownerUserId String  @db.Char(36)
+  owner       User    @relation("StoreOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String  @unique
+  description String?
+
+  // Company Information
+  companyName String?
+  taxId       String?
+  phone       String?
+  email       String?
+  website     String?
+
+  isPublished     Boolean @default(false)
+  deliveryEnabled Boolean @default(true)
+  pickupEnabled   Boolean @default(true)
+  prepTimeMin     Int     @default(15)
+  feesJson        Json?
+  hoursJson       Json?
+
+  // Delivery Settings
+  deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
+  deliveryCharge   Decimal?       @db.Decimal(10, 2) // Delivery charge amount
+  deliveryZones    DeliveryZone[]
+
+  // Geographic Coordinates (for distance-based search)
+  latitude  Decimal? @db.Decimal(10, 8) // -90 to 90, 8 decimal precision
+  longitude Decimal? @db.Decimal(11, 8) // -180 to 180, 8 decimal precision
+
+  // Structured Address (parsed from addressJson for search)
+  addressStreet  String?
+  addressCity    String?
+  addressState   String? @db.Char(2) // US state abbreviation
+  addressZip     String?
+  addressCountry String? @default("US") @db.Char(2)
+
+  // Geocoding Metadata
+  geocodedAt    DateTime? // When coordinates were last updated
+  geocodeSource String? // 'manual' | 'api' | 'import'
+
+  // Affiliate tracking
+  referredByAffiliateId String?    @db.Char(36)
+  referredByAffiliate   Affiliate? @relation("AffiliateReferrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
+
+  stripeAccountId String?
+  stripeOnboarded Boolean         @default(false)
+  commissionRate  Decimal?        @db.Decimal(5, 2)
+  media           MediaAsset[]
+  items           Item[]
+  orders          Order[]
+  carts           Cart[]
+  posts           Post[]
+  bundles         Bundle[]        @relation("StoreBundles")
+  teamMembers     TeamMember[]
+  invitations     Invitation[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  Promotion       Promotion[]
+  FavoriteStore   FavoriteStore[]
+
+  @@index([ownerUserId])
+  @@index([latitude, longitude]) // For distance queries
+  @@index([addressCity, addressState]) // For city search
+  @@index([addressZip]) // For zip code search
+  @@index([isPublished, latitude]) // For published + location queries
+  @@index([referredByAffiliateId])
+}
+
+model GeocodingCache {
+  id String @id @default(uuid()) @db.Char(36)
+
+  // Query identification
+  queryType  String @db.VarChar(20) // 'zip', 'city', 'address'
+  queryValue String @db.VarChar(100) // ZIP code, "city,state", full address (truncated for index)
+
+  // Geographic coordinates
+  latitude  Decimal @db.Decimal(10, 8) // -90 to 90, 8 decimal precision
+  longitude Decimal @db.Decimal(11, 8) // -180 to 180, 8 decimal precision
+
+  // Parsed address components
+  city             String?
+  state            String? @db.Char(2)
+  zip              String?
+  country          String? @default("US") @db.Char(2)
+  formattedAddress String?
+
+  // Metadata
+  confidence String @db.VarChar(10) // 'high', 'medium', 'low'
+  source     String @db.VarChar(20) // 'positionstack', 'manual', 'fallback'
+
+  // Cache management
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime? // Optional TTL for cache invalidation
+
+  // Indexes for performance
+  @@unique([queryType, queryValue])
+  @@index([latitude, longitude])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@index([queryType])
+}
+
+model Item {
+  id          String  @id @default(uuid()) @db.Char(36)
+  storeId     String  @db.Char(36)
+  store       Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  price       Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true)
+  isSoldOut   Boolean @default(false)
+  sortIndex   Int     @default(0)
+  optionsJson Json?
+  stockQty    Int?
+
+  // Dietary & Allergen Information
+  allergensJson Json? // Array of allergen strings
+  isVegan       Boolean @default(false)
+  isVegetarian  Boolean @default(false)
+  isGlutenFree  Boolean @default(false)
+  isDairyFree   Boolean @default(false)
+  spicyLevel    Int? // 0-5 scale
+
+  media        MediaAsset[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  bundleItems  BundleItem[]   @relation("ItemBundles")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  FavoriteItem FavoriteItem[]
+
+  @@index([storeId, sortIndex])
+  @@index([isVegan, isVegetarian, isGlutenFree])
+}
+
+model MediaAsset {
+  id        String    @id @default(uuid()) @db.Char(36)
+  storeId   String?   @db.Char(36)
+  itemId    String?   @db.Char(36)
+  store     Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  kind      MediaKind
+  url       String
+  altText   String?
+  metadata  Json?
+  sortIndex Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([storeId])
+  @@index([itemId])
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Char(36)
+  userId    String     @db.Char(36)
+  storeId   String     @db.Char(36)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status    CartStatus @default(ACTIVE)
+  note      String?
+  items     CartItem[]
+  order     Order?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([storeId])
+}
+
+model CartItem {
+  id            String   @id @default(uuid()) @db.Char(36)
+  cartId        String   @db.Char(36)
+  cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  itemId        String   @db.Char(36)
+  item          Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  titleSnapshot String
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  quantity      Int
+  optionsJson   Json?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([cartId])
+  @@index([itemId])
+}
+
+model Order {
+  id                     String        @id @default(uuid()) @db.Char(36)
+  userId                 String        @db.Char(36)
+  storeId                String        @db.Char(36)
+  cartId                 String?       @unique @db.Char(36)
+  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store                  Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  cart                   Cart?         @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  status                 OrderStatus   @default(PLACED)
+  deliveryType           DeliveryType
+  paymentStatus          PaymentStatus @default(UNPAID)
+  subtotal               Decimal       @db.Decimal(10, 2)
+  fees                   Decimal       @db.Decimal(10, 2)
+  tax                    Decimal       @db.Decimal(10, 2)
+  tip                    Decimal       @db.Decimal(10, 2)
+  total                  Decimal       @db.Decimal(10, 2)
+  serviceFeePercent      Decimal       @db.Decimal(5, 2)
+  serviceFeeAmount       Decimal       @db.Decimal(10, 2)
+  netToVendor            Decimal       @db.Decimal(10, 2)
+  stripePaymentIntentId  String?
+  stripeChargeId         String?
+  stripeTransferId       String?
+  stripeApplicationFeeId String?
+  stripeRefundId         String?
+  addressId              String?       @db.Char(36)
+  address                Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  addressSnapshot        Json?
+
+  // Cancellation & Refund tracking
+  cancelReason String?   @db.Text
+  canceledBy   String?   @db.Char(36) // User ID who canceled
+  canceledAt   DateTime?
+  refundReason String?   @db.Text
+  refundedAt   DateTime?
+
+  items       OrderItem[]
+  events      OrderEvent[]
+  tips        Tip[]
+  commissions Commission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([paymentStatus])
+  @@index([stripePaymentIntentId])
+  @@index([stripeTransferId])
+  @@index([status, canceledAt])
+}
+
+model OrderItem {
+  id            String  @id @default(uuid()) @db.Char(36)
+  orderId       String  @db.Char(36)
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId        String? @db.Char(36)
+  item          Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  bundleId      String? @db.Char(36)
+  bundle        Bundle? @relation("BundleOrderItems", fields: [bundleId], references: [id], onDelete: SetNull)
+  titleSnapshot String
+  unitPrice     Decimal @db.Decimal(10, 2)
+  quantity      Int
+  optionsJson   Json?
+  notes         String?
+
+  @@index([orderId])
+  @@index([itemId])
+}
+
+model OrderEvent {
+  id        String      @id @default(uuid()) @db.Char(36)
+  orderId   String      @db.Char(36)
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Tip {
+  id                     String    @id @default(uuid()) @db.Char(36)
+  orderId                String    @db.Char(36)
+  order                  Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount                 Decimal   @db.Decimal(10, 2)
+  status                 TipStatus @default(PENDING)
+  stripePaymentIntentId  String?
+  stripeChargeId         String?
+  stripeTransferId       String?
+  stripeApplicationFeeId String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model Address {
+  id           String    @id @default(uuid()) @db.Char(36)
+  userId       String    @db.Char(36)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String?
+  contactName  String?
+  phone        String?
+  line1        String
+  line2        String?
+  city         String
+  state        String
+  postalCode   String
+  country      String
+  instructions String?
+  geo          Json?
+  isDefault    Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  externalRef  String?
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  archivedAt   DateTime?
+
+  @@index([userId, isActive])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@unique([key])
+}
+
+model PaymentWebhook {
+  id        String   @id @default(uuid()) @db.Char(36)
+  provider  String   @default("stripe")
+  eventId   String   @unique
+  type      String
+  payload   Json
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id        String          @id @default(uuid()) @db.Char(36)
+  userId    String          @db.Char(36)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  PaymentProvider @default(TEST)
+  brand     String?
+  last4     String?
+  tokenRef  String
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model Promotion {
+  id            String          @id @default(uuid()) @db.Char(36)
+  storeId       String?         @db.Char(36)
+  store         Store?          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  code          String          @unique
+  name          String
+  description   String?
+  type          PromotionType
+  status        PromotionStatus @default(DRAFT)
+  value         Decimal         @db.Decimal(10, 2)
+  minOrderValue Decimal?        @db.Decimal(10, 2)
+  maxDiscount   Decimal?        @db.Decimal(10, 2)
+  usageLimit    Int?
+  usageCount    Int             @default(0)
+
+  // Enhanced discount features
+  usageLimitPerUser Int? // Max uses per customer
+  allowStacking     Boolean @default(false)
+  eligibleUserIds   Json? // Array of eligible user IDs (for targeted promos)
+  excludedUserIds   Json? // Array of excluded user IDs
+
+  validFrom   DateTime
+  validUntil  DateTime
+  isGlobal    Boolean  @default(false)
+  createdById String   @db.Char(36)
+  createdBy   User     @relation("PromotionCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  redemptions PromotionRedemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([code])
+  @@index([status, validFrom, validUntil])
+}
+
+model PromotionRedemption {
+  id          String    @id @default(uuid()) @db.Char(36)
+  promotionId String    @db.Char(36)
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  userId      String    @db.Char(36)
+  orderId     String?   @db.Char(36)
+
+  discountAmount Decimal  @db.Decimal(10, 2)
+  redeemedAt     DateTime @default(now())
+
+  @@index([promotionId, userId])
+  @@index([userId])
+  @@index([orderId])
+}
+
+model Post {
+  id            String     @id @default(uuid()) @db.Char(36)
+  storeId       String     @db.Char(36)
+  store         Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  content       String?    @db.Text
+  mediaUrls     Json // MediaItem[] - { type, url, thumbnail, title?, provider?, width?, height? }
+  likesCount    Int        @default(0)
+  commentsCount Int        @default(0)
+  sharesCount   Int        @default(0)
+  likes         PostLike[]
+  comments      Comment[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(uuid()) @db.Char(36)
+  postId    String   @db.Char(36)
+  userId    String   @db.Char(36)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Char(36)
+  postId    String   @db.Char(36)
+  userId    String   @db.Char(36)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+}
+
+// ============================================================================
+// AFFILIATE SYSTEM MODELS
+// ============================================================================
+
+model Affiliate {
+  id             String          @id @default(uuid()) @db.Char(36)
+  userId         String          @unique @db.Char(36)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         AffiliateStatus @default(PENDING)
+  referralCode   String          @unique
+  commissionRate Decimal         @default(0.10) @db.Decimal(5, 4)
+
+  // Payout Information
+  paypalEmail     String?
+  bankAccountJson Json?
+  taxId           String?
+
+  // Metadata
+  bio     String? @db.Text
+  website String?
+
+  // Relationships
+  referredStores Store[]           @relation("AffiliateReferrals")
+  commissions    Commission[]
+  payouts        AffiliatePayout[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([referralCode])
+  @@index([status])
+}
+
+model Commission {
+  id          String    @id @default(uuid()) @db.Char(36)
+  affiliateId String    @db.Char(36)
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  orderId     String    @db.Char(36)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId     String    @db.Char(36)
+
+  // Commission Details
+  amount         Decimal @db.Decimal(10, 2)
+  rate           Decimal @db.Decimal(5, 4)
+  serviceFeeBase Decimal @db.Decimal(10, 2) // The service fee this commission is based on
+
+  status     CommissionStatus @default(PENDING)
+  approvedAt DateTime?
+  paidAt     DateTime?
+
+  // Reference to payout batch
+  payoutId String?          @db.Char(36)
+  payout   AffiliatePayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([affiliateId, status])
+  @@index([orderId])
+  @@index([payoutId])
+  @@index([createdAt])
+}
+
+model AffiliatePayout {
+  id          String    @id @default(uuid()) @db.Char(36)
+  affiliateId String    @db.Char(36)
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  amount Decimal      @db.Decimal(10, 2)
+  method String // 'PAYPAL' | 'BANK_TRANSFER' | 'CHECK' | 'STRIPE_TRANSFER'
+  status PayoutStatus @default(PENDING)
+
+  // Period covered
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Payment details
+  referenceId   String? // External reference (PayPal transaction ID, bank reference, etc.)
+  failureReason String?
+  paidAt        DateTime?
+
+  commissions Commission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([affiliateId, status])
+  @@index([status, periodEnd])
+}
+
+// ============================================================================
+// DELIVERY ZONES
+// ============================================================================
+
+model DeliveryZone {
+  id      String @id @default(uuid()) @db.Char(36)
+  storeId String @db.Char(36)
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  name        String
+  polygonJson Json // GeoJSON polygon coordinates
+
+  // Fee Structure
+  baseFee  Decimal  @db.Decimal(10, 2)
+  minOrder Decimal? @db.Decimal(10, 2)
+
+  isActive Boolean @default(true)
+  priority Int     @default(0) // Higher priority zones checked first
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId, isActive])
+  @@index([priority])
+}
+
+// ============================================================================
+// VENDOR VERIFICATION (KYC/KYB)
+// ============================================================================
+
+enum VerificationStatus {
+  PENDING
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  REVOKED
+}
+
+enum TeamMemberPermission {
+  VIEW_ORDERS
+  MANAGE_ORDERS
+  VIEW_ITEMS
+  MANAGE_ITEMS
+  VIEW_ANALYTICS
+  MANAGE_SETTINGS
+  FULL_ACCESS
+}
+
+model VendorVerification {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @unique @db.Char(36)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Business Information
+  businessName String
+  businessType String // 'INDIVIDUAL' | 'LLC' | 'CORPORATION' | 'PARTNERSHIP'
+  taxId        String
+
+  // Documents
+  documentsJson Json? // Array of document URLs/IDs
+
+  // Status
+  status      VerificationStatus @default(PENDING)
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  approvedAt  DateTime?
+  expiresAt   DateTime?
+
+  // Review notes
+  reviewNotes     String? @db.Text
+  rejectionReason String? @db.Text
+
+  // Stripe KYC reference
+  stripeAccountId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
+// ============================================================================
+// TEAM MANAGEMENT MODELS
+// ============================================================================
+
+model TeamMember {
+  id      String @id @default(uuid()) @db.Char(36)
+  storeId String @db.Char(36)
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId  String @db.Char(36)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Permissions array stored as JSON
+  permissionsJson Json // TeamMemberPermission[]
+
+  isActive  Boolean  @default(true)
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, userId])
+  @@index([userId])
+  @@index([storeId, isActive])
+}
+
+model Invitation {
+  id              String  @id @default(uuid()) @db.Char(36)
+  storeId         String  @db.Char(36)
+  store           Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  senderUserId    String  @db.Char(36)
+  sender          User    @relation("InvitationSender", fields: [senderUserId], references: [id], onDelete: Cascade)
+  recipientEmail  String
+  recipientUserId String? @db.Char(36)
+  recipient       User?   @relation("InvitationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  token           String @unique
+  permissionsJson Json // TeamMemberPermission[]
+
+  status  InvitationStatus @default(PENDING)
+  message String?          @db.Text
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  declinedAt DateTime?
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([recipientEmail])
+  @@index([token])
+  @@index([status, expiresAt])
+}
+
+// ============================================================================
+// FAVORITES & ENGAGEMENT
+// ============================================================================
+
+model FavoriteStore {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  storeId   String   @db.Char(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, storeId])
+  @@index([userId])
+  @@index([storeId])
+}
+
+model FavoriteItem {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  itemId    String   @db.Char(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@index([itemId])
+}
+
+// ============================================================================
+// BUNDLES & COMBOS
+// ============================================================================
+
+model Bundle {
+  id          String      @id @default(uuid()) @db.Char(36)
+  storeId     String      @db.Char(36)
+  store       Store       @relation("StoreBundles", fields: [storeId], references: [id], onDelete: Cascade)
+  name        String
+  description String?     @db.Text
+  imageUrl    String?
+  isActive    Boolean     @default(true)
+  sortIndex   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Bundle items
+  items       BundleItem[]
+  
+  // Bundle pricing
+  pricing     BundlePricing?
+  
+  // Orders that include this bundle
+  orderItems  OrderItem[] @relation("BundleOrderItems")
+  
+  @@index([storeId])
+  @@index([isActive])
+  @@index([sortIndex])
+}
+
+model BundleItem {
+  id        String  @id @default(uuid()) @db.Char(36)
+  bundleId  String  @db.Char(36)
+  bundle    Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  itemId    String  @db.Char(36)
+  item      Item    @relation("ItemBundles", fields: [itemId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+  sortIndex Int     @default(0)
+  
+  @@unique([bundleId, itemId])
+  @@index([bundleId])
+  @@index([itemId])
+}
+
+model BundlePricing {
+  id              String  @id @default(uuid()) @db.Char(36)
+  bundleId        String  @unique @db.Char(36)
+  bundle          Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  
+  // Pricing strategy
+  pricingType     BundlePricingType @default(FIXED_PRICE)
+  fixedPrice      Decimal?          @db.Decimal(10, 2)
+  discountPercent Decimal?          @db.Decimal(5, 2) // e.g., 10.00 for 10%
+  discountAmount  Decimal?          @db.Decimal(10, 2)
+  
+  // Minimum savings guarantee
+  minSavings      Decimal?          @db.Decimal(10, 2)
+  
+  // Display settings
+  showSavings     Boolean           @default(true)
+  savingsLabel    String?           // e.g., "Save $5!"
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum BundlePricingType {
+  FIXED_PRICE      // Bundle has a fixed price
+  DISCOUNT_PERCENT // Bundle gets X% off total
+  DISCOUNT_AMOUNT  // Bundle gets $X off total
+  BEST_DEAL        // Show best available discount
+}

@@ -1,0 +1,2 @@
+export { NewestStores } from './NewestStores'
+

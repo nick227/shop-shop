@@ -1,0 +1,2 @@
+export { PostMedia } from './PostMedia'
+

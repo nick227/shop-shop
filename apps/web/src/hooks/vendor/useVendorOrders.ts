@@ -1,0 +1,91 @@
+/**
+ * useVendorOrders - Fetch orders for vendor's stores with real-time updates
+ * Enhanced with generated hooks for better type safety and error handling
+ */
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@api/client'
+import { useAuth } from '../useAuth'
+import { sortOrdersByDateDesc, isOrderPending } from '@utils/orderHelpers'
+import type { OrderResponse } from '@api/types'
+
+export interface UseVendorOrdersOptions {
+  status?: string;
+  refetchInterval?: number;
+}
+
+export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
+  const { user } = useAuth()
+
+  return useQuery<{ data: OrderResponse[]; meta: { total: number; page: number; limit: number } }>({
+    queryKey: ['vendor-orders', user?.id, options.status],
+    queryFn: async () => {
+      // Fetch orders for all vendor's stores;
+      // First get vendor's stores, then fetch orders for each;
+      const storesResponse = await apiClient.stores().listStores({
+        ownerUserId: user!['id']})
+      
+      const stores = storesResponse?.data || []
+      
+      if (stores.length === 0) {
+        return { data: [], meta: { total: 0, page: 1, limit: 100 } }
+      }
+
+      // Fetch orders for all stores;
+      const ordersPromises = stores.map(store =>
+        apiClient.orders().listOrders({
+          storeId: store.id,
+          ...(options.status && { status: options.status as any })})
+      )
+
+      const ordersResponses = await Promise.all(ordersPromises)
+      
+      // Combine all orders;
+      const allOrders = ordersResponses.flatMap(response => response?.data || [])
+      
+      // Sort by newest first (using consolidated helper)
+      allOrders.sort(sortOrdersByDateDesc)
+
+      return {
+        data: allOrders,
+        meta: {
+          total: allOrders.length,
+          page: 1,
+          limit: 100}}
+    },
+    enabled: !!user,
+    refetchInterval: options.refetchInterval || 30_000, // Default: refresh every 30 sec;
+    select: (data) => data?.data || []})
+}
+
+/**
+ * Get count of pending orders (PLACED, ACCEPTED, PREPARING, READY)
+ */
+export function usePendingOrderCount() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: ['vendor-pending-orders-count', user?.id],
+    queryFn: async () => {
+      const storesResponse = await apiClient.stores().listStores({
+        ownerUserId: user!['id']})
+      
+      const stores = storesResponse?.data || []
+      
+      if (stores.length === 0) return 0;
+      // Fetch orders for all stores (only active statuses)
+      const ordersPromises = stores.map(store =>
+        apiClient.orders().listOrders({
+          storeId: store.id})
+      )
+
+      const ordersResponses = await Promise.all(ordersPromises)
+      const allOrders = ordersResponses.flatMap(response => response?.data || [])
+      
+      // Count pending orders (using consolidated helper)
+      return allOrders.filter(order => isOrderPending(order.status)).length;
+    },
+    enabled: !!user,
+    refetchInterval: 15_000, // Refresh every 15 sec for widget;
+  })
+}
+

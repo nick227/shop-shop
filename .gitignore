@@ -1,0 +1,74 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+**/node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+.env.test
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+**/dist/
+
+# Testing
+test-results/
+**/test-results/
+**/playwright-report/
+**/tests/
+
+# Generated code
+packages/db/src/generated/
+packages/sdk/src/
+*.prisma-client/
+**/generated/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+*.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+logs/
+docs/
+src\*.md
+private/
+
+# Testing
+coverage/
+.nyc_output/
+**/coverage/
+.vitest/
+
+# Misc
+.cache/
+temp/
+tmp/
+data/
+*.tmp
+scripts/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Prisma
+packages/db/migrations/

@@ -1,0 +1,43 @@
+{
+  "name": "@packages/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./dtos": {
+      "types": "./dist/dtos/index.d.ts",
+      "import": "./dist/dtos/index.js"
+    }
+  },
+  "scripts": {
+    "gen:openapi": "tsx src/openapi.ts",
+    "build": "echo 'Schemas package does not need build - use gen:openapi instead'",
+    "typecheck": "echo 'Schemas imports server code - typecheck at app level'",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "echo 'Schemas package - unit tests coming soon'"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "dotenv": "^17.2.3",
+    "eslint": "^8.57.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

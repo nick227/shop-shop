@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "composite": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/controllers/base.controller.ts",
+    "src/scripts/geocode-stores.ts",
+    "src/generated/zod/index.ts"
+  ]
+}

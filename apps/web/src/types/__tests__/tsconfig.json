@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "jsdom"],
+    "baseUrl": ".",
+    "paths": {
+      "@api/types": ["../api/types"],
+      "@packages/sdk": ["../../../../packages/sdk/src"],
+      "@/*": ["../../*"]
+    }
+  },
+  "include": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.ts",
+    "../**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ]
+}

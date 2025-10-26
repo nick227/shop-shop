@@ -1,0 +1,50 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "apps/server": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**"]
+    },
+    "apps/web": {
+      "entry": ["src/main.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/db": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": [
+        "src/**/*.test.ts",
+        "src/**/*.spec.ts",
+        "src/__tests__/**",
+        "src/generated/**"
+      ]
+    },
+    "packages/schemas": {
+      "entry": ["src/index.ts", "src/openapi.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/sdk": {
+      "ignore": ["**"]
+    },
+    "packages/openapi": {
+      "ignore": ["**"]
+    }
+  },
+  "ignore": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/*.config.{js,ts,mjs,cjs}",
+    "**/vite.config.*",
+    "**/vitest.config.*",
+    "**/generated/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "ignoreDependencies": [
+    "@openapitools/openapi-generator-cli",
+    "zod-prisma-types",
+    "prisma"
+  ]
+}
+

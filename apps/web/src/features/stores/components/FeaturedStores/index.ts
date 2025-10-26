@@ -1,0 +1,2 @@
+export { FeaturedStores } from './FeaturedStores'
+
