@@ -17,8 +17,7 @@ import type {
   PromotionsApi,
   PaymentsApi,
   UsersApi,
-  PostsApi,
-  MediasApi,
+  MediaApi,
   BundlesApi
 } from '@packages/sdk'
 import { ConfigurationManager } from './config/ConfigurationManager'
@@ -34,8 +33,7 @@ import {
   PromotionsApiFactory,
   PaymentsApiFactory,
   UsersApiFactory,
-  PostsApiFactory,
-  MediasApiFactory,
+  MediaApiFactory,
   type ApiInstanceFactory,
 } from './factory/ApiInstanceFactory'
 
@@ -102,8 +100,7 @@ class ApiClient {
       promotions: new PromotionsApiFactory(),
       payments: new PaymentsApiFactory(),
       users: new UsersApiFactory(),
-      posts: new PostsApiFactory(),
-      medias: new MediasApiFactory(),
+      media: new MediaApiFactory(),
     }
   }
 
@@ -208,7 +205,7 @@ class ApiClient {
   setToken(token: string | undefined): void {
     this.token = token
     // eslint-disable-next-line
-    const newConfigVersion = this.configManager.setToken(token ?? null)
+    const newConfigVersion = this.configManager.setToken(token ?? undefined)
     this.configVersion = newConfigVersion
     this.cacheManager.updateConfigVersion(newConfigVersion)
   }
@@ -327,8 +324,7 @@ class ApiClient {
   promotions = (): PromotionsApi => this.getApiInstance<PromotionsApi>('promotions')
   payments = (): PaymentsApi => this.getApiInstance<PaymentsApi>('payments')
   users = (): UsersApi => this.getApiInstance<UsersApi>('users')
-  posts = (): PostsApi => this.getApiInstance<PostsApi>('posts')
-  medias = (): MediasApi => this.getApiInstance<MediasApi>('medias')
+  media = (): MediaApi => this.getApiInstance<MediaApi>('media')
   bundles = (): BundlesApi => this.getApiInstance<BundlesApi>('bundles')
   
   /**

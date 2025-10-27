@@ -9,10 +9,14 @@ import {
   useCreateBundle, 
   useUpdateBundle, 
   useDeleteBundle 
-} from '@hooks/generated'
+} from '../../../hooks/generated'
 import { formDataToCreateInput, formDataToUpdateInput } from '../types/bundle.types'
-import type { Bundle, CreateBundleInput, UpdateBundleInput } from '../../../api/types'
+import type { Bundle } from '../../../api/backend-types'
+import type { CreateBundleInput } from '../../../api/apiWrapper'
 import type { BundleFormData, BundleManagementOptions } from '../types/bundle.types'
+
+// Type alias for update operations (uses same structure as create)
+type UpdateBundleInput = Partial<CreateBundleInput>
 
 export function useBundleManagement(options: BundleManagementOptions = {}) {
   const { storeId, isActive = true } = options

@@ -5,17 +5,16 @@
  * To regenerate: pnpm gen:barrels
  */
 
+export * from './AvailableLocations'
+export * from './FeaturedStores'
 export * from './LocationSearch'
-export { LocationHistory } from './LocationSearch/LocationHistory'
+export * from './NewestStores'
 export * from './StoreCard'
+export * from './StoreCarousel'
+export * from './StoreCategoryCarousels'
 export * from './StoreGrid'
 export * from './StoreHeader'
 export * from './StoreHeroCard'
 export * from './StoreList'
 export * from './StoreMap'
 export * from './StoreMapLazy'
-export * from './StoreCarousel'
-export * from './FeaturedStores'
-export * from './NewestStores'
-export * from './AvailableLocations'
-export * from './StoreCategoryCarousels'

@@ -4,7 +4,7 @@
 import React from 'react'
 import { NoResults as NoResultsUI } from '@ui/NoResults'
 import type { LocationData } from '@/types/location.types'
-import type { StoreResponse } from '@api/types'
+import type { StoreWithDistance } from '@api/backend-types'
 
 // Radius policy constants - single source of truth
 const RADIUS_POLICY = {
@@ -14,17 +14,17 @@ const RADIUS_POLICY = {
 } as const
 
 interface NoResultsProps {
-  error: Error | null
-  location: LocationData | null
-  stores: StoreResponse[] | undefined
+  error: Error | undefined
+  location: LocationData | undefined
+  stores: StoreWithDistance[] | undefined
   onExpandSearch: () => void
 }
 
 export function NoResults({ error, location, stores, onExpandSearch }: NoResultsProps) {
-  if (error || !location || (stores && stores.length > 0)) return null
+  if (error || !location || (stores && stores.length > 0)) return
 
   // Check if this is a database empty state (no stores at all)
-  const isDatabaseEmpty = stores && stores.length === 0 && location
+  const isDatabaseEmpty = stores?.length === 0 && location
 
   if (isDatabaseEmpty) {
     return (

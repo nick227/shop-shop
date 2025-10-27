@@ -1,115 +1,18 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { RiverFeed, PostComposer } from '@features/river'
-import { Button, DataState } from '@ui'
-import { usePosts, useCreatePost, useDeletePost, useStore } from '@hooks/generated'
-import type { MediaItem } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+// Posts API is temporarily disabled - components will be re-enabled when Posts API is available
 
 export default function VendorStoreRiverPage() {
-  const { storeId } = useParams<{ storeId: string }>()
-  const navigate = useNavigate()
-  const [showComposer, setShowComposer] = useState(false)
-
-  const { data: store, isLoading: storeLoading } = useStore(storeId || '')
-  const { data: posts = [], isLoading: postsLoading, error, refetch } = usePosts(
-    storeId ? { storeId } : undefined
-  )
-  const createPostMutation = useCreatePost()
-  const deletePostMutation = useDeletePost()
-
-  const handleCreatePost = async (content: string, media: MediaItem[]) => {
-    if (!storeId) return;
-    createPostMutation.mutate(
-      {
-        storeId,
-        content,
-        mediaUrls: media},
-      {
-        onSuccess: () => {
-          setShowComposer(false)
-          refetch()
-        }}
-    )
-  }
-
-  const handleDeletePost = (postId: string) => {
-    if (!confirm('Are you sure you want to delete this post?')) return;
-    deletePostMutation.mutate(postId, {
-      onSuccess: () => {
-        refetch()
-      }})
-  }
-
-  const handleBack = () => {
-    navigate('/vendor/stores/' + storeId + '/items')
-  }
-
-  if (storeLoading) {
-    return (
-      <div className={styles['loading']}>
-        <p>Loading store...</p>
-      </div>
-    )
-  }
-
   return (
-    <div className={styles['page']}>
-      <div className={styles['container']}>
-        <div className={styles['backButton']}>
-          <Button variant="ghost" onClick={handleBack}>
-            ← Back to Items;
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Vendor Store River</h1>
+          <p className="text-gray-500 mb-8">
+            River feed is temporarily disabled while we update the Posts API.
+          </p>
+          <p className="text-sm text-gray-400">
+            This feature will be available soon with enhanced social capabilities.
+          </p>
         </div>
-
-        <header className={styles['header']}>
-          <div>
-            <h1 className={styles['title']}>Store River</h1>
-            <p className={styles['subtitle']}>
-              Manage your store's social feed - share updates, photos, videos, and connect with customers;
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            onClick={() => setShowComposer(!showComposer)}
-          >
-            {showComposer ? 'Cancel' : '+ Create Post'}
-          </Button>
-        </header>
-
-        {showComposer && storeId && store && (
-          <div className="mb-6">
-            <PostComposer
-              storeId={storeId}
-              storeName={store.name}
-              storeImage={store.media?.[0]?.url}
-              onPost={handleCreatePost}
-              onCancel={() => setShowComposer(false)}
-            />
-          </div>
-        )}
-
-        <DataState
-          data={posts}
-          isLoading={postsLoading}
-          error={error}
-          emptyMessage="No posts yet. Create your first post to start sharing with customers!"
-        >
-          {(posts) => (
-            <RiverFeed
-              posts={posts}
-              isLoading={postsLoading}
-              error={error}
-              hasMore={false}
-              onLoadMore={() => {}}
-              onPostClick={handleDeletePost}
-              onLike={() => {}}
-              onComment={() => {}}
-              onShare={() => {}}
-              onFiltersChange={() => {}}
-            />
-          )}
-        </DataState>
       </div>
     </div>
   )

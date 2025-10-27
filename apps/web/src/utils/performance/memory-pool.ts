@@ -10,15 +10,15 @@ import * as L from 'leaflet'
  * @template T - Type of objects to pool
  */
 export class ObjectPool<T> {
-  private pool: T[] = []
-  private createFn: () => T
-  private resetFn: (obj: T) => void
-  private maxSize: number
+  private readonly pool: T[] = []
+  private readonly createFn: () => T
+  private readonly resetFn: (obj: T) => void
+  private readonly maxSize: number
 
   constructor(
     createFn: () => T,
     resetFn: (obj: T) => void,
-    maxSize: number = 100
+    maxSize = 100
   ) {
     this.createFn = createFn
     this.resetFn = resetFn
@@ -75,11 +75,11 @@ export class ObjectPool<T> {
  * Specialized pool for DOM elements
  */
 export class DOMElementPool {
-  private pool: HTMLElement[] = []
-  private tagName: string
-  private maxSize: number
+  private readonly pool: HTMLElement[] = []
+  private readonly tagName: string
+  private readonly maxSize: number
 
-  constructor(tagName: string = 'div', maxSize: number = 50) {
+  constructor(tagName = 'div', maxSize = 50) {
     this.tagName = tagName
     this.maxSize = maxSize
   }
@@ -102,7 +102,7 @@ export class DOMElementPool {
     element.innerHTML = ''
     element.className = ''
     element.style.cssText = ''
-    element.removeAttribute('data-*')
+    delete element.dataset['*']
     
     this.pool.push(element)
   }
@@ -120,10 +120,10 @@ export class DOMElementPool {
  * Specialized pool for Leaflet markers
  */
 export class MarkerPool {
-  private pool: L.Marker[] = []
-  private maxSize: number
+  private readonly pool: L.Marker[] = []
+  private readonly maxSize: number
 
-  constructor(maxSize: number = 50) {
+  constructor(maxSize = 50) {
     this.maxSize = maxSize
   }
 
@@ -162,10 +162,10 @@ export class MarkerPool {
  * Specialized pool for Leaflet icons
  */
 export class IconPool {
-  private pool: L.DivIcon[] = []
-  private maxSize: number
+  private readonly pool: L.DivIcon[] = []
+  private readonly maxSize: number
 
-  constructor(maxSize: number = 50) {
+  constructor(maxSize = 50) {
     this.maxSize = maxSize
   }
 
@@ -206,14 +206,14 @@ export class IconPool {
  * Global pool manager for coordinating multiple pools
  */
 export class PoolManager {
-  private pools: Map<string, ObjectPool<any>> = new Map()
+  private readonly pools = new Map<string, ObjectPool<unknown>>()
 
   register<T>(name: string, pool: ObjectPool<T>): void {
-    this.pools.set(name, pool)
+    this.pools.set(name, pool as ObjectPool<unknown>)
   }
 
   get<T>(name: string): ObjectPool<T> | undefined {
-    return this.pools.get(name)
+    return this.pools.get(name) as ObjectPool<T> | undefined
   }
 
   clearAll(): void {

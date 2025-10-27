@@ -10,7 +10,7 @@ export function FeaturedStores() {
   return (
     <div className="my-8">
       <StoreCarousel
-        stores={stores || []}
+        stores={stores ?? []}
         title="⭐ Featured Stores"
         isLoading={isLoading}
       />

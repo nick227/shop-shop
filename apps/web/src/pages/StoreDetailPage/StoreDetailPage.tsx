@@ -5,18 +5,20 @@ import { useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useStore } from '@hooks/generated'
 import { useItems } from '@hooks/generated'
-import { usePosts } from '@hooks/generated'
-import { useTogglePostLike } from '@hooks/river'
+import { useBundles } from '@hooks/generated'
 import { StoreHeader } from '../../features/stores/components/StoreHeader'
 import { StoreMapLazy } from '../../features/stores/components/StoreMapLazy'
 import { ItemCard, ItemCarouselCompact } from '../../features/items/components'
-import { RiverFeed } from '../../features/river'
+import { BundleGrid } from '../../features/bundles/components/customer'
+// import { RiverFeed } from '../../features/river' // Disabled until Posts API is available
 import { Button, Spinner, DataState } from '@ui'
 import type { StoreWithDistance } from '@api/types'
 import { styles } from '@utils/tailwind-classes'
 
 // Stable no-op function reference (avoids re-renders)
-const NOOP = () => {}
+const NOOP = (): void => {
+  // Intentionally empty
+}
 
 export default function StoreDetailPage() {
   // Get storeId from URL parameters (matches router.tsx :storeId)
@@ -25,15 +27,19 @@ export default function StoreDetailPage() {
   const [showCarousel, setShowCarousel] = useState(false)
   const [activeTab, setActiveTab] = useState<'menu' | 'river'>('menu')
   
-  const { data: store, isLoading: storeLoading, error: storeError } = useStore(storeId || '')
+  const { data: store, isLoading: storeLoading, error: storeError } = useStore(storeId ?? '')
   const { data: items, isLoading: itemsLoading, error: itemsError } = useItems(storeId ? { storeId } : undefined)
-  const { data: posts = [], isLoading: postsLoading, error: postsError } = usePosts(storeId ? { storeId } : undefined)
-  const { toggleLike } = useTogglePostLike()
+  // Posts API not available in SDK yet
+  const posts: any[] = []
+  const postsLoading = false
+  const postsError = null
+  const { data: bundles = [] } = useBundles(storeId ? { storeId, isActive: true } : undefined)
+  // useTogglePostLike removed - Posts API not available
 
   // Memoize store array for map (must be before early returns per React hooks rules)
   const storeForMap = useMemo<StoreWithDistance[]>(() => {
     if (!store) return []
-    const hasLocation = store.latitude !== null && store.longitude !== null
+    const hasLocation = store.latitude !== undefined && store.longitude !== undefined
     return hasLocation ? [store as StoreWithDistance] : []
   }, [store])
 
@@ -41,23 +47,14 @@ export default function StoreDetailPage() {
     navigate('/')
   }
 
-  // Memoize posts map for O(1) lookup instead of O(n) find
-  const postsMap = useMemo(() => {
-    const map = new Map<string, typeof posts[0]>()
-    for (const post of posts) map.set(post.id, post)
-    return map
-  }, [posts])
-
+  // Posts functionality disabled until API is available
   const handleLike = useCallback((postId: string) => {
-    const post = postsMap.get(postId)
-    if (post) {
-      toggleLike(postId, post.isLiked || false)
-    }
-  }, [postsMap, toggleLike])
+    // No-op until Posts API is available
+  }, [])
 
   if (storeLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading store...</p>
       </div>
@@ -66,27 +63,27 @@ export default function StoreDetailPage() {
 
   if (storeError || !store) {
     return (
-      <div className={styles['error']}>
+      <div className={styles.error}>
         <h2>Store Not Found</h2>
-        <p>{storeError?.message || 'The store you are looking for does not exist.'}</p>
+        <p>{storeError?.message ?? 'The store you are looking for does not exist.'}</p>
         <Button onClick={handleBack}>Back to Home</Button>
       </div>
     )
   }
 
   return (
-    <div className={styles['container']}>
-      <div className={styles['backButton']}>
+    <div className={styles.container}>
+      <div className={styles.backButton}>
         <Button variant="ghost" onClick={handleBack}>
           ← Back
         </Button>
       </div>
 
-      <StoreHeader store={store} />
+      <StoreHeader store={store as any} />
 
       {/* Store Location Map */}
       {storeForMap.length > 0 && (
-        <div className={styles['mapSection']}>
+        <div className={styles.mapSection}>
           <StoreMapLazy 
             stores={storeForMap}
             height="400px"
@@ -94,7 +91,7 @@ export default function StoreDetailPage() {
         </div>
       )}
 
-      <main className={styles['content']}>
+      <main className={styles.content}>
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 border-b border-border">
           <button
@@ -122,8 +119,8 @@ export default function StoreDetailPage() {
         {/* Menu Tab */}
         {activeTab === 'menu' && (
           <>
-            <div className={styles['menuHeader']}>
-              <h2 className={styles['sectionTitle']}>Menu</h2>
+            <div className={styles.menuHeader}>
+              <h2 className={styles.sectionTitle}>Menu</h2>
               {items && items.length > 0 && (
                 <Button 
                   variant="primary" 
@@ -134,15 +131,28 @@ export default function StoreDetailPage() {
               )}
             </div>
 
+            {/* Bundles Section */}
+            {bundles.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-semibold mb-4">Bundle Deals</h3>
+                <BundleGrid
+                  bundles={bundles as any}
+                  columns={3}
+                  showSavings={true}
+                  compact={false}
+                />
+              </div>
+            )}
+
             <DataState
               data={items}
               isLoading={itemsLoading}
-              error={itemsError}
+              error={itemsError || undefined}
               emptyMessage="No menu items available"
             >
               {(items) => (
                 <>
-                  <div className={styles['grid']}>
+                  <div className={styles.grid}>
                     {items.map((item) => (
                       <ItemCard key={item.id} item={item} />
                     ))}
@@ -161,20 +171,11 @@ export default function StoreDetailPage() {
           </>
         )}
 
-        {/* River Tab */}
+        {/* River Tab - Disabled until Posts API is available */}
         {activeTab === 'river' && (
-          <RiverFeed
-            posts={posts}
-            isLoading={postsLoading}
-            error={postsError}
-            hasMore={false}
-            onLoadMore={NOOP}
-            onPostClick={NOOP}
-            onLike={handleLike}
-            onComment={NOOP}
-            onShare={NOOP}
-            onFiltersChange={NOOP}
-          />
+          <div className="p-8 text-center text-gray-500">
+            <p>River feed is temporarily disabled while we update the Posts API.</p>
+          </div>
         )}
       </main>
     </div>

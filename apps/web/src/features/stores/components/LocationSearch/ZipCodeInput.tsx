@@ -5,12 +5,12 @@ import { useState } from 'react'
 import { styles } from '@utils/tailwind-classes'
 
 interface ZipCodeInputProps {
-  onZipSubmit: (zipCode: string) => void;
-  isLoading?: boolean;
-  error?: string | null;
+  readonly onZipSubmit: (zipCode: string) => void;
+  readonly isLoading?: boolean;
+  readonly error?: string;
 }
 
-export function ZipCodeInput({ onZipSubmit, isLoading = false, error }: ZipCodeInputProps) {
+export function ZipCodeInput({ onZipSubmit, isLoading = false }: ZipCodeInputProps) {
   const [zipCode, setZipCode] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,10 +22,10 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false, error }: ZipCodeI
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles['zipForm']}>
+    <form onSubmit={handleSubmit} className={styles.zipForm}>
       <input
         type="text"
-        className={styles['zipInput']}
+        className={styles.zipInput}
         placeholder="Enter ZIP code"
         value={zipCode}
         onChange={(e) => setZipCode(e.target.value)}
@@ -36,7 +36,7 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false, error }: ZipCodeI
       />
       <button
         type="submit" 
-        className={styles['searchButton']}
+        className={styles.searchButton}
         disabled={zipCode.length !== 5 || !/^\d{5}$/.test(zipCode) || isLoading}
       >
         {isLoading ? 'Searching...' : 'Search'}

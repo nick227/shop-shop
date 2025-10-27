@@ -19,9 +19,10 @@
     "gen": "openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./src --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
     "gen:wrapper": "tsx scripts/generate-api-wrapper.ts",
     "gen:types": "tsx scripts/generate-type-mappers.ts",
+    "gen:frontend-types": "tsx scripts/generate-frontend-types.ts",
     "gen:hooks": "tsx scripts/generate-hooks.ts",
     "gen:barrels": "tsx scripts/generate-barrel-exports.ts",
-    "gen:all": "npm run gen:wrapper && npm run gen:types && npm run gen:hooks && npm run gen:barrels",
+    "gen:all": "npm run gen:wrapper && npm run gen:types && npm run gen:frontend-types && npm run gen:hooks && npm run gen:barrels",
     "gen:all-client": "tsx scripts/gen-and-validate.ts",
     "gen:all-client:update": "tsx scripts/gen-and-validate.ts --update-snapshots",
     "validate": "tsx scripts/validate-all.ts",
@@ -34,7 +35,9 @@
     "test": "tsx scripts/snapshot-test.ts"
   },
   "dependencies": {
-    "@packages/realtime": "workspace:*"
+    "@packages/realtime": "workspace:*",
+    "@packages/schemas": "workspace:*",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.13.4",

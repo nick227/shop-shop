@@ -7,20 +7,20 @@ import { geocodeCity } from '@services/geocoding'
 import type { LocationData } from '@/types/location.types'
 
 interface UseGeocodingResult {
-  geocodeLocation: (city: string, state: string, currentLocation?: LocationData | null) => Promise<LocationData | null>
+  geocodeLocation: (city: string, state: string, currentLocation?: LocationData | undefined) => Promise<LocationData | undefined>
   isGeocoding: boolean
-  geocodingError: string | null
+  geocodingError: string | undefined
   clearError: () => void
 }
 
 type GeocodeCache = Record<string, LocationData>;
 
 export function useGeocoding(): UseGeocodingResult {
-  const abortController = useRef<AbortController | null>(null)
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortController = useRef<AbortController | undefined>(undefined)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const cache = useRef<GeocodeCache>({})
   const isGeocodingRef = useRef(false)
-  const errorRef = useRef<string | null>(null)
+  const errorRef = useRef<string | undefined>(undefined)
   
   // Environment-safe logging helper
   const isProd = import.meta !== undefined ? import.meta.env?.MODE === 'production' : process.env.NODE_ENV === 'production'
@@ -50,8 +50,8 @@ export function useGeocoding(): UseGeocodingResult {
   const geocodeLocation = useCallback(async (
     city: string, 
     state: string, 
-    currentLocation?: LocationData | null
-  ): Promise<LocationData | null> => {
+    currentLocation?: LocationData | undefined
+  ): Promise<LocationData | undefined> => {
     const cacheKey = '${city},' + state + ''
     
     // Check cache first
@@ -81,12 +81,12 @@ export function useGeocoding(): UseGeocodingResult {
       debounceTimer.current = setTimeout(async () => {
         // Check if this request was already aborted
         if (currentAbortController.signal.aborted) {
-          resolve(null)
+          resolve(undefined)
           return
         }
 
         isGeocodingRef.current = true
-        errorRef.current = null
+        errorRef.current = undefined
 
         try {
           if (!isProd) {
@@ -98,7 +98,7 @@ export function useGeocoding(): UseGeocodingResult {
 
           // Check if request was aborted during geocoding
           if (currentAbortController.signal.aborted) {
-            resolve(null)
+            resolve(undefined)
             return
           }
 
@@ -110,8 +110,8 @@ export function useGeocoding(): UseGeocodingResult {
               radiusMiles: currentLocation?.radiusMiles ?? 25,
               displayName: geocodeResult.displayName || '${city}, ' + state + '',
               source: 'manual',
-              city: geocodeResult["city"] || city,
-              state: geocodeResult["state"] || state,
+              city: geocodeResult.city || city,
+              state: geocodeResult.state || state,
               zip: geocodeResult.zip,
             }
 
@@ -131,33 +131,33 @@ export function useGeocoding(): UseGeocodingResult {
               console.warn('[useGeocoding] ' + errorMsg + '')
             }
             
-            resolve(null)
+            resolve(undefined)
           }
         } catch (error: any) {
           // Ignore abort errors
-          if ((error as any) instanceof Error && error !== null && (error.name === 'AbortError' || currentAbortController.signal.aborted)) {
-            resolve(null)
+          if ((error) instanceof Error && error !== undefined && (error.name === 'AbortError' || currentAbortController.signal.aborted)) {
+            resolve(undefined)
             return
           }
 
-          const errorMsg = 'Geocoding error: ' + ((error as any) instanceof Error ? error.message : 'Unknown error')
+          const errorMsg = 'Geocoding error: ' + ((error) instanceof Error ? error.message : 'Unknown error')
           errorRef.current = errorMsg
 
           if (!isProd) {
             console.error('[useGeocoding] ' + errorMsg + '')
           }
 
-          resolve(null)
+          resolve(undefined)
         } finally {
           isGeocodingRef.current = false
-          abortController.current = null
+          abortController.current = undefined
         }
       }, 300) // 300ms debounce
     })
   }, [])
 
   const clearError = useCallback(() => {
-    errorRef.current = null
+    errorRef.current = undefined
   }, [])
 
   return {

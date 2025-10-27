@@ -39,7 +39,7 @@ export const PostComposer = ({
       await onPost(content, detectedMedia)
       setContent('')
       clearMedia()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create post:', error)
     } finally {
       setIsPosting(false)
@@ -55,7 +55,7 @@ export const PostComposer = ({
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault()
       if (!isPosting && (content.trim().length > 0 || detectedMedia.length > 0)) {
-        handleSubmit()
+        void handleSubmit()
       }
     }
   }
@@ -67,7 +67,7 @@ export const PostComposer = ({
   const isValid = content.trim().length > 0 || detectedMedia.length > 0;
   return (
     <Card className="p-6">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
         <header className="flex items-center gap-3 mb-4">
           {storeImage && (
             <img

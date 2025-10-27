@@ -1,18 +1,17 @@
 /**
  * ResultsContainer - Component for rendering search results based on status;
  */
-import React from 'react'
 import { LoadingState, ErrorState, NoResults, SearchResults } from './index'
 import type { LocationData } from '../../../types/location.types'
-import type { StoreWithDistance } from '@api/types'
+import type { StoreWithDistance } from '../../../api/types'
 
 interface ResultsContainerProps {
   searchStatus: 'idle' | 'loading' | 'error' | 'no-results' | 'results'
   isLoading: boolean;
-  location: LocationData | null;
-  error: Error | null;
+  location: LocationData | undefined;
+  error: Error | undefined;
   stores: StoreWithDistance[] | undefined;
-  userLocation: LocationData | null;
+  userLocation: LocationData | undefined  ;
   onStoreClick: (store: StoreWithDistance) => void;
   onExpandSearch: () => void;
 }
@@ -42,12 +41,12 @@ export function ResultsContainer({
         error={error} 
         location={location} 
         stores={stores} 
-        userLocation={userLocation as LocationCoordinates} 
+        userLocation={userLocation} 
         onStoreClick={onStoreClick}
       />
     }
     default: {
-      return null;
+      return;
     }
   }
 }

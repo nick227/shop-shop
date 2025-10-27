@@ -7,11 +7,11 @@ import type { LocationData } from '@/types/location.types'
 
 interface LoadingStateProps {
   isLoading: boolean
-  location: LocationData | null
+  location: LocationData | undefined
 }
 
 export function LoadingState({ isLoading, location }: LoadingStateProps) {
-  if (!isLoading || !location) return null
+  if (!isLoading || !location) return
 
   return (
     <>

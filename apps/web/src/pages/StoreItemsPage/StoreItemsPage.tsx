@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { handleApiError } from '../../api/errors'
 import { Button, SearchInput, Badge, Spinner, Pagination } from '../../components/ui'
 import { usePaginatedList } from '../../hooks/usePaginatedList'
-import type { Item } from '../../api/types'
+import type { ItemResponse } from '../../api/backend-types'
 import { formatCurrency, parsePrice } from '../../utils/format'
 
 export default function StoreItemsPage() {
@@ -32,7 +32,8 @@ export default function StoreItemsPage() {
     queryKey: ['items', storeId],
     queryFn: async () => {
       return await apiClient.items().listItems({
-        storeId: storeId!,
+        // Note: SDK doesn't support storeId filtering yet
+        // All items will be returned and filtered client-side
       })
     },
     enabled: !!storeId,
@@ -53,14 +54,15 @@ export default function StoreItemsPage() {
     },
   })
 
-  const items = (itemsData?.data || []) as unknown as Record<string, unknown>[]
+  // Filter items by storeId since SDK doesn't support server-side filtering
+  const items = (itemsData?.data ?? []).filter(item => item.storeId === storeId) as ItemResponse[]
 
   // Unified pagination handler with search
   const paginatedList = usePaginatedList({
     items: items,
     pageSize: 20,
     searchQuery,
-    searchFields: ['title', 'description'] as (keyof typeof items[0])[],
+    searchFields: ['title', 'description'],
   })
 
   const handleDeleteItem = useCallback((itemId: string, itemTitle: string) => {
@@ -170,10 +172,10 @@ export default function StoreItemsPage() {
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {paginatedList.items.map((item) => (
               <ItemCard
-                key={item.id as string}
-                item={item as any}
-                onEdit={() => navigate('/vendor/stores/${storeId}/items/' + item.id + '/edit')}
-                onDelete={() => handleDeleteItem(item.id as string, (item as any).title)}
+                key={item.id}
+                item={item as ItemResponse}
+                onEdit={() => navigate(`/vendor/stores/${storeId}/items/${item.id}/edit`)}
+                onDelete={() => handleDeleteItem(item.id, item.title)}
                 isDeleting={deleteItemMutation.isPending}
               />
             ))}
@@ -200,7 +202,7 @@ export default function StoreItemsPage() {
 
 // Item management card
 interface ItemCardProps {
-  item: Item
+  item: ItemResponse
   onEdit: () => void
   onDelete: () => void
   isDeleting: boolean

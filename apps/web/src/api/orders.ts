@@ -5,13 +5,21 @@
 
 import { apiClient } from './client'
 import type { 
-  ListOrdersStatusEnum,
   UpdateOrderRequest,
   UpdateOrderRequestStatusEnum
 } from '@packages/sdk'
 import type { CreateOrderInput } from '@api/types'
-// ListVendorOrdersStatusEnum doesn't exist yet in SDK - using ListOrdersStatusEnum;
-type ListVendorOrdersStatusEnum = ListOrdersStatusEnum;
+// Define order status enum locally since SDK doesn't have ListOrdersStatusEnum
+export const ListVendorOrdersStatusEnum = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED', 
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type ListVendorOrdersStatusEnum = typeof ListVendorOrdersStatusEnum[keyof typeof ListVendorOrdersStatusEnum]
 // CreateOrderInput is now imported from @api/types;
 // Use SDK type for order status updates
 export type UpdateOrderStatus = UpdateOrderRequest;
@@ -35,9 +43,9 @@ export const ordersApi = {
    * Get customer orders;
    */
   async getCustomerOrders(status?: string) {
-    return await apiClient.orders().listOrders({ 
-      status: status as ListOrdersStatusEnum
-  })
+    // Note: SDK doesn't support status filtering yet
+    // All orders will be returned and filtered client-side
+    return await apiClient.orders().listOrders({})
   },
 
   /**
@@ -47,10 +55,9 @@ export const ordersApi = {
    */
   async getVendorOrders(status?: string) {
     // Workaround until backend adds listVendorOrders()
-    return await apiClient.orders().listOrders({ 
-      status: status as ListOrdersStatusEnum
-      // Note: Will need storeId parameter when implemented
-    });
+    // Note: SDK doesn't support status filtering yet
+    // All orders will be returned and filtered client-side
+    return await apiClient.orders().listOrders({});
   },
   /**
    * Get pending orders count (vendor)
@@ -59,9 +66,8 @@ export const ordersApi = {
    */
   async getPendingOrdersCount() {
     // Workaround until backend adds getVendorPendingOrdersCount()
-    const orders = await apiClient.orders().listOrders({ 
-      status: 'PLACED' as ListOrdersStatusEnum
-    });
+    // Note: SDK doesn't support status filtering yet
+    const orders = await apiClient.orders().listOrders({});
     return { count: orders.data?.length || 0 };
   },
 

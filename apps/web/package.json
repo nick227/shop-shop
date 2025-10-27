@@ -36,6 +36,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@packages/realtime": "workspace:*",
+    "@packages/schemas": "workspace:*",
     "@packages/sdk": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-popover": "^1.1.2",

@@ -9,9 +9,9 @@ import type { LocationData, LocationInput, LocationPreferences } from '../types/
 
 export interface UseLocationReturn {
   // Current location state;
-  currentLocation: LocationData | null;
+  currentLocation: LocationData | undefined;
   isLoading: boolean;
-  error: string | null;
+  error: string | undefined;
   // Location methods;
   getLocation: (input: LocationInput) => Promise<LocationData>
   clearLocation: () => void;
@@ -27,9 +27,9 @@ export interface UseLocationReturn {
 }
 
 export function useLocation(): UseLocationReturn {
-  const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null)
+  const [currentLocation, setCurrentLocation] = useState<LocationData | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | undefined>(undefined)
   const [locationHistory, setLocationHistory] = useState<LocationData[]>([])
   const [preferences, setPreferences] = useState<LocationPreferences>(locationService.getPreferences())
 
@@ -53,7 +53,7 @@ export function useLocation(): UseLocationReturn {
   const getLocation = useCallback(async (input: LocationInput): Promise<LocationData> => {
     // Batch initial state updates;
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
     
     try {
       const location = await locationService.getLocation(input)
@@ -82,8 +82,8 @@ export function useLocation(): UseLocationReturn {
 
   // Clear current location;
   const clearLocation = useCallback(() => {
-    setCurrentLocation(null)
-    setError(null)
+    setCurrentLocation(undefined)
+    setError(undefined)
     // Note: We don't clear from localStorage here - that's handled by the service;
   }, [])
 

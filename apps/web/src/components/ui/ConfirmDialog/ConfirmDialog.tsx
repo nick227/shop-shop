@@ -82,12 +82,12 @@ export function ConfirmDialog({
 export function useConfirm() {
   const [state, setState] = useState<{
     open: boolean
-    resolve: ((value: boolean) => void) | null
-    props: Omit<ConfirmDialogProps, 'open' | 'onOpenChange' | 'onConfirm'> | null
+    resolve: ((value: boolean) => void) | undefined
+    props: Omit<ConfirmDialogProps, 'open' | 'onOpenChange' | 'onConfirm'> | undefined
   }>({
     open: false,
-    resolve: null,
-    props: null
+    resolve: undefined,
+    props: undefined
   })
 
   const confirm = useCallback((props: Omit<ConfirmDialogProps, 'open' | 'onOpenChange' | 'onConfirm'>) => {
@@ -102,12 +102,12 @@ export function useConfirm() {
 
   const handleConfirm = useCallback(() => {
     state.resolve?.(true)
-    setState({ open: false, resolve: null, props: null })
+    setState({ open: false, resolve: undefined, props: undefined })
   }, [state.resolve])
 
   const handleCancel = useCallback(() => {
     state.resolve?.(false)
-    setState({ open: false, resolve: null, props: null })
+    setState({ open: false, resolve: undefined, props: undefined })
   }, [state.resolve])
 
   const dialog = state.props ? (
@@ -117,7 +117,7 @@ export function useConfirm() {
       onOpenChange={(open) => !open && handleCancel()}
       onConfirm={handleConfirm}
     />
-  ) : null
+  ) : undefined
 
   return { confirm, dialog }
 }

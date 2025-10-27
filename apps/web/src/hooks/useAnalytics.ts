@@ -44,12 +44,12 @@ export function useAnalytics() {
     trackEvent({
       action: 'search_location',
       category: 'engagement',
-      label: params["city"] && params["state"] ? '${params["city"]}, ' + params["state"] + '' : 'coordinates',
+      label: params.city && params.state ? '${params["city"]}, ' + params.state + '' : 'coordinates',
       params: {
         search_latitude: params.latitude,
         search_longitude: params.longitude,
-        search_city: params["city"],
-        search_state: params["state"],
+        search_city: params.city,
+        search_state: params.state,
         search_radius: params.radius}})
   }, [trackEvent])
   

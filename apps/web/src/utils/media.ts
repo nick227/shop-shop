@@ -5,7 +5,7 @@
 /**
  * Truncate URL to specified length;
  */
-export function truncateUrl(url: string, maxLength: number = 50): string {
+export function truncateUrl(url: string, maxLength = 50): string {
   if (url.length <= maxLength) {
     return url;
   }
@@ -13,7 +13,7 @@ export function truncateUrl(url: string, maxLength: number = 50): string {
   const start = Math.floor((maxLength - 3) / 2)
   const end = Math.ceil((maxLength - 3) / 2)
   
-  return url.substring(0, start) + '...' + url.substring(url.length - end)
+  return url.slice(0, Math.max(0, start)) + '...' + url.slice(Math.max(0, url.length - end))
 }
 
 /**
@@ -24,11 +24,11 @@ export function formatCount(count: number): string {
     return count.toString()
   }
   
-  if (count < 1000000) {
+  if (count < 1_000_000) {
     return (count / 1000).toFixed(1) + 'K'
   }
   
-  return (count / 1000000).toFixed(1) + 'M'
+  return (count / 1_000_000).toFixed(1) + 'M'
 }
 
 /**

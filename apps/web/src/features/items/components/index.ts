@@ -1,8 +1,8 @@
 /**
- * Item Components - Auto-generated barrel exports;
- * ⚠️  AUTO-GENERATED - DO NOT EDIT MANUALLY;
+ * Item Components - Auto-generated barrel exports
+ * ⚠️  AUTO-GENERATED - DO NOT EDIT MANUALLY
  * 
- * To regenerate: pnpm gen:barrels;
+ * To regenerate: pnpm gen:barrels
  */
 
 export * from './ItemCard'

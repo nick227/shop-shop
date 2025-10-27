@@ -4,7 +4,7 @@
 import React from 'react'
 
 interface HeaderProps {
-  locationDisplayName: string | null;
+  locationDisplayName: string | undefined;
   currentRadius: number;
   citiesContextResult: { short?: string }
   onClearLocation: () => void;

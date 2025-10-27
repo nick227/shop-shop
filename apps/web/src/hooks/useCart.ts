@@ -21,13 +21,13 @@ export function useCart() {
 
   // Find active cart from the list
   const activeCart = useMemo(() => {
-    if (!carts || carts.length === 0) return null
-    return carts.find(cart => cart.status === 'ACTIVE') || null
+    if (!carts || carts.length === 0) return undefined
+    return carts.find(cart => cart.status === 'ACTIVE') || undefined
   }, [carts])
 
   // Calculate totals for the active cart
-  const cartWithTotals: CartWithTotals | null = useMemo(() => {
-    return activeCart ? calculateCartTotals(activeCart as any) : null
+  const cartWithTotals: CartWithTotals | undefined = useMemo(() => {
+    return activeCart ? calculateCartTotals(activeCart as any) : undefined
   }, [activeCart])
 
   return {

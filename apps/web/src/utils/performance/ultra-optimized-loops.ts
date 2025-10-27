@@ -8,7 +8,7 @@ import type { StoreWithDistance } from '../../api/types'
  * Performance monitoring utility for tracking execution time;
  */
 export class UltraOptimizedPerformanceMonitor {
-  private static timers: Map<string, number> = new Map()
+  private static readonly timers = new Map<string, number>()
 
   static track<T>(name: string, fn: () => T): T {
     const start = performance.now()
@@ -18,7 +18,7 @@ export class UltraOptimizedPerformanceMonitor {
     this.timers.set(name, duration)
     
     if (duration > 16) { // Warn if operation takes longer than one frame;
-      console.warn('Performance: ${name} took ' + duration.toFixed(2) + 'ms')
+      console.warn(`Performance: ${name} took ${duration.toFixed(2)}ms`)
     }
     
     return result;
@@ -42,25 +42,24 @@ export class UltraOptimizedPerformanceMonitor {
  */
 export class UltraOptimizedStoreProcessor {
   private processedStores: StoreWithDistance[] = []
-  private nearestStore: StoreWithDistance | null = null;
-  private nearestDistance: number = Infinity;
+  private nearestStore: StoreWithDistance | undefined = undefined;
+  private nearestDistance = Infinity;
   /**
    * Process stores in a single pass with early exit optimizations;
    */
   processStores(stores: StoreWithDistance[]): {
-    markerData: Array<{ store: StoreWithDistance; isNearest: boolean }>
-    nearestStore: StoreWithDistance | null;
+    markerData: { store: StoreWithDistance; isNearest: boolean }[]
+    nearestStore: StoreWithDistance | undefined;
     validStoresCount: number;
   } {
     // Reset state;
     this.processedStores = []
-    this.nearestStore = null;
+    this.nearestStore = undefined;
     this.nearestDistance = Infinity;
-    const markerData: Array<{ store: StoreWithDistance; isNearest: boolean }> = []
+    const markerData: { store: StoreWithDistance; isNearest: boolean }[] = []
     let validStoresCount = 0;
     // Single-pass processing with early exit patterns;
-    for (let i = 0; i < stores.length; i++) {
-      const store = stores[i]
+    for (const store of stores) {
       
       // Early exit: Skip invalid stores immediately;
       if (!store || typeof store.latitude !== 'number' || typeof store.longitude !== 'number') {
@@ -68,7 +67,7 @@ export class UltraOptimizedStoreProcessor {
       }
 
       // Early exit: Skip stores with invalid coordinates;
-      if (isNaN(store.latitude) || isNaN(store.longitude)) {
+      if (Number.isNaN(store.latitude) || Number.isNaN(store.longitude)) {
         continue;
       }
 
@@ -96,7 +95,7 @@ export class UltraOptimizedStoreProcessor {
     // Mark nearest store;
     if (this.nearestStore) {
       for (const data of markerData) {
-        if (data.store.id === this.nearestStore!['id']) {
+        if (data.store.id === this.nearestStore.id) {
           data.isNearest = true;
           break;
         }
@@ -120,7 +119,7 @@ export class UltraOptimizedStoreProcessor {
   /**
    * Get nearest store;
    */
-  getNearestStore(): StoreWithDistance | null {
+  getNearestStore(): StoreWithDistance | undefined {
     return this.nearestStore;
   }
 }
@@ -138,9 +137,9 @@ export class UltraOptimizedArrayOps {
     mapper: (item: T, index: number) => U
   ): U[] {
     const result: U[] = []
-    for (let i = 0; i < array.length; i++) {
-      if (predicate(array[i], i)) {
-        result.push(mapper(array[i], i))
+    for (const [i, element] of array.entries()) {
+      if (predicate(element, i)) {
+        result.push(mapper(element, i))
       }
     }
     return result;
@@ -153,9 +152,9 @@ export class UltraOptimizedArrayOps {
     array: T[],
     predicate: (item: T, index: number) => boolean
   ): T | undefined {
-    for (let i = 0; i < array.length; i++) {
-      if (predicate(array[i], i)) {
-        return array[i]
+    for (const [i, element] of array.entries()) {
+      if (predicate(element, i)) {
+        return element
       }
     }
     return undefined;
@@ -168,8 +167,8 @@ export class UltraOptimizedArrayOps {
     array: T[],
     predicate: (item: T, index: number) => boolean
   ): number {
-    for (let i = 0; i < array.length; i++) {
-      if (predicate(array[i], i)) {
+    for (const [i, element] of array.entries()) {
+      if (predicate(element, i)) {
         return i;
       }
     }
@@ -185,8 +184,8 @@ export class UltraOptimizedArrayOps {
     initialValue: U
   ): U {
     let acc = initialValue;
-    for (let i = 0; i < array.length; i++) {
-      acc = reducer(acc, array[i], i)
+    for (const [i, element] of array.entries()) {
+      acc = reducer(acc, element, i)
     }
     return acc;
   }
@@ -209,8 +208,7 @@ export class UltraOptimizedArrayOps {
     const seen = new Set<T>()
     const result: T[] = []
     
-    for (let i = 0; i < array.length; i++) {
-      const item = array[i]
+    for (const item of array) {
       if (!seen.has(item)) {
         seen.add(item)
         result.push(item)
@@ -308,22 +306,22 @@ export class UltraOptimizedBatchOps {
    */
   static createDebouncedBatchProcessor<T>(
     processor: (items: T[]) => void,
-    delay: number = 16
+    delay = 16
   ): (item: T) => void {
-    let timeoutId: number | null = null;
+    let timeoutId: number | undefined = undefined;
     let batch: T[] = []
 
     return (item: T) => {
       batch.push(item)
       
-      if (timeoutId !== null) {
+      if (timeoutId !== undefined) {
         clearTimeout(timeoutId)
       }
       
       timeoutId = window.setTimeout(() => {
         processor(batch)
         batch = []
-        timeoutId = null;
+        timeoutId = undefined;
       }, delay)
     }
   }

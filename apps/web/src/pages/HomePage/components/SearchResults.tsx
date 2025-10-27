@@ -1,19 +1,18 @@
 /**
  * SearchResults - Component for displaying search results
  */
-import React from 'react'
-import { StoreGrid } from '@features/stores/components/StoreGrid/StoreGrid'
-import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
-import type { LocationData } from '@/types/location.types'
-import type { StoreResponse, StoreWithDistance } from '@api/types'
+import { StoreGrid } from '../../../features/stores/components/StoreGrid/StoreGrid'
+import { StoreMapLazy } from '../../../features/stores/components/StoreMapLazy'
+import type { LocationData } from '../../../types/location.types'
+import type { StoreResponse, StoreWithDistance } from '../../../api/backend-types'
 
 interface SearchResultsProps {
-  error: Error | null
-  location: LocationData | null
+  error: Error | undefined
+  location: LocationData | undefined
   stores: StoreResponse[] | undefined
-  userLocation: LocationData | null
+  userLocation: LocationData | undefined  
   onStoreClick: (store: StoreResponse | StoreWithDistance) => void
-  highlightedStoreId?: string | null
+  highlightedStoreId?: string | undefined
 }
 
 export function SearchResults({ 
@@ -24,7 +23,7 @@ export function SearchResults({
   onStoreClick, 
   highlightedStoreId 
 }: SearchResultsProps) {
-  if (error || !location || !stores || stores.length === 0) return null
+  if (error || !location || !stores || stores.length === 0) return
 
   return (
     <>
@@ -38,7 +37,7 @@ export function SearchResults({
       <div className="my-8 rounded-xl overflow-hidden shadow-lg">
         <StoreMapLazy 
           stores={stores || []}
-          userLocation={userLocation ? { latitude: userLocation.latitude, longitude: userLocation.longitude  as LocationCoordinates} as LocationCoordinates : undefined}
+          userLocation={userLocation ? { latitude: userLocation.latitude, longitude: userLocation.longitude } : undefined}
           radiusMiles={location?.radiusMiles}
         />
       </div>
@@ -47,7 +46,7 @@ export function SearchResults({
       <StoreGrid
         stores={stores}
         onStoreClick={onStoreClick}
-        highlightedStoreId={highlightedStoreId || null}
+        highlightedStoreId={highlightedStoreId || undefined}
       />
     </>
   )

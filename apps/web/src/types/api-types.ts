@@ -4,12 +4,6 @@
  */
 
 import type { 
-  StoreResponse, 
-  ItemResponse, 
-  OrderResponse, 
-  AddressResponse, 
-  PostResponse,
-  CartResponse,
   MediaResponse,
   PromotionResponse
 } from '@api/types'
@@ -17,26 +11,27 @@ import type {
 // Import actual SDK response types
 import type {
   AddressListResponse,
-  AddressResponse as SDKAddressResponse,
-  AuthResponse,
   CartListResponse,
-  CartResponse as SDKCartResponse,
   ErrorResponse,
   ItemListResponse,
-  ItemResponse as SDKItemResponse,
   OrderListResponse,
-  OrderResponse as SDKOrderResponse,
-  PostListResponse,
-  PostResponse as SDKPostResponse,
-  StoreListResponse,
-  StoreResponse as SDKStoreResponse
+  StoreListResponse
 } from '@packages/sdk'
+
+// Import augmented types with missing fields (only used ones)
+import type {
+  StoreResponse as AugmentedStoreResponse,
+  OrderResponse as AugmentedOrderResponse,
+  ItemResponse as AugmentedItemResponse,
+  AddressResponse as AugmentedAddressResponse,
+  CartResponse as AugmentedCartResponse
+} from './sdk-augmentations'
 
 // ============================================
 // Common Types Derived from SDK
 // ============================================
-// Extract common ID type from SDK entities
-export type EntityId = Pick<SDKStoreResponse, 'id'>['id']
+// Extract common ID type from augmented entities
+export type EntityId = Pick<AugmentedStoreResponse, 'id'>['id']
 
 // ========================================
 // Base API Response Types (Using SDK Types)
@@ -86,8 +81,8 @@ export interface ApiClientConfig {
 export interface ApiRequestConfig {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   url: string
-  params?: Record<string, any>
-  data?: any
+  params?: Record<string, unknown>
+  data?: unknown
   headers?: Record<string, string>
   timeout?: number
   retries?: number
@@ -105,41 +100,37 @@ export interface ApiResponse<T> {
 // Entity-Specific API Types (Using SDK Types)
 // ========================================
 
-// Use actual SDK response types directly
-export type StoreApiResponse = SDKStoreResponse
+// Use augmented SDK response types with missing fields
+export type StoreApiResponse = AugmentedStoreResponse
 export type StoreListApiResponse = StoreListResponse
-export type StoreCreateApiResponse = SDKStoreResponse
-export type StoreUpdateApiResponse = SDKStoreResponse
+export type StoreCreateApiResponse = AugmentedStoreResponse
+export type StoreUpdateApiResponse = AugmentedStoreResponse
 export interface StoreDeleteApiResponse { id: EntityId }
 
-export type ItemApiResponse = SDKItemResponse
+export type ItemApiResponse = AugmentedItemResponse
 export type ItemListApiResponse = ItemListResponse
-export type ItemCreateApiResponse = SDKItemResponse
-export type ItemUpdateApiResponse = SDKItemResponse
+export type ItemCreateApiResponse = AugmentedItemResponse
+export type ItemUpdateApiResponse = AugmentedItemResponse
 export interface ItemDeleteApiResponse { id: EntityId }
 
-export type OrderApiResponse = SDKOrderResponse
+export type OrderApiResponse = AugmentedOrderResponse
 export type OrderListApiResponse = OrderListResponse
-export type OrderCreateApiResponse = SDKOrderResponse
-export type OrderUpdateApiResponse = SDKOrderResponse
+export type OrderCreateApiResponse = AugmentedOrderResponse
+export type OrderUpdateApiResponse = AugmentedOrderResponse
 export interface OrderDeleteApiResponse { id: EntityId }
 
-export type AddressApiResponse = SDKAddressResponse
+export type AddressApiResponse = AugmentedAddressResponse
 export type AddressListApiResponse = AddressListResponse
-export type AddressCreateApiResponse = SDKAddressResponse
-export type AddressUpdateApiResponse = SDKAddressResponse
+export type AddressCreateApiResponse = AugmentedAddressResponse
+export type AddressUpdateApiResponse = AugmentedAddressResponse
 export interface AddressDeleteApiResponse { id: EntityId }
 
-export type PostApiResponse = SDKPostResponse
-export type PostListApiResponse = PostListResponse
-export type PostCreateApiResponse = SDKPostResponse
-export type PostUpdateApiResponse = SDKPostResponse
-export interface PostDeleteApiResponse { id: EntityId }
+// Posts API types removed - Posts API not available in SDK
 
-export type CartApiResponse = SDKCartResponse
+export type CartApiResponse = AugmentedCartResponse
 export type CartListApiResponse = CartListResponse
-export type CartCreateApiResponse = SDKCartResponse
-export type CartUpdateApiResponse = SDKCartResponse
+export type CartCreateApiResponse = AugmentedCartResponse
+export type CartUpdateApiResponse = AugmentedCartResponse
 export interface CartDeleteApiResponse { id: EntityId }
 
 // Media and Promotion responses (if they exist in SDK)
@@ -173,14 +164,14 @@ export interface UseApiMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>
   onSuccess?: (data: TData, variables: TVariables) => void
   onError?: (error: Error, variables: TVariables) => void
-  onSettled?: (data: TData | undefined, error: Error | null, variables: TVariables) => void
+  onSettled?: (data: TData | undefined, error: Error | undefined, variables: TVariables) => void
 }
 
 export interface UseApiQueryReturn<T> {
   data: T | undefined
   isLoading: boolean
   isError: boolean
-  error: Error | null
+  error: Error | undefined
   refetch: () => void
   isFetching: boolean
   isStale: boolean
@@ -192,7 +183,7 @@ export interface UseApiMutationReturn<TData, TVariables> {
   data: TData | undefined
   isLoading: boolean
   isError: boolean
-  error: Error | null
+  error: Error | undefined
   isSuccess: boolean
   reset: () => void
 }
@@ -203,7 +194,7 @@ export interface UseApiMutationReturn<TData, TVariables> {
 
 export interface ApiService<T> {
   get: (id: string) => Promise<BaseApiResponse<T>>
-  list: (params?: Record<string, any>) => Promise<PaginatedApiResponse<T>>
+  list: (params?: Record<string, unknown>) => Promise<PaginatedApiResponse<T>>
   create: (data: Partial<T>) => Promise<BaseApiResponse<T>>
   update: (id: string, data: Partial<T>) => Promise<BaseApiResponse<T>>
   delete: (id: string) => Promise<BaseApiResponse<{ id: string }>>
@@ -234,7 +225,7 @@ export interface ApiCacheEntry<T> {
 }
 
 export interface ApiCacheManager<T> {
-  get: (key: string) => T | null
+  get: (key: string) => T | undefined
   set: (key: string, data: T, ttl?: number) => void
   delete: (key: string) => void
   clear: () => void
@@ -273,7 +264,7 @@ export interface ApiValidationError {
   field: string
   message: string
   code: string
-  value: any
+  value: unknown
 }
 
 // ========================================
@@ -285,7 +276,7 @@ export interface ApiMetrics {
   successCount: number
   errorCount: number
   averageResponseTime: number
-  lastRequestTime: Date | null
+  lastRequestTime: Date | undefined
 }
 
 export interface ApiMonitor {

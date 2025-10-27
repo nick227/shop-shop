@@ -6,7 +6,7 @@ import type { ErrorInfo, ReactNode} from 'react';
 import { useEffect, useRef, useMemo, memo, Suspense, Component, useCallback } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { StoreWithDistance, StoreClickHandler } from '../../../../api/types'
+import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
 import type { LocationCoordinates } from '../../../../types/component-props'
 import { formatDistance } from '../../../../utils/format'
 import { hasValidCoordinates } from '../../../../utils/storeAccessors'
@@ -41,7 +41,7 @@ const iconPool = new ObjectPool(
 )
 
 // Color singleton (performance optimization - single DOM query)
-let cachedSuccessColor: string | null = null
+let cachedSuccessColor: string | undefined = undefined
 function getSuccessColor(): string {
   if (!cachedSuccessColor && typeof window !== 'undefined') {
     const style = getComputedStyle(document.documentElement)
@@ -57,7 +57,7 @@ class MapErrorBoundary extends Component<
 > {
   constructor(props: { children: ReactNode }) {
     super(props)
-    this["state"] = { hasError: false }
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(): { hasError: boolean } {
@@ -69,9 +69,9 @@ class MapErrorBoundary extends Component<
   }
 
   render() {
-    if (this["state"].hasError) {
+    if (this.state.hasError) {
       return (
-        <div className={styles['map']} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={styles.map} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div>Map temporarily unavailable</div>
         </div>
       )
@@ -90,20 +90,20 @@ function UltraOptimizedLeafletMap({
   userLocation,
   radiusMiles,
   onStoreClick
-}: { 
+}: Readonly<{ 
   center: [number, number]
   zoom: number
-  mapRef: React.MutableRefObject<L.Map | null>
+  mapRef: React.MutableRefObject<L.Map | undefined>
   stores: StoreWithDistance[]
   userLocation?: LocationCoordinates
   radiusMiles?: number
   onStoreClick?: StoreClickHandler
-}) {
+}>) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const markersRef = useRef<L.Marker[]>([])
-  const userMarkerRef = useRef<L.Marker | null>(null)
-  const circleRef = useRef<L.Circle | null>(null)
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const userMarkerRef = useRef<L.Marker | undefined>(undefined)
+  const circleRef = useRef<L.Circle | undefined>(undefined)
+  const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   
   // Ultra-optimized store processor
   const storeProcessor = useMemo(() => new UltraOptimizedStoreProcessor(), [])
@@ -152,14 +152,14 @@ function UltraOptimizedLeafletMap({
       return () => {
         if (resizeObserverRef.current) {
           resizeObserverRef.current.disconnect()
-          resizeObserverRef.current = null
+          resizeObserverRef.current = undefined
         }
         if (mapRef.current) {
           mapRef.current.remove()
-          mapRef.current = null
+          mapRef.current = undefined
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to initialize map:', error)
     }
   }, [])
@@ -180,11 +180,11 @@ function UltraOptimizedLeafletMap({
     try {
       if (userMarkerRef.current) {
         map.removeLayer(userMarkerRef.current)
-        userMarkerRef.current = null
+        userMarkerRef.current = undefined
       }
       if (circleRef.current) {
         map.removeLayer(circleRef.current)
-        circleRef.current = null
+        circleRef.current = undefined
       }
 
       const userIcon = L.divIcon({
@@ -196,7 +196,7 @@ function UltraOptimizedLeafletMap({
 
       userMarkerRef.current = L.marker([userLocation.latitude, userLocation.longitude], { icon: userIcon })
         .addTo(map)
-        .bindPopup('<div><strong>Your Location</strong></div>') as L.Marker
+        .bindPopup('<div><strong>Your Location</strong></div>')
 
       if (radiusMiles) {
         const radiusMeters = radiusMiles * 1609.34
@@ -208,7 +208,7 @@ function UltraOptimizedLeafletMap({
           weight: 2
         }).addTo(map)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add user location marker:', error)
     }
   }, [userLocation, radiusMiles, mapRef])
@@ -219,7 +219,7 @@ function UltraOptimizedLeafletMap({
     icon.options.html = '<div style="background: ' + (isNearest ? '#f59e0b' : '#3b82f6') + '; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">' + (isNearest ? '★' : '🏪') + '</div>'
     
     const marker = markerPool.acquire()
-    marker.setLatLng([store.latitude, store.longitude])
+    marker.setLatLng([Number(store.latitude), Number(store.longitude)])
     marker.setIcon(icon)
     
     const popupContent = '<div style="min-width: 200px;"><h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">' + store.name + '</h3>' +
@@ -268,7 +268,7 @@ function UltraOptimizedLeafletMap({
           markersRef.current.push(marker)
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add store markers:', error)
     }
   }, [stores, createMarker, mapRef, storeProcessor])
@@ -276,7 +276,7 @@ function UltraOptimizedLeafletMap({
   return (
     <div 
       ref={mapContainerRef}
-      className={styles['map']}
+      className={styles.map}
       style={{ height: '100%', width: '100%' }}
     />
   )
@@ -308,18 +308,18 @@ function StoreMapUltraOptimizedComponent({
   })
 
   // Map reference for direct Leaflet control
-  const mapRef = useRef<L.Map | null>(null)
+  const mapRef = useRef<L.Map | undefined>(undefined)
   
   return (
-    <div className={styles['container']} style={{ height }}>
-      <Suspense fallback={<div className={styles['map']} style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
+    <div className={styles.container} style={{ height }}>
+      <Suspense fallback={<div className={styles.map} style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
         <MapErrorBoundary>
           <UltraOptimizedLeafletMap
             center={mapData.mapCenter}
             zoom={mapData.mapZoom}
             mapRef={mapRef}
             stores={mapData.validStores}
-            userLocation={userLocation as LocationCoordinates}
+            userLocation={userLocation!}
             radiusMiles={radiusMiles}
             onStoreClick={onStoreClick}
           />
@@ -327,20 +327,20 @@ function StoreMapUltraOptimizedComponent({
       </Suspense>
 
       {/* Map legend */}
-      <div className={styles['legend']}>
+      <div className={styles.legend}>
         {userLocation && (
-          <div className={styles['legendItem']}>
-            <span className={styles['legendIcon']}>📍</span>
+          <div className={styles.legendItem}>
+            <span className={styles.legendIcon}>📍</span>
             <span>Your Location</span>
           </div>
         )}
-        <div className={styles['legendItem']}>
-          <span className={styles['legendIcon']}>🍽️</span>
+        <div className={styles.legendItem}>
+          <span className={styles.legendIcon}>🍽️</span>
           <span>Restaurants ({mapData.validStoresCount})</span>
         </div>
         {userLocation && radiusMiles && (
-          <div className={styles['legendItem']}>
-            <span className={styles['legendCircle']}></span>
+          <div className={styles.legendItem}>
+            <span className={styles.legendCircle}></span>
             <span>{radiusMiles} mi radius</span>
           </div>
         )}

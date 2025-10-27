@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardContent, CardFooter, Badge } from '@ui'
 import { Button } from '@ui'
 import { Radio, Package, Truck, CheckCircle, XCircle } from 'lucide-react'
-import type { Order, OrderStatus } from '@api/types'
+import type { OrderResponse } from '@api/types'
+import type { OrderStatus } from '@api/safe-types'
 import { formatCurrency, formatRelativeTime, formatDate } from '@utils/format'
 import { parsePrice } from '@api/types'
 
@@ -11,8 +12,8 @@ import { parsePrice } from '@api/types'
  */
 
 export interface OrderCardProps {
-  order: Order
-  onClick?: (orderId: string) => void
+  readonly order: OrderResponse
+  readonly onClick?: (orderId: string) => void
 }
 
 const statusConfig: Record<OrderStatus, { 
@@ -20,12 +21,12 @@ const statusConfig: Record<OrderStatus, {
   icon: typeof Package,
   label: string
 }> = {
-  pending: { variant: 'secondary', icon: Package, label: 'Order Placed' },
-  confirmed: { variant: 'default', icon: CheckCircle, label: 'Accepted' },
-  preparing: { variant: 'warning', icon: Package, label: 'Preparing' },
-  ready: { variant: 'warning', icon: Truck, label: 'Ready for Pickup' },
-  delivered: { variant: 'success', icon: CheckCircle, label: 'Completed' },
-  cancelled: { variant: 'destructive', icon: XCircle, label: 'Canceled' },
+  PENDING: { variant: 'secondary', icon: Package, label: 'Order Placed' },
+  CONFIRMED: { variant: 'default', icon: CheckCircle, label: 'Accepted' },
+  PREPARING: { variant: 'warning', icon: Package, label: 'Preparing' },
+  READY: { variant: 'warning', icon: Truck, label: 'Ready for Pickup' },
+  COMPLETED: { variant: 'success', icon: CheckCircle, label: 'Completed' },
+  CANCELLED: { variant: 'destructive', icon: XCircle, label: 'Canceled' },
 }
 
 const deliveryIcons = {
@@ -63,7 +64,7 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
               Order #{order.id.slice(0, 8).toUpperCase()}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {formatRelativeTime(order.createdAt)} • {formatDate(order.createdAt)}
+              {order.createdAt ? formatRelativeTime(order.createdAt) : 'Unknown time'} • {order.createdAt ? formatDate(order.createdAt) : 'Unknown date'}
             </p>
           </div>
           <Badge variant={statusInfo?.variant}>

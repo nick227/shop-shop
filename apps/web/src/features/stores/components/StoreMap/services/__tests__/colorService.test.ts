@@ -14,7 +14,7 @@ describe('ColorService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Reset cached values;
-    ;(ColorService as any).cachedSuccessColor = null;
+    ;(ColorService as any).cachedSuccessColor = undefined;
     ;(ColorService as any).cachedCircleOptions.clear()
   })
 

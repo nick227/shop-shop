@@ -21,7 +21,7 @@ export interface OrderDetailsCardProps {
   tip?: string | number
   total: string | number
   paymentMethod?: string
-  address?: AddressSnapshot | null
+  address?: AddressSnapshot | undefined
 }
 
 export function OrderDetailsCard({
@@ -116,14 +116,14 @@ export function OrderDetailsCard({
         <div>
           <div className="text-sm font-medium text-gray-500 mb-1">Delivery Address</div>
           <div className="text-sm text-gray-900">
-            {address["line1"]}
+            {address.line1}
             {address.line2 && (
               <>
                 <br />{address.line2}
               </>
             )}
             <br />
-            {address["city"]}, {address["state"]} {address["postalCode"]}
+            {address.city}, {address.state} {address.postalCode}
           </div>
         </div>
       )}

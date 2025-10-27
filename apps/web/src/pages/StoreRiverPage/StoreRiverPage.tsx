@@ -1,94 +1,18 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { RiverFeed } from '../../features/river'
-import { PostComposer } from '../../features/river'
-import { Button } from '@ui'
-import { usePosts, useCreatePost } from '@hooks/generated'
-import { useTogglePostLike } from '@hooks/river'
-import type { MediaItem } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+// Posts API is temporarily disabled - components will be re-enabled when Posts API is available
 
 export const StoreRiverPage = () => {
-  const { storeId } = useParams<{ storeId: string }>()
-  const [showComposer, setShowComposer] = useState(false)
-
-  // Use generated hooks;
-  const { data: posts = [], isLoading, error, refetch } = usePosts(storeId ? { storeId } : undefined)
-  const createPostMutation = useCreatePost()
-  const { toggleLike } = useTogglePostLike()
-
-  const handleCreatePost = async (content: string, media: MediaItem[]) => {
-    if (!storeId) return;
-    createPostMutation.mutate({
-      storeId,
-      content,
-      mediaUrls: media}, {
-      onSuccess: () => {
-        setShowComposer(false)
-        refetch()
-      }
-    })
-  }
-
-  const handleLike = (postId: string) => {
-    const post = posts.find(p => p.id === postId)
-    if (post) {
-      toggleLike(postId, post.isLiked || false)
-    }
-  }
-
-  const handleComment = (postId: string) => {
-    // Navigate to post detail or open comment modal;
-    console.log('Comment on post:', postId)
-  }
-
-  const handleShare = (postId: string) => {
-    // Implement share functionality;
-    console.log('Share post:', postId)
-  }
-
-  const handlePostClick = (postId: string) => {
-    // Navigate to post detail page;
-    console.log('View post:', postId)
-  }
-
   return (
-    <div className={styles['page']}>
-      <div className={styles['container']}>
-        <header className={styles['header']}>
-          <h1 className={styles['title']}>Store River</h1>
-          <Button
-            variant="primary"
-            onClick={() => setShowComposer(!showComposer)}
-          >
-            {showComposer ? 'Cancel' : 'Create Post'}
-          </Button>
-        </header>
-
-        {showComposer && storeId && (
-          <div className={styles['composerSection']}>
-            <PostComposer
-              storeId={storeId}
-              storeName="Your Store"
-              storeImage="https://via.placeholder.com/150"
-              onPost={handleCreatePost}
-              onCancel={() => setShowComposer(false)}
-            />
-          </div>
-        )}
-
-        <RiverFeed
-          posts={posts}
-          isLoading={isLoading}
-          error={error}
-          hasMore={false}
-          onLoadMore={() => {}}
-          onPostClick={handlePostClick}
-          onLike={handleLike}
-          onComment={handleComment}
-          onShare={handleShare}
-          onFiltersChange={() => {}}
-        />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Store River</h1>
+          <p className="text-gray-500 mb-8">
+            River feed is temporarily disabled while we update the Posts API.
+          </p>
+          <p className="text-sm text-gray-400">
+            This feature will be available soon with enhanced social capabilities.
+          </p>
+        </div>
       </div>
     </div>
   )

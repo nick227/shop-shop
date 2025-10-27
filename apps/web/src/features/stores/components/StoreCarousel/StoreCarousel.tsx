@@ -3,19 +3,19 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { StoreCardCompact } from '../StoreCard/StoreCardCompact'
-import type { Store } from '@api/types'
+import type { StoreResponse, Store, StoreWithDistance } from '../../../../api/backend-types'
 
 interface StoreCarouselProps {
-  stores: Store[]
-  title?: string;
-  isLoading?: boolean;
+  readonly stores: StoreWithDistance[]
+  readonly title?: string;
+  readonly isLoading?: boolean;
 }
 
 export function StoreCarousel({ stores, title, isLoading }: StoreCarouselProps) {
   const navigate = useNavigate()
 
   const handleStoreClick = (store: Store) => {
-    navigate('/stores/' + store.id + '')
+    navigate(`/stores/${store.id}`)
   }
 
   if (isLoading) {
@@ -23,7 +23,7 @@ export function StoreCarousel({ stores, title, isLoading }: StoreCarouselProps) 
       <div className="py-4">
         {title && <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>}
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {[...Array(4)].map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="min-w-[280px] h-[180px] bg-white/10 rounded-xl animate-pulse" />
           ))}
         </div>

@@ -15,7 +15,7 @@ import { LocationHistory } from './LocationHistory'
 import styles from './LocationSearch.module.css'
 
 interface LocationSearchProps {
-  readonly onLocationChange: (location: LocationData | null) => void
+  readonly onLocationChange: (location: LocationData | undefined) => void
   readonly initialRadius?: number
   readonly showHistory?: boolean
 }
@@ -71,7 +71,7 @@ export function LocationSearch({
         throw new Error('Please provide a state abbreviation (e.g., TX, CA, NY)')
       }
       await getLocation({ type, value, ...(state && { state }) })
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log error for debugging while hook handles user feedback
       console.warn('Location request failed:', error)
     } finally {
@@ -119,8 +119,8 @@ export function LocationSearch({
       const inputType = getLocationType(location.source)
       
       // Preserve original search data to avoid information loss
-      const searchValue = location.zip ?? location["city"] ?? location.displayName ?? ''
-      const searchState = location["state"] ?? undefined
+      const searchValue = location.zip ?? location.city ?? location.displayName ?? ''
+      const searchState = location.state ?? undefined
       
       // Validate required data for city searches
       if (inputType === 'city' && !searchValue) {
@@ -132,7 +132,7 @@ export function LocationSearch({
         value: searchValue,
         ...(searchState && { state: searchState })
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('History selection failed:', error)
     }
   }, [getLocation])
@@ -152,7 +152,7 @@ export function LocationSearch({
 
   return (
     <div 
-      className={styles['container']}
+      className={styles.container}
       aria-busy={loadingStates.any}
       aria-live="polite"
     >
@@ -167,14 +167,14 @@ export function LocationSearch({
       )}
 
       {/* OPTIMIZED: Consolidated search controls with coordinated loading states */}
-      <div className={styles['searchControls']}>
+      <div className={styles.searchControls}>
         {isGeolocationSupported && (
           <>
             <GeolocationButton
               onGetLocation={() => { void handleUseMyLocation() }}
               isLoading={loadingStates.geolocation}
             />
-            <div className={styles['divider']}>
+            <div className={styles.divider}>
               <span>or</span>
             </div>
           </>
@@ -185,13 +185,13 @@ export function LocationSearch({
           isLoading={loadingStates.zip}
         />
 
-        <div className={styles['divider']}>
+        <div className={styles.divider}>
           <span>or</span>
         </div>
 
         <CityStateInput 
           onCitySubmit={(city, state) => { void handleCitySubmit(city, state) }}
-          isLoading={loadingStates["city"]}
+          isLoading={loadingStates.city}
         />
       </div>
 
@@ -212,11 +212,11 @@ export function LocationSearch({
 
       {/* Error Message with Recovery Action */}
       {error && (
-        <div className={styles['error']} role="alert" aria-live="polite">
-          <span className={styles['errorIcon']} aria-hidden="true">⚠️</span>
+        <div className={styles.error} role="alert" aria-live="polite">
+          <span className={styles.errorIcon} aria-hidden="true">⚠️</span>
           <span>{error}</span>
           <button 
-            className={styles['retryButton']}
+            className={styles.retryButton}
             onClick={() => window.location.reload()}
             aria-label="Try again"
           >

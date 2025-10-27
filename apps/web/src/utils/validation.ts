@@ -16,7 +16,7 @@ export const emailSchema = z.string().email('Invalid email address')
 export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters')
 export const phoneSchema = z
   .string()
-  .regex(/^[\d\s()\-]+$/, 'Invalid phone number')
+  .regex(/^[\d\s()-]+$/, 'Invalid phone number')
   .transform((val) => val.replaceAll(/\D/g, ''))
   .refine((val) => val.length === 10 || val.length === 11, {
     message: 'Phone number must be 10 or 11 digits',
@@ -24,22 +24,25 @@ export const phoneSchema = z
 
 // Legacy function exports for backward compatibility
 export const isValidEmail = (email: string): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const result = require('./validation/unified').formValidator.validateEmail(email)
   return result.valid
 }
 
 export const isValidPassword = (password: string): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const result = require('./validation/unified').formValidator.validatePassword(password)
   return result.valid
 }
 
 export const isValidPhone = (phone: string): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const result = require('./validation/unified').formValidator.validatePhone(phone)
   return result.valid
 }
 
-export const isRequired = (value: string | null | undefined): boolean => {
-  return value !== null && value !== undefined && value.trim().length > 0
+export const isRequired = (value: string | undefined): boolean => {
+  return value !== undefined && value.trim().length > 0
 }
 
 export const minLength = (value: string, min: number): boolean => {

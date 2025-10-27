@@ -82,7 +82,7 @@ export interface PaginatedListResult<T> {
  * )
  * ```
  */
-export function usePaginatedList<T extends Record<string, unknown>>({
+export function usePaginatedList<T extends Record<string, any>>({
   items,
   pageSize = 20,
   initialPage = 1,

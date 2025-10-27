@@ -36,36 +36,36 @@ export function CartItem({ item, onUpdateQuantity, onRemove, isUpdating }: CartI
   }
 
   return (
-    <div className={styles['cartItem']}>
+    <div className={styles.cartItem}>
       <Image
         src={imageUrl || '/placeholder-item-' + item.itemId + '.jpg'}
         alt={item.titleSnapshot || 'Item'}
         fallbackSeed={item.itemId}
         aspectRatio="1/1"
-        containerClassName={styles['image']}
+        containerClassName={styles.image}
       />
-      <div className={styles['info']}>
-        <h4 className={styles['title']}>{item.titleSnapshot}</h4>
+      <div className={styles.info}>
+        <h4 className={styles.title}>{item.titleSnapshot}</h4>
         {item.notes && (
-          <p className={styles['notes']}>{item.notes}</p>
+          <p className={styles.notes}>{item.notes}</p>
         )}
       </div>
 
-      <div className={styles['controls']}>
-        <div className={styles['quantity']}>
+      <div className={styles.controls}>
+        <div className={styles.quantity}>
           <button
             type="button"
-            className={styles['quantityButton']}
+            className={styles.quantityButton}
             onClick={handleDecrement}
             disabled={isUpdating || item.quantity <= 1}
             aria-label="Decrease quantity"
           >
             −
           </button>
-          <span className={styles['quantityValue']}>{item.quantity}</span>
+          <span className={styles.quantityValue}>{item.quantity}</span>
           <button
             type="button"
-            className={styles['quantityButton']}
+            className={styles.quantityButton}
             onClick={handleIncrement}
             disabled={isUpdating}
             aria-label="Increase quantity"
@@ -74,8 +74,8 @@ export function CartItem({ item, onUpdateQuantity, onRemove, isUpdating }: CartI
           </button>
         </div>
 
-        <div className={styles['pricing']}>
-          <span className={styles['price']}>{formatCurrency(lineTotal)}</span>
+        <div className={styles.pricing}>
+          <span className={styles.price}>{formatCurrency(lineTotal)}</span>
           <Button
             variant="ghost"
             size="small"

@@ -25,7 +25,7 @@ export function UserLocationMarker({ userLocation, radiusMiles }: UserLocationMa
         icon={userIcon}
       >
         <Popup>
-          <div className={styles['popup']}>
+          <div className={styles.popup}>
             <strong>Your Location</strong>
           </div>
         </Popup>

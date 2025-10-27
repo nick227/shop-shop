@@ -8,15 +8,15 @@ import { Image } from '@ui'
 import { ICON, TIME_SUFFIX, ASPECT_RATIO, ARIA_LABEL } from '@ui/Carousel/constants'
 import { formatDistance } from '@utils/format'
 import { getImageUrl } from '@utils/image'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 import { cn } from '@utils/cn'
 
 export interface StoreCardCompactProps {
-  store: StoreWithDistance
-  onClick?: StoreClickHandler | undefined
-  showDistance?: boolean | undefined
-  showMeta?: boolean | undefined
-  className?: string | undefined
+  readonly store: StoreWithDistance
+  readonly onClick?: StoreClickHandler
+  readonly showDistance?: boolean
+  readonly showMeta?: boolean
+  readonly className?: string
 }
 
 function StoreCardCompactComponent({ 
@@ -28,8 +28,7 @@ function StoreCardCompactComponent({
 }: StoreCardCompactProps) {
   const handleClick = useCallback(() => onClick?.(store), [onClick, store])
   
-  // @ts-expect-error - imageUrl will be added to Store type
-  const imageUrl = getImageUrl(store.imageUrl, store.id, 'store')
+  const imageUrl = getImageUrl((store as { imageUrl?: string }).imageUrl, store.id, 'store')
 
   return (
     <button

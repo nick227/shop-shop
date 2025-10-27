@@ -10,18 +10,18 @@ export interface CoordinateCache {
 }
 
 // Global cache to avoid repeated validations
-const coordinateCache: CoordinateCache | null = null
-const CACHE_DURATION = 30_000 // 30 seconds
+// const coordinateCache: CoordinateCache | undefined = undefined
+// const CACHE_DURATION = 30_000 // 30 seconds
 
 /**
  * Fast coordinate validation with caching
  * Reduces repeated validations of the same coordinates
  */
 export function isValidCoordinateFast(
-  latitude: number | string | null | undefined,
-  longitude: number | string | null | undefined
+  latitude: number | string | undefined,
+  longitude: number | string | undefined
 ): boolean {
-  // Quick null/undefined checks
+  // Quick undefined/undefined checks
   if (latitude == undefined || longitude == undefined) return false
   
   // Convert to numbers once
@@ -39,7 +39,7 @@ export function isValidCoordinateFast(
  * Batch coordinate validation with minimal allocations
  * Processes multiple coordinates in a single pass
  */
-export function validateCoordinatesBatch<T extends { latitude?: number | string | null, longitude?: number | string | null }>(
+export function validateCoordinatesBatch<T extends { latitude?: number | string, longitude?: number | string }>(
   items: T[]
 ): { valid: T[], invalid: T[] } {
   const valid: T[] = []

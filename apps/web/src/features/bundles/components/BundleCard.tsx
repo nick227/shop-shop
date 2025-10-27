@@ -3,12 +3,9 @@
  * Displays bundle information with pricing and actions
  */
 import React from 'react'
-import { Card } from '@components/ui/Card'
-import { Button } from '@components/ui/Button'
-import { Badge } from '@components/ui/Badge'
-import { BundleSavingsBadge } from './BundleSavingsBadge'
+import { Card, Button, Badge } from '../../../components/ui'
 import { BundlePricing } from './BundlePricing'
-import type { Bundle } from '../../../api/types'
+import type { Bundle } from '../../../api/backend-types'
 
 interface BundleCardProps {
   bundle: Bundle
@@ -26,7 +23,7 @@ export function BundleCard({
   onToggleStatus,
   showActions = true,
   className = ''
-}: BundleCardProps) {
+}: Readonly<BundleCardProps>) {
   const handleEdit = () => onEdit?.(bundle)
   const handleDelete = () => onDelete?.(bundle)
   const handleToggleStatus = () => onToggleStatus?.(bundle)
@@ -57,7 +54,6 @@ export function BundleCard({
           <div className="bundle-card__status">
             <Badge 
               variant={bundle.isActive ? 'success' : 'secondary'}
-              size="sm"
             >
               {bundle.isActive ? 'Active' : 'Inactive'}
             </Badge>
@@ -71,10 +67,10 @@ export function BundleCard({
         <div className="bundle-card__items">
           <h4 className="bundle-card__items-title">Items ({bundle.totalItems || 0})</h4>
           <div className="bundle-card__items-list">
-            {bundle.items?.slice(0, 3).map((bundleItem, index) => (
-              <div key={index} className="bundle-card__item">
+            {bundle.items?.slice(0, 3).map((bundleItem) => (
+              <div key={bundleItem.itemId || bundleItem.id} className="bundle-card__item">
                 <span className="bundle-card__item-name">
-                  {bundleItem.item?.title || `Item ${bundleItem.itemId}`}
+                  {bundleItem.title ?? bundleItem.itemId ?? 'Unknown Item'}
                 </span>
                 <span className="bundle-card__item-quantity">
                   x{bundleItem.quantity}
@@ -94,7 +90,7 @@ export function BundleCard({
         <div className="bundle-card__actions">
           <Button 
             variant="outline" 
-            size="sm"
+            size="small"
             onClick={handleEdit}
           >
             Edit
@@ -102,15 +98,15 @@ export function BundleCard({
           
           <Button 
             variant="outline" 
-            size="sm"
+            size="small"
             onClick={handleToggleStatus}
           >
             {bundle.isActive ? 'Deactivate' : 'Activate'}
           </Button>
           
           <Button 
-            variant="destructive" 
-            size="sm"
+            variant="secondary" 
+            size="small"
             onClick={handleDelete}
           >
             Delete

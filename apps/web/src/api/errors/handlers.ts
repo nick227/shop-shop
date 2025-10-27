@@ -3,12 +3,12 @@
  */
 import { AppError, type ValidationIssue } from './types'
 
-type ErrorHandler = (body: Record<string, unknown> | null) => AppError
+type ErrorHandler = (body: Record<string, unknown> | undefined) => AppError
 
 /**
  * Handle 400 Bad Request
  */
-export function handleValidationError(body: Record<string, unknown> | null): AppError {
+export function handleValidationError(body: Record<string, unknown> | undefined): AppError {
   const issues = body?.['issues'] as ValidationIssue[] | undefined
   
   if (issues && issues.length > 0) {
@@ -32,7 +32,7 @@ export function handleValidationError(body: Record<string, unknown> | null): App
 /**
  * Handle 401 Unauthorized with context-aware messaging
  */
-export function handleUnauthorizedError(body: Record<string, unknown> | null): AppError {
+export function handleUnauthorizedError(body: Record<string, unknown> | undefined): AppError {
   // Check if error is from server response
   const serverMessage = body?.['error'] as string
   

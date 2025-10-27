@@ -15,21 +15,21 @@ export interface OrderDetailModalProps {
 }
 
 const statusVariants: Record<OrderStatus, 'default' | 'success' | 'warning' | 'destructive' | 'secondary' | 'outline'> = {
-  pending: 'secondary',
-  confirmed: 'default',
-  preparing: 'warning',
-  ready: 'warning',
-  delivered: 'success',
-  cancelled: 'destructive',
+  PENDING: 'secondary',
+  CONFIRMED: 'default',
+  PREPARING: 'warning',
+  READY: 'warning',
+  COMPLETED: 'success',
+  CANCELLED: 'destructive',
 }
 
 const statusLabels: Record<OrderStatus, string> = {
-  pending: 'Order Placed',
-  confirmed: 'Accepted by Restaurant',
-  preparing: 'Being Prepared',
-  ready: 'Ready for Pickup',
-  delivered: 'Completed',
-  cancelled: 'Canceled',
+  PENDING: 'Order Placed',
+  CONFIRMED: 'Accepted by Restaurant',
+  PREPARING: 'Being Prepared',
+  READY: 'Ready for Pickup',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Canceled',
 }
 
 export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
@@ -76,26 +76,26 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
         <DialogHeader>
           <DialogTitle>Order #{order.id.slice(0, 8).toUpperCase()}</DialogTitle>
         </DialogHeader>
-      <div className={styles['content']}>
-        <div className={styles['statusSection']}>
+      <div className={styles.content}>
+        <div className={styles.statusSection}>
           <Badge variant={statusVariants[order.status as OrderStatus]}>
             {statusLabels[order.status as OrderStatus] || order.status}
           </Badge>
-          <p className={styles['orderDate']}>{formatDateLong(order.createdAt)}</p>
+          <p className={styles.orderDate}>{formatDateLong(order.createdAt)}</p>
         </div>
 
-        <div className={styles['section']}>
-          <h3 className={styles['sectionTitle']}>Order Details</h3>
-          <div className={styles['detailsGrid']}>
-            <div className={styles['detailRow']}>
-              <span className={styles['detailLabel']}>Delivery Method</span>
-              <span className={styles['detailValue']}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Order Details</h3>
+          <div className={styles.detailsGrid}>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Delivery Method</span>
+              <span className={styles.detailValue}>
                 {order.deliveryType === 'PICKUP' ? '🏪 Pickup' : '🚗 Delivery'}
               </span>
             </div>
             
-            <div className={styles['detailRow']}>
-              <span className={styles['detailLabel']}>Payment Status</span>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Payment Status</span>
               <Badge 
                 variant={order.paymentStatus === 'PAID' ? 'success' : 'warning'}
                 className="text-xs"
@@ -105,9 +105,9 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
             </div>
 
             {order.addressSnapshot && (
-              <div className={styles['detailRow']}>
-                <span className={styles['detailLabel']}>Delivery Address</span>
-                <span className={styles['detailValue']}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Delivery Address</span>
+                <span className={styles.detailValue}>
                   {order.addressSnapshot["line1"]}<br />
                   {order.addressSnapshot["city"]}, {order.addressSnapshot["state"]} {order.addressSnapshot["postalCode"]}
                 </span>
@@ -116,37 +116,37 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
           </div>
         </div>
 
-        <div className={styles['section']}>
-          <h3 className={styles['sectionTitle']}>Order Summary</h3>
-          <div className={styles['summaryRows']}>
-            <div className={styles['summaryRow']}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Order Summary</h3>
+          <div className={styles.summaryRows}>
+            <div className={styles.summaryRow}>
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className={styles['summaryRow']}>
+            <div className={styles.summaryRow}>
               <span>Delivery & Service Fees</span>
               <span>{formatCurrency(fees)}</span>
             </div>
-            <div className={styles['summaryRow']}>
+            <div className={styles.summaryRow}>
               <span>Tax</span>
               <span>{formatCurrency(tax)}</span>
             </div>
             {tip > 0 && (
-              <div className={styles['summaryRow']}>
+              <div className={styles.summaryRow}>
                 <span>Tip</span>
                 <span>{formatCurrency(tip)}</span>
               </div>
             )}
-            <div className={styles['divider']} />
-            <div className={`${styles['summaryRow']} ${styles['totalRow']}`}>
-              <span className={styles['totalLabel']}>Total</span>
-              <span className={styles['totalValue']}>{formatCurrency(total)}</span>
+            <div className={styles.divider} />
+            <div className={`${styles.summaryRow} ${styles.totalRow}`}>
+              <span className={styles.totalLabel}>Total</span>
+              <span className={styles.totalValue}>{formatCurrency(total)}</span>
             </div>
           </div>
         </div>
 
-        <div className={styles['actions']}>
-          <Button variant="ghost" onClick={onClose} className={styles['closeButton']}>
+        <div className={styles.actions}>
+          <Button variant="ghost" onClick={onClose} className={styles.closeButton}>
             Close
           </Button>
         </div>

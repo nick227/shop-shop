@@ -54,24 +54,24 @@ export default function ModularWidgetsExample() {
   const nearbyStores = (stores || []).slice(0, 10)
   const popularProducts = mockProducts.slice(0, 8)
 
-  const handleStoreClick = (store: import('@api/types').StoreResponse | import('@api/types').StoreWithDistance) => {
+  const handleStoreClick = (store: import('@api/backend-types').StoreResponse | import('@api/backend-types').StoreWithDistance) => {
     navigate('/stores/' + store.id + '')
   }
 
-  const handleProductClick = (item: import('@api/types').ItemResponse) => {
+  const handleProductClick = (item: import('@api/backend-types').ItemResponse) => {
     console.log('Product clicked:', item?.id)
   }
 
   return (
-    <div className={styles['page']}>
-      <header className={styles['header']}>
+    <div className={styles.page}>
+      <header className={styles.header}>
         <h1>Modular Widget System</h1>
         <p>Demonstrates all card variants and carousel layouts with search integration</p>
       </header>
 
-      <main className={styles['main']}>
+      <main className={styles.main}>
         {/* Section 1: Featured Section with Expanded Cards */}
-        <section className={styles['section']}>
+        <section className={styles.section}>
           <Carousel
             variant="horizontal"
             title="🌟 Featured Restaurants"
@@ -79,7 +79,7 @@ export default function ModularWidgetsExample() {
             showControls
           >
             {featuredStores.map((store: any) => (
-              <div key={store.id} className={styles['expandedCard']}>
+              <div key={store.id} className={styles.expandedCard}>
                 <StoreCardExpanded
                   store={store}
                   onViewMenu={handleStoreClick}
@@ -92,14 +92,14 @@ export default function ModularWidgetsExample() {
         </section>
 
         {/* Section 2: Quick Browse with Compact Cards */}
-        <section className={styles['section']}>
+        <section className={styles.section}>
           <Carousel
             variant="compact"
             title="🍽️ Nearby Restaurants"
             subtitle="Quick browse of stores near you"
             showControls
           >
-            {nearbyStores.map((store: any) => (
+            {nearbyStores.map((store) => (
               <StoreCardCompact
                 key={store.id}
                 store={store}
@@ -112,12 +112,12 @@ export default function ModularWidgetsExample() {
         </section>
 
         {/* Section 3: Grid with Standard Cards */}
-        <section className={styles['section']}>
-          <h2 className={styles['sectionTitle']}>📍 All Restaurants</h2>
-          <p className={styles['sectionSubtitle']}>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>📍 All Restaurants</h2>
+          <p className={styles.sectionSubtitle}>
             Showing {filteredStores.total} restaurant{filteredStores.total === 1 ? '' : 's'}
           </p>
-          <div className={styles['grid']}>
+          <div className={styles.grid}>
             {filteredStores.items.slice(0, 6).map((store: any) => (
               <StoreCardStandard
                 key={store.id}
@@ -129,7 +129,7 @@ export default function ModularWidgetsExample() {
         </section>
 
         {/* Section 4: Product Carousel */}
-        <section className={styles['section']}>
+        <section className={styles.section}>
           <Carousel
             variant="horizontal"
             title="🔥 Popular Items"
@@ -137,7 +137,7 @@ export default function ModularWidgetsExample() {
             showControls
           >
             {popularProducts.map((product: any) => (
-              <div key={product.id} className={styles['productCard']}>
+              <div key={product.id} className={styles.productCard}>
                 <ProductCard
                   product={product}
                   onClick={handleProductClick}
@@ -148,15 +148,15 @@ export default function ModularWidgetsExample() {
         </section>
 
         {/* Section 5: Sidebar Layout with Vertical Carousel */}
-        <section className={styles['section']}>
-          <div className={styles['sidebarLayout']}>
-            <div className={styles['mainContent']}>
+        <section className={styles.section}>
+          <div className={styles.sidebarLayout}>
+            <div className={styles.mainContent}>
               <h2>Main Content Area</h2>
               <p>This demonstrates how a vertical carousel can work as a sidebar.</p>
               <p>The main content flows here while quick access items appear on the right.</p>
             </div>
 
-            <aside className={styles['sidebar']}>
+            <aside className={styles.sidebar}>
               <Carousel
                 variant="vertical"
                 title="Popular Now"
@@ -177,7 +177,7 @@ export default function ModularWidgetsExample() {
         </section>
 
         {/* Section 6: Compact Product Grid */}
-        <section className={styles['section']}>
+        <section className={styles.section}>
           <Carousel
             variant="compact"
             title="⚡ Quick Picks"
@@ -185,7 +185,7 @@ export default function ModularWidgetsExample() {
             showControls
           >
             {popularProducts.map((product: any) => (
-              <div key={product.id} className={styles['compactProduct']}>
+              <div key={product.id} className={styles.compactProduct}>
                 <ProductCard
                   product={product}
                   onClick={handleProductClick}

@@ -10,7 +10,7 @@ export interface CircleOptions {
 }
 
 export class ColorService {
-  private static cachedSuccessColor: string | null = null
+  private static cachedSuccessColor: string | undefined = undefined
   private static readonly cachedCircleOptions = new Map<string, CircleOptions>()
 
   static getSuccessColor(): string {

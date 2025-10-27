@@ -22,7 +22,7 @@ export function createStoreFormSections(
         <>
           <Input
             label="Store Name *"
-            value={formData['name']}
+            value={formData.name}
             onChange={(e) => onChange('name', e.target.value)}
             placeholder="My Amazing Store"
             required
@@ -30,7 +30,7 @@ export function createStoreFormSections(
 
           <Input
             label="Slug (URL) *"
-            value={formData['slug']}
+            value={formData.slug}
             onChange={(e) => onChange('slug', e.target.value)}
             placeholder="my-amazing-store"
             helperText="Used in store URL. Lowercase letters, numbers, and hyphens only."
@@ -41,13 +41,13 @@ export function createStoreFormSections(
           <div>
             <TextArea
               label="Description"
-              value={formData['description']}
+              value={formData.description}
               onChange={(e) => onChange('description', e.target.value)}
               placeholder="Tell customers about your store, cuisine type, specialties, and what makes you unique..."
               rows={5}
               maxLength={1000}
             />
-            <CharCount current={formData['description'].length} max={1000} />
+            <CharCount current={formData.description.length} max={1000} />
           </div>
         </>
       ),
@@ -61,7 +61,7 @@ export function createStoreFormSections(
         <>
           <Input
             label="Company Name"
-            value={formData['companyName']}
+            value={formData.companyName}
             onChange={(e) => onChange('companyName', e.target.value)}
             placeholder="ACME Corporation"
           />
@@ -69,7 +69,7 @@ export function createStoreFormSections(
           <FormRow>
             <Input
               label="Tax ID / EIN"
-              value={formData['taxId']}
+              value={formData.taxId}
               onChange={(e) => onChange('taxId', e.target.value)}
               placeholder="12-3456789"
             />
@@ -77,7 +77,7 @@ export function createStoreFormSections(
             <Input
               label="Phone"
               type="tel"
-              value={formData['phone']}
+              value={formData.phone}
               onChange={(e) => onChange('phone', e.target.value)}
               placeholder="+1 (555) 123-4567"
             />
@@ -87,7 +87,7 @@ export function createStoreFormSections(
             <Input
               label="Email"
               type="email"
-              value={formData['email']}
+              value={formData.email}
               onChange={(e) => onChange('email', e.target.value)}
               placeholder="contact@store.com"
             />
@@ -95,7 +95,7 @@ export function createStoreFormSections(
             <Input
               label="Website"
               type="url"
-              value={formData['website']}
+              value={formData.website}
               onChange={(e) => onChange('website', e.target.value)}
               placeholder="https://www.store.com"
             />
@@ -112,7 +112,7 @@ export function createStoreFormSections(
         <>
           <Input
             label="Street Address *"
-            value={formData['addressStreet']}
+            value={formData.addressStreet}
             onChange={(e) => onChange('addressStreet', e.target.value)}
             placeholder="123 Main Street"
             required
@@ -122,7 +122,7 @@ export function createStoreFormSections(
           <FormRow>
             <Input
               label="City *"
-              value={formData['addressCity']}
+              value={formData.addressCity}
               onChange={(e) => onChange('addressCity', e.target.value)}
               placeholder="New York"
               required
@@ -130,7 +130,7 @@ export function createStoreFormSections(
 
             <Input
               label="State *"
-              value={formData['addressState']}
+              value={formData.addressState}
               onChange={(e) => onChange('addressState', e.target.value.toUpperCase())}
               placeholder="NY"
               maxLength={2}
@@ -142,7 +142,7 @@ export function createStoreFormSections(
           <FormRow>
             <Input
               label="ZIP Code *"
-              value={formData['addressZip']}
+              value={formData.addressZip}
               onChange={(e) => onChange('addressZip', e.target.value)}
               placeholder="10001"
               required
@@ -150,7 +150,7 @@ export function createStoreFormSections(
 
             <Input
               label="Country"
-              value={formData['addressCountry']}
+              value={formData.addressCountry}
               onChange={(e) => onChange('addressCountry', e.target.value.toUpperCase())}
               placeholder="US"
               maxLength={2}
@@ -163,7 +163,7 @@ export function createStoreFormSections(
             <Input
               label="Latitude (optional)"
               type="number"
-              value={formData['latitude']}
+              value={formData.latitude}
               onChange={(e) => onChange('latitude', e.target.value)}
               placeholder="40.7128"
               step="0.00000001"
@@ -173,7 +173,7 @@ export function createStoreFormSections(
             <Input
               label="Longitude (optional)"
               type="number"
-              value={formData['longitude']}
+              value={formData.longitude}
               onChange={(e) => onChange('longitude', e.target.value)}
               placeholder="-74.0060"
               step="0.00000001"
@@ -193,19 +193,19 @@ export function createStoreFormSections(
           <CheckboxGroup>
             <Checkbox
               label="Published (visible to customers)"
-              checked={formData['isPublished']}
+              checked={formData.isPublished}
               onChange={(e) => onChange('isPublished', e.target.checked)}
             />
 
             <Checkbox
               label="Delivery Enabled"
-              checked={formData['deliveryEnabled']}
+              checked={formData.deliveryEnabled}
               onChange={(e) => onChange('deliveryEnabled', e.target.checked)}
             />
 
             <Checkbox
               label="Pickup Enabled"
-              checked={formData['pickupEnabled']}
+              checked={formData.pickupEnabled}
               onChange={(e) => onChange('pickupEnabled', e.target.checked)}
             />
           </CheckboxGroup>
@@ -213,7 +213,7 @@ export function createStoreFormSections(
           <Input
             label="Preparation Time (minutes)"
             type="number"
-            value={formData['prepTimeMin'].toString()}
+            value={formData.prepTimeMin.toString()}
             onChange={(e) => onChange('prepTimeMin', Number.parseInt(e.target.value) || 15)}
             min="5"
             max="120"
@@ -224,7 +224,7 @@ export function createStoreFormSections(
             <Input
               label="Preferred Delivery Distance (miles)"
               type="number"
-              value={formData['deliveryDistance']}
+              value={formData.deliveryDistance}
               onChange={(e) => onChange('deliveryDistance', e.target.value)}
               min="0"
               step="0.01"
@@ -235,7 +235,7 @@ export function createStoreFormSections(
             <Input
               label="Delivery Charge ($)"
               type="number"
-              value={formData['deliveryCharge']}
+              value={formData.deliveryCharge}
               onChange={(e) => onChange('deliveryCharge', e.target.value)}
               min="0"
               step="0.01"

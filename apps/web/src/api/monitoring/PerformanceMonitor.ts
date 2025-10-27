@@ -24,10 +24,10 @@ export interface OptimizationRecommendation {
 }
 
 export class PerformanceMonitor {
-  private static instance: PerformanceMonitor | null = null
+  private static instance: PerformanceMonitor | undefined = undefined
   private metrics: PerformanceMetrics[] = []
   private readonly maxMetricsHistory = 1000
-  private monitoringInterval: NodeJS.Timeout | null = null
+  private monitoringInterval: NodeJS.Timeout | undefined = undefined
   private isMonitoring = false
 
   static getInstance(): PerformanceMonitor {
@@ -55,7 +55,7 @@ export class PerformanceMonitor {
   stopMonitoring(): void {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval)
-      this.monitoringInterval = null
+      this.monitoringInterval = undefined
     }
     this.isMonitoring = false
   }

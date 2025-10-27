@@ -19,6 +19,6 @@ export interface FormContextValue {
   reset?: () => void;
 }
 
-export const FormContext = createContext<FormContextValue | null>(null)
+export const FormContext = createContext<FormContextValue | undefined>(undefined)
 
 export const FormProvider = FormContext.Provider;

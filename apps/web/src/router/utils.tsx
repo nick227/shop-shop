@@ -9,7 +9,7 @@ import { useAuthStore } from '@stores/authStore'
 /**
  * Protected Route - Requires authentication;
  */
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({ children }: { readonly children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   if (!isAuthenticated) {

@@ -4,13 +4,15 @@
  */
 import { internString } from './string-interning'
 
+const OPACITY_TRANSITION = 'opacity'
+
 /**
  * Batch operation queue for DOM manipulation
  */
 class BatchOperationQueue {
   private operations: (() => void)[] = []
   private isProcessing = false
-  private frameId: number | null = null
+  private frameId: number | undefined = undefined
   
   /**
    * Add operation to batch queue
@@ -24,7 +26,7 @@ class BatchOperationQueue {
    * Schedule batch processing
    */
   private schedule(): void {
-    if (this.isProcessing || this.frameId !== null) return
+    if (this.isProcessing || this.frameId !== undefined) return
     
     this.frameId = requestAnimationFrame(() => {
       this.process()
@@ -36,7 +38,7 @@ class BatchOperationQueue {
    */
   private process(): void {
     this.isProcessing = true
-    this.frameId = null
+    this.frameId = undefined
     
     const operations = this.operations.splice(0)
     
@@ -44,7 +46,7 @@ class BatchOperationQueue {
       for (const operation of operations) {
         operation()
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Batch operation failed:', error)
     } finally {
       this.isProcessing = false
@@ -61,9 +63,9 @@ class BatchOperationQueue {
    */
   clear(): void {
     this.operations = []
-    if (this.frameId !== null) {
+    if (this.frameId !== undefined) {
       cancelAnimationFrame(this.frameId)
-      this.frameId = null
+      this.frameId = undefined
     }
   }
   
@@ -95,7 +97,9 @@ export function batchElementUpdates(
   updates: (element: HTMLElement) => void
 ): void {
   batchDOM(() => {
-    elements.forEach(updates)
+    for (const element of elements) {
+      updates(element)
+    }
   })
 }
 
@@ -158,7 +162,7 @@ export class OptimizedDOMOperations {
   /**
    * Get element with caching
    */
-  static getElement(selector: string): HTMLElement | null {
+  static getElement(selector: string): HTMLElement | undefined {
     if (this.elementCache.has(selector)) {
       return this.elementCache.get(selector)!
     }
@@ -168,7 +172,7 @@ export class OptimizedDOMOperations {
       this.elementCache.set(selector, element)
     }
     
-    return element
+    return element || undefined
   }
   
   /**
@@ -276,7 +280,7 @@ export class OptimizedEventHandling {
     handler: (event: Event) => void,
     options?: AddEventListenerOptions
   ): void {
-    const key = '${event}-${element.tagName}-' + element.className + ''
+    const key = `${event}-${element.tagName}-${element.className}`
     
     if (!this.eventListeners.has(key)) {
       this.eventListeners.set(key, new Map())
@@ -295,7 +299,7 @@ export class OptimizedEventHandling {
     event: string,
     handler: (event: Event) => void
   ): void {
-    const key = '${event}-${element.tagName}-' + element.className + ''
+    const key = `${event}-${element.tagName}-${element.className}`
     const listeners = this.eventListeners.get(key)
     
     if (listeners) {
@@ -354,7 +358,9 @@ export class OptimizedAnimation {
     duration = 300
   ): void {
     this.animationQueue.push(() => {
-      elements.forEach(animation)
+      for (const element of elements) {
+        animation(element)
+      }
     })
     
     if (!this.isAnimating) {
@@ -395,7 +401,7 @@ export class OptimizedAnimation {
   static fadeIn(elements: HTMLElement[], duration = 300): void {
     this.batchAnimate(elements, (element) => {
       element.style.opacity = '0'
-      element.style.transition = 'opacity ' + duration + 'ms ease-in-out'
+      element.style.transition = `${OPACITY_TRANSITION} ${duration}ms ease-in-out`
       element.style.opacity = '1'
     }, duration)
   }
@@ -406,7 +412,7 @@ export class OptimizedAnimation {
   static fadeOut(elements: HTMLElement[], duration = 300): void {
     this.batchAnimate(elements, (element) => {
       element.style.opacity = '1'
-      element.style.transition = 'opacity ' + duration + 'ms ease-in-out'
+      element.style.transition = `${OPACITY_TRANSITION} ${duration}ms ease-in-out`
       element.style.opacity = '0'
     }, duration)
   }

@@ -20,8 +20,14 @@
     }
   },
   "scripts": {
+    "gen:dtos": "tsx scripts/generate-dtos-from-prisma.ts",
     "gen:openapi": "tsx src/openapi.ts",
-    "build": "echo 'Schemas package does not need build - use gen:openapi instead'",
+    "gen:all": "pnpm gen:dtos && pnpm gen:openapi",
+    "smoke-test": "tsx scripts/smoke-test.ts",
+    "api-smoke-test": "tsx scripts/api-smoke-test.ts",
+    "simple-smoke-test": "tsx scripts/simple-smoke-test.ts",
+    "working-smoke-test": "tsx scripts/working-smoke-test.ts",
+    "build": "echo 'Schemas package does not need build - use gen:all instead'",
     "typecheck": "echo 'Schemas imports server code - typecheck at app level'",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

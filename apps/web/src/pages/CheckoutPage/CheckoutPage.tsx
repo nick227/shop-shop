@@ -27,8 +27,30 @@ export default function CheckoutPage() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (params: { cartId: string; deliveryType: 'PICKUP' | 'DELIVERY'; tip?: string }) => {
+      // Calculate totals from cart
+      const subtotal = Number.parseFloat(cart?.subtotal?.toString() || '0')
+      const deliveryFee = subtotal > 0 ? DEFAULT_DELIVERY_FEE : 0
+      const tax = subtotal * TAX_RATE
+      const tipAmount = tip ? Number.parseFloat(tip) : 0
+      const totalAmount = subtotal + deliveryFee + tax + tipAmount
+      
       return await apiClient.orders().createOrder({
-        createOrderRequest: params
+        createOrderRequest: {
+          userId: '', // Will be set by backend from auth
+          storeId: cart?.storeId || '',
+          cartId: params.cartId,
+          status: 'PENDING',
+          deliveryType: params.deliveryType,
+          paymentStatus: 'PENDING',
+          subtotal: subtotal.toFixed(2),
+          fees: deliveryFee.toFixed(2),
+          tax: tax.toFixed(2),
+          tip: tipAmount.toFixed(2),
+          total: totalAmount.toFixed(2),
+          serviceFeePercent: '2.9',
+          serviceFeeAmount: (totalAmount * 0.029).toFixed(2),
+          netToVendor: (totalAmount * 0.971).toFixed(2),
+        }
       })
     },
     onSuccess: () => {
@@ -69,11 +91,14 @@ export default function CheckoutPage() {
 
     try {
       // 1. Create order first
-      const order = await createOrderMutation.mutateAsync({
+      const orderResponse = await createOrderMutation.mutateAsync({
         cartId: cart?.id,
         deliveryType,
         tip: tipAmount > 0 ? tipAmount.toFixed(2) : undefined,
-      } as any)
+      })
+      
+      // Extract order ID from response
+      const order = { id: (orderResponse as any)?.id || (orderResponse as any)?.data?.id || 'unknown' }
 
       // 2. If test mode (no payment method), we're done
       if (!paymentMethodId) {
@@ -109,7 +134,7 @@ export default function CheckoutPage() {
   // Early returns AFTER all hooks
   if (isLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading checkout...</p>
       </div>
@@ -118,8 +143,8 @@ export default function CheckoutPage() {
 
   if (cart?.items?.length === 0) {
     return (
-      <div className={styles['container']}>
-        <div className={styles['empty']}>
+      <div className={styles.container}>
+        <div className={styles.empty}>
           <h2>Your cart is empty</h2>
           <p>Add items to your cart before checking out.</p>
           <Button variant="primary" onClick={() => navigate('/')}>
@@ -131,16 +156,16 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className={styles['container']}>
-      <div className={styles['header']}>
-        <div className={styles['headerContent']}>
-          <h1 className={styles['title']}>Checkout</h1>
-          <div className={styles['steps']}>
-            <div className={currentStep === 'details' ? styles['stepActive'] : styles['stepInactive']}>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Checkout</h1>
+          <div className={styles.steps}>
+            <div className={currentStep === 'details' ? styles.stepActive : styles.stepInactive}>
               1. Order Details
             </div>
-            <div className={styles['stepDivider']}>→</div>
-            <div className={currentStep === 'payment' ? styles['stepActive'] : styles['stepInactive']}>
+            <div className={styles.stepDivider}>→</div>
+            <div className={currentStep === 'payment' ? styles.stepActive : styles.stepInactive}>
               2. Payment
             </div>
           </div>
@@ -150,26 +175,26 @@ export default function CheckoutPage() {
         </Button>
       </div>
 
-      <div className={styles['content']}>
+      <div className={styles.content}>
         {currentStep === 'details' && (
-          <div className={styles['formSection']}>
-            <div className={styles['card']}>
-              <h2 className={styles['sectionTitle']}>Delivery Method</h2>
-            <div className={styles['radioGroup']}>
-              <label className={styles['radioOption']}>
+          <div className={styles.formSection}>
+            <div className={styles.card}>
+              <h2 className={styles.sectionTitle}>Delivery Method</h2>
+            <div className={styles.radioGroup}>
+              <label className={styles.radioOption}>
                 <input
                   type="radio"
                   value="PICKUP"
                   checked={deliveryType === 'PICKUP'}
                   onChange={(e) => setDeliveryType(e.target.value as 'PICKUP')}
                 />
-                <div className={styles['radioLabel']}>
+                <div className={styles.radioLabel}>
                   <strong>Pickup</strong>
                   <span>Pick up your order at the Store</span>
                 </div>
               </label>
 
-              <label className={styles['radioOption']}>
+              <label className={styles.radioOption}>
                 <input
                   type="radio"
                   value="DELIVERY"
@@ -177,7 +202,7 @@ export default function CheckoutPage() {
                   onChange={(e) => setDeliveryType(e.target.value as 'DELIVERY')}
                   disabled
                 />
-                <div className={styles['radioLabel']}>
+                <div className={styles.radioLabel}>
                   <strong>Delivery</strong>
                   <span>Coming soon - Address management required</span>
                 </div>
@@ -185,9 +210,9 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className={styles['card']}>
-            <h2 className={styles['sectionTitle']}>Add a Tip (Optional)</h2>
-            <div className={styles['tipOptions']}>
+          <div className={styles.card}>
+            <h2 className={styles.sectionTitle}>Add a Tip (Optional)</h2>
+            <div className={styles.tipOptions}>
               <Button
                 variant={tip === '2.00' ? 'primary' : 'ghost'}
                 onClick={() => setTip('2.00')}
@@ -214,7 +239,7 @@ export default function CheckoutPage() {
                 placeholder="Custom"
                 value={tip}
                 onChange={(e) => setTip(e.target?.value)}
-                className={styles['customTip']}
+                className={styles.customTip}
                 min="0"
                 step="0.01"
               />
@@ -223,11 +248,11 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <div className={styles['summarySection']}>
+        <div className={styles.summarySection}>
         {currentStep === 'details' ? (
           <>
-            {cart && <CartSummary cart={cart as any} onCheckout={handleContinueToPayment} />}
-            <p className={styles['hint']}>
+            {cart && <CartSummary cart={cart} onCheckout={handleContinueToPayment} />}
+            <p className={styles.hint}>
               Review your order, then proceed to payment
             </p>
           </>
@@ -243,7 +268,7 @@ export default function CheckoutPage() {
               isProcessing={createOrderMutation.isPending || isCreatingIntent}
             />
             {(createOrderMutation.isPending || isCreatingIntent) && (
-              <div className={styles['submitting']}>
+              <div className={styles.submitting}>
                 <Spinner size="small" />
                 <span>Processing payment...</span>
               </div>

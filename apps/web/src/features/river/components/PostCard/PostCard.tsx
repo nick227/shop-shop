@@ -5,11 +5,11 @@ import { PostActions } from '../PostActions'
 import { formatRelativeTime } from '../../../../utils/format'
 
 interface PostCardProps {
-  post: RiverPost
-  onLike?: ((postId: string) => void) | undefined
-  onComment?: ((postId: string) => void) | undefined
-  onShare?: ((postId: string) => void) | undefined
-  onPostClick?: ((postId: string) => void) | undefined
+  readonly post: RiverPost
+  readonly onLike?: (postId: string) => void
+  readonly onComment?: (postId: string) => void
+  readonly onShare?: (postId: string) => void
+  readonly onPostClick?: (postId: string) => void
 }
 
 export const PostCard = ({
@@ -20,8 +20,8 @@ export const PostCard = ({
   onPostClick,
 }: PostCardProps) => {
   const handleCardClick = () => {
-    if (onPostClick) {
-      onPostClick(post.id)
+    if (onPostClick && post.id) {
+      onPostClick(String(post.id))
     }
   }
 
@@ -32,14 +32,14 @@ export const PostCard = ({
           {post.storeImage && (
             <img
               src={post.storeImage}
-              alt={post.storeName}
+              alt={post.storeName ?? 'Store'}
               className="w-12 h-12 rounded-full"
             />
           )}
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">{post.storeName}</h3>
+            <h3 className="font-semibold text-foreground">{post.storeName ?? 'Store'}</h3>
             <time className="text-sm text-muted-foreground">
-              {formatRelativeTime(post.createdAt)}
+              {formatRelativeTime(post.createdAt ? new Date(post.createdAt) : new Date())}
             </time>
           </div>
         </div>
@@ -52,7 +52,7 @@ export const PostCard = ({
       )}
 
       {post.media && post.media.length > 0 && (
-        <PostMedia media={post.media} postId={post.id} />
+        <PostMedia media={post.media} postId={post.id ?? ''} />
       )}
 
       <PostActions

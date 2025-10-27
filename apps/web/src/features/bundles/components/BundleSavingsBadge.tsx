@@ -3,33 +3,31 @@
  * Displays bundle savings with visual emphasis
  */
 import React from 'react'
-import { Badge } from '@components/ui/Badge'
+import { Badge } from '../../../components/ui/Badge'
 
 interface BundleSavingsBadgeProps {
-  savings: number
-  savingsPercent: number
-  label?: string
-  size?: 'sm' | 'md' | 'lg'
-  variant?: 'default' | 'success' | 'warning'
-  className?: string
+  readonly savings: number
+  readonly savingsPercent: number
+  readonly label?: string
+  readonly size?: 'sm' | 'md' | 'lg'
+  readonly variant?: 'default' | 'success' | 'warning'
+  readonly className?: string
 }
 
 export function BundleSavingsBadge({
   savings,
   savingsPercent,
   label,
-  size = 'md',
   variant = 'success',
   className = ''
 }: BundleSavingsBadgeProps) {
-  const displayLabel = label || `Save $${savings.toFixed(2)}`
+  const displayLabel = label ?? `Save $${savings.toFixed(2)}`
   const percentText = `${savingsPercent.toFixed(1)}%`
 
   return (
     <div className={`bundle-savings-badge ${className}`}>
       <Badge 
         variant={variant} 
-        size={size}
         className="bundle-savings-badge__badge"
       >
         <span className="bundle-savings-badge__text">

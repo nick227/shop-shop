@@ -7,29 +7,29 @@ import type { StoreWithDistance } from '@api/types'
 /**
  * Get store city name;
  */
-export function getStoreCity(store: StoreWithDistance): string | null {
-  return store.addressCity;
+export function getStoreCity(store: StoreWithDistance): string | undefined {    
+  return store.addressCity ?? undefined;
 }
 
 /**
  * Get store state;
  */
-export function getStoreState(store: StoreWithDistance): string | null {
-  return store.addressState;
+export function getStoreState(store: StoreWithDistance): string | undefined {   
+  return store.addressState ?? undefined;
 }
 
 /**
  * Get store street;
  */
-export function getStoreStreet(store: StoreWithDistance): string | null {
-  return store.addressStreet;
+export function getStoreStreet(store: StoreWithDistance): string | undefined {  
+  return store.addressStreet ?? undefined;
 }
 
 /**
  * Get store zip;
  */
-export function getStoreZip(store: StoreWithDistance): string | null {
-  return store.addressZip;
+export function getStoreZip(store: StoreWithDistance): string | undefined {     
+  return store.addressZip ?? undefined;
 }
 
 /**
@@ -62,7 +62,7 @@ export function getStoreCoordinates(store: StoreWithDistance): {
  * Check if store has valid coordinates - OPTIMIZED for performance;
  */
 export function hasValidCoordinates(store: StoreWithDistance): boolean {
-  // Fast null checks first;
+  // Fast undefined checks first;
   if (store.latitude == undefined || store.longitude == undefined) return false;
   // Convert to numbers once;
   const lat = Number(store.latitude)

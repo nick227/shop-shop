@@ -8,15 +8,15 @@ import { Card, Image, Button, Badge } from '@ui'
 import { ICON, ASPECT_RATIO, LABEL } from '@ui/Carousel/constants'
 import { formatDistance } from '@utils/format'
 import { getImageUrl } from '@utils/image'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 import { cn } from '@utils/cn'
 
 export interface StoreCardExpandedProps {
-  store: StoreWithDistance
-  onViewMenu?: StoreClickHandler | undefined
-  onViewDetails?: StoreClickHandler | undefined
-  showActions?: boolean | undefined
-  featured?: boolean | undefined
+  readonly store: StoreWithDistance
+  readonly onViewMenu?: StoreClickHandler
+  readonly onViewDetails?: StoreClickHandler
+  readonly showActions?: boolean
+  readonly featured?: boolean
 }
 
 // Mock constants - should come from store data in real implementation
@@ -32,8 +32,7 @@ function StoreCardExpandedComponent({
   showActions = true,
   featured = false
 }: StoreCardExpandedProps) {
-  // @ts-expect-error - imageUrl will be added to Store type
-  const imageUrl = getImageUrl(store.imageUrl, store.id, 'store')
+  const imageUrl = getImageUrl((store as { imageUrl?: string }).imageUrl, store.id, 'store')
 
   const handleViewMenu = useCallback(() => onViewMenu?.(store), [onViewMenu, store])
   const handleViewDetails = useCallback(() => onViewDetails?.(store), [onViewDetails, store])

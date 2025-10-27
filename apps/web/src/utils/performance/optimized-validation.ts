@@ -22,8 +22,8 @@ export interface OptimizedValidationResult {
 /**
  * Optimized form validation with early exit patterns
  */
-export class OptimizedFormValidator<T extends Record<string, any>> {
-  private readonly fieldValidators = new Map<keyof T, (value: any) => string | null>()
+export class OptimizedFormValidator<T extends Record<string, unknown>> {
+  private readonly fieldValidators = new Map<keyof T, (value: unknown) => string | undefined>()
   private readonly requiredFields = new Set<keyof T>()
   private readonly earlyExitFields = new Set<keyof T>()
   
@@ -32,7 +32,7 @@ export class OptimizedFormValidator<T extends Record<string, any>> {
    */
   addFieldValidator(
     field: keyof T, 
-    validator: (value: any) => string | null,
+    validator: (value: unknown) => string | undefined,
     options: { required?: boolean; earlyExit?: boolean } = {}
   ): this {
     this.fieldValidators.set(field, validator)
@@ -81,7 +81,7 @@ export class OptimizedFormValidator<T extends Record<string, any>> {
       // Check required fields first (early exit)
       if (this.requiredFields.has(field as keyof T) && (!value || (typeof value === 'string' && value.trim() === ''))) {
           const error = internString('' + field + ' is required')
-          errors['push'](error)
+          errors.push(error)
           fieldErrors[field] = error
           
           if (this.earlyExitFields.has(field as keyof T)) {
@@ -97,7 +97,7 @@ export class OptimizedFormValidator<T extends Record<string, any>> {
         const error = validator(value)
         if (error) {
           const internedError = internString(error)
-          errors['push'](internedError)
+          errors.push(internedError)
           fieldErrors[field] = internedError
           
           if (this.earlyExitFields.has(field as keyof T)) {
@@ -109,9 +109,9 @@ export class OptimizedFormValidator<T extends Record<string, any>> {
     }
     
     return {
-      isValid: errors['length'] === 0,
-      errors: errors['map'](internString),
-      warnings: warnings.map(internString),
+      isValid: errors.length === 0,
+      errors: errors.map((error) => internString(error)),
+      warnings: warnings.map((warning) => internString(warning)),
       fieldErrors,
       performance: {
         validationTime: performance.now() - startTime,
@@ -216,7 +216,7 @@ export class OptimizedArrayOperations {
  */
 export class OptimizedDOMOperations {
   private static readonly batchQueue: (() => void)[] = []
-  private static batchTimer: number | null = null
+  private static batchTimer: number | undefined = undefined
   
   /**
    * Batch DOM operations for better performance
@@ -224,7 +224,7 @@ export class OptimizedDOMOperations {
   static batch(operation: () => void): void {
     this.batchQueue.push(operation)
     
-    if (this.batchTimer === null) {
+    if (this.batchTimer === undefined) {
       this.batchTimer = requestAnimationFrame(() => {
         this.flushBatch()
       })
@@ -236,7 +236,7 @@ export class OptimizedDOMOperations {
    */
   private static flushBatch(): void {
     const operations = this.batchQueue.splice(0)
-    this.batchTimer = null
+    this.batchTimer = undefined
     
     // Execute all operations
     for (const operation of operations) {
@@ -256,7 +256,9 @@ export class OptimizedDOMOperations {
     updates: (element: HTMLElement) => void
   ): void {
     this.batch(() => {
-      elements.forEach(updates)
+      for (const element of elements) {
+        updates(element)
+      }
     })
   }
   
@@ -287,7 +289,7 @@ export class ValidationPatterns {
   /**
    * Email validation with early exit
    */
-  static validateEmail(email: string): string | null {
+  static validateEmail(email: string): string | undefined {
     if (!email) return internString('Email is required')
     if (email.length > 254) return internString('Email too long')
     if (!email.includes('@')) return internString('Invalid email format')
@@ -297,26 +299,26 @@ export class ValidationPatterns {
     if (local.length > 64) return internString('Email local part too long')
     if (domain.length > 253) return internString('Email domain too long')
     
-    return null
+    return undefined
   }
   
   /**
    * Phone validation with early exit
    */
-  static validatePhone(phone: string): string | null {
+  static validatePhone(phone: string): string | undefined {
     if (!phone) return internString('Phone is required')
     
     const cleaned = phone.replaceAll(/\D/g, '')
     if (cleaned.length < 10) return internString('Phone number too short')
     if (cleaned.length > 15) return internString('Phone number too long')
     
-    return null
+    return undefined
   }
   
   /**
    * Password validation with early exit
    */
-  static validatePassword(password: string): string | null {
+  static validatePassword(password: string): string | undefined {
     if (!password) return internString('Password is required')
     if (password.length < 8) return internString('Password too short')
     if (password.length > 128) return internString('Password too long')
@@ -326,18 +328,18 @@ export class ValidationPatterns {
       return internString('Password too common')
     }
     
-    return null
+    return undefined
   }
   
   /**
    * Coordinate validation with early exit
    */
-  static validateCoordinates(lat: number, lng: number): string | null {
-    if (isNaN(lat) || isNaN(lng)) return internString('Invalid coordinates')
+  static validateCoordinates(lat: number, lng: number): string | undefined {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return internString('Invalid coordinates')
     if (lat < -90 || lat > 90) return internString('Latitude out of range')
     if (lng < -180 || lng > 180) return internString('Longitude out of range')
     
-    return null
+    return undefined
   }
 }
 
@@ -354,7 +356,7 @@ export class ValidationPerformanceMonitor {
   /**
    * Track validation performance
    */
-  static track(operation: string, fn: () => any): any {
+  static track<T>(operation: string, fn: () => T): T {
     const startTime = performance.now()
     const result = fn()
     const endTime = performance.now()

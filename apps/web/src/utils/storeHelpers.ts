@@ -31,9 +31,10 @@ export function sortStores(
     case 'name': {
       return sorted.sort((a, b) => a.name.localeCompare(b.name))
     }
-    case 'prepTime' as any: { // prepTime not in standard sort options
-      return sorted.sort((a, b) => a.prepTimeMin - b.prepTimeMin)
-    }
+    // Note: prepTime removed as it's not a valid StoreSortOption
+    // case 'prepTime': { 
+    //   return sorted.sort((a, b) => (a.prepTimeMin ?? 0) - (b.prepTimeMin ?? 0))
+    // }
     default: {
       return stores
     }  // Return original for unknown sort types
@@ -44,15 +45,15 @@ export function sortStores(
  * Get plural form for store count
  */
 export function getStoreCountText(count: number): string {
-  return '${count} store' + count === 1 ? '' : 's' + ''
+  return `${count} store${count === 1 ? '' : 's'}`;
 }
 
 /**
  * Get store result text with context
  */
-export function getStoreResultsText(count: number, filtered = false): string {
+export function getStoreResultsText(count: number, filtered = false): string {  
   const countText = getStoreCountText(count)
-  return filtered ? '' + countText + ' found' : countText
+  return filtered ? `${countText} found` : countText
 }
 
 /**
@@ -77,10 +78,10 @@ export function getStoreCitiesContextDual(stores: StoreWithDistance[]): CitiesCo
   
   for (const store of stores) {
     const city = store.addressCity
-    const state = store.addressState
-    
+        const state = store.addressState
+
     if (city && !cityStateMap.has(city)) {
-      cityStateMap.set(city, state || '')
+      cityStateMap.set(city, state ?? '')
       if (cityStateMap.size >= 6) break  // Early exit (enough for both formats)
     }
   }
@@ -123,25 +124,20 @@ export function getStoreCitiesContextDual(stores: StoreWithDistance[]): CitiesCo
   if (totalCities === 2) {
     const lastComma = shortResult.lastIndexOf(', ')
     if (lastComma !== -1) {
-      shortResult = shortResult.slice(0, Math.max(0, lastComma)) + ' and' + shortResult.slice(Math.max(0, lastComma + 1))
+      shortResult = `${shortResult.slice(0, Math.max(0, lastComma))} and${shortResult.slice(Math.max(0, lastComma + 1))}`
     }
   } else if (totalCities > 2) {
-    shortResult += ' and ${totalCities - 2} more ' + totalCities - 2 === 1 ? 'area' : 'areas' + ''
+        shortResult += ` and ${totalCities - 2} more ${totalCities - 2 === 1 ? 'area' : 'areas'}`                                                              
   }
-  
+
   // Handle full version (3 cities)
   if (totalCities === 3) {
     const lastComma = fullResult.lastIndexOf(', ')
     if (lastComma !== -1) {
-      fullResult = fullResult.slice(0, Math.max(0, lastComma)) + ' and' + fullResult.slice(Math.max(0, lastComma + 1))
+      fullResult = `${fullResult.slice(0, Math.max(0, lastComma))} and${fullResult.slice(Math.max(0, lastComma + 1))}`                                          
     }
   } else if (totalCities > 3) {
-    fullResult += ' and ${totalCities - 3} more ' + totalCities - 3 === 1 ? 'area' : 'areas' + ''
-  } else if (totalCities === 2) {
-    const lastComma = fullResult.lastIndexOf(', ')
-    if (lastComma !== -1) {
-      fullResult = fullResult.slice(0, Math.max(0, lastComma)) + ' and' + fullResult.slice(Math.max(0, lastComma + 1))
-    }
+    fullResult += ` and ${totalCities - 3} more ${totalCities - 3 === 1 ? 'area' : 'areas'}`                                                               
   }
   
   return { full: fullResult, short: shortResult }

@@ -22,7 +22,7 @@ export function GridView<TItem = unknown>({
   const { layout, cols = 3, gap = 'medium', itemComponent } = config
 
   // Handle empty state
-  if (!items || items.length === 0) {
+  if (items?.length === 0) {
     return (
       <div 
         className={cn('flex items-center justify-center p-8 text-muted-foreground')}

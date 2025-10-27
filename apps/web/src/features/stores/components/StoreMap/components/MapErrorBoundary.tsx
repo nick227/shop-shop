@@ -19,7 +19,7 @@ export interface MapErrorBoundaryState {
 export class MapErrorBoundary extends Component<MapErrorBoundaryProps, MapErrorBoundaryState> {
   constructor(props: MapErrorBoundaryProps) {
     super(props)
-    this["state"] = { hasError: false }
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(error: Error): MapErrorBoundaryState {
@@ -32,7 +32,7 @@ export class MapErrorBoundary extends Component<MapErrorBoundaryProps, MapErrorB
   }
 
   override render() {
-    if (this["state"].hasError) {
+    if (this.state.hasError) {
       return this.props.fallback || (
         <div className="h-[400px] bg-gray-200 flex items-center justify-center rounded-lg">
           <div className="text-center">

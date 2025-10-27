@@ -15,37 +15,37 @@ const MAX_HISTORY_SIZE = 5
 const DEFAULT_RADIUS = 25
 
 // OPTIMIZED: Object pool for reducing GC pressure
-class ObjectPool<T> {
-  private readonly pool: T[] = []
-  private readonly createFn: () => T
-  
-  constructor(createFn: () => T, initialSize = 10) {
-    this.createFn = createFn
-    // Pre-allocate objects
-    for (let i = 0; i < initialSize; i++) {
-      this.pool.push(createFn())
-    }
-  }
-  
-  acquire(): T {
-    return this.pool.pop() || this.createFn()
-  }
-  
-  release(obj: T): void {
-    if (this.pool.length < 20) { // Limit pool size
-      this.pool.push(obj)
-    }
-  }
-}
+// class ObjectPool<T> {
+//   private readonly pool: T[] = []
+//   private readonly createFn: () => T
+//   
+//   constructor(createFn: () => T, initialSize = 10) {
+//     this.createFn = createFn
+//     // Pre-allocate objects
+//     for (let i = 0; i < initialSize; i++) {
+//       this.pool.push(createFn())
+//     }
+//   }
+//   
+//   acquire(): T {
+//     return this.pool.pop() ?? this.createFn()
+//   }
+//   
+//   release(obj: T): void {
+//     if (this.pool.length < 20) { // Limit pool size
+//       this.pool.push(obj)
+//     }
+//   }
+// }
 
 export class LocationService {
   private static instance: LocationService
   private preferences: LocationPreferences
   
   // OPTIMIZED: Cache parsed data to avoid repeated JSON operations
-  private _cachedCurrentLocation: LocationData | null = null
-  private _cachedHistory: LocationData[] | null = null
-  private readonly _cachedPreferences: LocationPreferences | null = null
+  private _cachedCurrentLocation: LocationData | undefined = undefined
+  private _cachedHistory: LocationData[] | undefined = undefined
+  private readonly _cachedPreferences: LocationPreferences | undefined = undefined
 
   private constructor() {
     this.preferences = this.loadPreferences()
@@ -86,6 +86,7 @@ export class LocationService {
     }
 
     return new Promise((resolve, reject) => {
+      // eslint-disable-next-line sonarjs/no-intrusive-permissions
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = this.createLocationData(
@@ -154,8 +155,8 @@ export class LocationService {
       'zip',
       result.displayName,
       {
-        city: result["city"],
-        state: result["state"],
+        city: result.city,
+        state: result.state,
         zip: result.zip
       }
     )
@@ -188,8 +189,8 @@ export class LocationService {
       radiusMiles: this.preferences.preferredRadius,
       source: 'city',
       displayName: result.displayName,
-      city: result["city"],
-      state: result["state"],
+      city: result.city,
+      state: result.state,
       timestamp: Date.now()
     }
 
@@ -215,8 +216,8 @@ export class LocationService {
       radiusMiles: this.preferences.preferredRadius,
       source: 'address',
       displayName: result.displayName,
-      city: result["city"],
-      state: result["state"],
+      city: result.city,
+      state: result.state,
       zip: result.zip,
       timestamp: Date.now()
     }
@@ -247,24 +248,24 @@ export class LocationService {
     }
     
     // Single execution path - no branching complexity
-    return strategy(input.value, input["state"])
+    return strategy(input.value, input.state)
   }
 
   /**
    * Get current saved location (with caching)
    */
-  getCurrentLocation(): LocationData | null {
-    if (this._cachedCurrentLocation !== null) {
+  getCurrentLocation(): LocationData | undefined {
+    if (this._cachedCurrentLocation !== undefined) {
       return this._cachedCurrentLocation
     }
     
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_LOCATION)
-      this._cachedCurrentLocation = stored ? JSON.parse(stored) : null
+      this._cachedCurrentLocation = stored ? JSON.parse(stored) : undefined
       return this._cachedCurrentLocation
     } catch {
-      this._cachedCurrentLocation = null
-      return null
+      this._cachedCurrentLocation = undefined
+      return undefined
     }
   }
 
@@ -275,7 +276,7 @@ export class LocationService {
     try {
       localStorage.setItem(STORAGE_KEYS.CURRENT_LOCATION, JSON.stringify(location))
       this._cachedCurrentLocation = location // Update cache
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('Failed to save current location:', error)
     }
   }
@@ -284,14 +285,14 @@ export class LocationService {
    * Get location history (with caching)
    */
   getLocationHistory(): LocationData[] {
-    if (this._cachedHistory !== null) {
+    if (this._cachedHistory !== undefined) {
       return this._cachedHistory
     }
     
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.LOCATION_HISTORY)
       this._cachedHistory = stored ? JSON.parse(stored) : []
-      return this._cachedHistory
+      return this._cachedHistory || []
     } catch {
       this._cachedHistory = []
       return []
@@ -329,7 +330,7 @@ export class LocationService {
     try {
       localStorage.setItem(STORAGE_KEYS.LOCATION_HISTORY, JSON.stringify(history))
       this._cachedHistory = history // Update cache
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('Failed to save location history:', error)
     }
   }
@@ -376,7 +377,7 @@ export class LocationService {
       if (stored) {
         return { ...this.getDefaultPreferences(), ...JSON.parse(stored) }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('Failed to load location preferences:', error)
     }
     return this.getDefaultPreferences()
@@ -388,7 +389,7 @@ export class LocationService {
   private savePreferences(): void {
     try {
       localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(this.preferences))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('Failed to save location preferences:', error)
     }
   }

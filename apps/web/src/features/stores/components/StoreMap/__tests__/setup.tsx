@@ -10,7 +10,7 @@ jest.mock('leaflet', () => ({
   Marker: {
     prototype: {
       options: {
-        icon: null
+        icon: undefined
       }
     }
   }

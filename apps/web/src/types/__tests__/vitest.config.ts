@@ -70,7 +70,7 @@ export default defineConfig({
     },
     
     // Reporter configuration
-    reporter: 'verbose'
+    reporters: ['text']
   },
   
   // Resolve configuration

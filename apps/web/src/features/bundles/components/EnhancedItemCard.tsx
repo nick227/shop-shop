@@ -6,16 +6,21 @@ import { Card } from '../../../components/ui/Card'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { ItemBundleControls } from './ItemBundleControls'
-import type { Item } from '../../../api/types'
+import type { ItemResponse } from '../../../api/backend-types'
+
+interface Bundle {
+  id: string
+  name: string
+}
 
 interface EnhancedItemCardProps {
-  item: Item
-  storeId: string
-  onEdit?: (item: Item) => void
-  onDelete?: (item: Item) => void
-  onBundleCreated?: (bundle: any) => void
-  showBundleControls?: boolean
-  className?: string
+  readonly item: ItemResponse
+  readonly storeId: string
+  readonly onEdit?: (item: ItemResponse) => void
+  readonly onDelete?: (item: ItemResponse) => void
+  readonly onBundleCreated?: (bundle: Bundle) => void
+  readonly showBundleControls?: boolean
+  readonly className?: string
 }
 
 export function EnhancedItemCard({
@@ -33,10 +38,10 @@ export function EnhancedItemCard({
   return (
     <Card className={`enhanced-item-card ${className}`}>
       {/* Item Image */}
-      <div className="enhanced-item-card__image">
-        {(item as any).imageUrl ? (
-          <img 
-            src={(item as any).imageUrl} 
+            <div className="enhanced-item-card__image">
+        {'imageUrl' in item && typeof item.imageUrl === 'string' && item.imageUrl ? (
+          <img
+            src={item.imageUrl}
             alt={item.title}
             className="enhanced-item-card__image-img"
           />
@@ -49,12 +54,12 @@ export function EnhancedItemCard({
         {/* Item Status Badges */}
         <div className="enhanced-item-card__badges">
           {!item.isActive && (
-            <Badge variant="secondary" size="sm">
+            <Badge variant="secondary">
               Inactive
             </Badge>
           )}
           {item.isSoldOut && (
-            <Badge variant="warning" size="sm">
+            <Badge variant="warning">
               Sold Out
             </Badge>
           )}
@@ -97,7 +102,7 @@ export function EnhancedItemCard({
       <div className="enhanced-item-card__actions">
         <div className="enhanced-item-card__primary-actions">
           <Button
-            size="sm"
+            size="small"
             variant="outline"
             onClick={handleEdit}
           >
@@ -105,8 +110,8 @@ export function EnhancedItemCard({
           </Button>
           
           <Button
-            size="sm"
-            variant="destructive"
+            size="small"
+            variant="danger"
             onClick={handleDelete}
           >
             Delete

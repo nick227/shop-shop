@@ -5,8 +5,8 @@
 import type { SearchResult, StoreSearchResult, ProductSearchResult } from '../types/search.types'
 import { isStoreResult, isProductResult } from '../types/search.types'
 import { transformStoreResult, transformProductResult } from './searchTransformers'
-import type { StoreWithDistance } from '@api/types'
-import type { ItemResponse } from '@api/types'
+import type { StoreWithDistance } from '@api/backend-types'
+import type { ItemResponse } from '@api/backend-types'
 
 /**
  * Group and transform results in a single pass (O(n) instead of O(3n))

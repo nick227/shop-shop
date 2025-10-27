@@ -6,9 +6,9 @@
 import { useEffect, useRef, useMemo, memo } from 'react'
 import { MapContainer, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
-import { hasValidCoordinates } from '@utils/storeAccessors'
-import { styles } from '@utils/tailwind-classes'
+import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
+import { hasValidCoordinates } from '../../../../utils/storeAccessors'
+import { styles } from '../../../../utils/tailwind-classes'
 import { useMapCenter } from './hooks/useMapCenter'
 import { useMapZoom } from './hooks/useMapZoom'
 import { IconService } from './services/iconService'
@@ -49,8 +49,8 @@ function StoreMapRefactoredComponent({
   radiusMiles = 25,
   onStoreClick,
   height = '500px'
-}: StoreMapProps) {
-  const mapRef = useRef<L.Map>(null)
+}: Readonly<StoreMapProps>) {
+  const mapRef = useRef<L.Map>(null!)
   
   // Memoize valid stores - use centralized validator to prevent NaN coordinates
   const validStores = useMemo(() => 
@@ -60,14 +60,24 @@ function StoreMapRefactoredComponent({
   
   // Use custom hooks for map calculations
   const mapCenter = useMapCenter({ 
-    userLocation, 
-    stores: validStores.map(s => ({ latitude: Number(s.latitude), longitude: Number(s.longitude) }))
+    userLocation: userLocation ? {
+      latitude: userLocation.latitude,
+      longitude: userLocation.longitude,
+      radiusMiles: radiusMiles || 25,
+      source: 'geolocation' as const
+    } : undefined, 
+    stores: validStores.map(s => ({ 
+      latitude: Number(s.latitude), 
+      longitude: Number(s.longitude),
+      radiusMiles: radiusMiles || 25,
+      source: 'geolocation' as const
+    }))
   })
   const mapZoom = useMapZoom({ radiusMiles })
   
   // Find nearest store
   const nearestStore = useMemo(() => 
-    validStores.length > 0 ? validStores[0] : null,
+    validStores.length > 0 ? validStores[0] : undefined,
     [validStores]
   )
   
@@ -87,11 +97,11 @@ function StoreMapRefactoredComponent({
 
   return (
     <MapErrorBoundary>
-      <div className={styles['container']} style={{ height }}>
+      <div className={styles.container} style={{ height }}>
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
-          className={styles['map']}
+          className={styles.map}
           ref={mapRef}
         >
           {/* Map tiles from OpenStreetMap */}
@@ -106,7 +116,7 @@ function StoreMapRefactoredComponent({
           {/* User location marker and radius circle */}
           {userLocation && (
             <UserLocationMarker 
-              userLocation={userLocation as LocationCoordinates} 
+              userLocation={userLocation as any} 
               radiusMiles={radiusMiles}
             />
           )}
@@ -130,7 +140,7 @@ function StoreMapRefactoredComponent({
 
         {/* Map legend */}
         <MapLegend 
-          userLocation={userLocation as LocationCoordinates}
+          userLocation={userLocation as any}
           storeCount={validStores.length}
           radiusMiles={radiusMiles}
         />

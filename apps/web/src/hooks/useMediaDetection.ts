@@ -35,14 +35,14 @@ const IMAGE_PATTERNS = [
 /**
  * Extract YouTube video ID from URL
  */
-function extractYouTubeId(url: string): string | null {
+function extractYouTubeId(url: string): string | undefined {
   for (const pattern of YOUTUBE_PATTERNS) {
     const match = url.match(pattern)
     if (match?.[1]) {
       return match[1]
     }
   }
-  return null
+  return undefined
 }
 
 /**
@@ -65,7 +65,7 @@ function detectMediaFromText(text: string): MediaItem[] {
   
   for (let url of urls) {
     // Clean URL (remove leading/trailing punctuation and wrappers)
-    url = url.replace(/^["'(<[\]]+|[!"'),.:;>?\]]+$/g, '')
+    url = url.replaceAll(/^["'(<[\]]+|[!"'),.:;>?\]]+$/g, '')
     
     // Skip duplicates
     if (seenUrls.has(url)) continue
@@ -116,10 +116,10 @@ export function useMediaDetection(
       
       // Filter out URLs that user explicitly removed
       setDetectedMedia(prev => {
-        const filtered = detected.filter(d => !userRemovedUrls.has(d.url))
+        const filtered = detected.filter(d => d.url && !userRemovedUrls.has(d.url))
         
         // Keep manually added items that aren't in detected
-        const manualItems = prev.filter(p => !filtered.some(f => f.url === p.url))
+        const manualItems = prev.filter(p => p.url && !filtered.some(f => f.url === p.url))
         
         return [...manualItems, ...filtered]
       })
@@ -137,7 +137,7 @@ export function useMediaDetection(
       const item = prev[index]
       if (item?.url) {
         // Track removed URL so it doesn't re-appear
-        setUserRemovedUrls(s => new Set(s).add(item.url))
+        setUserRemovedUrls(s => new Set(s).add(item.url!))
       }
       return prev.filter((_, i) => i !== index)
     })
@@ -160,18 +160,18 @@ export function useMediaDetection(
 /**
  * Utility: Get YouTube embed URL
  */
-export function getYouTubeEmbedUrl(url: string): string | null {
+export function getYouTubeEmbedUrl(url: string): string | undefined {
   const videoId = extractYouTubeId(url)
-  if (!videoId) return null
+  if (!videoId) return undefined
   return 'https://www.youtube.com/embed/' + videoId + ''
 }
 
 /**
  * Utility: Get YouTube thumbnail
  */
-export function getYouTubeThumbnail(url: string, quality: 'default' | 'hq' | 'maxres' = 'maxres'): string | null {
+export function getYouTubeThumbnail(url: string, quality: 'default' | 'hq' | 'maxres' = 'maxres'): string | undefined {
   const videoId = extractYouTubeId(url)
-  if (!videoId) return null
+  if (!videoId) return undefined
   
   const qualityMap = {
     default: 'default',

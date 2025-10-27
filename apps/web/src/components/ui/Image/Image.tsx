@@ -38,7 +38,7 @@ function ImageComponent({
   )
 
   const imageClassNames = useMemo(() => [
-    styles['image'],
+    styles.image,
     loading && styles['image--hidden'],
     className,
   ]
@@ -51,7 +51,7 @@ function ImageComponent({
         className={'relative overflow-hidden ' + containerClassName + ''}
         style={{ ...containerStyle, backgroundColor: fallbackColor }}
       >
-        <div className={styles['fallback']} role="img" aria-label={alt}>
+        <div className={styles.fallback} role="img" aria-label={alt}>
           {alt}
         </div>
       </div>

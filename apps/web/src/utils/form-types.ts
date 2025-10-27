@@ -5,17 +5,14 @@
  * Eliminates manual type duplication and ensures API sync
  */
 
-import type { 
+import type {
   CreateStoreRequest,
   CreateItemInput,
   CreateAddressInput,
   CreateOrderInput,
-  CreatePostInput,
-  UpdateStoreRequest,
+  StoreResponse,
   UpdateItemInput,
-  UpdateAddressInput,
-  UpdateOrderInput,
-  UpdatePostInput
+  UpdateAddressInput
 } from '@packages/sdk'
 
 // ========================================
@@ -46,29 +43,30 @@ export type StoreFormData = Required<Pick<CreateStoreRequest,
   | 'longitude'
 >>
 
-export type StoreUpdateFormData = Required<Pick<UpdateStoreRequest, 
-  | 'name' 
-  | 'slug' 
-  | 'description' 
-  | 'companyName' 
-  | 'taxId' 
-  | 'phone' 
-  | 'email' 
-  | 'website' 
-  | 'isPublished' 
-  | 'deliveryEnabled' 
-  | 'pickupEnabled' 
-  | 'prepTimeMin' 
-  | 'deliveryDistance' 
-  | 'deliveryCharge' 
-  | 'addressStreet' 
-  | 'addressCity' 
-  | 'addressState' 
-  | 'addressZip' 
-  | 'addressCountry' 
-  | 'latitude' 
-  | 'longitude'
->>
+// Use a more conservative approach for UpdateStoreRequest
+export interface StoreUpdateFormData {
+  name: string
+  slug: string
+  description: string
+  companyName: string
+  taxId: string
+  phone: string
+  email: string
+  website: string
+  isPublished: boolean
+  deliveryEnabled: boolean
+  pickupEnabled: boolean
+  prepTimeMin: number
+  deliveryDistance: string
+  deliveryCharge: string
+  addressStreet: string
+  addressCity: string
+  addressState: string
+  addressZip: string
+  addressCountry: string
+  latitude: string
+  longitude: string
+}
 
 // ========================================
 // Item Form Types
@@ -136,16 +134,17 @@ export type AddressUpdateFormData = Required<Pick<UpdateAddressInput,
 // Post Form Types
 // ========================================
 
-export type PostFormData = Required<Pick<CreatePostInput, 
-  | 'storeId' 
-  | 'content' 
-  | 'mediaUrls'
->>
+// Note: Post types not available in current SDK version
+// export type PostFormData = Required<Pick<CreatePostInput, 
+//   | 'storeId' 
+//   | 'content' 
+//   | 'mediaUrls'
+// >>
 
-export type PostUpdateFormData = Required<Pick<UpdatePostInput, 
-  | 'content' 
-  | 'mediaUrls'
->>
+// export type PostUpdateFormData = Required<Pick<UpdatePostInput, 
+//   | 'content' 
+//   | 'mediaUrls'
+// >>
 
 // ========================================
 // Generic Form Type Utilities
@@ -171,7 +170,7 @@ export type UpdateFormType<T, K extends keyof T> = Required<Pick<T, K>>
  * Check if form data is valid for API submission
  */
 export function isValidFormData<T>(data: T): data is T {
-  return data !== null && data !== undefined
+  return data !== undefined
 }
 
 /**
@@ -227,7 +226,7 @@ export function createInitialItemFormData(): ItemFormData {
     isActive: true,
     storeId: '',
     sortIndex: 0,
-    stockQty: 0,
+    stockQty: '0',
     isSoldOut: false,
   }
 }
@@ -260,16 +259,14 @@ export function createInitialOrderFormData(): OrderFormData {
   }
 }
 
-/**
- * Create initial form data for PostFormData
- */
-export function createInitialPostFormData(): PostFormData {
-  return {
-    storeId: '',
-    content: '',
-    mediaUrls: [],
-  }
-}
+// Note: Post functions commented out due to missing SDK types
+// export function createInitialPostFormData(): PostFormData {
+//   return {
+//     storeId: '',
+//     content: '',
+//     mediaUrls: [],
+//   }
+// }
 
 // ========================================
 // Dynamic Form Utilities
@@ -279,29 +276,29 @@ export function createInitialPostFormData(): PostFormData {
  * Transform store data to form data dynamically
  * Works with any SDK store response
  */
-export function transformStoreToFormData(store: any): StoreFormData {
+export function transformStoreToFormData(store: StoreResponse): StoreFormData {
   return {
-    name: store.name || '',
-    slug: store.slug || '',
-    description: store.description || '',
-    companyName: store.companyName || '',
-    taxId: store.taxId || '',
-    phone: store.phone || '',
-    email: store.email || '',
-    website: store.website || '',
-    isPublished: store.isPublished || false,
+    name: store.name ?? '',
+    slug: store.slug ?? '',
+    description: store.description ?? '',
+    companyName: store.companyName ?? '',
+    taxId: store.taxId ?? '',
+    phone: store.phone ?? '',
+    email: store.email ?? '',
+    website: store.website ?? '',
+    isPublished: store.isPublished ?? false,
     deliveryEnabled: store.deliveryEnabled ?? true,
     pickupEnabled: store.pickupEnabled ?? true,
-    prepTimeMin: store.prepTimeMin || 15,
-    deliveryDistance: store.deliveryDistance?.toString() || '',
-    deliveryCharge: store.deliveryCharge?.toString() || '',
-    addressStreet: store.addressStreet || '',
-    addressCity: store.addressCity || '',
-    addressState: store.addressState || '',
-    addressZip: store.addressZip || '',
-    addressCountry: store.addressCountry || 'US',
-    latitude: store.latitude?.toString() || '',
-    longitude: store.longitude?.toString() || '',
+    prepTimeMin: store.prepTimeMin ?? 15,
+    deliveryDistance: store.deliveryDistance?.toString() ?? '',
+    deliveryCharge: store.deliveryCharge?.toString() ?? '',
+    addressStreet: store.addressStreet ?? '',
+    addressCity: store.addressCity ?? '',
+    addressState: store.addressState ?? '',
+    addressZip: store.addressZip ?? '',
+    addressCountry: store.addressCountry ?? 'US',
+    latitude: store.latitude?.toString() ?? '',
+    longitude: store.longitude?.toString() ?? '',
   }
 }
 
@@ -309,14 +306,14 @@ export function transformStoreToFormData(store: any): StoreFormData {
  * Clean form data for API submission dynamically
  * Handles string trimming and empty value conversion
  */
-export function cleanFormDataForSubmission<T extends Record<string, any>>(formData: T): T {
+export function cleanFormDataForSubmission<T extends Record<string, unknown>>(formData: T): T {
   const cleaned = { ...formData }
   
   // Clean string fields - trim and convert empty strings to empty strings
-  for (const key of Object?.keys(cleaned)) {
-    const value = cleaned[key]!
+  for (const key of Object.keys(cleaned)) {
+    const value = cleaned[key]
     if (typeof value === 'string') {
-      (cleaned as any)[key] = value?.trim()
+      (cleaned as Record<string, unknown>)[key] = value.trim()
     }
   }
   
@@ -348,7 +345,7 @@ export function cleanFormData<T extends Record<string, any>>(
     const value = cleaned[field]!
     if (typeof value === 'string') {
       const num = Number.parseFloat(value)
-      cleaned[field] = (isNaN(num) ? 0 : num) as T[keyof T]
+      cleaned[field] = (Number.isNaN(num) ? 0 : num) as T[keyof T]
     }
   }
   

@@ -7,7 +7,7 @@ import { Marker, Popup } from 'react-leaflet'
 import type L from 'leaflet'
 import { formatDistance } from '@utils/format'
 import { styles } from '@utils/tailwind-classes'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 
 export interface OptimizedStoreMarkersProps {
   stores: StoreWithDistance[]
@@ -41,25 +41,25 @@ const StoreMarker = memo(({
       eventHandlers={handleClick ? { click: handleClick } : {}}
     >
       <Popup>
-        <div className={styles['popup']}>
-          <h3 className={styles['popupTitle']}>{store.name}</h3>
+        <div className={styles.popup}>
+          <h3 className={styles.popupTitle}>{store.name}</h3>
           {store.description && (
-            <p className={styles['popupDescription']}>{store.description}</p>
+            <p className={styles.popupDescription}>{store.description}</p>
           )}
           {store.distance !== undefined && (
-            <div className={styles['popupDistance']}>
+            <div className={styles.popupDistance}>
               📍 {formatDistance(store.distance)} away
             </div>
           )}
           {(store.addressCity || store.addressState) && (
-            <div className={styles['popupAddress']}>
+            <div className={styles.popupAddress}>
               {store.addressStreet && <div>{store.addressStreet}</div>}
               <div>{store.addressCity}, {store.addressState} {store.addressZip}</div>
             </div>
           )}
           {onStoreClick && (
             <button 
-              className={styles['popupButton']}
+              className={styles.popupButton}
               onClick={() => onStoreClick(store)}
             >
               View Menu →

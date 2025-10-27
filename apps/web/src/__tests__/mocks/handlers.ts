@@ -15,9 +15,9 @@ export const handlers = [
         email: 'test@example.com',
         name: 'Test User',
         role: 'USER',
-        phone: null,
+        phone: undefined,
         isCompany: false,
-        companyName: null,
+        companyName: undefined,
         createdAt: new Date().toISOString()},
       token: 'mock-jwt-token'})
   }),
@@ -30,9 +30,9 @@ export const handlers = [
         email: 'newuser@example.com',
         name: 'New User',
         role: 'USER',
-        phone: null,
+        phone: undefined,
         isCompany: false,
-        companyName: null,
+        companyName: undefined,
         createdAt: new Date().toISOString()},
       token: 'mock-jwt-token-new'})
   }),

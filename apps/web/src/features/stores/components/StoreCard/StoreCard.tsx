@@ -6,16 +6,16 @@
 import { memo, useMemo } from 'react'
 import { Card, CardContent, Badge } from '@ui'
 import { MapPin, Clock, Star, DollarSign } from 'lucide-react'
-import { parseStore } from '@api/types'
+import { parseStore } from '@api/backend-types'
 import { formatDistance } from '@utils/format'
 import { getStoreImageUrl } from '@utils/storeAccessors'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 import { cn } from '@utils/cn'
 
 export interface StoreCardProps {
-  store: StoreWithDistance
-  onClick?: StoreClickHandler | undefined
-  className?: string | undefined
+  readonly store: StoreWithDistance
+  readonly onClick?: StoreClickHandler
+  readonly className?: string
 }
 
 function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
@@ -75,12 +75,12 @@ function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
             <span>4.8</span>
           </div>
           
-          {(typedStore.fees?.['deliveryFee'] ? (
+          {(typedStore.deliveryFee ? (
             <div className="flex items-center gap-1">
               <DollarSign className="h-3.5 w-3.5" />
-              <span>${(typedStore.fees["deliveryFee"] as number).toFixed(2)} delivery</span>
+              <span>${typedStore.deliveryFee.toFixed(2)} delivery</span>
             </div>
-          ) : null) as React.ReactNode}
+          ) : undefined) as React.ReactNode}
         </div>
       </CardContent>
     </Card>

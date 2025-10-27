@@ -10,16 +10,16 @@
 /**
  * Parse price from string or number to number
  */
-export function parsePrice(price: string | number | null | undefined): number {
-  if (price === null || price === undefined) return 0
+export function parsePrice(price: string | number | undefined): number {
+  if (price === undefined) return 0
   
   if (typeof price === 'number') return price
   
   if (typeof price === 'string') {
     // Remove currency symbols and parse
-    const cleaned = price.replace(/[^\d.-]/g, '')
-    const parsed = parseFloat(cleaned)
-    return isNaN(parsed) ? 0 : parsed
+    const cleaned = price.replaceAll(/[^\d.-]/g, '')
+    const parsed = Number.parseFloat(cleaned)
+    return Number.isNaN(parsed) ? 0 : parsed
   }
   
   return 0
@@ -28,7 +28,7 @@ export function parsePrice(price: string | number | null | undefined): number {
 /**
  * Format price as currency string
  */
-export function formatPrice(price: number | string | null | undefined, currency: string = 'USD'): string {
+export function formatPrice(price: number | string | undefined, currency = 'USD'): string {
   const numericPrice = parsePrice(price)
   
   return new Intl.NumberFormat('en-US', {
@@ -81,7 +81,7 @@ function toRadians(degrees: number): number {
 /**
  * Add details to order object
  */
-export function addDetailsToOrder<T extends Record<string, any>>(
+export function addDetailsToOrder<T extends Record<string, unknown>>(
   order: T,
   details: Partial<T>
 ): T {
@@ -99,7 +99,7 @@ export function addDetailsToOrder<T extends Record<string, any>>(
 /**
  * Add store information to item
  */
-export function addStoreToItem<T extends Record<string, any>>(
+export function addStoreToItem<T extends Record<string, unknown>>(
   item: T,
   store: { id: string; name: string; slug: string }
 ): T & { store: { id: string; name: string; slug: string } } {
@@ -120,7 +120,7 @@ export function addStoreToItem<T extends Record<string, any>>(
 /**
  * Add coordinates to address object
  */
-export function addCoordinatesToAddress<T extends Record<string, any>>(
+export function addCoordinatesToAddress<T extends Record<string, unknown>>(
   address: T,
   coordinates: { latitude: number; longitude: number }
 ): T & { latitude: number; longitude: number } {
@@ -134,7 +134,7 @@ export function addCoordinatesToAddress<T extends Record<string, any>>(
 /**
  * Add distance to store object
  */
-export function addDistanceToStore<T extends Record<string, any>>(
+export function addDistanceToStore<T extends Record<string, unknown>>(
   store: T,
   distance: number
 ): T & { distance: number } {
@@ -147,7 +147,7 @@ export function addDistanceToStore<T extends Record<string, any>>(
 /**
  * Flatten store address object
  */
-export function flattenStoreAddress<T extends Record<string, any>>(
+export function flattenStoreAddress<T extends Record<string, unknown>>(
   store: T
 ): T & { 
   addressStreet?: string
@@ -156,25 +156,27 @@ export function flattenStoreAddress<T extends Record<string, any>>(
   addressZip?: string
   addressCountry?: string
 } {
-  const address = store.addressJson as any
+  const address = store.addressJson
   if (!address || typeof address !== 'object') {
     return store
   }
 
+  const addressObj = address as Record<string, unknown>
+  
   return {
     ...store,
-    addressStreet: address.street || address.addressStreet,
-    addressCity: address["city"] || address.addressCity,
-    addressState: address["state"] || address.addressState,
-    addressZip: address.zip || address.addressZip,
-    addressCountry: address.country || address.addressCountry || 'US'
+    addressStreet: (addressObj.street as string) ?? (addressObj.addressStreet as string),
+    addressCity: (addressObj.city as string) ?? (addressObj.addressCity as string),
+    addressState: (addressObj.state as string) ?? (addressObj.addressState as string),
+    addressZip: (addressObj.zip as string) ?? (addressObj.addressZip as string),
+    addressCountry: (addressObj.country as string) ?? (addressObj.addressCountry as string) ?? 'US'
   }
 }
 
 /**
  * Add fees to store object
  */
-export function addFeesToStore<T extends Record<string, any>>(
+export function addFeesToStore<T extends Record<string, unknown>>(
   store: T,
   fees: { deliveryFee?: number; serviceFee?: number; taxRate?: number }
 ): T & { 
@@ -184,7 +186,7 @@ export function addFeesToStore<T extends Record<string, any>>(
 } {
   return {
     ...store,
-    deliveryFee: fees["deliveryFee"],
+    deliveryFee: fees.deliveryFee,
     serviceFee: fees.serviceFee,
     taxRate: fees.taxRate
   }
@@ -193,7 +195,7 @@ export function addFeesToStore<T extends Record<string, any>>(
 /**
  * Add name to user object
  */
-export function addNameToUser<T extends Record<string, any>>(
+export function addNameToUser<T extends Record<string, unknown>>(
   user: T,
   name: string
 ): T & { name: string } {
@@ -211,8 +213,8 @@ export function addNameToUser<T extends Record<string, any>>(
  * Convert string to title case
  */
 export function toTitleCase(str: string): string {
-  return str.replace(/\w\S*/g, (txt) => 
-    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  return str.replaceAll(/\w\S*/g, (txt) => 
+    txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
   )
 }
 
@@ -220,20 +222,27 @@ export function toTitleCase(str: string): string {
  * Convert string to slug
  */
 export function toSlug(str: string): string {
-  return str
+  let result = str
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replaceAll(/[^\s\w-]/g, '')
+    .replaceAll(/[\s_-]+/g, '-')
+    .replaceAll(/^-+/, '')
+  
+  // Remove trailing dashes more efficiently
+  while (result.endsWith('-')) {
+    result = result.slice(0, -1)
+  }
+  
+  return result
 }
 
 /**
  * Truncate string to specified length
  */
-export function truncateString(str: string, length: number, suffix: string = '...'): string {
+export function truncateString(str: string, length: number, suffix = '...'): string {
   if (str.length <= length) return str
-  return str.substring(0, length - suffix.length) + suffix
+  return str.slice(0, Math.max(0, length - suffix.length)) + suffix
 }
 
 // ============================================
@@ -244,8 +253,8 @@ export function truncateString(str: string, length: number, suffix: string = '..
  * Format number with commas
  */
 export function formatNumber(num: number | string): string {
-  const numeric = typeof num === 'string' ? parseFloat(num) : num
-  if (isNaN(numeric)) return '0'
+  const numeric = typeof num === 'string' ? Number.parseFloat(num) : num
+  if (Number.isNaN(numeric)) return '0'
   
   return new Intl.NumberFormat('en-US').format(numeric)
 }
@@ -253,14 +262,14 @@ export function formatNumber(num: number | string): string {
 /**
  * Format percentage
  */
-export function formatPercentage(value: number, decimals: number = 1): string {
+export function formatPercentage(value: number, decimals = 1): string {
   return '' + (value * 100).toFixed(decimals) + '%'
 }
 
 /**
  * Round to specified decimal places
  */
-export function roundToDecimals(num: number, decimals: number = 2): number {
+export function roundToDecimals(num: number, decimals = 2): number {
   return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
 }
 
@@ -293,8 +302,8 @@ export function formatRelativeTime(date: string | Date): string {
   
   if (diffInSeconds < 60) return 'just now'
   if (diffInSeconds < 3600) return '' + Math.floor(diffInSeconds / 60) + ' minutes ago'
-  if (diffInSeconds < 86400) return '' + Math.floor(diffInSeconds / 3600) + ' hours ago'
-  if (diffInSeconds < 2592000) return '' + Math.floor(diffInSeconds / 86400) + ' days ago'
+  if (diffInSeconds < 86_400) return '' + Math.floor(diffInSeconds / 3600) + ' hours ago'
+  if (diffInSeconds < 2_592_000) return '' + Math.floor(diffInSeconds / 86_400) + ' days ago'
   
   return formatDate(dateObj)
 }
@@ -310,7 +319,7 @@ export function transformArray<T, U>(
   array: T[],
   transformer: (item: T, index: number) => U
 ): U[] {
-  return array.map(transformer)
+  return array.map((item, index) => transformer(item, index))
 }
 
 /**
@@ -357,11 +366,11 @@ export function sortBy<T, K extends keyof T>(
  */
 export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   const result = {} as Pick<T, K>
-  keys.forEach(key => {
+  for (const key of keys) {
     if (key in obj) {
-      result[key] = obj[key] as any
+      result[key] = obj[key]
     }
-  })
+  }
   return result
 }
 
@@ -370,24 +379,20 @@ export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pi
  */
 export function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
   const result = { ...obj }
-  keys.forEach(key => {
+  for (const key of keys) {
     delete result[key]
-  })
+  }
   return result
 }
 
 /**
  * Deep merge objects
  */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+export function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
   const result = { ...target }
   
   for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key]) as T[Extract<keyof T, string>]
-    } else {
-      result[key] = source[key] as T[Extract<keyof T, string>]
-    }
+    result[key] = source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) ? deepMerge(result[key] || {}, source[key]) as T[Extract<keyof T, string>] : source[key] as T[Extract<keyof T, string>];
   }
   
   return result

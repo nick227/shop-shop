@@ -4,7 +4,6 @@
  */
 
 // Core Components
-export { BundleCard } from './components/BundleCard'
 export { BundleList } from './components/BundleList'
 export { BundleFormModal } from './components/BundleFormModal'
 export { BundleItemSelector } from './components/BundleItemSelector'
@@ -14,6 +13,9 @@ export { BundleSavingsBadge } from './components/BundleSavingsBadge'
 // Integration Components
 export { ItemBundleControls } from './components/ItemBundleControls'
 export { EnhancedItemCard } from './components/EnhancedItemCard'
+
+// Customer Components
+export { BundleCard, BundleGrid, BundleCarousel } from './components/customer'
 
 // Optimized Hooks
 export { useBundleManagement } from './hooks/useBundleManagement'

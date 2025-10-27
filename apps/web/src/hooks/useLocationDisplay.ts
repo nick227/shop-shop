@@ -15,7 +15,7 @@ interface UseLocationDisplayResult {
 }
 
 export function useLocationDisplay(
-  location: LocationData | null,
+  location: LocationData | undefined,
   stores: StoreWithDistance[] | undefined
 ): UseLocationDisplayResult {
   // Get cities context for location display

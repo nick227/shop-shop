@@ -20,7 +20,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   // Early return if not authenticated
   if (!isAuthenticated) {
-    return null
+    return undefined
   }
 
   const handleCheckout = () => {
@@ -66,17 +66,32 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           </div>
         )}
 
-        {cart && cart.items.length > 0 && (
+        {cart && (() => {
+          try {
+            const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+            return items.length > 0
+          } catch {
+            return false
+          }
+        })() && (
           <>
             {/* Items */}
             <div className="space-y-3 mb-6">
-              {cart.items.map((item) => (
-                <CartItem
-                  key={item.id}
-                  item={item}
-                  isUpdating={isDeleting}
-                />
-              ))}
+              {(() => {
+                try {
+                  const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+                  return items.map((item: any) => (
+                    <CartItem
+                      key={item.id}
+                      item={item}
+                      isUpdating={isDeleting}
+                    />
+                  ))
+                } catch (error) {
+                  console.warn('Failed to parse cart items:', error)
+                  return <div>Unable to load cart items</div>
+                }
+              })()}
             </div>
 
             {/* Summary */}

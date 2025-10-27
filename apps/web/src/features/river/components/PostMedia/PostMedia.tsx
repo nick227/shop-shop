@@ -4,14 +4,14 @@ import { getYouTubeEmbedUrl } from '../../../../hooks/useMediaDetection'
 import { Image } from '../../../../components/ui/Image/Image'
 
 interface PostMediaProps {
-  media: MediaItem[]
-  postId: string // UUID
+  readonly media: MediaItem[]
+  readonly postId: string // UUID
 }
 
 export const PostMedia = ({ media, postId }: PostMediaProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
-  if (media.length === 0) return null
+  if (media.length === 0) return
 
   // Bounds checking: reset selectedIndex if it's out of range
   const safeIndex = selectedIndex >= media.length ? 0 : selectedIndex
@@ -23,15 +23,15 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
 
   const renderMediaItem = (item: MediaItem, index: number) => {
     if (item.type === 'youtube') {
-      const embedUrl = getYouTubeEmbedUrl(item.url)
-      if (!embedUrl) return null
+      const embedUrl = getYouTubeEmbedUrl((item.url) ?? '')
+      if (!embedUrl) return
 
       return (
-        <div key={item.url ?? 'youtube-' + index + ''} className="mb-4">
+        <div key={item.url ?? `youtube-${index}`} className="mb-4">
           <iframe
             src={embedUrl}
             title="YouTube video"
-            frameBorder="0"
+            style={{ border: 'none' }}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="w-full aspect-video rounded-lg"
@@ -42,23 +42,21 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
 
     if (item.type === 'image') {
       return (
-        <div key={item.url ?? 'image-' + index + ''} className="relative aspect-square rounded-lg overflow-hidden">
+        <div key={item.url ?? `image-${index}`} className="relative aspect-square rounded-lg overflow-hidden">
           <Image
-            src={item.url}
-            alt={'Post ${postId} media ' + index + 1 + ''}
+            src={(item.url) ?? ''}
+            alt={`Post ${postId} media ${index + 1}`}
           />
         </div>
       )
     }
-
-    return null
   }
 
   const renderMediaLayout = () => {
     if (media.length === 1) {
       return (
         <div className="aspect-video">
-          {media[0] && renderMediaItem(media[0], 0)}
+          {media[0] ? renderMediaItem(media[0], 0) : undefined}
         </div>
       )
     }
@@ -66,24 +64,24 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
     return (
       <div className="grid gap-2">
         <div className="aspect-video">
-          {media[safeIndex] && renderMediaItem(media[safeIndex], safeIndex)}
+          {media[safeIndex] ? renderMediaItem(media[safeIndex], safeIndex) : undefined}
         </div>
         
         {media.length > 1 && (
           <div className="flex gap-2 overflow-x-auto">
             {media.map((item, index) => (
               <button
-                key={item.url ?? '${item.type}-' + index + ''}
-                className={'flex-shrink-0 w-20 h-20 rounded border-2 transition-colors cursor-pointer overflow-hidden ' + 
+                key={item.url ?? `${item.type}-${index}`}
+                className={`flex-shrink-0 w-20 h-20 rounded border-2 transition-colors cursor-pointer overflow-hidden ${
                   index === safeIndex ? 'border-primary' : 'border-transparent hover:border-primary'
-                 + ''}
+                }`}
                 onClick={(e) => handleThumbnailClick(index, e)}
                 type="button"
               >
                 {item.thumbnail && (
                   <img
                     src={item.thumbnail}
-                    alt={'Thumbnail ' + index + 1 + ''}
+                    alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 )}

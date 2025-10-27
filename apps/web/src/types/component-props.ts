@@ -10,8 +10,7 @@ import type { StoreWithDistance } from '@api/types'
 import type { 
   ItemResponse, 
   OrderResponse, 
-  AddressResponse,
-  StoreResponse
+  AddressResponse
 } from '@packages/sdk'
 
 // Location coordinate type derived from SDK
@@ -40,13 +39,13 @@ export type LayoutVariant = 'grid' | 'list'
 export type DrawerSize = SizeVariant | 'full'
 
 export interface BaseProps {
-  className?: string | undefined
-  children?: ReactNode | undefined
+  className: string | undefined
+  children: ReactNode | undefined
 }
 
 export interface ClickableProps<T extends HTMLElement = HTMLElement> extends BaseProps {
-  onClick?: ((event: MouseEvent<T>) => void) | undefined
-  disabled?: boolean | undefined
+  onClick: ((event: MouseEvent<T>) => void) | undefined
+  disabled: boolean | undefined
 }
 
 export interface InteractiveProps<T extends HTMLElement = HTMLElement> extends ClickableProps<T> {
@@ -189,15 +188,15 @@ export type StoreListProps = EntityListProps<StoreWithDistance>
 export type StoreModalProps = EntityModalProps<StoreWithDistance>
 
 export type ItemCardProps = EntityCardProps<ItemResponse>
-export type ItemListProps = EntityListProps<ItemResponse>
+export type ItemListProps = EntityListProps<WithId & ItemResponse>
 export type ItemModalProps = EntityModalProps<ItemResponse>
 
 export type OrderCardProps = EntityCardProps<OrderResponse>
-export type OrderListProps = EntityListProps<OrderResponse>
+export type OrderListProps = EntityListProps<WithId & OrderResponse>
 export type OrderModalProps = EntityModalProps<OrderResponse>
 
 export type AddressCardProps = EntityCardProps<AddressResponse>
-export type AddressListProps = EntityListProps<AddressResponse>
+export type AddressListProps = EntityListProps<WithId & AddressResponse>
 export type AddressModalProps = EntityModalProps<AddressResponse>
 
 // ========================================
@@ -281,7 +280,6 @@ export interface BreadcrumbProps extends BaseProps {
 export interface StatusBadgeProps extends BaseProps {
   variant: StatusVariant
   showIcon?: boolean
-  children?: ReactNode
 }
 
 export interface StatCardProps extends BaseProps {

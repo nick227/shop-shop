@@ -3,21 +3,18 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import type { StoreResponse } from '@api/types'
+import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
 
 export function useNewestStores(limit = 6) {
-  return useQuery<StoreResponse[]>({
+  return useQuery<StoreWithDistance[]>({
     queryKey: ['newest-stores', limit],
     queryFn: async () => {
       console.log('🔍 Fetching newest stores...')
       const response = await apiClient.stores().listStores({ 
-        isPublished: 'true',
-        sortBy: 'createdAt',
-        order: 'desc',
         limit: limit.toString()
       })
       console.log('📦 Newest stores response:', response)
-      const stores = (response?.data || response || []).slice(0, limit) as StoreResponse[]
+      const stores = (response?.data || response || []).slice(0, limit) as unknown as StoreWithDistance[]
       console.log('✨ Newest stores selected:', stores)
       return stores;
     },

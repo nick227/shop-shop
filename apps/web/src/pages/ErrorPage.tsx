@@ -13,9 +13,10 @@ export default function ErrorPage() {
   if (isRouteErrorResponse(error)) {
     statusCode = error.status
     title = error.statusText || 'Error ' + error.status + ''
-    message = error.data?.message || error.data || 'An error occurred while loading this page'
+    message = error.data?.message ?? error.data ?? 'An error occurred while loading this page'
   } else if (error && typeof error === 'object' && 'message' in error) {
-    message = (error as { message: string }).message
+    const errorMessage = (error as { message: string }).message
+    message = errorMessage ?? 'An unexpected error occurred'
   }
 
   return (
@@ -47,13 +48,13 @@ export default function ErrorPage() {
           </button>
         </div>
 
-        {import.meta.env.DEV && error && typeof error === 'object' && 'stack' in error && (
+        {import.meta.env.DEV && error && typeof error === 'object' && 'stack' in error ? (
           <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-md text-left">
             <p className="text-xs font-mono text-red-900 break-all">
               {(error as { stack: string }).stack}
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )

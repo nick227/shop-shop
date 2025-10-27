@@ -3,7 +3,7 @@
  * Handles bundle pricing calculations and validation
  */
 import { useMemo, useCallback } from 'react'
-import type { Bundle, Item } from '../../../api/types'
+import type { Bundle, ItemResponse } from '../../../api/backend-types'
 
 export interface BundlePricingResult {
   individualTotal: number
@@ -16,12 +16,24 @@ export interface BundlePricingResult {
 
 export interface BundlePricingOptions {
   bundle: Bundle
-  items: Item[]
+  items: ItemResponse[]
 }
 
 export function useBundlePricing({ bundle, items }: BundlePricingOptions) {
   const pricing = useMemo(() => {
     const errors: string[] = []
+    
+    // Early return if no items provided - avoid expensive calculations
+    if (items?.length === 0) {
+      return {
+        individualTotal: 0,
+        bundlePrice: bundle.pricing?.fixedPrice || 0,
+        savings: 0,
+        savingsPercent: 0,
+        isValid: true,
+        errors: []
+      }
+    }
     
     // Calculate individual item total
     const individualTotal = bundle.items?.reduce((sum, bundleItem) => {
@@ -74,7 +86,7 @@ export function useBundlePricing({ bundle, items }: BundlePricingOptions) {
   }, [bundle, items])
 
   // Calculate pricing for a specific set of items
-  const calculatePricingForItems = useCallback((items: Item[], quantities: Record<string, number>) => {
+  const calculatePricingForItems = useCallback((items: ItemResponse[], quantities: Record<string, number>) => {
     const individualTotal = items.reduce((sum, item) => {
       const quantity = quantities[item.id] || 0
       return sum + (Number(item.price) * quantity)
@@ -122,7 +134,7 @@ export function useBundlePricing({ bundle, items }: BundlePricingOptions) {
 // Helper function for pricing calculations
 export const calculateBundlePricing = (
   bundle: Bundle, 
-  items: Item[]
+  items: ItemResponse[]
 ): BundlePricingResult => {
   const individualTotal = bundle.items?.reduce((sum, bundleItem) => {
     const item = items.find(i => i.id === bundleItem.itemId)

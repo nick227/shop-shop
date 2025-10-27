@@ -5,16 +5,16 @@
 import { Carousel } from '@ui'
 import { StoreCardCompact, StoreCardExpanded } from '../StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
-import type { Store, StoreClickHandler, ProductClickHandler, ItemResponse } from '@api/types'
+import type { StoreResponse, ItemResponse, StoreWithDistance, StoreClickHandler, ProductClickHandler } from '../../../../api/backend-types'
 
 interface ExampleProps {
-  stores: (Store & { distance?: number })[]
+  stores: StoreWithDistance[]
   products: ItemResponse[]
   onStoreClick: StoreClickHandler
   onProductClick: ProductClickHandler
 }
 
-export function CarouselExamples({ stores, products, onStoreClick, onProductClick }: ExampleProps) {
+export function CarouselExamples({ stores, products, onStoreClick, onProductClick }: Readonly<ExampleProps>) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
       {/* 1. Compact Horizontal - Quick Store Browse */}

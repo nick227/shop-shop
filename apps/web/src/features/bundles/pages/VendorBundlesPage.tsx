@@ -7,12 +7,12 @@ import { useParams } from 'react-router-dom'
 import { PageHeader } from '@layouts/PageHeader'
 import { BundleList } from '../components/BundleList'
 import { BundleFormModal } from '../components/BundleFormModal'
-import type { Bundle } from '../../../api/types'
+import type { Bundle } from '../../../api/backend-types'
 
 export function VendorBundlesPage() {
   const { storeId } = useParams<{ storeId: string }>()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingBundle, setEditingBundle] = useState<Bundle | null>(null)
+  const [editingBundle, setEditingBundle] = useState<Bundle | undefined>(undefined)
 
   if (!storeId) {
     return (
@@ -26,7 +26,7 @@ export function VendorBundlesPage() {
   }
 
   const handleCreateBundle = () => {
-    setEditingBundle(null)
+    setEditingBundle(undefined)
     setIsCreateModalOpen(true)
   }
 
@@ -42,7 +42,7 @@ export function VendorBundlesPage() {
 
   const handleCloseModal = () => {
     setIsCreateModalOpen(false)
-    setEditingBundle(null)
+    setEditingBundle(undefined)
   }
 
   return (

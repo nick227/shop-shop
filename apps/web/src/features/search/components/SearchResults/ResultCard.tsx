@@ -6,7 +6,7 @@ import { memo } from 'react'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult, StoreSearchResult, ProductSearchResult } from '../../types/search.types'
-import type { StoreClickHandler, ProductClickHandler } from '@api/types'
+import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
 import { transformStoreResult, transformProductResult } from '../../utils/searchTransformers'
 
 export type CardVariant = 'compact' | 'standard' | 'expanded'
@@ -33,7 +33,7 @@ function ResultCardComponent({
       return renderProductCard(result, variant, onProductClick)
     }
     default: {
-      return null
+      return undefined
     }
   }
 }

@@ -52,7 +52,7 @@ export function validateResponse<T>(
 }
 
 /**
- * Validate with fallback - returns null on error instead of throwing;
+ * Validate with fallback - returns undefined on error instead of throwing;
  * Useful for optional/non-critical data;
  */
 export function validateResponseSafe<T>(

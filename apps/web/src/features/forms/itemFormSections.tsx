@@ -21,7 +21,7 @@ export function createItemFormSections(
         <>
           <Input
             label="Item Title *"
-            value={formData['title']}
+            value={formData.title}
             onChange={(e) => onChange('title', e.target.value)}
             placeholder="Delicious Menu Item"
             required
@@ -30,13 +30,13 @@ export function createItemFormSections(
           <div>
             <TextArea
               label="Description"
-              value={formData['description']}
+              value={formData.description}
               onChange={(e) => onChange('description', e.target.value)}
               placeholder="Describe ingredients, preparation, allergens, and what makes this item special..."
               rows={4}
               maxLength={1000}
             />
-            <CharCount current={formData['description'].length} max={1000} />
+            <CharCount current={formData.description.length} max={1000} />
           </div>
 
           <FormRow>
@@ -45,7 +45,7 @@ export function createItemFormSections(
               type="number"
               step="0.01"
               min="0"
-              value={formData['price']}
+              value={formData.price}
               onChange={(e) => onChange('price', e.target.value)}
               placeholder="9.99"
               helperText="💲 Price in USD (customers will see this)"
@@ -56,7 +56,7 @@ export function createItemFormSections(
               label="Stock Quantity"
               type="number"
               min="0"
-              value={formData['stockQty']}
+              value={formData.stockQty}
               onChange={(e) => onChange('stockQty', e.target.value)}
               placeholder="Optional"
               helperText="📦 Leave empty for unlimited stock"
@@ -67,7 +67,7 @@ export function createItemFormSections(
             label="Sort Order"
             type="number"
             min="0"
-            value={formData['sortIndex'].toString()}
+            value={formData.sortIndex.toString()}
             onChange={(e) => onChange('sortIndex', Number.parseInt(e.target.value) || 0)}
             helperText="📌 Lower numbers appear first on your menu (0 = top)"
           />
@@ -82,13 +82,13 @@ export function createItemFormSections(
         <CheckboxGroup>
           <Checkbox
             label="Active (visible to customers)"
-            checked={formData['isActive']}
+            checked={formData.isActive}
             onChange={(e) => onChange('isActive', e.target.checked)}
           />
 
           <Checkbox
             label="Sold Out"
-            checked={formData['isSoldOut']}
+            checked={formData.isSoldOut}
             onChange={(e) => onChange('isSoldOut', e.target.checked)}
           />
         </CheckboxGroup>

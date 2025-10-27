@@ -64,7 +64,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           label="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          error={errors['email']}
+          error={errors.email}
           required
           autoComplete="email"
           disabled={isSigningUp}
@@ -75,7 +75,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          error={errors['password']}
+          error={errors.password}
           required
           autoComplete="new-password"
           disabled={isSigningUp}

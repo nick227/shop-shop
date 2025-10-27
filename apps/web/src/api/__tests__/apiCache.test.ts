@@ -155,7 +155,7 @@ describe('API Cache System', () => {
   })
 
   describe('Edge Cases', () => {
-    it('should handle null token correctly', () => {
+    it('should handle undefined token correctly', () => {
       apiClient.setToken(undefined)
       
       const stores = apiClient.stores()

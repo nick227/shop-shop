@@ -6,17 +6,17 @@ import { useMemo, useCallback } from 'react'
 import { useStores } from '@hooks/generated'
 import { useLocationParams } from './useLocationParams'
 import { useAnalytics } from './useAnalytics'
-import type { LocationData } from '@features/stores/components/LocationSearch/LocationSearch'
-import type { StoreResponse } from '@api/types'
+import type { LocationData } from '@/types/location.types'
+import type { StoreResponse } from '../api/backend-types'
 
 interface UseStoreSearchResult {
   stores: StoreResponse[] | undefined;
   isLoading: boolean;
-  error: Error | null;
-  handleLocationChange: (newLocation: LocationData | null) => void;
+  error: Error | undefined;
+  handleLocationChange: (newLocation: LocationData | undefined) => void;
 }
 
-export function useStoreSearch(location: LocationData | null): UseStoreSearchResult {
+export function useStoreSearch(location: LocationData | undefined): UseStoreSearchResult {
   const { updateParams, clearParams } = useLocationParams()
   const { trackLocationSearch } = useAnalytics()
 
@@ -35,17 +35,17 @@ export function useStoreSearch(location: LocationData | null): UseStoreSearchRes
     enabled: Boolean(location)
   })
 
-  const handleLocationChange = useCallback((newLocation: LocationData | null) => {
+  const handleLocationChange = useCallback((newLocation: LocationData | undefined) => {
     // Note: This hook doesn't manage location state directly;
     // The parent component should handle location state updates;
     if (newLocation) {
       // Update URL with search parameters for shareable links;
       updateParams({
-        latitude: newLocation.latitude,
-        longitude: newLocation.longitude,
-        radiusMiles: newLocation.radiusMiles,
-        city: newLocation["city"],
-        state: newLocation["state"],
+        latitude: newLocation.latitude?.toString(),
+        longitude: newLocation.longitude?.toString(),
+        radiusMiles: newLocation.radiusMiles?.toString(),
+        city: newLocation.city,
+        state: newLocation.state,
         zip: newLocation.zip,
         source: newLocation.source as any})
       
@@ -54,8 +54,8 @@ export function useStoreSearch(location: LocationData | null): UseStoreSearchRes
         latitude: newLocation.latitude.toString(),
         longitude: newLocation.longitude.toString(),
         radius: newLocation.radiusMiles.toString(),
-        city: newLocation["city"],
-        state: newLocation["state"]})
+        city: newLocation.city,
+        state: newLocation.state})
     } else {
       // Clear URL params when location is cleared;
       clearParams()
@@ -64,6 +64,6 @@ export function useStoreSearch(location: LocationData | null): UseStoreSearchRes
   return {
     stores,
     isLoading,
-    error,
+    error: error || undefined,
     handleLocationChange}
 }

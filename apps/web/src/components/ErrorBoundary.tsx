@@ -11,13 +11,13 @@ interface Props {
 
 interface State {
   hasError: boolean
-  error: Error | null
+  error: Error | undefined
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this["state"] = { hasError: false, error: null }
+    this.state = { hasError: false, error: undefined }
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -36,12 +36,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null })
+    this.setState({ hasError: false, error: undefined })
     window.location.href = '/'
   }
 
   override render() {
-    if (this["state"].hasError) {
+    if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback
       }

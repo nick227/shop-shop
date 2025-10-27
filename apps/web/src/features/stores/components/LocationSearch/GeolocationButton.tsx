@@ -13,19 +13,19 @@ export const GeolocationButton = memo(function GeolocationButton({ onGetLocation
   return (
     <button
       type="button"
-      className={styles['geoButton']}
+      className={styles.geoButton}
       onClick={onGetLocation}
       disabled={isLoading}
       aria-label="Use my current location"
     >
       {isLoading ? (
         <>
-          <span className={styles['spinner']}>⌛</span>
+          <span className={styles.spinner}>⌛</span>
           Getting location...
         </>
       ) : (
         <>
-          <span className={styles['icon']}>📍</span>
+          <span className={styles.icon}>📍</span>
           Use My Location
         </>
       )}

@@ -3,7 +3,7 @@
  * Single Responsibility: Optimized data processing with minimal loops and memory allocation
  */
 import { useMemo } from 'react'
-import type { StoreWithDistance } from '@api/types'
+import type { StoreWithDistance } from '@api/backend-types'
 import type { LocationData } from '@/types/location.types'
 import type { LocationCoordinates } from '@/types/component-props'
 import { hasValidCoordinates } from '@utils/storeAccessors'
@@ -11,7 +11,7 @@ import { hasValidCoordinates } from '@utils/storeAccessors'
 export interface OptimizedMapData {
   validStores: StoreWithDistance[]
   storeLocations: LocationCoordinates[]
-  nearestStore: StoreWithDistance | null
+  nearestStore: StoreWithDistance | undefined
   mapCenter: [number, number]
   mapZoom: number
 }
@@ -55,7 +55,7 @@ export function useOptimizedMapData({
     }
 
     // Find nearest store in single pass (avoid sorting)
-    let nearestStore: StoreWithDistance | null = null
+    let nearestStore: StoreWithDistance | undefined = undefined
     let nearestDistance = Infinity
     for (const store of validStores) {
       if (store.distance !== undefined && store.distance < nearestDistance) {

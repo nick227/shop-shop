@@ -6,9 +6,9 @@ import { parseStoreSlug, parseItemSlug } from '@utils/slugify'
 
 export interface StoreParams {
   storeSlug: string;
-  storeId: string | null;
+  storeId: string | undefined;
   itemSlug?: string;
-  itemId?: string | null;
+  itemId?: string | undefined;
 }
 
 /**
@@ -22,7 +22,7 @@ export function useStoreParams(): StoreParams {
   const itemSlug = params.itemSlug;
   // Parse slugs to extract potential IDs;
   const { id: storeId } = parseStoreSlug(storeSlug)
-  const { id: itemId } = itemSlug ? parseItemSlug(itemSlug) : { id: null }
+  const { id: itemId } = itemSlug ? parseItemSlug(itemSlug) : { id: undefined }
   
   return {
     storeSlug,

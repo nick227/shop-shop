@@ -88,8 +88,8 @@ export function getSearchRoute(params: {
   searchParams.set('lat', params.lat)
   searchParams.set('lng', params.lng)
   if (params.radius) searchParams.set('radius', params.radius)
-  if (params["city"]) searchParams.set('city', params["city"])
-  if (params["state"]) searchParams.set('state', params["state"])
+  if (params.city) searchParams.set('city', params.city)
+  if (params.state) searchParams.set('state', params.state)
   
   return '/?' + searchParams.toString() + ''
 }

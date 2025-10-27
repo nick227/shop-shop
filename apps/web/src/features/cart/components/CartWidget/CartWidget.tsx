@@ -22,11 +22,19 @@ export function CartWidget() {
 
   // Early return if not authenticated to prevent unnecessary API calls
   if (!isAuthenticated) {
-    return null
+    return undefined
   }
 
   // Direct computation - optimized for performance
-  const itemCount = cart?.items?.length ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0
+  const itemCount = (() => {
+    if (!cart?.items) return 0
+    try {
+      const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+      return items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+    } catch {
+      return 0
+    }
+  })()
 
   // Handlers
   const handleCheckout = useCallback(() => {
@@ -51,7 +59,7 @@ export function CartWidget() {
 
   // Early return for performance
   if (isLoading || itemCount === 0) {
-    return null
+    return undefined
   }
 
   return (
@@ -103,27 +111,31 @@ export function CartWidget() {
 
             {/* Cart Items */}
             <div className="space-y-3">
-              {cart.items.map((item) => (
-                <CartItemRow
-                  key={item.id}
-                  cartItem={{
-          ...item,
-          itemTitle: String(item.titleSnapshot || 'Item'),
-          lineTotal: String((((item as any).price || 0) * (item.quantity || 1)).toString()),
-          createdAt: new Date().toISOString()
-        }}
-                  storeId={cart.storeId}
-                />
-              ))}
+              {(() => {
+                try {
+                  const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+                  return items.map((item: any) => (
+                    <CartItemRow
+                      key={item.id}
+                      cartItem={{
+                        ...item,
+                        itemTitle: String(item.titleSnapshot || 'Item'),
+                        lineTotal: String((((item as any).price || 0) * (item.quantity || 1)).toString()),
+                        createdAt: new Date().toISOString()
+                      }}
+                      storeId={cart.storeId}
+                    />
+                  ))
+                } catch (error) {
+                  console.warn('Failed to parse cart items:', error)
+                  return <div>Unable to load cart items</div>
+                }
+              })()}
             </div>
 
             {/* Summary */}
             <div className="pt-4 border-t border-border">
-              <CartSummary cart={{
-                ...cart,
-                taxAmount: String(cart.tax || 0),
-                totalAmount: String(cart.total || 0)
-              }} onCheckout={handleCheckout} />
+              <CartSummary cart={cart} onCheckout={handleCheckout} />
             </div>
           </div>
         </BottomSheet>

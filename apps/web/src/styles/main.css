@@ -4,7 +4,7 @@
  */
 
 /* 1. Design System */
-@import './design-tokens.css';
+@import './tokens.css';
 
 /* 2. Reset & Base */
 @import './reset.css';

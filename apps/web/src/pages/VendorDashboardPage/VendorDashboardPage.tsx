@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { useAuth } from '@hooks/useAuth'
 import { Button, SearchInput, Badge, Spinner } from '@ui'
-import type { Store } from '@api/types'
+import type { StoreResponse, Store } from '@api/backend-types'
 import { styles } from '@utils/tailwind-classes'
 
 export default function VendorDashboardPage() {
@@ -19,14 +19,12 @@ export default function VendorDashboardPage() {
   const { data: storesData, isLoading, error } = useQuery({
     queryKey: ['vendor-stores', user?.id],
     queryFn: async () => {
-      return await apiClient.stores().listStores({
-        ownerUserId: user!['id'],
-      })
+      return await apiClient.stores().listStores({})
     },
     enabled: !!user,
   })
 
-  const stores = storesData?.data || []
+  const stores = (storesData?.data ?? []) as unknown as Store[]
 
   // Filter stores by search query
   const filteredStores = stores.filter((store) =>
@@ -36,7 +34,7 @@ export default function VendorDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading your stores...</p>
       </div>
@@ -45,7 +43,7 @@ export default function VendorDashboardPage() {
 
   if (error) {
     return (
-      <div className={styles['error']}>
+      <div className={styles.error}>
         <h2>Failed to load stores</h2>
         <p>Please try refreshing the page</p>
       </div>
@@ -53,14 +51,14 @@ export default function VendorDashboardPage() {
   }
 
   return (
-    <div className={styles['container']}>
+    <div className={styles.container}>
       {/* Header */}
-      <div className={styles['header']}>
-        <div className={styles['headerContent']}>
-          <h1 className={styles['title']}>🏪 My Stores</h1>
-          <p className={styles['subtitle']}>Manage your stores and menu items</p>
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>🏪 My Stores</h1>
+          <p className={styles.subtitle}>Manage your stores and menu items</p>
         </div>
-        <div className={styles['headerActions']}>
+        <div className={styles.headerActions}>
           <Button variant="ghost" onClick={() => navigate('/')}>
             ← Back to Home
           </Button>
@@ -71,12 +69,12 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* Actions Bar */}
-      <div className={styles['actionsBar']}>
+      <div className={styles.actionsBar}>
         <SearchInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search stores..."
-          className={styles['searchInput']}
+          className={styles.searchInput}
         />
         <Button
           variant="primary"
@@ -87,28 +85,28 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className={styles['stats']}>
-        <div className={styles['statCard']}>
-          <div className={styles['statValue']}>{stores.length}</div>
-          <div className={styles['statLabel']}>Total Stores</div>
+      <div className={styles.stats}>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{stores.length}</div>
+          <div className={styles.statLabel}>Total Stores</div>
         </div>
-        <div className={styles['statCard']}>
-          <div className={styles['statValue']}>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>
             {stores.filter(s => s.isPublished).length}
           </div>
-          <div className={styles['statLabel']}>Published</div>
+          <div className={styles.statLabel}>Published</div>
         </div>
-        <div className={styles['statCard']}>
-          <div className={styles['statValue']}>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>
             {stores.filter(s => !s.isPublished).length}
           </div>
-          <div className={styles['statLabel']}>Drafts</div>
+          <div className={styles.statLabel}>Drafts</div>
         </div>
       </div>
 
       {/* Stores List */}
       {filteredStores.length === 0 ? (
-        <div className={styles['empty']}>
+        <div className={styles.empty}>
           {searchQuery ? (
             <>
               <h3>No stores found</h3>
@@ -128,7 +126,7 @@ export default function VendorDashboardPage() {
           )}
         </div>
       ) : (
-        <div className={styles['storesList']}>
+        <div className={styles.storesList}>
           {filteredStores.map((store) => (
             <VendorStoreCard
               key={store.id}
@@ -145,17 +143,17 @@ export default function VendorDashboardPage() {
 
 // Vendor-specific store card with management actions
 interface VendorStoreCardProps {
-  store: Store
-  onEdit: () => void
-  onViewItems: () => void
+  readonly store: Store
+  readonly onEdit: () => void
+  readonly onViewItems: () => void
 }
 
 function VendorStoreCard({ store, onEdit, onViewItems }: VendorStoreCardProps) {
   return (
-    <div className={styles['vendorStoreCard']}>
-      <div className={styles['cardHeader']}>
-        <h3 className={styles['storeName']}>{store.name}</h3>
-        <div className={styles['badges']}>
+    <div className={styles.vendorStoreCard}>
+      <div className={styles.cardHeader}>
+        <h3 className={styles.storeName}>{store.name}</h3>
+        <div className={styles.badges}>
           {store.isPublished ? (
             <Badge variant="success">Published</Badge>
           ) : (
@@ -165,31 +163,31 @@ function VendorStoreCard({ store, onEdit, onViewItems }: VendorStoreCardProps) {
       </div>
 
       {store.description && (
-        <p className={styles['storeDescription']}>{store.description}</p>
+        <p className={styles.storeDescription}>{store.description}</p>
       )}
 
-      <div className={styles['storeInfo']}>
+      <div className={styles.storeInfo}>
         {store.companyName && (
-          <div className={styles['infoItem']}>
-            <span className={styles['infoLabel']}>Company:</span>
-            <span className={styles['infoValue']}>{store.companyName}</span>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Company:</span>
+            <span className={styles.infoValue}>{store.companyName}</span>
           </div>
         )}
         {store.email && (
-          <div className={styles['infoItem']}>
-            <span className={styles['infoLabel']}>Email:</span>
-            <span className={styles['infoValue']}>{store.email}</span>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Email:</span>
+            <span className={styles.infoValue}>{store.email}</span>
           </div>
         )}
         {store.phone && (
-          <div className={styles['infoItem']}>
-            <span className={styles['infoLabel']}>Phone:</span>
-            <span className={styles['infoValue']}>{store.phone}</span>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Phone:</span>
+            <span className={styles.infoValue}>{store.phone}</span>
           </div>
         )}
       </div>
 
-      <div className={styles['cardActions']}>
+      <div className={styles.cardActions}>
         <Button variant="ghost" size="small" onClick={onViewItems}>
           📦 Manage Items
         </Button>

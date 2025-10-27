@@ -23,7 +23,7 @@ export function slugify(text: string): string {
     // Remove apostrophes
     .replaceAll('\'', '')
     // Remove special characters except hyphens
-    .replaceAll(/[^\w\-]+/g, '')
+    .replaceAll(/[^\w-]+/g, '')
     // Replace multiple hyphens with single hyphen
     .replaceAll(/--+/g, '-')
     // Remove leading/trailing hyphens
@@ -53,7 +53,7 @@ export function createItemSlug(itemTitle: string, _itemId?: string): string {
  * Extract ID from a slug
  * Example: "joes-pizza-abc123" → "abc123" (if it ends with 6 chars)
  */
-export function extractIdFromSlug(slug: string): string | null {
+export function extractIdFromSlug(slug: string): string | undefined {
   const parts = slug.split('-')
   const lastPart = parts[parts.length - 1]
   
@@ -62,14 +62,14 @@ export function extractIdFromSlug(slug: string): string | null {
     return lastPart
   }
   
-  return null
+  return undefined
 }
 
 /**
  * Parse store slug to get potential ID
  * Returns the slug as-is if no ID pattern found
  */
-export function parseStoreSlug(slug: string): { slug: string; id: string | null } {
+export function parseStoreSlug(slug: string): { slug: string; id: string | undefined } {
   const id = extractIdFromSlug(slug)
   return { slug, id }
 }
@@ -78,7 +78,7 @@ export function parseStoreSlug(slug: string): { slug: string; id: string | null 
  * Parse item slug to get potential ID
  * Returns the slug as-is if no ID pattern found
  */
-export function parseItemSlug(slug: string): { slug: string; id: string | null } {
+export function parseItemSlug(slug: string): { slug: string; id: string | undefined } {
   const id = extractIdFromSlug(slug)
   return { slug, id }
 }

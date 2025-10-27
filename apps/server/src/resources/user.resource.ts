@@ -1,6 +1,6 @@
 import { defineResource } from '@packages/schemas/core'
 import {
-  UpdateUserProfileInputSchema,
+  UpdateUserInputSchema,
   UserResponseSchema,
   UserListResponseSchema,
 } from '@packages/schemas/dtos'
@@ -13,7 +13,7 @@ export const userResource = defineResource({
   name: 'user',
   model: 'user',
   schemas: {
-    update: UpdateUserProfileInputSchema,
+    update: UpdateUserInputSchema,
     response: UserResponseSchema,
     list: UserListResponseSchema,
   },

@@ -3,10 +3,10 @@
  * Performance: Object pooling, single-pass processing, batched DOM operations
  */
 import type { ErrorInfo, ReactNode} from 'react';
-import { useEffect, useRef, useMemo, memo, Suspense, Component, useCallback } from 'react'
+import { useEffect, useRef, memo, Suspense, Component, useCallback } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { StoreWithDistance, StoreClickHandler } from '../../../../api/types'
+import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
 import type { LocationCoordinates } from '../../../../types/component-props'
 import { formatDistance } from '../../../../utils/format'
 import { hasValidCoordinates } from '../../../../utils/storeAccessors'
@@ -40,14 +40,7 @@ const iconPool = new ObjectPool(
 )
 
 // Color singleton (performance optimization - single DOM query)
-let cachedSuccessColor: string | null = null
-function getSuccessColor(): string {
-  if (!cachedSuccessColor && typeof window !== 'undefined') {
-    const style = getComputedStyle(document.documentElement)
-    cachedSuccessColor = style.getPropertyValue('--color-success').trim() || '#10b981'
-  }
-  return cachedSuccessColor || '#10b981'
-}
+// let cachedSuccessColor: string | undefined
 
 
 
@@ -58,7 +51,7 @@ class MapErrorBoundary extends Component<
 > {
   constructor(props: { children: ReactNode }) {
     super(props)
-    this["state"] = { hasError: false }
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(): { hasError: boolean } {
@@ -70,9 +63,9 @@ class MapErrorBoundary extends Component<
   }
 
   render() {
-    if (this["state"].hasError) {
+    if (this.state.hasError) {
       return (
-        <div className={styles['map']} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={styles.map} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div>Map temporarily unavailable</div>
         </div>
       )
@@ -92,19 +85,19 @@ function PureLeafletMap({
   radiusMiles,
   onStoreClick
 }: { 
-  center: [number, number]
-  zoom: number
-  mapRef: React.MutableRefObject<L.Map | null>
-  stores: StoreWithDistance[]
-  userLocation?: LocationCoordinates
-  radiusMiles?: number
-  onStoreClick?: StoreClickHandler
+  readonly center: [number, number]
+  readonly zoom: number
+  readonly mapRef: React.MutableRefObject<L.Map | undefined>
+  readonly stores: StoreWithDistance[]
+  readonly userLocation?: LocationCoordinates
+  readonly radiusMiles?: number
+  readonly onStoreClick?: StoreClickHandler
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const markersRef = useRef<L.Marker[]>([])
-  const userMarkerRef = useRef<L.Marker | null>(null)
-  const circleRef = useRef<L.Circle | null>(null)
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const userMarkerRef = useRef<L.Marker | undefined>(undefined)
+  const circleRef = useRef<L.Circle | undefined>(undefined)
+  const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
 
   // Initialize map
   useEffect(() => {
@@ -157,14 +150,14 @@ function PureLeafletMap({
       return () => {
         if (resizeObserverRef.current) {
           resizeObserverRef.current.disconnect()
-          resizeObserverRef.current = null
+          resizeObserverRef.current = undefined
         }
         if (mapRef.current) {
           mapRef.current.remove()
-          mapRef.current = null
+          mapRef.current = undefined
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to initialize map:', error)
     }
   }, [])
@@ -186,11 +179,11 @@ function PureLeafletMap({
       // Remove existing user marker and circle
       if (userMarkerRef.current) {
         map.removeLayer(userMarkerRef.current)
-        userMarkerRef.current = null
+        userMarkerRef.current = undefined
       }
       if (circleRef.current) {
         map.removeLayer(circleRef.current)
-        circleRef.current = null
+        circleRef.current = undefined
       }
 
       // Add user location marker
@@ -216,7 +209,7 @@ function PureLeafletMap({
           weight: 2
         }).addTo(map)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add user location marker:', error)
     }
   }, [userLocation, radiusMiles, mapRef])
@@ -292,7 +285,7 @@ function PureLeafletMap({
           markersRef.current.push(marker)
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add store markers:', error)
     }
   }, [stores, createMarker, mapRef])
@@ -300,18 +293,18 @@ function PureLeafletMap({
   return (
     <div 
       ref={mapContainerRef}
-      className={styles['map']}
+      className={styles.map}
       style={{ height: '100%', width: '100%' }}
     />
   )
 }
 
 export interface StoreMapProps {
-  stores: StoreWithDistance[]
-  userLocation?: LocationCoordinates
-  radiusMiles?: number
-  onStoreClick?: StoreClickHandler
-  height?: string
+  readonly stores: StoreWithDistance[]
+  readonly userLocation?: LocationCoordinates
+  readonly radiusMiles?: number
+  readonly onStoreClick?: StoreClickHandler
+  readonly height?: string
 }
 
 function StoreMapComponent({ 
@@ -325,26 +318,31 @@ function StoreMapComponent({
   // Use optimized map data hook for single-pass processing
   const mapData = useMapData({
     stores,
-    userLocation: userLocation as any,
+    userLocation: userLocation ? {
+      latitude: userLocation.latitude,
+      longitude: userLocation.longitude,
+      radiusMiles: radiusMiles || 25,
+      source: 'geolocation' as const
+    } : undefined,
     radiusMiles,
     defaultCenter: [40.7505, -73.9934],
     defaultZoom: 12
   })
 
   // Map reference for direct Leaflet control
-  const mapRef = useRef<L.Map | null>(null)
+  const mapRef = useRef<L.Map | undefined>(undefined)
   
 
   return (
-    <div className={styles['container']} style={{ height }}>
-      <Suspense fallback={<div className={styles['map']} style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
+    <div className={styles.container} style={{ height }}>
+      <Suspense fallback={<div className={styles.map} style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
         <MapErrorBoundary>
           <PureLeafletMap
             center={mapData.mapCenter}
             zoom={mapData.mapZoom}
             mapRef={mapRef}
             stores={mapData.validStores}
-            userLocation={userLocation as LocationCoordinates}
+            userLocation={userLocation!}
             radiusMiles={radiusMiles}
             onStoreClick={onStoreClick}
           />
@@ -352,20 +350,20 @@ function StoreMapComponent({
       </Suspense>
 
       {/* Map legend */}
-      <div className={styles['legend']}>
+      <div className={styles.legend}>
         {userLocation && (
-          <div className={styles['legendItem']}>
-            <span className={styles['legendIcon']}>📍</span>
+          <div className={styles.legendItem}>
+            <span className={styles.legendIcon}>📍</span>
             <span>Your Location</span>
           </div>
         )}
-        <div className={styles['legendItem']}>
-          <span className={styles['legendIcon']}>🍽️</span>
+        <div className={styles.legendItem}>
+          <span className={styles.legendIcon}>🍽️</span>
           <span>Restaurants ({mapData.validStoresCount})</span>
         </div>
         {userLocation && radiusMiles && (
-          <div className={styles['legendItem']}>
-            <span className={styles['legendCircle']}></span>
+          <div className={styles.legendItem}>
+            <span className={styles.legendCircle}></span>
             <span>{radiusMiles} mi radius</span>
           </div>
         )}

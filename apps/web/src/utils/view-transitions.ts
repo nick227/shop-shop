@@ -75,7 +75,7 @@ export function setupViewTransitions() {
     }
   `
   
-  document.head.appendChild(style)
+  document.head.append(style)
 
   console.log('✅ View Transitions API setup complete')
 }
@@ -88,11 +88,11 @@ export function setupViewTransitions() {
 export function startViewTransition(callback: () => void | Promise<void>): Promise<void> {
   if (!('startViewTransition' in document)) {
     // Fallback for browsers without View Transitions API;
-    callback()
+    void callback()
     return Promise.resolve()
   }
 
-  return (document as any).startViewTransition(callback)
+  return (document as unknown as { startViewTransition: (callback: () => void | Promise<void>) => Promise<void> }).startViewTransition(callback)
 }
 
 /**
@@ -120,7 +120,7 @@ export function removeNamedTransition(element: HTMLElement) {
  * @param to - Route to navigate to;
  */
 export function navigateWithTransition(navigate: (to: string) => void, to: string) {
-  startViewTransition(() => {
+  void startViewTransition(() => {
     navigate(to)
   })
 }
@@ -141,7 +141,7 @@ export function getTransitionDuration(): number {
     .trim()
   
   if (duration) {
-    return parseFloat(duration) * 1000 // Convert to milliseconds;
+    return Number.parseFloat(duration) * 1000 // Convert to milliseconds;
   }
   
   return 300 // Default 300ms;

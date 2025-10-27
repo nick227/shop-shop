@@ -4,9 +4,9 @@ import { truncateUrl } from '@utils/media'
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-family="sans-serif"%3EImage%3C/text%3E%3C/svg%3E'
 
 interface MediaPreviewProps {
-  media: MediaItem[]
-  onRemove?: (index: number) => void
-  editable?: boolean
+  readonly media: MediaItem[]
+  readonly onRemove?: (index: number) => void
+  readonly editable?: boolean
 }
 
 export const MediaPreview = ({
@@ -14,7 +14,7 @@ export const MediaPreview = ({
   onRemove,
   editable = true,
 }: MediaPreviewProps) => {
-  if (media.length === 0) return null
+  if (media.length === 0) return
 
   const handleRemove = (index: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -26,7 +26,7 @@ export const MediaPreview = ({
   return (
     <div className="grid gap-2">
       {media.map((item, index) => (
-        <div key={item.url ?? '${item.type}-' + index + ''} className="relative rounded-lg overflow-hidden border border-border">
+        <div key={item.url ?? `${item.type}-${index}`} className="relative rounded-lg overflow-hidden border border-border">
           {item.type === 'youtube' && (
             <div className="relative aspect-video">
               <img
@@ -35,7 +35,9 @@ export const MediaPreview = ({
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
-                  target.src = FALLBACK_IMAGE
+                  if (target?.src) {
+                    target.src = FALLBACK_IMAGE
+                  }
                 }}
               />
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
@@ -57,7 +59,9 @@ export const MediaPreview = ({
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
-                  target.src = FALLBACK_IMAGE
+                  if (target?.src) {
+                    target.src = FALLBACK_IMAGE
+                  }
                 }}
               />
             </div>
@@ -75,8 +79,8 @@ export const MediaPreview = ({
           )}
 
           <div className="flex items-center gap-2 p-2 bg-muted rounded">
-            <span className="text-sm text-muted-foreground truncate" title={item.url}>
-              {truncateUrl(item.url, 40)}
+            <span className="text-sm text-muted-foreground truncate" title={item.url ?? ''}>
+              {truncateUrl(item.url!, 40)}
             </span>
           </div>
         </div>

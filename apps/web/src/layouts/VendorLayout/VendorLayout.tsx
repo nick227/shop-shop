@@ -14,6 +14,7 @@ import { useAuth } from '@hooks/useAuth'
 import { Button } from '@ui'
 import { OrderCountWidget } from '../../features/orders/components/OrderCountWidget'
 import { useVendorStores, useVendorRealtimeOrders } from '@hooks/vendor'
+import type { Store } from '@api/backend-types'
 import styles from './VendorLayout.module.css'
 
 export function VendorLayout() {
@@ -23,132 +24,144 @@ export function VendorLayout() {
   const { data: stores } = useVendorStores()
 
   // Enable real-time for first store (if any stores exist)
-  const firstStore = stores?.[0]
+  const firstStore = (stores?.[0] as unknown as Store) ?? undefined
   const hasStores = stores && stores.length > 0
   
   useVendorRealtimeOrders({
-    storeId: firstStore?.id || '',
+    storeId: firstStore?.id ?? '',
     enableSound: true,
     enableDesktopNotification: true,
   })
 
   const isActive = (path: string) => location.pathname.startsWith(path)
+  
+  // Constants for repeated strings
+  const STORE_BASE_PATH = '/vendor/stores/'
+  const STORE_EDIT_PATH = '/edit'
+  const STORE_ITEMS_PATH = '/items'
+  const STORE_RIVER_PATH = '/river'
+  const STORE_ITEMS_NEW_PATH = '/items/new'
+  
+  // Helper functions to avoid nested template literals
+  const getStoreEditPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}${STORE_EDIT_PATH}`
+  const getStoreItemsPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}${STORE_ITEMS_PATH}`
+  const getStoreRiverPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}${STORE_RIVER_PATH}`
 
   return (
-    <div className={styles['layout']}>
+    <div className={styles.layout}>
       {/* Top Bar */}
-      <header className={styles['topBar']}>
-        <div className={styles['topLeft']}>
-          <button onClick={() => navigate('/')} className={styles['logo']}>
+      <header className={styles.topBar}>
+        <div className={styles.topLeft}>
+          <button onClick={() => navigate('/')} className={styles.logo}>
             🏪 Shop-Shop
           </button>
-          <span className={styles['vendorBadge']}>Vendor Portal</span>
+          <span className={styles.vendorBadge}>Vendor Portal</span>
         </div>
         
-        <div className={styles['topRight']}>
+        <div className={styles.topRight}>
           <OrderCountWidget />
-          <span className={styles['userName']}>{user?.name}</span>
+          <span className={styles.userName}>{user?.name}</span>
           <Button variant="ghost" size="small" onClick={logout}>
             Logout
           </Button>
         </div>
       </header>
 
-      <div className={styles['main']}>
+      <div className={styles.main}>
         {/* Side Navigation */}
-        <nav className={styles['sideNav']}>
-          <div className={styles['navSection']}>
-            <div className={styles['navLabel']}>Overview</div>
+        <nav className={styles.sideNav}>
+          <div className={styles.navSection}>
+            <div className={styles.navLabel}>Overview</div>
             <button
-              className={`${styles['navItem']} ${isActive('/vendor/dashboard') ? styles['navItemActive'] : ''}`}
+              className={`${styles.navItem} ${isActive('/vendor/dashboard') ? styles.navItemActive : ''}`}
               onClick={() => navigate('/vendor/dashboard')}
             >
-              <span className={styles['navIcon']}>🏪</span>
+              <span className={styles.navIcon}>🏪</span>
               <span>My Stores</span>
             </button>
             <button
-              className={`${styles['navItem']} ${isActive('/vendor/orders') ? styles['navItemActive'] : ''}`}
+              className={`${styles.navItem} ${isActive('/vendor/orders') ? styles.navItemActive : ''}`}
               onClick={() => navigate('/vendor/orders')}
             >
-              <span className={styles['navIcon']}>📋</span>
+              <span className={styles.navIcon}>📋</span>
               <span>Orders</span>
             </button>
           </div>
 
           {hasStores && firstStore && (
-            <div className={styles['navSection']}>
-              <div className={styles['navLabel']}>
+            <div className={styles.navSection}>
+              <div className={styles.navLabel}>
                 Current Store: {firstStore.name}
               </div>
               <button
-                className={`${styles['navItem']} ${isActive(`/vendor/stores/${firstStore.id}/edit`) ? styles['navItemActive'] : ''}`}
-                onClick={() => navigate('/vendor/stores/' + firstStore.id + '/edit')}
+                className={`${styles.navItem} ${isActive(getStoreEditPath(firstStore.id)) ? styles.navItemActive : ''}`}
+                onClick={() => navigate(getStoreEditPath(firstStore.id))}
               >
-                <span className={styles['navIcon']}>✏️</span>
+                <span className={styles.navIcon}>✏️</span>
                 <span>Store Details</span>
               </button>
               <button
-                className={`${styles['navItem']} ${isActive(`/vendor/stores/${firstStore.id}/items`) ? styles['navItemActive'] : ''}`}
-                onClick={() => navigate('/vendor/stores/' + firstStore.id + '/items')}
+                className={`${styles.navItem} ${isActive(getStoreItemsPath(firstStore.id)) ? styles.navItemActive : ''}`}
+                onClick={() => navigate(getStoreItemsPath(firstStore.id))}
               >
-                <span className={styles['navIcon']}>🍽️</span>
+                <span className={styles.navIcon}>🍽️</span>
                 <span>Menu Items</span>
               </button>
               <button
-                className={`${styles['navItem']} ${isActive(`/vendor/stores/${firstStore.id}/river`) ? styles['navItemActive'] : ''}`}
-                onClick={() => navigate('/vendor/stores/' + firstStore.id + '/river')}
+                className={`${styles.navItem} ${isActive(getStoreRiverPath(firstStore.id)) ? styles.navItemActive : ''}`}
+                onClick={() => navigate(getStoreRiverPath(firstStore.id))}
               >
-                <span className={styles['navIcon']}>📱</span>
+                <span className={styles.navIcon}>📱</span>
                 <span>Store River</span>
               </button>
             </div>
           )}
 
           {!hasStores && (
-            <div className={styles['navSection']}>
-              <div className={styles['navLabel']}>
+            <div className={styles.navSection}>
+              <div className={styles.navLabel}>
                 Getting Started
               </div>
-              <div className={styles['emptyState']}>
+              <div className={styles.emptyState}>
                 <p>👋 Welcome to the Vendor Portal!</p>
                 <p>Create your first store to get started.</p>
               </div>
             </div>
           )}
 
-          <div className={styles['navSection']}>
-            <div className={styles['navLabel']}>Quick Actions</div>
+          <div className={styles.navSection}>
+            <div className={styles.navLabel}>Quick Actions</div>
             <button
-              className={styles['navItem']}
+              className={styles.navItem}
               onClick={() => navigate('/vendor/stores/new')}
             >
-              <span className={styles['navIcon']}>➕</span>
+              <span className={styles.navIcon}>➕</span>
               <span>Create Store</span>
             </button>
             {hasStores && firstStore && (
               <button
-                className={styles['navItem']}
-                onClick={() => navigate('/vendor/stores/' + firstStore.id + '/items/new')}
+                className={styles.navItem}
+                onClick={() => navigate(`${STORE_BASE_PATH}${firstStore.id}${STORE_ITEMS_NEW_PATH}`)}
               >
-                <span className={styles['navIcon']}>🍕</span>
+                <span className={styles.navIcon}>🍕</span>
                 <span>Add Menu Item</span>
               </button>
             )}
           </div>
 
-          <div className={styles['navSection']}>
+          <div className={styles.navSection}>
             <button
-              className={styles['navItem']}
+              className={styles.navItem}
               onClick={() => navigate('/')}
             >
-              <span className={styles['navIcon']}>🏠</span>
+              <span className={styles.navIcon}>🏠</span>
               <span>Customer View</span>
             </button>
           </div>
         </nav>
 
         {/* Main Content */}
-        <main className={styles['content']}>
+        <main className={styles.content}>
           <Outlet />
         </main>
       </div>

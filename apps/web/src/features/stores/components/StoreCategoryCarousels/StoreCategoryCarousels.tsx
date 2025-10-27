@@ -5,7 +5,7 @@
 import { useStores } from '@hooks/generated'
 import { StoreCarousel } from '../StoreCarousel'
 import { useMemo } from 'react'
-import type { Store } from '@api/types'
+import type { StoreResponse, Store, StoreWithDistance } from '../../../../api/backend-types'
 
 interface CategoryConfig {
   title: string;
@@ -23,7 +23,7 @@ const CATEGORIES: CategoryConfig[] = [
 ]
 
 function categorizeStore(store: Store): string[] {
-  const text = '${store.name} ' + store.description || '' + ''.toLowerCase()
+  const text = `${store.name} ${store.description || ''}`.toLowerCase()
   const categories: string[] = []
   
   for (const category of CATEGORIES) {
@@ -43,7 +43,7 @@ export function StoreCategoryCarousels() {
   const categorizedStores = useMemo(() => {
     if (!stores) return {}
     
-    const result: Record<string, Store[]> = {}
+    const result: Record<string, StoreWithDistance[]> = {}
     
     for (const store of stores) {
       const categories = categorizeStore(store)
@@ -104,7 +104,7 @@ export function StoreCategoryCarousels() {
     <div className="space-y-8">
       {CATEGORIES.map(category => {
         const categoryStores = categorizedStores[category.title]
-        if (!categoryStores || categoryStores.length === 0) return null;
+        if (!categoryStores || categoryStores.length === 0) return undefined;
         return (
           <StoreCarousel
             key={category.title}

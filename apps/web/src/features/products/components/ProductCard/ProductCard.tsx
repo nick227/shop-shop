@@ -6,7 +6,7 @@ import { memo, useCallback, useMemo } from 'react'
 import { Card, Image } from '@ui'
 import { ICON, ASPECT_RATIO, LABEL } from '@ui/Carousel/constants'
 import { getImageUrl } from '@utils/image'
-import type { ProductClickHandler, ItemResponse } from '@api/types'
+import type { ProductClickHandler, ItemResponse } from '@api/backend-types'
 import { styles } from '@utils/tailwind-classes'
 
 export interface ProductCardProps {
@@ -40,38 +40,38 @@ function ProductCardComponent({
   return (
     <Card 
       onClick={handleClick} 
-      className={`${styles['card']} ${isCompact ? styles['compact'] : ''}`}
+      className={`${styles.card} ${isCompact ? styles.compact : ''}`}
     >
-      <div className={styles['imageWrapper']}>
+      <div className={styles.imageWrapper}>
         <Image
           src={imageUrl}
           alt={product.title}
           fallbackSeed={product.id}
           aspectRatio={aspectRatio}
-          containerClassName={styles['image']}
+          containerClassName={styles.image}
         />
         {!product.isActive && (
-          <div className={styles['unavailableBadge']}>
+          <div className={styles.unavailableBadge}>
             {LABEL.SOLD_OUT}
           </div>
         )}
       </div>
       
-      <div className={styles['content']}>
-        <div className={styles['header']}>
-          <h4 className={styles['name']}>{product.title}</h4>
-          <span className={styles['price']}>
+      <div className={styles.content}>
+        <div className={styles.header}>
+          <h4 className={styles.name}>{product.title}</h4>
+          <span className={styles.price}>
             {formattedPrice}
           </span>
         </div>
         
         {!isCompact && product.description && (
-          <p className={styles['description']}>{product.description}</p>
+          <p className={styles.description}>{product.description}</p>
         )}
         
         {showStore && (
-          <div className={styles['storeName']}>
-            <span className={styles['storeIcon']}>{ICON.STORE}</span>
+          <div className={styles.storeName}>
+            <span className={styles.storeIcon}>{ICON.STORE}</span>
             Store ID: {product.storeId}
           </div>
         )}

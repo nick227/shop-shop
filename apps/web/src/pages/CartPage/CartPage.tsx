@@ -122,13 +122,13 @@ export default function CartPage() {
         {/* Items Section */}
         <div className="p-4">
           <h2 className="text-xl font-semibold mb-4">
-            Items ({cart?.items.length})
+            Items ({Array.isArray(cart?.items) ? cart.items.length : 0})
           </h2>
           <div className="space-y-3">
-            {cart?.items.map((item) => (
+            {Array.isArray(cart?.items) && cart.items.map((item: any) => (
               <CartItemRow 
                 key={item.id} 
-                cartItem={item as any}
+                cartItem={item}
                 storeId={cart?.storeId}
               />
             ))}
@@ -137,7 +137,7 @@ export default function CartPage() {
 
         {/* Summary Section */}
         <div className="p-4 border-t border-border bg-muted/30">
-          {cart && <CartSummary cart={cart as any} onCheckout={handleCheckout} />}
+          {cart && <CartSummary cart={cart} onCheckout={handleCheckout} />}
         </div>
       </div>
     </MobileShell>

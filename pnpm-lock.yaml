@@ -138,6 +138,9 @@ importers:
       '@packages/realtime':
         specifier: workspace:*
         version: link:../../packages/realtime
+      '@packages/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@packages/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -508,6 +511,12 @@ importers:
       '@packages/realtime':
         specifier: workspace:*
         version: link:../realtime
+      '@packages/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
     devDependencies:
       '@openapitools/openapi-generator-cli':
         specifier: ^2.13.4

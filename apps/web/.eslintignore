@@ -1,8 +1,8 @@
 # Generated files - never edit manually
-src/api/apiWrapper.ts
-src/api/backend-types.ts
-src/hooks/generated.ts
-src/components/ui/index.ts
+# src/api/apiWrapper.ts
+# src/api/backend-types.ts
+# src/hooks/generated.ts
+# src/components/ui/index.ts
 
 # Test utilities
 src/__tests__/

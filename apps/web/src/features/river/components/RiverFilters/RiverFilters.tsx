@@ -13,7 +13,7 @@ export const RiverFilters = ({ filters, onFiltersChange }: RiverFiltersProps) =>
   ]
 
   const handleSortChange = (sortBy: RiverFiltersType["sortBy"]) => {
-    onFiltersChange({ ...filters, sortBy: sortBy || 'recent' })
+    onFiltersChange({ ...filters, sortBy: sortBy ?? 'recent' })
   }
 
   const handleMediaFilterToggle = () => {

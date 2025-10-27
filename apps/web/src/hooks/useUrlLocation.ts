@@ -8,28 +8,28 @@ import { locationValidator } from '../utils/validation/unified'
 import type { LocationData } from '../types/location.types'
 
 interface UseUrlLocationResult {
-  location: LocationData | null
-  urlParamError: string | null
-  setLocation: (location: LocationData | null) => void
-  setUrlParamError: (error: string | null | undefined) => void
+  location: LocationData | undefined
+  urlParamError: string | undefined
+  setLocation: (location: LocationData | undefined) => void
+  setUrlParamError: (error: string | undefined | undefined) => void
   clearLocation: () => void
 }
 
 export function useUrlLocation(): UseUrlLocationResult {
   const { params: urlParams, updateParams, clearParams } = useLocationParams()
-  const [location, setLocation] = useState<LocationData | null>(null)
-  const [urlParamError, setUrlParamError] = useState<string | null>(null)
+  const [location, setLocation] = useState<LocationData | undefined>(undefined)
+  const [urlParamError, setUrlParamError] = useState<string | undefined>(undefined)
   const isInitialMount = useRef(true)
   
   // Helper function to check if two locations are the same
-  const isSameLocation = useCallback((a: LocationData | null, b: LocationData | null): boolean => {
+  const isSameLocation = useCallback((a: LocationData | undefined, b: LocationData | undefined): boolean => {
     if (!a || !b) return a === b
     return (
       a.latitude === b.latitude &&
       a.longitude === b.longitude &&
       a.radiusMiles === b.radiusMiles &&
-      a["city"] === b["city"] &&
-      a["state"] === b["state"] &&
+      a.city === b.city &&
+      a.state === b.state &&
       a.zip === b.zip &&
       a.source === b.source
     )
@@ -40,16 +40,16 @@ export function useUrlLocation(): UseUrlLocationResult {
     urlParams.latitude, 
     urlParams.longitude, 
     urlParams.radiusMiles, 
-    urlParams["city"], 
-    urlParams["state"], 
+    urlParams.city, 
+    urlParams.state, 
     urlParams.zip
   ])
 
   // Helper function to build display name from URL params
   const buildDisplayName = useCallback((params: typeof urlParams) => {
     const parts: string[] = []
-    if (params["city"]) parts.push(params["city"])
-    if (params["state"] && locationValidator.validateState(params["state"]).valid) parts.push(params["state"])
+    if (params.city) parts.push(params.city)
+    if (params.state && locationValidator.validateState(params.state).valid) parts.push(params.state)
     if (params.zip && locationValidator.validateZipCode(params.zip).valid) parts.push(params.zip)
     return parts.length > 0 ? parts.join(', ') : 'Your Location'
   }, [])
@@ -68,18 +68,18 @@ export function useUrlLocation(): UseUrlLocationResult {
       if (!isInitialMount.current) {
         setUrlParamError(validation.error)
       }
-      if (location !== null) {
-        setLocation(null)
+      if (location !== undefined) {
+        setLocation(undefined)
       }
       return false
     }
     
     // Validate and sanitize optional fields
-    const cityResult = locationValidator.sanitizeCityName(urlParams["city"])
+    const cityResult = urlParams.city ? locationValidator.sanitizeCityName(urlParams.city) : { valid: false, data: undefined }
     const city = cityResult.valid ? cityResult.data : undefined
-    const stateResult = locationValidator.validateState(urlParams["state"])
+    const stateResult = urlParams.state ? locationValidator.validateState(urlParams.state) : { valid: false, data: undefined }
     const state = stateResult.valid ? stateResult.data : undefined
-    const zipResult = locationValidator.validateZipCode(urlParams.zip)
+    const zipResult = urlParams.zip ? locationValidator.validateZipCode(urlParams.zip) : { valid: false, data: undefined }
     const zip = zipResult.valid ? zipResult.data : undefined
     
     // Create new location object
@@ -98,7 +98,7 @@ export function useUrlLocation(): UseUrlLocationResult {
     // Only update if location actually changed
     if (!isSameLocation(location, newLocation)) {
       setLocation(newLocation)
-      setUrlParamError(null)
+      setUrlParamError(undefined)
     }
     return true
   }, [urlParams, buildDisplayName, location, isSameLocation])
@@ -114,10 +114,10 @@ export function useUrlLocation(): UseUrlLocationResult {
       handleCoordinateParams()
     }
     // Handle city/state URL params
-    else if (memoizedUrlParams["city"] && memoizedUrlParams["state"]) {
-      const cityResult = locationValidator.sanitizeCityName(memoizedUrlParams["city"])
+    else if (memoizedUrlParams.city && memoizedUrlParams.state) {
+      const cityResult = locationValidator.sanitizeCityName(memoizedUrlParams.city)
       const city = cityResult.valid ? cityResult.data : undefined
-      const stateResult = locationValidator.validateState(memoizedUrlParams["state"])
+      const stateResult = locationValidator.validateState(memoizedUrlParams.state)
       const state = stateResult.valid ? stateResult.data : undefined
       
       if (city && state) {
@@ -135,7 +135,7 @@ export function useUrlLocation(): UseUrlLocationResult {
         // Only update if location actually changed
         if (!isSameLocation(location, newLocation)) {
           setLocation(newLocation)
-          setUrlParamError(null)
+          setUrlParamError(undefined)
         }
       }
     }
@@ -171,25 +171,25 @@ export function useUrlLocation(): UseUrlLocationResult {
         // Only update if location actually changed
         if (!isSameLocation(location, newLocation)) {
           setLocation(newLocation)
-          setUrlParamError(null)
+          setUrlParamError(undefined)
         }
       }
     }
     // No URL params - clear location (only after initial mount)
-    else if (!isInitialMount.current && location !== null) {
-        setLocation(null)
+    else if (!isInitialMount.current && location !== undefined) {
+        setLocation(undefined)
       }
     
     isInitialMount.current = false
   }, [memoizedUrlParams, handleCoordinateParams, buildDisplayName, location, isSameLocation])
 
   // Custom setLocation with equality guard to prevent unnecessary re-renders
-  const setLocationWithEquality = useCallback((newLocation: LocationData | null) => {
+  const setLocationWithEquality = useCallback((newLocation: LocationData | undefined) => {
     if (!isSameLocation(location, newLocation)) {
       setLocation(newLocation)
       
-      // Clear URL parameters when location is set to null
-      if (newLocation === null) {
+      // Clear URL parameters when location is set to undefined
+      if (newLocation === undefined) {
         clearParams()
       }
     }
@@ -197,9 +197,9 @@ export function useUrlLocation(): UseUrlLocationResult {
 
   // Dedicated clearLocation method that resets state and URL params
   const clearLocation = useCallback(() => {
-    setLocation(null)
+    setLocation(undefined)
     clearParams()
-    setUrlParamError(null)
+    setUrlParamError(undefined)
   }, [clearParams])
 
   return {

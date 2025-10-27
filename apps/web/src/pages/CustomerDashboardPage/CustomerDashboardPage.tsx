@@ -28,7 +28,7 @@ export default function CustomerDashboardPage() {
 
   if (statsLoading || ordersLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading dashboard...</p>
       </div>
@@ -44,40 +44,40 @@ export default function CustomerDashboardPage() {
     .slice(0, 5)
 
   return (
-    <div className={styles['container']}>
+    <div className={styles.container}>
       {/* Stats Cards */}
-      <div className={styles['statsGrid']}>
-        <Card className={styles['statCard']}>
-          <div className={styles['statIcon']}>📦</div>
-          <div className={styles['statValue']}>{stats?.totalOrders || 0}</div>
-          <div className={styles['statLabel']}>Total Orders</div>
+      <div className={styles.statsGrid}>
+        <Card className={styles.statCard}>
+          <div className={styles.statIcon}>📦</div>
+          <div className={styles.statValue}>{stats?.totalOrders || 0}</div>
+          <div className={styles.statLabel}>Total Orders</div>
         </Card>
 
-        <Card className={`${styles['statCard']} ${styles['statCardPending']}`}>
-          <div className={styles['statIcon']}>🔴</div>
-          <div className={styles['statValue']}>{stats?.pendingOrders || 0}</div>
-          <div className={styles['statLabel']}>Pending</div>
+        <Card className={`${styles.statCard} ${styles.statCardPending}`}>
+          <div className={styles.statIcon}>🔴</div>
+          <div className={styles.statValue}>{stats?.pendingOrders || 0}</div>
+          <div className={styles.statLabel}>Pending</div>
         </Card>
 
-        <Card className={styles['statCard']}>
-          <div className={styles['statIcon']}>✅</div>
-          <div className={styles['statValue']}>{stats?.completedOrders || 0}</div>
-          <div className={styles['statLabel']}>Completed</div>
+        <Card className={styles.statCard}>
+          <div className={styles.statIcon}>✅</div>
+          <div className={styles.statValue}>{stats?.completedOrders || 0}</div>
+          <div className={styles.statLabel}>Completed</div>
         </Card>
 
-        <Card className={styles['statCard']}>
-          <div className={styles['statIcon']}>💰</div>
-          <div className={styles['statValue']}>{formatCurrency(stats?.totalSpent || 0)}</div>
-          <div className={styles['statLabel']}>Total Spent</div>
+        <Card className={styles.statCard}>
+          <div className={styles.statIcon}>💰</div>
+          <div className={styles.statValue}>{formatCurrency(stats?.totalSpent || 0)}</div>
+          <div className={styles.statLabel}>Total Spent</div>
         </Card>
       </div>
 
       {/* Pending Orders Section */}
       {pendingOrders.length > 0 && (
-        <section className={styles['section']}>
-          <div className={styles['sectionHeader']}>
-            <h2 className={styles['sectionTitle']}>
-              <span className={styles['liveDot']}>🔴</span>
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.liveDot}>🔴</span>
               Pending Orders ({pendingOrders.length})
             </h2>
             <Button 
@@ -88,7 +88,7 @@ export default function CustomerDashboardPage() {
               View All →
             </Button>
           </div>
-          <div className={styles['ordersList']}>
+          <div className={styles.ordersList}>
             {pendingOrders.map(order => (
               <OrderCard 
                 key={order.id} 
@@ -101,9 +101,9 @@ export default function CustomerDashboardPage() {
       )}
 
       {/* Recent Orders Section */}
-      <section className={styles['section']}>
-        <div className={styles['sectionHeader']}>
-          <h2 className={styles['sectionTitle']}>Recent Orders</h2>
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Recent Orders</h2>
           <Button 
             variant="ghost" 
             size="small"
@@ -113,7 +113,7 @@ export default function CustomerDashboardPage() {
           </Button>
         </div>
         {recentOrders.length > 0 ? (
-          <div className={styles['ordersList']}>
+          <div className={styles.ordersList}>
             {recentOrders.map(order => (
               <OrderCard 
                 key={order.id} 
@@ -123,9 +123,9 @@ export default function CustomerDashboardPage() {
             ))}
           </div>
         ) : (
-          <Card className={styles['emptyState']}>
-            <div className={styles['emptyIcon']}>📦</div>
-            <p className={styles['emptyText']}>No orders yet</p>
+          <Card className={styles.emptyState}>
+            <div className={styles.emptyIcon}>📦</div>
+            <p className={styles.emptyText}>No orders yet</p>
             <Button variant="primary" onClick={() => navigate('/')}>
               Order Now
             </Button>
@@ -134,72 +134,72 @@ export default function CustomerDashboardPage() {
       </section>
 
       {/* Quick Actions */}
-      <section className={styles['section']}>
-        <h2 className={styles['sectionTitle']}>Quick Actions</h2>
-        <div className={styles['actionsGrid']}>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Quick Actions</h2>
+        <div className={styles.actionsGrid}>
           <Button 
             variant="primary" 
             size="large"
             onClick={() => navigate('/')}
-            className={styles['actionButton']}
+            className={styles.actionButton}
           >
-            <span className={styles['actionIcon']}>🍔</span>
-            <span className={styles['actionLabel']}>Order Food</span>
+            <span className={styles.actionIcon}>🍔</span>
+            <span className={styles.actionLabel}>Order Food</span>
           </Button>
 
           <Button 
             variant="secondary" 
             size="large"
             onClick={() => navigate('/account/addresses')}
-            className={styles['actionButton']}
+            className={styles.actionButton}
           >
-            <span className={styles['actionIcon']}>📍</span>
-            <span className={styles['actionLabel']}>My Addresses</span>
+            <span className={styles.actionIcon}>📍</span>
+            <span className={styles.actionLabel}>My Addresses</span>
           </Button>
 
           <Button 
             variant="secondary" 
             size="large"
             onClick={() => navigate('/account/profile')}
-            className={styles['actionButton']}
+            className={styles.actionButton}
           >
-            <span className={styles['actionIcon']}>👤</span>
-            <span className={styles['actionLabel']}>My Profile</span>
+            <span className={styles.actionIcon}>👤</span>
+            <span className={styles.actionLabel}>My Profile</span>
           </Button>
 
           <Button 
             variant="secondary" 
             size="large"
             onClick={() => navigate('/account/deliveries')}
-            className={styles['actionButton']}
+            className={styles.actionButton}
           >
-            <span className={styles['actionIcon']}>🚗</span>
-            <span className={styles['actionLabel']}>My Deliveries</span>
+            <span className={styles.actionIcon}>🚗</span>
+            <span className={styles.actionLabel}>My Deliveries</span>
           </Button>
         </div>
       </section>
 
       {/* Account Summary */}
       {stats?.lastOrderDate && (
-        <section className={styles['section']}>
-          <Card className={styles['summaryCard']}>
-            <h3 className={styles['summaryTitle']}>Account Summary</h3>
-            <div className={styles['summaryGrid']}>
-              <div className={styles['summaryItem']}>
-                <span className={styles['summaryLabel']}>Last Order</span>
-                <span className={styles['summaryValue']}>
+        <section className={styles.section}>
+          <Card className={styles.summaryCard}>
+            <h3 className={styles.summaryTitle}>Account Summary</h3>
+            <div className={styles.summaryGrid}>
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Last Order</span>
+                <span className={styles.summaryValue}>
                   {formatRelativeTime(stats?.lastOrderDate)}
                 </span>
               </div>
-              <div className={styles['summaryItem']}>
-                <span className={styles['summaryLabel']}>Average Order</span>
-                <span className={styles['summaryValue']}>
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Average Order</span>
+                <span className={styles.summaryValue}>
                   {formatCurrency(stats?.averageOrderValue)}
                 </span>
               </div>
-              <div className={styles['summaryItem']}>
-                <span className={styles['summaryLabel']}>Favorite Store</span>
-                <span className={styles['summaryValue']}>-</span>
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Favorite Store</span>
+                <span className={styles.summaryValue}>-</span>
               </div>
             </div>
           </Card>

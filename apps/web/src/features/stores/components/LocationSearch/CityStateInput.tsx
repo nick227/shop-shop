@@ -6,8 +6,8 @@ import { useState } from 'react'
 import styles from './LocationSearch.module.css'
 
 interface CityStateInputProps {
-  onCitySubmit: (city: string, state?: string) => void;
-  isLoading?: boolean;
+  readonly onCitySubmit: (city: string, state?: string) => void;
+  readonly isLoading?: boolean;
 }
 
 export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps) {
@@ -25,11 +25,11 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles['cityForm']}>
-      <div className={styles['cityInputs']}>
+    <form onSubmit={handleSubmit} className={styles.cityForm}>
+      <div className={styles.cityInputs}>
         <input
           type="text"
-          className={styles['cityInput']}
+          className={styles.cityInput}
           value={cityInput}
           onChange={(e) => setCityInput(e.target.value)}
           placeholder="City name (e.g., Austin)"
@@ -37,7 +37,7 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
         />
         <input
           type="text"
-          className={styles['stateInput']}
+          className={styles.stateInput}
           value={stateInput}
           onChange={(e) => setStateInput(e.target.value.toUpperCase())}
           placeholder="ST"
@@ -47,7 +47,7 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
       </div>
       <button
         type="submit" 
-        className={styles['searchButton']}
+        className={styles.searchButton}
         disabled={!cityInput.trim() || isLoading}
       >
         {isLoading ? 'Searching...' : 'Search by City'}

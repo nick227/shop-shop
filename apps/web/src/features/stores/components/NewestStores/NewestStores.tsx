@@ -10,7 +10,7 @@ export function NewestStores() {
   return (
     <div className="my-8">
       <StoreCarousel
-        stores={stores || []}
+        stores={stores ?? []}
         title="🆕 Newest Stores"
         isLoading={isLoading}
       />

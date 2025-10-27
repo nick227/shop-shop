@@ -1,82 +1,134 @@
 import { z } from 'zod'
-import { 
-  defineFields,
-  generateResponseSchema,
-  generateListResponseSchema,
-  generateQuerySchema,
-} from '../core/dto.generator.js'
 
 // ========================================
-// Order DTOs (Aligned with Prisma Schema)
-// Schema includes: fees, tax, tip, serviceFee, netToVendor, Stripe fields
+// Order DTOs (Auto-Generated from Prisma)
 // ========================================
 
-const orderFields = defineFields([
-  { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'userId', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'storeId', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'cartId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'status', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'deliveryType', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'paymentStatus', type: 'String', isOptional: false, hasDefault: true },
-  
-  // Financial breakdown (all calculated)
-  { name: 'subtotal', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'fees', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'tax', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'tip', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'total', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'serviceFeePercent', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'serviceFeeAmount', type: 'Decimal', isOptional: false, hasDefault: false },
-  { name: 'netToVendor', type: 'Decimal', isOptional: false, hasDefault: false },
-  
-  // Stripe integration
-  { name: 'stripePaymentIntentId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'stripeChargeId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'stripeTransferId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'stripeApplicationFeeId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'stripeRefundId', type: 'String', isOptional: true, hasDefault: false },
-  
-  { name: 'addressId', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'addressSnapshot', type: 'Json', isOptional: true, hasDefault: false },
-  { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-  { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-])
-
-// Order creation input (user provides minimal info, system calculates rest)
 export const CreateOrderInputSchema = z.object({
-  cartId: z.string().uuid(),
-  deliveryType: z.enum(['DELIVERY', 'PICKUP']),
-  addressId: z.string().uuid().optional(),
-  tip: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0.00'),
+  userId: z.string(),
+  storeId: z.string(),
+  cartId: z.string().optional(),
+  status: z.string(),
+  deliveryType: z.string(),
+  paymentStatus: z.string(),
+  subtotal: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  fees: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  tax: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  tip: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  total: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  serviceFeePercent: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  serviceFeeAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  netToVendor: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  stripePaymentIntentId: z.string().optional(),
+  stripeChargeId: z.string().optional(),
+  stripeTransferId: z.string().optional(),
+  stripeApplicationFeeId: z.string().optional(),
+  stripeRefundId: z.string().optional(),
+  addressId: z.string().optional(),
+  addressSnapshot: z.record(z.unknown()).optional(),
+  cancelReason: z.string().optional(),
+  canceledBy: z.string().optional(),
+  canceledAt: z.string().datetime().optional(),
+  refundReason: z.string().optional(),
+  refundedAt: z.string().datetime().optional()
 })
 
-// Order status updates (vendors update status)
+export const UpdateOrderInputSchema = z.object({
+  userId: z.string().optional(),
+  storeId: z.string().optional(),
+  cartId: z.string().optional(),
+  status: z.string(),
+  deliveryType: z.string(),
+  paymentStatus: z.string(),
+  subtotal: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  fees: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  tax: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  tip: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  total: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  serviceFeePercent: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  serviceFeeAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  netToVendor: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  stripePaymentIntentId: z.string().optional(),
+  stripeChargeId: z.string().optional(),
+  stripeTransferId: z.string().optional(),
+  stripeApplicationFeeId: z.string().optional(),
+  stripeRefundId: z.string().optional(),
+  addressId: z.string().optional(),
+  addressSnapshot: z.record(z.unknown()).optional(),
+  cancelReason: z.string().optional(),
+  canceledBy: z.string().optional(),
+  canceledAt: z.string().datetime().optional(),
+  refundReason: z.string().optional(),
+  refundedAt: z.string().datetime().optional()
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
+
+export const OrderResponseSchema = z.object({
+  userId: z.string(),
+  storeId: z.string(),
+  cartId: z.string().nullable(),
+  user: z.string(),
+  store: z.string(),
+  cart: z.string().nullable(),
+  status: z.string(),
+  deliveryType: z.string(),
+  paymentStatus: z.string(),
+  subtotal: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  fees: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  tax: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  tip: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  total: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  serviceFeePercent: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  serviceFeeAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  netToVendor: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal'),
+  stripePaymentIntentId: z.string().nullable(),
+  stripeChargeId: z.string().nullable(),
+  stripeTransferId: z.string().nullable(),
+  stripeApplicationFeeId: z.string().nullable(),
+  stripeRefundId: z.string().nullable(),
+  addressId: z.string().nullable(),
+  address: z.string().nullable(),
+  addressSnapshot: z.record(z.unknown()).nullable(),
+  cancelReason: z.string().nullable(),
+  canceledBy: z.string().nullable(),
+  canceledAt: z.string().datetime().nullable(),
+  refundReason: z.string().nullable(),
+  refundedAt: z.string().datetime().nullable(),
+  items: z.string(),
+  events: z.string(),
+  tips: z.string(),
+  commissions: z.string()
+})
+
+export const OrderListResponseSchema = z.object({
+  data: z.array(OrderResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+})
+
+export const OrderQuerySchema = z.object({
+  page: z.string().transform(Number).default('1'),
+  limit: z.string().transform(Number).default('20'),
+}).transform(data => ({
+  page: data.page,
+  limit: data.limit,
+  filters: Object.keys(data)
+    .filter(k => k !== 'page' && k !== 'limit' && (data as any)[k] !== undefined)
+    .reduce((acc, k) => ({ ...acc, [k]: (data as any)[k] }), {}),
+  orderBy: { createdAt: 'desc' },
+}))
+
+
+// Additional schemas
 export const UpdateOrderStatusSchema = z.object({
-  status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELED']),
-  note: z.string().max(500).optional(),
-})
+  status: z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED'])
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
 
-export const OrderResponseSchema = generateResponseSchema({
-  fields: orderFields,
-  exclude: ['stripePaymentIntentId', 'stripeChargeId', 'stripeTransferId'],  // Hide Stripe internal IDs from response
-})
-
-export const OrderListResponseSchema = generateListResponseSchema(OrderResponseSchema)
-
-export const OrderQuerySchema = generateQuerySchema({
-  additionalFilters: {
-    userId: z.string().uuid().optional(),
-    storeId: z.string().uuid().optional(),
-    status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELED']).optional(),
-    paymentStatus: z.enum(['UNPAID', 'PAID', 'REFUNDED']).optional(),
-  },
-})
 
 // Type exports
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>
-export type UpdateOrderStatus = z.infer<typeof UpdateOrderStatusSchema>
+export type UpdateOrderInput = z.infer<typeof UpdateOrderInputSchema>
 export type OrderResponse = z.infer<typeof OrderResponseSchema>
 export type OrderListResponse = z.infer<typeof OrderListResponseSchema>
 export type OrderQuery = z.infer<typeof OrderQuerySchema>
-
+export type UpdateOrderStatus = z.infer<typeof UpdateOrderStatusSchema>

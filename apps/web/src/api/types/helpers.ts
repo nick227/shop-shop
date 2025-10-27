@@ -3,15 +3,15 @@
  * Runtime helper functions for working with API types
  */
 
-import type { 
+import type {
   StoreResponse,
-  ListCarts200ResponseDataInner,
-  ListCarts200ResponseDataInnerItemsInner
+  ListCarts200ResponseDataInner
 } from '@packages/sdk'
 // import type { OrderItem, AddressSnapshot } from '@/types/extensions'
 
 // Cart with totals interface - extends SDK cart with computed fields
 export interface CartWithTotals extends ListCarts200ResponseDataInner {
+  id: string  // Add missing id field
   // Computed fields for frontend display
   itemCount: number
   subtotal: number
@@ -20,10 +20,18 @@ export interface CartWithTotals extends ListCarts200ResponseDataInner {
   deliveryFee: number
   fees: number  // Total fees
   total: number
+  taxAmount?: number
 }
 
 // Cart item data - extends SDK cart item with computed fields
-export interface CartItemData extends ListCarts200ResponseDataInnerItemsInner {
+// CartItemData - SDK doesn't have ListCarts200ResponseDataInnerItemsInner
+export interface CartItemData { 
+  id: string  // Add missing id field
+  itemId: string  // Add missing itemId field
+  unitPrice: string  // Add missing unitPrice field
+  quantity: number  // Add missing quantity field
+  titleSnapshot?: string  // Add missing titleSnapshot field
+  notes?: string  // Add missing notes field
   // Additional computed fields for frontend
   item?: import('@packages/sdk').ListItems200ResponseDataInner
   currentItem?: import('@packages/sdk').ListItems200ResponseDataInner
@@ -58,27 +66,39 @@ export function calculateCartTotals(
   let itemCount = 0
   let totalWeight = 0
   
-  for (let i = 0; i < cart.items.length; i++) {
-    const item = cart.items[i]
-    if (!item) continue
-    
-    const price = typeof item.unitPrice === 'string' 
-      ? Number.parseFloat(item.unitPrice) 
-      : item.unitPrice
-    
-    subtotal += price * item.quantity
-    itemCount += item.quantity
-    
-    // Calculate weight if available
-    if (item.weight) {
-      totalWeight += item.weight * item.quantity
+  // Note: SDK cart.items is a string, not an array
+  // This is a limitation of the current SDK
+  // For now, we'll use default values
+  if (typeof cart.items === 'string' && cart.items) {
+    // Parse items from string if needed
+    try {
+      const items = JSON.parse(cart.items)
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (!item) continue
+        
+        const price = typeof item.unitPrice === 'string' 
+          ? Number.parseFloat(item.unitPrice) 
+          : item.unitPrice || 0
+        
+        subtotal += price * (item.quantity || 1)
+        itemCount += item.quantity || 1
+        
+        // Calculate weight if available
+        if (item.weight) {
+          totalWeight += item.weight * (item.quantity || 1)
+        }
+      }
+    } catch (error) {
+      // If parsing fails, use default values
+      console.warn('Failed to parse cart items:', error)
     }
   }
 
   const taxRate = 0.1 // 10% tax
   const tax = subtotal * taxRate
 
-  const deliveryFee = storeFees?.["deliveryFee"] || 5.99;
+  const deliveryFee = storeFees?.deliveryFee || 5.99;
   const serviceFee = storeFees?.serviceFeePercent
     ? subtotal * (storeFees.serviceFeePercent / 100)
     : 0;
@@ -101,15 +121,15 @@ export function calculateCartTotals(
  * Parse store with typed JSON fields
  */
 export function parseStore(store: StoreResponse): StoreResponse & {
-  fees: Record<string, unknown> | null
-  hours: Record<string, unknown> | null
-  address: Record<string, unknown> | null
+  fees: Record<string, unknown> | undefined
+  hours: Record<string, unknown> | undefined
+  address: Record<string, unknown> | undefined
 } {
   return {
     ...store,
-    fees: (store as any).feesJson || null,
-    hours: (store as any).hoursJson || null,
-    address: (store as any).addressJson || null,
+    fees: (store as any).feesJson || undefined,
+    hours: (store as any).hoursJson || undefined,
+    address: (store as any).addressJson || undefined,
   }
 }
 

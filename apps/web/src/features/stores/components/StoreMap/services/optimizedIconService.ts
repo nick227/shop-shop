@@ -22,7 +22,7 @@ export class OptimizedIconService {
   private static readonly MAX_CACHE_SIZE = 50
   private static readonly CACHE_CLEANUP_INTERVAL = 300_000 // 5 minutes
   private static readonly iconCache = new Map<string, CacheEntry>()
-  private static cleanupTimer: NodeJS.Timeout | null = null
+  private static cleanupTimer: NodeJS.Timeout | undefined = undefined
   private static accessCounter = 0
 
   // Singleton pattern for global cache management
@@ -138,7 +138,7 @@ export class OptimizedIconService {
   static destroy(): void {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer)
-      this.cleanupTimer = null
+      this.cleanupTimer = undefined
     }
     this.clearCache()
   }

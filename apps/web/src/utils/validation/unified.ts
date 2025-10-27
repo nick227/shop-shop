@@ -48,7 +48,7 @@ const locationSchema = z.object({
 // ============================================
 
 export class LocationValidator {
-  private config: ValidationConfig = {
+  private readonly config: ValidationConfig = {
     enableMetrics: true,
     enableLogging: true,
     strictMode: false
@@ -64,9 +64,11 @@ export class LocationValidator {
   ): ValidationResult<{ latitude: number; longitude: number; radius: number }> {
     return UltraOptimizedPerformanceMonitor.track('validateCoordinates', () => {
       try {
-        const lat = typeof latitude === 'string' ? parseFloat(latitude) : latitude
-        const lng = typeof longitude === 'string' ? parseFloat(longitude) : longitude
-        const radius = radiusMiles ? (typeof radiusMiles === 'string' ? parseFloat(radiusMiles) : radiusMiles) : 25
+        const lat = typeof latitude === 'string' ? Number.parseFloat(latitude) : latitude
+        const lng = typeof longitude === 'string' ? Number.parseFloat(longitude) : longitude
+        const radius = radiusMiles 
+          ? (typeof radiusMiles === 'string' ? Number.parseFloat(radiusMiles) : radiusMiles)
+          : 25
 
         const result = coordinateSchema.safeParse({ latitude: lat, longitude: lng, radius })
         
@@ -82,10 +84,10 @@ export class LocationValidator {
           data: {
             latitude: result.data.latitude,
             longitude: result.data.longitude,
-            radius: result.data.radius || 25
+            radius: result.data.radius ?? 25
           }
         }
-      } catch (error: any) {
+      } catch {
         return {
           valid: false,
           error: 'Invalid coordinate format'
@@ -150,7 +152,7 @@ export class LocationValidator {
       }
     }
 
-    const sanitized = city.trim().replace(/[^a-zA-Z\s\-']/g, '')
+    const sanitized = city.trim().replaceAll(/[^\s'A-Za-z-]/g, '')
     
     if (sanitized.length < 2) {
       return {
@@ -190,7 +192,7 @@ export class LocationValidator {
         valid: true,
         data: result.data
       }
-    } catch (error: any) {
+    } catch {
       return {
         valid: false,
         error: 'Invalid location format'
@@ -228,8 +230,8 @@ export const emailSchema = z.string().email('Invalid email address')
 export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters')
 export const phoneSchema = z
   .string()
-  .regex(/^[\d\s()\-]+$/, 'Invalid phone number')
-  .transform((val) => val.replace(/\D/g, ''))
+  .regex(/^[\d\s()-]+$/, 'Invalid phone number')
+  .transform((val) => val.replaceAll(/\D/g, ''))
 
 export const nameSchema = z.string().min(2, 'Name must be at least 2 characters')
 export const addressSchema = z.object({
@@ -265,7 +267,7 @@ export class FormValidator {
           valid: true,
           data: result.data
         }
-      } catch (error: any) {
+      } catch {
         return {
           valid: false,
           error: 'Validation error'

@@ -33,7 +33,7 @@ const STATUS_FILTERS: { value: OrderStatus | 'ALL'; label: string }[] = [
 
 export default function VendorOrdersPage() {
   const [selectedFilter, setSelectedFilter] = useState<OrderStatus | 'ALL'>('ALL')
-  const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<string | undefined>()
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
@@ -165,7 +165,7 @@ export default function VendorOrdersPage() {
             {filter.label}
             {filter.value === 'PLACED' && pendingCount?.count ? (
               <Badge variant="destructive">{pendingCount.count}</Badge>
-            ) : null}
+            ) : undefined}
           </button>
         ))}
       </div>
@@ -229,7 +229,7 @@ export default function VendorOrdersPage() {
       {selectedOrderData && (
         <OrderDetailsModal
           order={selectedOrderData}
-          onClose={() => setSelectedOrder(null)}
+          onClose={() => setSelectedOrder(undefined)}
           onStatusUpdate={handleStatusUpdate}
         />
       )}
@@ -279,9 +279,9 @@ function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
           {order.deliveryType === 'DELIVERY' && order.addressId && (
             <div className="pb-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold mb-2">Delivery Address</h3>
-              <p className="text-gray-900">{(order.addressId as any)["line1"]}</p>
+              <p className="text-gray-900">{(order.addressId as any).line1}</p>
               {(order.addressId as any).line2 && <p className="text-gray-900">{(order.addressId as any).line2}</p>}
-              <p className="text-gray-900">{(order.addressId as any)["city"]}, {(order.addressId as any)["state"]} {(order.addressId as any)["postalCode"]}</p>
+              <p className="text-gray-900">{(order.addressId as any).city}, {(order.addressId as any).state} {(order.addressId as any).postalCode}</p>
             </div>
           )}
 

@@ -1,47 +1,80 @@
 import { z } from 'zod'
-import { 
-  defineFields,
-  generateUpdateInputSchema,
-  generateListResponseSchema,
-} from '../core/dto.generator.js'
-import { UserPublicResponseSchema } from './auth.dto.js'
 
 // ========================================
-// User DTOs (Profile Management)
-// Note: User creation handled by auth signup
+// User DTOs (Auto-Generated from Prisma)
 // ========================================
 
-const userFields = defineFields([
-  { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'email', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'name', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'phone', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'role', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'isCompany', type: 'Boolean', isOptional: false, hasDefault: true },
-  { name: 'companyName', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-  { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-])
-
-// Update profile schema - only safe fields
-export const UpdateUserProfileInputSchema = generateUpdateInputSchema({
-  fields: userFields,
-  exclude: ['id', 'email', 'role', 'createdAt', 'updatedAt'], // Protected fields
-  overrides: {
-    name: z.string().min(1).max(100).trim().optional().describe('Full name'),
-    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional().describe('Phone number (E.164 format)'),
-    isCompany: z.boolean().optional().describe('Whether this is a business account'),
-    companyName: z.string().min(1).max(200).trim().optional().describe('Company name (required if isCompany is true)'),
-  },
+export const CreateUserInputSchema = z.object({
+  role: z.string().optional(),
+  email: z.string(),
+  name: z.string(),
+  phone: z.string(),
+  isCompany: z.boolean().optional(),
+  companyName: z.string().optional(),
+  affiliate: z.string().optional(),
+  vendorVerification: z.string().optional()
 })
 
-// Reuse UserPublicResponseSchema from auth for consistency
-export const UserResponseSchema = UserPublicResponseSchema
+export const UpdateUserInputSchema = z.object({
+  role: z.string().optional(),
+  email: z.string(),
+  name: z.string(),
+  phone: z.string(),
+  isCompany: z.boolean().optional(),
+  companyName: z.string().optional(),
+  affiliate: z.string().optional(),
+  vendorVerification: z.string().optional()
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
 
-export const UserListResponseSchema = generateListResponseSchema(UserResponseSchema)
+export const UserResponseSchema = z.object({
+  role: z.string().nullable(),
+  email: z.string(),
+  name: z.string(),
+  phone: z.string(),
+  isCompany: z.boolean().nullable(),
+  companyName: z.string().nullable(),
+  addresses: z.string(),
+  carts: z.string(),
+  orders: z.string(),
+  storesOwned: z.string(),
+  paymentMethods: z.string(),
+  promotionsCreated: z.string(),
+  postLikes: z.string(),
+  comments: z.string(),
+  affiliate: z.string().nullable(),
+  vendorVerification: z.string().nullable(),
+  teamMemberships: z.string(),
+  invitationsSent: z.string(),
+  invitationsReceived: z.string(),
+  FavoriteStore: z.string(),
+  FavoriteItem: z.string()
+})
+
+export const UserListResponseSchema = z.object({
+  data: z.array(UserResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+})
+
+export const UserQuerySchema = z.object({
+  page: z.string().transform(Number).default('1'),
+  limit: z.string().transform(Number).default('20'),
+}).transform(data => ({
+  page: data.page,
+  limit: data.limit,
+  filters: Object.keys(data)
+    .filter(k => k !== 'page' && k !== 'limit' && (data as any)[k] !== undefined)
+    .reduce((acc, k) => ({ ...acc, [k]: (data as any)[k] }), {}),
+  orderBy: { createdAt: 'desc' },
+}))
+
+
 
 // Type exports
-export type UpdateUserProfileInput = z.infer<typeof UpdateUserProfileInputSchema>
+export type CreateUserInput = z.infer<typeof CreateUserInputSchema>
+export type UpdateUserInput = z.infer<typeof UpdateUserInputSchema>
 export type UserResponse = z.infer<typeof UserResponseSchema>
 export type UserListResponse = z.infer<typeof UserListResponseSchema>
+export type UserQuery = z.infer<typeof UserQuerySchema>
 

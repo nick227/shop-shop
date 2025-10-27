@@ -16,7 +16,7 @@ export function processStoresOptimized<T extends { latitude: number; longitude: 
   } = {}
 ): {
   validStores: T[];
-  nearestStore: T | null;
+  nearestStore: T | undefined;
   storeLocations: { latitude: number; longitude: number }[];
   minDistance: number;
   maxDistance: number;
@@ -27,7 +27,7 @@ export function processStoresOptimized<T extends { latitude: number; longitude: 
   const validStores: T[] = [];
   const storeLocations: { latitude: number; longitude: number }[] = [];
   
-  let nearestStore: T | null = null;
+  let nearestStore: T | undefined = undefined;
   let minDistance = Infinity;
   let maxDistance = -Infinity;
   
@@ -36,7 +36,7 @@ export function processStoresOptimized<T extends { latitude: number; longitude: 
     
     // Filter valid coordinates in same pass
     if (filterValid && (!store.latitude || !store.longitude || 
-        isNaN(store.latitude) || isNaN(store.longitude))) {
+        Number.isNaN(store.latitude) || Number.isNaN(store.longitude))) {
       continue;
     }
     
@@ -170,7 +170,7 @@ export class ArrayBufferPool<T> {
   getBuffer(): T[] {
     if (this.currentIndex >= this.bufferSize) {
       this.buffers.push(this.currentBuffer);
-      this.currentBuffer = new Array(this.bufferSize);
+      this.currentBuffer = Array.from({ length: this.bufferSize });
       this.currentIndex = 0;
     }
     
@@ -179,7 +179,7 @@ export class ArrayBufferPool<T> {
   
   reset(): void {
     this.buffers = [];
-    this.currentBuffer = new Array(this.bufferSize);
+    this.currentBuffer = Array.from({ length: this.bufferSize });
     this.currentIndex = 0;
   }
 }
@@ -200,7 +200,7 @@ export function processMapMarkersOptimized<T extends { latitude: number; longitu
     isNearest: boolean;
     position: [number, number];
   }[];
-  nearestStore: T | null;
+  nearestStore: T | undefined;
 } {
   const { batchSize = 50, findNearest = true } = options;
   
@@ -210,7 +210,7 @@ export function processMapMarkersOptimized<T extends { latitude: number; longitu
     position: [number, number];
   }[] = [];
   
-  let nearestStore: T | null = null;
+  let nearestStore: T | undefined = undefined;
   let minDistance = Infinity;
   
   // Process in batches for better performance

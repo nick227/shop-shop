@@ -131,7 +131,7 @@ describe('MapController', () => {
     expect(mockMap.setView).toHaveBeenCalledWith([40.7506, -73.9935], 12)
   })
 
-  it('should return null (no visual output)', () => {
+  it('should return undefined (no visual output)', () => {
     const { container } = render(
       <MapContainer center={[40.7505, -73.9934]} zoom={12}>
         <MapController center={[40.7505, -73.9934]} zoom={12} />

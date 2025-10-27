@@ -2,7 +2,7 @@
  * AddressCard - Display address with edit/delete actions
  */
 import { Card, Button } from '@ui'
-import type { Address } from '@api/types'
+import type { Address } from '../../../../api/backend-types'
 import { styles } from '@utils/tailwind-classes'
 
 export interface AddressCardProps {
@@ -25,29 +25,29 @@ export function AddressCard({
   return (
     <Card
       onClick={handleSelect}
-      className={isSelected ? styles['selected'] : ''}
+      className={isSelected ? styles.selected : ''}
     >
-      <div className={styles['content']}>
+      <div className={styles.content}>
         {address.label && (
-          <h4 className={styles['label']}>{address.label}</h4>
+          <h4 className={styles.label}>{address.label}</h4>
         )}
 
-        <address className={styles['address']}>
+        <address className={styles.address}>
           {address.contactName && <div>{address.contactName}</div>}
-          <div>{address["line1"]}</div>
+          <div>{address.line1}</div>
           {address.line2 && <div>{address.line2}</div>}
           <div>
-            {address["city"]}, {address["state"]} {address["postalCode"]}
+            {address.city}, {address.state} {address.postalCode}
           </div>
           {address.phone && <div>{address.phone}</div>}
         </address>
 
         {address.instructions && (
-          <p className={styles['instructions']}>Note: {address.instructions}</p>
+          <p className={styles.instructions}>Note: {address.instructions}</p>
         )}
 
         {(onEdit || onDelete) && (
-          <div className={styles['actions']}>
+          <div className={styles.actions}>
             {onEdit && (
               <Button
                 variant="ghost"

@@ -23,11 +23,11 @@ export interface ProcessTipInput {
 
 export function useTip() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | undefined>(undefined)
 
   const createTip = async (input: CreateTipInput): Promise<TipData> => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       // TODO: Implement tip creation via apiClient;
@@ -43,7 +43,7 @@ export function useTip() {
 
   const processTip = async (tipId: string, input: ProcessTipInput): Promise<TipData> => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       // TODO: Implement tip processing via apiClient;
@@ -59,7 +59,7 @@ export function useTip() {
 
   const getTip = async (tipId: string): Promise<TipData> => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       // TODO: Implement tip retrieval via apiClient;
@@ -75,7 +75,7 @@ export function useTip() {
 
   const refundTip = async (tipId: string): Promise<TipData> => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       // TODO: Implement tip refund via apiClient;

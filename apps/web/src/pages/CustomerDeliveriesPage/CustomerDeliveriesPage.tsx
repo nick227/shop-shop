@@ -135,7 +135,7 @@ export default function CustomerDeliveriesPage() {
                           <span className="text-lg">📍</span>
                           <span className="text-gray-600">Address:</span>
                           <span className="font-medium">
-                            {(order.addressSnapshot as AddressSnapshot)["line1"]}
+                            {(order.addressSnapshot as AddressSnapshot).line1}
                           </span>
                         </div>
                       )}

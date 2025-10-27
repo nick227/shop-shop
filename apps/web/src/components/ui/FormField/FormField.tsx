@@ -108,21 +108,21 @@ export function FormField({
   // Custom children render (with error display)
   if (children) {
     return (
-      <div className={styles['field']}>
-        <div className={styles['customInput']}>
-          <label htmlFor={name} className={styles['label']}>
+      <div className={styles.field}>
+        <div className={styles.customInput}>
+          <label htmlFor={name} className={styles.label}>
             {label}
-            {inputProps.required && <span className={styles['required']}>*</span>}
+            {inputProps.required && <span className={styles.required}>*</span>}
           </label>
           {children}
         </div>
         
         {helperText && !error && (
-          <p className={styles['helperText']}>{helperText}</p>
+          <p className={styles.helperText}>{helperText}</p>
         )}
         
         {error && (
-          <p className={styles['errorText']} role="alert">
+          <p className={styles.errorText} role="alert">
             {error}
           </p>
         )}
@@ -132,7 +132,7 @@ export function FormField({
 
   // Default Input render (Input handles its own error/helper display)
   return (
-    <div className={styles['field']}>
+    <div className={styles.field}>
       <Input
         id={name}
         name={name}

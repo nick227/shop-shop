@@ -16,7 +16,7 @@ import { styles } from '@utils/tailwind-classes'
 export default function OrderHistoryPage() {
   const { data: orders, isLoading, error } = useOrders()
   const navigate = useNavigate()
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | undefined>()
   const { user } = useAuth()
 
   // Subscribe to real-time order updates for this customer
@@ -40,12 +40,12 @@ export default function OrderHistoryPage() {
   }, [])
 
   const handleCloseModal = useCallback(() => {
-    setSelectedOrderId(null)
+    setSelectedOrderId(undefined)
   }, [])
 
   if (isLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading your orders...</p>
       </div>
@@ -55,13 +55,13 @@ export default function OrderHistoryPage() {
   const isEmpty = !orders || orders.length === 0
 
   return (
-    <div className={styles['container']}>
-      <header className={styles['header']}>
-        <div className={styles['headerContent']}>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
           <div>
-            <h1 className={styles['title']}>Order History</h1>
+            <h1 className={styles.title}>Order History</h1>
             {!isEmpty && (
-              <p className={styles['subtitle']}>{orders.length} {orders.length === 1 ? 'order' : 'orders'}</p>
+              <p className={styles.subtitle}>{orders.length} {orders.length === 1 ? 'order' : 'orders'}</p>
             )}
           </div>
           <Button variant="ghost" onClick={handleBack}>
@@ -70,9 +70,9 @@ export default function OrderHistoryPage() {
         </div>
       </header>
 
-      <main className={styles['content']}>
+      <main className={styles.content}>
         {error && (
-          <div className={styles['error']}>
+          <div className={styles.error}>
             <h2>Error Loading Orders</h2>
             <p>{error.message}</p>
             <Button onClick={() => window.location.reload()}>Retry</Button>
@@ -80,10 +80,10 @@ export default function OrderHistoryPage() {
         )}
 
         {isEmpty && !error && (
-          <div className={styles['empty']}>
-            <div className={styles['emptyIcon']}>📦</div>
-            <h2 className={styles['emptyTitle']}>No orders yet</h2>
-            <p className={styles['emptyText']}>
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon}>📦</div>
+            <h2 className={styles.emptyTitle}>No orders yet</h2>
+            <p className={styles.emptyText}>
               Your order history will appear here after you place your first order.
             </p>
             <Button variant="primary" size="large" onClick={handleBack}>
@@ -94,9 +94,9 @@ export default function OrderHistoryPage() {
 
         {!isEmpty && !error && (
           <>
-            <div className={styles['list']}>
+            <div className={styles.list}>
               {paginatedList.items.map((order) => (
-                <OrderCard key={order['id'] as string} order={order as any} onClick={handleOrderClick} />
+                <OrderCard key={order.id as string} order={order as any} onClick={handleOrderClick} />
               ))}
             </div>
 

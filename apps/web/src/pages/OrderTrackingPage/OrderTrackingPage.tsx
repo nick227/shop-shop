@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { ordersApi } from '../../api/orders'
 import { useCustomerRealtimeOrder } from '../../hooks/useCustomerRealtimeOrder'
 import { useTip } from '../../hooks/useTip'
+import { useStore } from '../../hooks/generated'
 import { Button, Spinner, Badge } from '../../components/ui'
 import { TipPrompt } from '../../features/checkout/components/TipPrompt'
 import { OrderProgressTracker } from '../../features/orders/components/OrderProgressTracker'
@@ -17,6 +18,38 @@ import {
   getOrderAge, 
   getEstimatedReadyTime
 } from '../../utils/orderHelpers'
+import type { OrderStatus, DeliveryType } from '../../api/backend-types'
+import { mapOrder } from '../../api/backend-types'
+
+// Helper function to determine badge variant
+function getBadgeVariant(status: OrderStatus, isCanceled: boolean, isCompleted: boolean) {
+  if (isCanceled) return 'destructive'
+  if (isCompleted) return 'success'
+  if (status === 'READY') return 'success'
+  if (status === 'PREPARING') return 'default'
+  return 'warning'
+}
+
+// Helper function to parse order items from the orderItems string field
+function parseOrderItems(orderItemsString: string | null | undefined) {
+  if (!orderItemsString) return []
+  
+  try {
+    const parsed: unknown = JSON.parse(orderItemsString)
+    // Convert to the format expected by OrderDetailsCard
+    return Array.isArray(parsed) ? parsed.map((item: unknown) => {
+      const orderItem = item as Record<string, unknown>
+      return {
+        quantity: (orderItem.quantity as number) ?? 1,
+        titleSnapshot: (orderItem.titleSnapshot as string) ?? (orderItem.title as string) ?? 'Unknown Item',
+        unitPrice: (orderItem.unitPrice as number) ?? (orderItem.price as number) ?? 0,
+      }
+    }) : []
+  } catch (error) {
+    console.warn('Failed to parse order items:', error)
+    return []
+  }
+}
 
 export default function OrderTrackingPage() {
   const { orderId } = useParams<{ orderId: string }>()
@@ -26,7 +59,7 @@ export default function OrderTrackingPage() {
   const { createTip, isLoading: isTipLoading } = useTip()
 
   // Fetch order details
-  const { data: order, isLoading } = useQuery({
+  const { data: orderData, isLoading } = useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
       return ordersApi.getOrder(orderId!)
@@ -35,9 +68,36 @@ export default function OrderTrackingPage() {
     refetchInterval: 5000, // Fallback polling (real-time is primary)
   })
 
+  // Convert SDK order data to app types
+  const order = orderData ? {
+    ...mapOrder(orderData),
+    status: orderData.status as OrderStatus,
+    deliveryType: orderData.deliveryType as DeliveryType,
+    subtotal: Number.parseFloat(orderData.subtotal),
+    fees: Number.parseFloat(orderData.fees),
+    tax: Number.parseFloat(orderData.tax),
+    tip: Number.parseFloat(orderData.tip),
+    total: Number.parseFloat(orderData.total),
+    addressSnapshot: orderData.addressSnapshot ? {
+      line1: orderData.addressSnapshot.line1 as string,
+      line2: orderData.addressSnapshot.line2 as string | null,
+      city: orderData.addressSnapshot.city as string,
+      state: orderData.addressSnapshot.state as string,
+      postalCode: orderData.addressSnapshot.postalCode as string,
+      country: orderData.addressSnapshot.country as string,
+    } : undefined,
+  } : undefined
+
+  // Fetch store information
+  const storeQuery = useStore(order?.storeId ?? '')
+  const store = storeQuery.data as { name?: string } | undefined
+
+  // Parse order items
+  const orderItems = orderData ? parseOrderItems((orderData as unknown as Record<string, unknown>).orderItems as string) : []
+
   // Subscribe to real-time updates
   useCustomerRealtimeOrder({
-    orderId: orderId || '',
+    orderId: orderId ?? '',
     enableToast: true,
   })
 
@@ -45,7 +105,7 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     if (order?.status === 'COMPLETED' && !hasShownTipPrompt) {
       // Check if there's already a tip for this order
-      const hasExistingTip = Number.parseFloat(order.tip?.toString() || '0') > 0
+      const hasExistingTip = order.tip > 0
       if (!hasExistingTip) {
         setShowTipPrompt(true)
         setHasShownTipPrompt(true)
@@ -70,7 +130,7 @@ export default function OrderTrackingPage() {
       setShowTipPrompt(false)
       // Show success message
       alert('Tip of $' + amount.toFixed(2) + ' added successfully!')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to add tip:', error)
       alert('Failed to add tip. Please try again.')
     }
@@ -106,7 +166,7 @@ export default function OrderTrackingPage() {
     display: estimatedReadyDate.toLocaleTimeString(),
     isLate: estimatedReadyDate < new Date()
   }
-  const orderProgress = { status: order.status, percentage: 50 } // Simple progress
+  const orderProgressPercentage = 50 // Simple progress percentage
   const statusMessage = `Order ${order.status.toLowerCase()}` // Simple status message
 
   const isCanceled = order.status === 'CANCELED'
@@ -128,13 +188,7 @@ export default function OrderTrackingPage() {
             Order #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <Badge 
-            variant={
-              isCanceled ? 'destructive' :
-              isCompleted ? 'success' :
-              order.status === 'READY' ? 'success' :
-              order.status === 'PREPARING' ? 'default' :
-              'warning'
-            }
+            variant={getBadgeVariant(order.status, isCanceled, isCompleted)}
             className="text-lg px-3 py-1"
           >
             {order.status}
@@ -163,7 +217,7 @@ export default function OrderTrackingPage() {
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
               <div 
                 className="h-full bg-blue-500 transition-all duration-500 ease-out rounded-full" 
-                style={{ width: '' + orderProgress + '%' }}
+                style={{ width: `${orderProgressPercentage}%` }}
               />
             </div>
             <p className="text-sm text-center text-gray-700 font-medium">{statusMessage}</p>
@@ -173,9 +227,9 @@ export default function OrderTrackingPage() {
 
       {/* Order Details */}
       <OrderDetailsCard
-        storeName="Store" // TODO: Get store name from storeId
-        deliveryType={order.deliveryType as 'DELIVERY' | 'PICKUP'}
-        items={[]} // TODO: Get items from order
+        storeName={store?.name ?? 'Loading...'}
+        deliveryType={order.deliveryType}
+        items={orderItems}
         subtotal={order.subtotal}
         fees={order.fees}
         tax={order.tax}
@@ -200,7 +254,7 @@ export default function OrderTrackingPage() {
           isOpen={showTipPrompt}
           onClose={handleTipClose}
           orderId={order.id}
-          storeName="Store" // TODO: Get store name from storeId
+          storeName={store?.name ?? 'Store'}
           onTipSubmit={handleTipSubmit}
           isProcessing={isTipLoading}
         />

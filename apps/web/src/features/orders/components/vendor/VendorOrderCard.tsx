@@ -15,7 +15,7 @@ export interface VendorOrderCardProps {
 }
 
 export function VendorOrderCard({ order, onSelect, onStatusUpdate, isSelected }: VendorOrderCardProps) {
-  const orderAge = getOrderAge(order.createdAt)
+  const orderAge = getOrderAge(order.createdAt || new Date().toISOString())
   const isUrgent = orderAge.minutes > 15 && ['PLACED', 'ACCEPTED'].includes(order.status)
 
   return (
@@ -64,17 +64,31 @@ export function VendorOrderCard({ order, onSelect, onStatusUpdate, isSelected }:
 
       {/* Items */}
       <div className="mb-3">
-        {order.items?.slice(0, 2).map((item, i) => (
-          <div key={i} className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">{item.quantity}x</span>
-            <span className="flex-1 text-gray-900 mx-2">{item.titleSnapshot}</span>
-          </div>
-        ))}
-        {(order.items?.length || 0) > 2 && (
-          <span className="text-xs text-gray-500">
-            +{(order.items?.length || 0) - 2} more
-          </span>
-        )}
+        {(() => {
+          try {
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+            return items?.slice(0, 2).map((item: any, i: number) => (
+              <div key={i} className="flex justify-between text-sm mb-1">
+                <span className="font-medium text-gray-700">{item.quantity}x</span>
+                <span className="flex-1 text-gray-900 mx-2">{item.titleSnapshot}</span>
+              </div>
+            ))
+          } catch {
+            return <div className="text-sm text-gray-500">Unable to load items</div>
+          }
+        })()}
+        {(() => {
+          try {
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+            return (items?.length || 0) > 2 && (
+              <span className="text-xs text-gray-500">
+                +{(items?.length || 0) - 2} more
+              </span>
+            )
+          } catch {
+            return null
+          }
+        })()}
       </div>
 
       {/* Footer */}

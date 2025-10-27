@@ -4,7 +4,7 @@
 import { useAvailableLocations } from '@hooks/store'
 
 interface AvailableLocationsProps {
-  onLocationClick?: (city: string, state: string) => void;
+  readonly onLocationClick?: (city: string, state: string) => void;
 }
 
 export function AvailableLocations({ onLocationClick }: AvailableLocationsProps) {
@@ -19,7 +19,7 @@ export function AvailableLocations({ onLocationClick }: AvailableLocationsProps)
   }
 
   if (!data || (data.cities.length === 0 && data.zipCodes.length === 0)) {
-    return null;
+    return undefined;
   }
 
   const topCities = data.cities.slice(0, 8)

@@ -12,8 +12,8 @@ import userEvent from '@testing-library/user-event'
 
 // ===== Test Wrapper =====
 interface TestWrapperProps {
-  children: ReactNode;
-  initialRoute?: string;
+  readonly children: ReactNode;
+  readonly initialRoute?: string;
 }
 
 export function TestWrapper({ children, initialRoute = '/' }: TestWrapperProps) {
@@ -35,7 +35,7 @@ export function TestWrapper({ children, initialRoute = '/' }: TestWrapperProps) 
 // ===== Render with Router =====
 export function renderWithRouter(
   ui: ReactNode,
-  { route = '/', ...options }: { route?: string } = {}
+  { route = '/', ...options }: { readonly route?: string } = {}
 ): ReturnType<typeof render> {
   return render(ui, {
     wrapper: ({ children }) => <TestWrapper initialRoute={route}>{children}</TestWrapper>,

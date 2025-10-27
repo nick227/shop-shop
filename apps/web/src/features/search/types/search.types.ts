@@ -132,8 +132,8 @@ export interface SearchState {
   query: string;
   filters: SearchFilters;
   isLoading: boolean;
-  error: Error | null;
-  results: SearchResponse | null;
+  error: Error | undefined;
+  results: SearchResponse | undefined;
 }
 
 /**

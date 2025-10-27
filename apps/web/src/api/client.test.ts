@@ -14,7 +14,7 @@ describe('ApiClient', () => {
     for (const key of Object.keys(localStorageMock)) delete localStorageMock[key]
     
     global.localStorage = {
-      getItem: vi.fn((key: string) => localStorageMock[key] || null),
+      getItem: vi.fn((key: string) => localStorageMock[key] || undefined),
       setItem: vi.fn((key: string, value: string) => { localStorageMock[key] = value }),
       removeItem: vi.fn((key: string) => { delete localStorageMock[key] }),
       clear: vi.fn(() => { for (const k of Object.keys(localStorageMock)) delete localStorageMock[k] }),
@@ -27,9 +27,9 @@ describe('ApiClient', () => {
   })
 
   describe('Token Management', () => {
-    it('should start with null or undefined token', () => {
+    it('should start with undefined or undefined token', () => {
       const token = apiClient.getToken()
-      expect(token === null || token === undefined).toBe(true)
+      expect(token === undefined || token === undefined).toBe(true)
     })
 
     it('should set token', () => {

@@ -1,6 +1,6 @@
 import { MapPin, Phone, Clock } from 'lucide-react'
 import { Badge } from '@ui'
-import type { Store } from '@api/types'
+import type { StoreResponse } from '../../../../api/backend-types'
 import { cn } from '@utils/cn'
 
 /**
@@ -8,12 +8,12 @@ import { cn } from '@utils/cn'
  */
 
 export interface StoreHeaderProps {
-  store: Store
-  className?: string
+  readonly store: StoreResponse
+  readonly className?: string
 }
 
 export function StoreHeader({ store, className }: StoreHeaderProps) {
-  const fullAddress = [store.addressStreet, store["city"], store["state"], store.zipCode]
+  const fullAddress = [store.addressStreet, store.city, store.state, store.zipCode]
     .filter(Boolean)
     .join(', ')
 
@@ -60,7 +60,7 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
         <div className="flex items-center gap-2 text-sm">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">
-            Prep time: {store.prepTimeMin || 20} minutes
+            Prep time: {store.prepTimeMin ?? 20} minutes
           </span>
         </div>
       </div>

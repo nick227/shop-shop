@@ -27,7 +27,7 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
     enableDesktopNotification = true,
   } = options
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | undefined>(undefined)
 
   // Request notification permission on mount
   useEffect(() => {

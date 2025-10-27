@@ -22,4 +22,4 @@ export type {
   StoreClickHandler,
   ProductClickHandler,
   EntityClickHandler
-} from '@api/types'
+} from '../../../../api/types'

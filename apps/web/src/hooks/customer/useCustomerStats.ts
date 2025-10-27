@@ -13,7 +13,7 @@ export interface CustomerStats {
   canceledOrders: number;
   totalSpent: number;
   averageOrderValue: number;
-  lastOrderDate: string | null;
+  lastOrderDate: string | undefined;
 }
 
 export function useCustomerStats() {
@@ -32,7 +32,7 @@ export function useCustomerStats() {
           canceledOrders: 0,
           totalSpent: 0,
           averageOrderValue: 0,
-          lastOrderDate: null}
+          lastOrderDate: undefined}
       }
 
       // Calculate all stats in SINGLE PASS (was 5 passes before)
@@ -43,7 +43,7 @@ export function useCustomerStats() {
       let canceledOrders = 0;
       let totalSpent = 0;
       let lastOrderTime = 0;
-      let lastOrderDate: string | null = null;
+      let lastOrderDate: string | undefined = undefined;
       // Single loop - accumulate everything;
       for (const order of orders) {
         // Count by status (replaces 3 separate filters)
@@ -71,10 +71,10 @@ export function useCustomerStats() {
         }
 
         // Track last order (replaces sort + array copy)
-        const orderTime = new Date(order.createdAt).getTime()
+        const orderTime = new Date((order as any).createdAt).getTime()
         if (orderTime > lastOrderTime) {
           lastOrderTime = orderTime;
-          lastOrderDate = order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt;
+          lastOrderDate = (order as any).createdAt instanceof Date ? (order as any).createdAt.toISOString() : (order as any).createdAt;
         }
       }
 

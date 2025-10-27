@@ -3,36 +3,146 @@
  * Displays bundle pricing information and savings
  */
 import React from 'react'
-import { Badge } from '@components/ui/Badge'
+import { Badge } from '../../../components/ui/Badge'
 import { BundleSavingsBadge } from './BundleSavingsBadge'
-import type { Bundle } from '../../../api/types'
 
-interface BundlePricingProps {
-  bundle: Bundle
-  showDetails?: boolean
-  className?: string
+// Local type definitions to avoid circular dependencies
+interface BundleItem {
+  id: string
+  bundleId: string
+  itemId: string
+  quantity: number
+  sortIndex: number
+  item?: {
+    id: string
+    title: string
+    price: number
+    imageUrl?: string
+  }
 }
 
-export function BundlePricing({ 
+interface BundlePricing {
+  id: string
+  bundleId: string
+  pricingType: 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
+  fixedPrice?: number
+  discountPercent?: number
+  discountAmount?: number
+  minSavings?: number
+  showSavings: boolean
+  savingsLabel?: string
+}
+
+interface Bundle {
+  id: string
+  storeId: string
+  name: string
+  description?: string
+  imageUrl?: string
+  isActive: boolean
+  sortIndex: number
+  createdAt: string
+  updatedAt: string
+  items?: BundleItem[]
+  pricing?: BundlePricing
+  totalItems?: number
+}
+
+interface BundlePricingProps {
+  readonly bundle: Bundle
+  readonly showDetails?: boolean
+  readonly className?: string
+}
+
+// Type guard function to ensure bundle is valid
+function isValidBundle(bundle: unknown): bundle is Bundle {
+  return (
+    bundle !== null &&
+    bundle !== undefined &&
+    typeof bundle === 'object' &&
+    'id' in bundle &&
+    'storeId' in bundle &&
+    'name' in bundle
+  )
+}
+
+export function BundlePricing ({ 
   bundle, 
   showDetails = true, 
   className = '' 
 }: BundlePricingProps) {
-  const {
-    individualPrice = 0,
-    bundlePrice = 0,
-    savings = 0,
-    savingsPercent = 0
-  } = bundle
+  // Type guard to ensure bundle is valid
+  if (!isValidBundle(bundle)) {
+    return <></>
+  }
 
+  // Calculate pricing values from bundle data
+  const calculatePricing = (): {
+    individualPrice: number
+    bundlePrice: number
+    savings: number
+    savingsPercent: number
+  } => {
+    if (!bundle.pricing) {
+      return {
+        individualPrice: 0,
+        bundlePrice: 0,
+        savings: 0,
+        savingsPercent: 0
+      }
+    }
+
+    // Calculate individual total from bundle items
+    const individualPrice = bundle.items?.reduce((total, bundleItem) => {
+      const itemPrice = bundleItem.item?.price ?? 0
+      return total + (itemPrice * bundleItem.quantity)
+    }, 0) ?? 0
+
+    // Calculate bundle price based on pricing type
+    let bundlePrice = 0
+    switch (bundle.pricing.pricingType) {
+      case 'FIXED_PRICE': {
+        bundlePrice = bundle.pricing.fixedPrice ?? 0
+        break
+      }
+      case 'DISCOUNT_PERCENT': {
+        bundlePrice = individualPrice * (1 - (bundle.pricing.discountPercent ?? 0) / 100)
+        break
+      }
+      case 'DISCOUNT_AMOUNT': {
+        bundlePrice = Math.max(0, individualPrice - (bundle.pricing.discountAmount ?? 0))
+        break
+      }
+      case 'BEST_DEAL': {
+        bundlePrice = Math.min(individualPrice, bundle.pricing.fixedPrice ?? individualPrice)
+        break
+      }
+      default: {
+        bundlePrice = individualPrice
+        break
+      }
+    }
+
+    const savings = Math.max(0, individualPrice - bundlePrice)
+    const savingsPercent = individualPrice > 0 ? (savings / individualPrice) * 100 : 0
+
+    return {
+      individualPrice,
+      bundlePrice,
+      savings,
+      savingsPercent
+    }
+  }
+
+  const { individualPrice, bundlePrice, savings, savingsPercent } = calculatePricing()
   const hasSavings = savings > 0
 
   return (
-    <div className={`bundle-pricing ${className}`}>
-      <div className="bundle-pricing__main">
-        <div className="bundle-pricing__price">
-          <span className="bundle-pricing__price-label">Bundle Price:</span>
-          <span className="bundle-pricing__price-value">
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-neutral-600 font-medium">Bundle Price:</span>
+          <span className="text-2xl font-bold text-neutral-900">
             ${bundlePrice.toFixed(2)}
           </span>
         </div>
@@ -47,22 +157,22 @@ export function BundlePricing({
       </div>
 
       {showDetails && (
-        <div className="bundle-pricing__details">
-          <div className="bundle-pricing__individual">
-            <span className="bundle-pricing__individual-label">
+        <div className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-md">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-neutral-600 font-medium">
               Individual Total:
             </span>
-            <span className="bundle-pricing__individual-value">
+            <span className="text-neutral-900 line-through">
               ${individualPrice.toFixed(2)}
             </span>
           </div>
           
           {hasSavings && (
-            <div className="bundle-pricing__savings">
-              <span className="bundle-pricing__savings-label">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-neutral-600 font-medium">
                 You Save:
               </span>
-              <span className="bundle-pricing__savings-value">
+              <span className="text-green-600 font-semibold">
                 ${savings.toFixed(2)} ({savingsPercent.toFixed(1)}%)
               </span>
             </div>
@@ -71,8 +181,8 @@ export function BundlePricing({
       )}
 
       {bundle.pricing?.pricingType && (
-        <div className="bundle-pricing__type">
-          <Badge variant="outline" size="sm">
+        <div className="flex justify-start">
+          <Badge variant="outline">
             {getPricingTypeLabel(bundle.pricing.pricingType)}
           </Badge>
         </div>
@@ -83,87 +193,20 @@ export function BundlePricing({
 
 function getPricingTypeLabel(pricingType: string): string {
   switch (pricingType) {
-    case 'FIXED_PRICE':
+    case 'FIXED_PRICE': {
       return 'Fixed Price'
-    case 'DISCOUNT_PERCENT':
+    }
+    case 'DISCOUNT_PERCENT': {
       return 'Percentage Discount'
-    case 'DISCOUNT_AMOUNT':
+    }
+    case 'DISCOUNT_AMOUNT': {
       return 'Amount Discount'
-    case 'BEST_DEAL':
+    }
+    case 'BEST_DEAL': {
       return 'Best Deal'
-    default:
+    }
+    default: {
       return 'Custom Pricing'
+    }
   }
 }
-
-// Bundle Pricing Styles
-export const bundlePricingStyles = `
-.bundle-pricing {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.bundle-pricing__main {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.bundle-pricing__price {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.bundle-pricing__price-label {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.bundle-pricing__price-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.bundle-pricing__details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--muted-background);
-  border-radius: 0.375rem;
-}
-
-.bundle-pricing__individual,
-.bundle-pricing__savings {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-}
-
-.bundle-pricing__individual-label,
-.bundle-pricing__savings-label {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.bundle-pricing__individual-value {
-  color: var(--text-primary);
-  text-decoration: line-through;
-}
-
-.bundle-pricing__savings-value {
-  color: var(--success-color);
-  font-weight: 600;
-}
-
-.bundle-pricing__type {
-  display: flex;
-  justify-content: flex-start;
-}
-`

@@ -4,14 +4,14 @@
 import { styles } from '@utils/tailwind-classes'
 
 interface RadiusControlProps {
-  radius: number;
-  onRadiusChange: (newRadius: number) => void;
+  readonly radius: number;
+  readonly onRadiusChange: (newRadius: number) => void;
 }
 
 export function RadiusControl({ radius, onRadiusChange }: RadiusControlProps) {
   return (
-    <div className={styles['radiusControl']}>
-      <label htmlFor="radius-slider" className={styles['radiusLabel']}>
+    <div className={styles.radiusControl}>
+      <label htmlFor="radius-slider" className={styles.radiusLabel}>
         Search Radius: <strong>{radius} miles</strong>
       </label>
       <input
@@ -22,14 +22,14 @@ export function RadiusControl({ radius, onRadiusChange }: RadiusControlProps) {
         step="5"
         value={radius}
         onChange={(e) => onRadiusChange(Number(e.target.value))}
-        className={styles['radiusSlider']}
+        className={styles.radiusSlider}
         aria-label={'Search radius: ' + radius + ' miles'}
         aria-valuemin={5}
         aria-valuemax={100}
         aria-valuenow={radius}
         aria-valuetext={'' + radius + ' miles'}
       />
-      <div className={styles['radiusMarkers']}>
+      <div className={styles.radiusMarkers}>
         <span>5 mi</span>
         <span>50 mi</span>
         <span>100 mi</span>

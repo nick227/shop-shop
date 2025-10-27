@@ -84,11 +84,11 @@ export const ORDER_STATUS_PROGRESSION: OrderStatus[] = [
 /**
  * Get next status in progression
  */
-export function getNextStatus(currentStatus: OrderStatus): OrderStatus | null {
+export function getNextStatus(currentStatus: OrderStatus): OrderStatus | undefined {
   const currentIndex = ORDER_STATUS_PROGRESSION.indexOf(currentStatus)
   if (currentIndex === -1 || currentIndex === ORDER_STATUS_PROGRESSION.length - 1) {
-    return null
+    return undefined
   }
-  return ORDER_STATUS_PROGRESSION[currentIndex + 1] || null
+  return ORDER_STATUS_PROGRESSION[currentIndex + 1] || undefined
 }
 

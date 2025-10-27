@@ -3,19 +3,17 @@
  * Displays a list of bundles with filtering and actions
  */
 import React, { useState } from 'react'
-import { Button } from '@components/ui/Button'
-import { Input } from '@components/ui/Input'
-import { Badge } from '@components/ui/Badge'
+import { Button, Input, Badge } from '@ui'
 import { BundleCard } from './BundleCard'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { Bundle } from '../../../api/types'
+import type { Bundle } from '../../../api/backend-types'
 
 interface BundleListProps {
-  storeId: string
-  onEditBundle?: (bundle: Bundle) => void
-  onDeleteBundle?: (bundle: Bundle) => void
-  onCreateBundle?: () => void
-  className?: string
+  readonly storeId: string
+  readonly onEditBundle?: (bundle: Bundle) => void
+  readonly onDeleteBundle?: (bundle: Bundle) => void
+  readonly onCreateBundle?: () => void
+  readonly className?: string
 }
 
 export function BundleList({
@@ -26,42 +24,44 @@ export function BundleList({
   className = ''
 }: BundleListProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')                                                                        
 
   const {
-    bundles,
     isLoading,
     error,
     deleteBundle,
     toggleBundleStatus,
     activeCount,
     inactiveCount,
-    isDeleting,
     filterBundles
   } = useBundleManagement({ storeId })
 
   // Use optimized filtering from hook
   const filteredBundles = filterBundles(searchTerm, statusFilter)
 
-  const handleDeleteBundle = async (bundle: Bundle) => {
+  const handleDeleteBundle = (bundle: Bundle) => {
     if (window.confirm(`Are you sure you want to delete "${bundle.name}"?`)) {
-      try {
-        await deleteBundle(bundle.id)
-        onDeleteBundle?.(bundle)
-      } catch (error) {
-        console.error('Failed to delete bundle:', error)
-        alert('Failed to delete bundle. Please try again.')
-      }
+      void (async () => {
+        try {
+          await deleteBundle(bundle.id)
+          onDeleteBundle?.(bundle)
+        } catch (error) {
+          console.error('Failed to delete bundle:', error)
+          alert('Failed to delete bundle. Please try again.')
+        }
+      })()
     }
   }
 
-  const handleToggleStatus = async (bundle: Bundle) => {
-    try {
-      await toggleBundleStatus(bundle.id, !bundle.isActive)
-    } catch (error) {
-      console.error('Failed to toggle bundle status:', error)
-      alert('Failed to update bundle status. Please try again.')
-    }
+  const handleToggleStatus = (bundle: Bundle) => {
+    void (async () => {
+      try {
+        await toggleBundleStatus(bundle.id, !bundle.isActive)
+      } catch (error) {
+        console.error('Failed to toggle bundle status:', error)
+        alert('Failed to update bundle status. Please try again.')
+      }
+    })()
   }
 
   if (isLoading) {
@@ -94,17 +94,17 @@ export function BundleList({
       <div className="bundle-list__header">
         <div className="bundle-list__title">
           <h2>Bundles ({filteredBundles.length})</h2>
-          <div className="bundle-list__stats">
-            <Badge variant="success" size="sm">
-              {activeCount} Active
-            </Badge>
-            <Badge variant="secondary" size="sm">
-              {inactiveCount} Inactive
-            </Badge>
-          </div>
+                  <div className="bundle-list__stats">
+          <Badge variant="success">
+            {activeCount} Active
+          </Badge>
+          <Badge variant="secondary">
+            {inactiveCount} Inactive
+          </Badge>
         </div>
-        
-        <Button onClick={onCreateBundle}>
+      </div>
+
+      <Button onClick={() => onCreateBundle?.()}>
           Create Bundle
         </Button>
       </div>
@@ -122,22 +122,22 @@ export function BundleList({
         
         <div className="bundle-list__status-filter">
           <Button
-            variant={statusFilter === 'all' ? 'default' : 'outline'}
-            size="sm"
+            variant={statusFilter === 'all' ? 'primary' : 'outline'}
+            size="small"
             onClick={() => setStatusFilter('all')}
           >
             All
           </Button>
           <Button
-            variant={statusFilter === 'active' ? 'default' : 'outline'}
-            size="sm"
+            variant={statusFilter === 'active' ? 'primary' : 'outline'}
+            size="small"
             onClick={() => setStatusFilter('active')}
           >
             Active
           </Button>
           <Button
-            variant={statusFilter === 'inactive' ? 'default' : 'outline'}
-            size="sm"
+            variant={statusFilter === 'inactive' ? 'primary' : 'outline'}
+            size="small"
             onClick={() => setStatusFilter('inactive')}
           >
             Inactive
@@ -157,7 +157,7 @@ export function BundleList({
               }
             </p>
             {!searchTerm && statusFilter === 'all' && (
-              <Button onClick={onCreateBundle}>
+              <Button onClick={() => onCreateBundle?.()}>
                 Create First Bundle
               </Button>
             )}
@@ -180,128 +180,3 @@ export function BundleList({
     </div>
   )
 }
-
-// Bundle List Styles
-export const bundleListStyles = `
-.bundle-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.bundle-list__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.bundle-list__title {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.bundle-list__title h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.bundle-list__stats {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.bundle-list__filters {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.bundle-list__search {
-  flex: 1;
-  min-width: 200px;
-}
-
-.bundle-list__status-filter {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.bundle-list__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.bundle-list__empty {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-.bundle-list__empty-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.bundle-list__empty-content h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.bundle-list__empty-content p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.bundle-list--loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-.bundle-list__loading {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.bundle-list__loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid var(--border-color);
-  border-top: 2px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.bundle-list--error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-.bundle-list__error {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-`

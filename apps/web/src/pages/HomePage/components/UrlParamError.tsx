@@ -4,12 +4,12 @@
 import React from 'react'
 
 interface UrlParamErrorProps {
-  error: string | null;
+  error: string | undefined;
   onDismiss: () => void;
 }
 
 export function UrlParamError({ error, onDismiss }: UrlParamErrorProps) {
-  if (!error) return null;
+  if (!error) return;
   return (
     <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2" role="alert" aria-live="assertive">
       <span className="text-xl">⚠️</span>

@@ -5,17 +5,18 @@
  * This component is kept for backward compatibility but delegates to StoreGrid;
  * Migrated to Tailwind (removed CSS module)
  */
-import { useStores } from '@hooks/generated'
+import { useStores } from '../../../../hooks/generated'
 import { StoreGrid } from '../StoreGrid'
-import { Spinner } from '@ui'
+import { Spinner } from '../../../../components/ui'
+import type { StoreResponse, StoreWithDistance } from '../../../../api/backend-types'
 import { useNavigate } from 'react-router-dom'
 
 export function StoreList() {
   const { data: stores, isLoading, error } = useStores()
   const navigate = useNavigate()
 
-  const handleStoreClick = (store: import('@api/types').StoreResponse | import('@api/types').StoreWithDistance) => {
-    navigate('/stores/' + store.id + '')
+  const handleStoreClick = (store: StoreResponse | StoreWithDistance) => {
+    navigate(`/stores/${store.id}`)
   }
 
   if (isLoading) {

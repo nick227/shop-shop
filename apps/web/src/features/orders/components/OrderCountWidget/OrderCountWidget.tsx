@@ -17,7 +17,7 @@ export function OrderCountWidget() {
 
   if (isLoading) {
     return (
-      <div className={styles['widget']}>
+      <div className={styles.widget}>
         <Button variant="ghost" size="small" onClick={handleClick}>
           📋 Orders;
         </Button>
@@ -27,17 +27,17 @@ export function OrderCountWidget() {
 
   const hasPending = pendingCount && pendingCount > 0;
   return (
-    <div className={styles['widget']}>
+    <div className={styles.widget}>
       <Button
         variant={hasPending ? 'primary' : 'ghost'}
         size="small"
         onClick={handleClick}
-        className={hasPending ? styles['widgetActive'] : ''}
+        className={hasPending ? styles.widgetActive : ''}
       >
-        <span className={styles['widgetIcon']}>📋</span>
+        <span className={styles.widgetIcon}>📋</span>
         <span>Orders</span>
         {hasPending && (
-          <Badge variant="destructive" className={styles['widgetBadge']}>
+          <Badge variant="destructive" className={styles.widgetBadge}>
             {pendingCount > 99 ? '99+' : pendingCount}
           </Badge>
         )}

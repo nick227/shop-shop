@@ -4,24 +4,24 @@
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User } from '@api/types'
+import type { UserResponse } from '@api/backend-types'
 
 interface AuthState {
-  user: User | null
-  token: string | null
+  user: UserResponse | undefined
+  token: string | undefined
   isAuthenticated: boolean
   
   // Actions
-  setAuth: (user: User, token: string) => void
+  setAuth: (user: UserResponse, token: string) => void
   clearAuth: () => void
-  updateUser: (user: Partial<User>) => void
+  updateUser: (user: Partial<UserResponse>) => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
-      token: null,
+      user: undefined,
+      token: undefined,
       isAuthenticated: false,
 
       setAuth: (user, token) =>
@@ -33,14 +33,14 @@ export const useAuthStore = create<AuthState>()(
 
       clearAuth: () =>
         set({
-          user: null,
-          token: null,
+          user: undefined,
+          token: undefined,
           isAuthenticated: false,
         }),
 
       updateUser: (updates) =>
         set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
+          user: state.user ? { ...state.user, ...updates } : undefined,
         })),
     }),
     {

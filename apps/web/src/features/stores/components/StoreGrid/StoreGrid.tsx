@@ -1,8 +1,8 @@
-import { GridView } from '@utils/page-builder'
+import { GridView } from '../../../../utils/page-builder'
 import { StoreCard } from '../StoreCard'
-import type { StoreWithDistance, StoreClickHandler } from '@api/types'
-import type { ViewConfig } from '@/types/page-config.types'
-import { cn } from '@utils/cn'
+import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
+import type { ViewConfig } from '../../../../types/page-config.types'
+import { cn } from '../../../../utils/cn'
 
 /**
  * StoreGrid - Declarative grid view for stores;
@@ -10,10 +10,10 @@ import { cn } from '@utils/cn'
  */
 
 export interface StoreGridProps {
-  stores: StoreWithDistance[]
-  onStoreClick?: StoreClickHandler;
-  highlightedStoreId?: string | null;
-  className?: string;
+  readonly stores: StoreWithDistance[]
+  readonly onStoreClick?: StoreClickHandler;
+  readonly highlightedStoreId?: string;
+  readonly className?: string;
 }
 
 export function StoreGrid({ stores, onStoreClick, highlightedStoreId, className }: StoreGridProps) {
@@ -35,7 +35,8 @@ export function StoreGrid({ stores, onStoreClick, highlightedStoreId, className 
       >
         <StoreCard store={store} onClick={onStoreClick} />
       </div>
-    )}
+    )
+  }
 
   return (
     <div className={cn('p-4', className)}>

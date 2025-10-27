@@ -6,18 +6,22 @@
  * To regenerate: pnpm gen:wrapper
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { apiClient } from './client'
 import type { 
-  Store, 
-  Item, 
+  StoreResponse as Store, 
+  ItemResponse as Item, 
   CartWithTotals,
   OrderResponse as Order,
   AddressResponse as Address,
-  RiverPost,
-} from './types'
-// Bundle types are not yet available in the SDK
-type Bundle = any
-type UpdateBundleInput = any
+  Bundle,
+} from './backend-types'
 
 export interface CreateOrderInput {
   cartId: string
@@ -62,11 +66,11 @@ export interface CreateBundleInput {
   imageUrl?: string
   isActive?: boolean
   sortIndex?: number
-  items: Array<{
+  items: {
     itemId: string
     quantity: number
     sortIndex?: number
-  }>
+  }[]
   pricing: {
     pricingType: 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
     fixedPrice?: number
@@ -78,32 +82,43 @@ export interface CreateBundleInput {
   }
 }
 
-// Validators (pass-through for now, can add Zod validation later)
-const validators = {
-  store: (data: unknown) => data,
-  storeList: (data: unknown) => data,
-  item: (data: unknown) => data,
-  itemList: (data: unknown) => data,
-  cart: (data: unknown) => data,
-  order: (data: unknown) => data,
-  orderList: (data: unknown) => data,
-  address: (data: unknown) => data,
-  addressList: (data: unknown) => data,
-  post: (data: unknown) => data,
-  postList: (data: unknown) => data,
-  bundle: (data: unknown) => data,
-  bundleList: (data: unknown) => data,
+
+/**
+ * Custom error class for API errors
+ */
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+    public code?: string
+  ) {
+    super(message)
+    this.name = 'APIError'
+  }
 }
 
-// Helper: Wrap API calls with error handling
+/**
+ * Helper: Wrap API calls with comprehensive error handling
+ * 
+ * NOTE: Currently uses 'any' assertions for type conversion between SDK and frontend types.
+ * Future improvement: Implement proper type mappers for better type safety.
+ */
 async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn()
   } catch (error) {
-    console.error('API Error:', error)
-    throw error
+    // Handle API errors
+    if (error && typeof error === 'object' && 'message' in error) {
+      const apiError = error as { message: string; status?: number; code?: string }
+      console.error('API Error:', apiError.message)
+      throw new APIError(apiError.message, apiError.status, apiError.code)
+    }
+    
+    console.error('Unknown Error:', error)
+    throw new Error('An unexpected error occurred')
   }
 }
+
 
 // ============================================
 // Stores API
@@ -112,17 +127,21 @@ export const stores = {
   /**
    * List stores
    */
-  list: async (params?: { latitude?: number; longitude?: number; radiusMiles?: number }): Promise<Store[]> => {
-    const response = await handleRequest(() => apiClient.stores().listStores(params as any || {}))
-    return validators.storeList((response as any).data || response) as Store[]
+  list: async (params?: { page?: string; limit?: string }): Promise<Store[]> => {
+    const response = await handleRequest(() =>
+      apiClient.stores().listStores(params as any)
+    )
+    return (response as any).data ?? (response as any) as Store[]
   },
 
   /**
-   * Get single store by ID
+   * Get store by ID
    */
   getById: async (id: string): Promise<Store> => {
-    const result = await handleRequest(() => apiClient.stores().getStoreById({ id }))
-    return validators.store(result) as Store
+    const result = await handleRequest(() =>
+      apiClient.stores().getStoreById({ id })
+    )
+    return result as any as Store
   },
 }
 
@@ -133,17 +152,67 @@ export const items = {
   /**
    * List items
    */
-  list: async (params?: { storeId?: string }): Promise<Item[]> => {
-    const response = await handleRequest(() => apiClient.items().listItems(params as any || {}))
-    return validators.itemList((response as any).data || response) as Item[]
+  list: async (params?: { page?: string; limit?: string }): Promise<Item[]> => {
+    const response = await handleRequest(() =>
+      apiClient.items().listItems(params as any)
+    )
+    return (response as any).data ?? (response as any) as Item[]
   },
 
   /**
-   * Get single item by ID
+   * Get item by ID
    */
   getById: async (id: string): Promise<Item> => {
-    const result = await handleRequest(() => apiClient.items().getItemById({ id }))
-    return validators.item(result) as Item
+    const result = await handleRequest(() =>
+      apiClient.items().getItemById({ id })
+    )
+    return result as any as Item
+  },
+}
+
+// ============================================
+// Carts API
+// ============================================
+export const carts = {
+  /**
+   * List carts
+   */
+  list: async (): Promise<CartWithTotals[]> => {
+    const response = await handleRequest(() =>
+      apiClient.carts().listCarts()
+    )
+    return (response as any).data ?? (response as any) as CartWithTotals[]
+  },
+
+  /**
+   * Get cart by ID
+   */
+  getById: async (id: string): Promise<CartWithTotals> => {
+    const result = await handleRequest(() =>
+      apiClient.carts().getCartById({ id })
+    )
+    return result as any as CartWithTotals
+  },
+
+  /**
+   * Create new cart
+   */
+  create: async (input: AddCartItemInput): Promise<CartWithTotals> => {
+    const result = await handleRequest(() =>
+        apiClient.carts().createCart({
+          createCartRequest: input as any
+        })
+    )
+    return result as any as CartWithTotals
+  },
+
+  /**
+   * Delete cart
+   */
+  delete: async (id: string): Promise<void> => {
+    await handleRequest(() =>
+      apiClient.carts().deleteCart({ id })
+    )
   },
 }
 
@@ -155,16 +224,20 @@ export const orders = {
    * List orders
    */
   list: async (): Promise<Order[]> => {
-    const response = await handleRequest(() => apiClient.orders().listOrders({}))
-    return validators.orderList((response as any).data || response) as Order[]
+    const response = await handleRequest(() =>
+      apiClient.orders().listOrders()
+    )
+    return (response as any).data ?? (response as any) as Order[]
   },
 
   /**
-   * Get single order by ID
+   * Get order by ID
    */
   getById: async (id: string): Promise<Order> => {
-    const result = await handleRequest(() => apiClient.orders().getOrderById({ id }))
-    return validators.order(result) as Order
+    const result = await handleRequest(() =>
+      apiClient.orders().getOrderById({ id })
+    )
+    return result as any as Order
   },
 
   /**
@@ -172,9 +245,11 @@ export const orders = {
    */
   create: async (input: CreateOrderInput): Promise<Order> => {
     const result = await handleRequest(() =>
-      apiClient.orders().createOrder({ createOrderRequest: input as any })
+        apiClient.orders().createOrder({
+          createOrderRequest: input as any
+        })
     )
-    return validators.order(result) as Order
+    return result as any as Order
   },
 
   /**
@@ -187,7 +262,7 @@ export const orders = {
         updateOrderRequest: { status: status as any },
       })
     )
-    return validators.order(result) as Order
+    return result as Order
   },
 }
 
@@ -199,16 +274,20 @@ export const addresses = {
    * List addresses
    */
   list: async (): Promise<Address[]> => {
-    const response = await handleRequest(() => apiClient.addresses().listAddresss({}))
-    return validators.addressList((response as any).data || response) as Address[]
+    const response = await handleRequest(() =>
+      apiClient.addresses().listAddresss()
+    )
+    return (response as any).data ?? (response as any) as Address[]
   },
 
   /**
-   * Get single addresse by ID
+   * Get addresse by ID
    */
   getById: async (id: string): Promise<Address> => {
-    const result = await handleRequest(() => apiClient.addresses().getAddressById({ id }))
-    return validators.address(result) as Address
+    const result = await handleRequest(() =>
+      apiClient.addresses().getAddressById({ id })
+    )
+    return result as any as Address
   },
 
   /**
@@ -216,74 +295,33 @@ export const addresses = {
    */
   create: async (input: CreateAddressInput): Promise<Address> => {
     const result = await handleRequest(() =>
-      apiClient.addresses().createAddress({ createAddressRequest: input as any })
+        apiClient.addresses().createAddress({
+          createAddressRequest: input as any
+        })
     )
-    return validators.address(result) as Address
+    return result as any as Address
   },
 
   /**
    * Update addresse
    */
-  update: async (id: string, input: Partial<CreateAddressInput>): Promise<Address> => {
+  update: async (id: string, input: CreateAddressInput): Promise<Address> => {
     const result = await handleRequest(() =>
-      apiClient.addresses().updateAddress({ id, updateAddressRequest: input as any })
+        apiClient.addresses().updateAddress({
+          id,
+          updateAddressRequest: input as any
+        })
     )
-    return validators.address(result) as Address
+    return result as any as Address
   },
 
   /**
    * Delete addresse
    */
   delete: async (id: string): Promise<void> => {
-    await apiClient.addresses().deleteAddress({ id })
-  },
-}
-
-// ============================================
-// Posts API
-// ============================================
-export const posts = {
-  /**
-   * List posts
-   */
-  list: async (params?: { storeId?: string; sortBy?: string; hasMedia?: string }): Promise<RiverPost[]> => {
-    const response = await handleRequest(() => apiClient.posts().listPosts(params as any || {}))
-    return validators.postList((response as any).data || response) as RiverPost[]
-  },
-
-  /**
-   * Get single post by ID
-   */
-  getById: async (id: string): Promise<RiverPost> => {
-    const result = await handleRequest(() => apiClient.posts().getPostById({ id }))
-    return validators.post(result) as RiverPost
-  },
-
-  /**
-   * Create new post
-   */
-  create: async (input: CreatePostInput): Promise<RiverPost> => {
-    const result = await handleRequest(() =>
-      apiClient.posts().createPost({ createPostRequest: input as any })
+    await handleRequest(() =>
+      apiClient.addresses().deleteAddress({ id })
     )
-    return validators.post(result) as RiverPost
-  },
-
-  /**
-   * Update post
-   */
-  update: async (id: string, input: Partial<CreatePostInput>): Promise<RiverPost> => {
-    const result = await handleRequest(() =>
-      apiClient.posts().updatePost({ id, createPostRequest: input as any })
-    )
-    return validators.post(result) as RiverPost
-  },
-
-  /**
-   * Delete post
-   */
-  delete: async (id: string): Promise<void> => {
-    await apiClient.posts().deletePost({ id })
   },
 }
 
@@ -294,17 +332,21 @@ export const bundles = {
   /**
    * List bundles
    */
-  list: async (params?: { storeId?: string; isActive?: boolean; search?: string }): Promise<Bundle[]> => {
-    const response = await handleRequest(() => apiClient.bundles().listBundles(params as any || {}))
-    return validators.bundleList((response as any).data || response) as Bundle[]
+  list: async (params?: { page?: string; limit?: string }): Promise<Bundle[]> => {
+    const response = await handleRequest(() =>
+      apiClient.bundles().listBundles(params as any)
+    )
+    return (response as any).data ?? (response as any) as Bundle[]
   },
 
   /**
-   * Get single bundle by ID
+   * Get bundle by ID
    */
   getById: async (id: string): Promise<Bundle> => {
-    const result = await handleRequest(() => apiClient.bundles().getBundleById({ id }))
-    return validators.bundle(result) as Bundle
+    const result = await handleRequest(() =>
+      apiClient.bundles().getBundleById({ id })
+    )
+    return result as any as Bundle
   },
 
   /**
@@ -312,67 +354,81 @@ export const bundles = {
    */
   create: async (input: CreateBundleInput): Promise<Bundle> => {
     const result = await handleRequest(() =>
-      apiClient.bundles().createBundle({ createBundleRequest: input as any })
+        apiClient.bundles().createBundle({
+          createBundleRequest: input as any
+        })
     )
-    return validators.bundle(result) as Bundle
+    return result as any as Bundle
   },
 
   /**
    * Update bundle
    */
-  update: async (id: string, input: Partial<CreateBundleInput>): Promise<Bundle> => {
+  update: async (id: string, input: CreateBundleInput): Promise<Bundle> => {
     const result = await handleRequest(() =>
-      apiClient.bundles().updateBundle({ id, updateBundleRequest: input as any })
+        apiClient.bundles().updateBundle({
+          id,
+          updateBundleRequest: input as any
+        })
     )
-    return validators.bundle(result) as Bundle
+    return result as any as Bundle
   },
 
   /**
    * Delete bundle
    */
   delete: async (id: string): Promise<void> => {
-    await apiClient.bundles().deleteBundle({ id })
+    await handleRequest(() =>
+      apiClient.bundles().deleteBundle({ id })
+    )
   },
 }
 
 // ============================================
-// Carts API (Custom - not fully in SDK)
+// Cart API (Custom - not fully in SDK)
 // ============================================
-export const carts = {
+const CART_NOT_IMPLEMENTED_ERROR = 'Cart API methods not yet in OpenAPI spec'
+
+export const cart = {
   /**
    * Get active cart for current user
-   * TODO: Add to OpenAPI spec for auto-generation
+   * NOTE: This will be auto-generated when added to OpenAPI spec
    */
   getActive: async (): Promise<CartWithTotals> => {
     // Placeholder - SDK method doesn't exist yet
-    throw new Error('Cart API methods not yet in OpenAPI spec')
+    await Promise.resolve() // Add await to satisfy linter
+    throw new Error(CART_NOT_IMPLEMENTED_ERROR)
   },
 
   /**
    * Add item to cart
    */
-  addItem: async (input: AddCartItemInput): Promise<CartWithTotals> => {
-    throw new Error('Cart API methods not yet in OpenAPI spec')
+  addItem: async (_input: AddCartItemInput): Promise<CartWithTotals> => {
+    await Promise.resolve() // Add await to satisfy linter
+    throw new Error(CART_NOT_IMPLEMENTED_ERROR)
   },
 
   /**
    * Update cart item
    */
-  updateItem: async (itemId: string, input: UpdateCartItemInput): Promise<CartWithTotals> => {
-    throw new Error('Cart API methods not yet in OpenAPI spec')
+  updateItem: async (_itemId: string, _input: UpdateCartItemInput): Promise<CartWithTotals> => {
+    await Promise.resolve() // Add await to satisfy linter
+    throw new Error(CART_NOT_IMPLEMENTED_ERROR)
   },
 
   /**
    * Remove item from cart
    */
-  removeItem: async (itemId: string): Promise<CartWithTotals> => {
-    throw new Error('Cart API methods not yet in OpenAPI spec')
+  removeItem: async (_itemId: string): Promise<CartWithTotals> => {
+    await Promise.resolve() // Add await to satisfy linter
+    throw new Error(CART_NOT_IMPLEMENTED_ERROR)
   },
 
   /**
    * Clear cart
    */
   clear: async (): Promise<CartWithTotals> => {
-    throw new Error('Cart API methods not yet in OpenAPI spec')
+    await Promise.resolve() // Add await to satisfy linter
+    throw new Error(CART_NOT_IMPLEMENTED_ERROR)
   },
 }

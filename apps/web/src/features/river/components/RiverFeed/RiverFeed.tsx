@@ -6,19 +6,19 @@ import { Button } from '@ui/Button'
 import { RiverFilters } from '../RiverFilters'
 
 interface RiverFeedProps {
-  posts: RiverPost[]
-  isLoading: boolean
-  error: Error | null
-  hasMore: boolean
-  onLoadMore: () => void
-  onPostClick?: (postId: string) => void
-  onLike?: (postId: string) => void
-  onComment?: (postId: string) => void
-  onShare?: (postId: string) => void
-  onFiltersChange?: (filters: RiverFiltersType) => void
+  readonly posts: RiverPost[]
+  readonly isLoading: boolean
+  readonly error: Error | null
+  readonly hasMore: boolean
+  readonly onLoadMore: () => void
+  readonly onPostClick?: (postId: string) => void
+  readonly onLike?: (postId: string) => void
+  readonly onComment?: (postId: string) => void
+  readonly onShare?: (postId: string) => void
+  readonly onFiltersChange?: (filters: RiverFiltersType) => void
 }
 
-export const RiverFeed = memo(({
+export const RiverFeed = memo(function RiverFeed({
   posts,
   isLoading,
   error,
@@ -29,7 +29,7 @@ export const RiverFeed = memo(({
   onComment,
   onShare,
   onFiltersChange,
-}: RiverFeedProps) => {
+}: RiverFeedProps) {
   const [filters, setFilters] = useState<RiverFiltersType>({
     sortBy: 'recent',
   })
@@ -41,18 +41,19 @@ export const RiverFeed = memo(({
     }
   }
 
-  // Memoize posts rendering to prevent unnecessary re-renders
-  const memoizedPosts = useMemo(() => 
-    posts.map((post) => (
-      <PostCard
-        key={post.id}
-        post={post}
-        onPostClick={onPostClick}
-        onLike={onLike}
-        onComment={onComment}
-        onShare={onShare}
-      />
-    )),
+    // Memoize posts rendering to prevent unnecessary re-renders
+  const memoizedPosts = useMemo(
+    () =>
+      posts.map((post, index) => (
+        <PostCard
+          key={post.id ?? `post-${index}`}
+          post={post}
+          onPostClick={onPostClick}
+          onLike={onLike}
+          onComment={onComment}
+          onShare={onShare}
+        />
+      )),
     [posts, onPostClick, onLike, onComment, onShare]
   )
 
@@ -60,7 +61,7 @@ export const RiverFeed = memo(({
     return (
       <div className="text-center py-12">
         <p className="text-xl font-bold text-destructive mb-2">Failed to load posts</p>
-        <p className="text-sm text-muted-foreground">{error.message}</p>
+        <p className="text-sm text-muted-foreground">{error.message ?? 'Unknown error'}</p>
       </div>
     )
   }

@@ -14,10 +14,10 @@ interface UseSearchOrchestrationResult {
 }
 
 export function useSearchOrchestration(
-  location: LocationData | null,
+  location: LocationData | undefined,
   stores: StoreWithDistance[] | undefined,
   isLoading: boolean,
-  error: Error | null
+  error: Error | undefined
 ): UseSearchOrchestrationResult {
   // Centralize status logic for better readability and testability
   const getSearchStatus = useCallback((): SearchStatus => {

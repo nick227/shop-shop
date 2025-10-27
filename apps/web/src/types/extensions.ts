@@ -7,31 +7,30 @@
  */
 
 import type { 
-  StoreResponse as SDKStoreResponse,
-  UserResponse as SDKUserResponse,
-  OrderResponse as SDKOrderResponse,
-  ListItems200ResponseDataInner as SDKItemResponse,
-  ListAddresss200ResponseDataInner as SDKAddressResponse,
-  ListCarts200ResponseDataInnerItemsInner as SDKCartItemResponse
-} from '@packages/sdk'
+  StoreResponse,
+  StoreWithDistance,
+  UserResponse,
+  ItemResponse,
+  AddressResponse
+} from '../api/backend-types'
+
+// Note: SDK types are not directly used in this file
+// All interfaces are defined independently for frontend-specific needs
 
 // ========================================
 // Store Extensions
 // ========================================
 
-export interface StoreWithDistance extends SDKStoreResponse {
-  distance?: number;
-  deliveryFee?: number  // Computed from feesJson;
-  minOrder?: number     // Computed from feesJson;
-}
+// StoreWithDistance is now imported from backend-types
+export type { StoreWithDistance }
 
-export interface StoreWithLocation extends SDKStoreResponse {
+export interface StoreWithLocation extends StoreResponse {
   city?: string    // Flattened from addressCity;
   state?: string   // Flattened from addressState;
   zipCode?: string // Flattened from addressZip;
 }
 
-export interface StoreWithFees extends SDKStoreResponse {
+export interface StoreWithFees extends StoreResponse {
   deliveryFee: number;
   minOrder: number;
   serviceFeePercent: number;
@@ -41,7 +40,7 @@ export interface StoreWithFees extends SDKStoreResponse {
 // User Extensions;
 // ========================================
 
-export interface UserWithName extends SDKUserResponse {
+export interface UserWithName extends UserResponse {
   name: string  // Computed from firstName + lastName;
   displayName?: string // Formatted display name;
 }
@@ -50,19 +49,41 @@ export interface UserWithName extends SDKUserResponse {
 // Order Extensions;
 // ========================================
 
-export interface OrderWithDetails extends SDKOrderResponse {
+export interface OrderWithDetails {
+  // Base order properties
+  id: string;
+  userId: string;
+  storeId: string;
+  cartId: string | null;
+  status: string;
+  deliveryType: string;
+  paymentStatus: string;
+  subtotal: string;
+  fees: string;
+  tax: string;
+  tip: string;
+  total: string;
+  serviceFeePercent: string;
+  serviceFeeAmount: string;
+  netToVendor: string;
+  createdAt: string;
+  updatedAt?: string;
+  
+  // Extended properties
   store?: { id: string; name: string }
+  user?: { name?: string; phone?: string; email?: string }
   items?: OrderItem[]
-  // addressSnapshot is already in SDKOrderResponse as { [key: string]: any | null; } | null
-  stripePaymentIntentId?: string | null;
-  stripeChargeId?: string | null;
+  totalAmount?: number
+  addressSnapshot?: AddressSnapshot
+  stripePaymentIntentId?: string;
+  stripeChargeId?: string;
 }
 
 // ========================================
 // Item Extensions;
 // ========================================
 
-export interface ItemWithStore extends SDKItemResponse {
+export interface ItemWithStore extends ItemResponse {
   storeName?: string;
   storeSlug?: string;
 }
@@ -71,7 +92,7 @@ export interface ItemWithStore extends SDKItemResponse {
 // Address Extensions;
 // ========================================
 
-export interface AddressWithCoordinates extends SDKAddressResponse {
+export interface AddressWithCoordinates extends AddressResponse {
   lat?: number;
   lng?: number;
 }
@@ -80,30 +101,48 @@ export interface AddressWithCoordinates extends SDKAddressResponse {
 // Supporting Types;
 // ========================================
 
-// Use SDK cart item type as base for order items
+// Order item interface for order details
 // Note: Cart items become order items when order is created
-export interface OrderItem extends Omit<SDKCartItemResponse, 'cartId'> {
+export interface OrderItem {
+  id: string;
   orderId: string; // Replace cartId with orderId for order context
+  itemId: string;
+  quantity: number;
+  unitPrice: string;
+  titleSnapshot?: string;
   optionsSnapshot?: Record<string, unknown> // Rename optionsJson for consistency
+  weight?: number;
 }
 
-// Use SDK address type as base for address snapshots
-export interface AddressSnapshot extends Pick<SDKAddressResponse, 'line1' | 'line2' | 'city' | 'state' | 'postalCode' | 'country'> {
-  // All required fields are already included from SDK type
+// Address snapshot interface for order details
+export interface AddressSnapshot {
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
 }
 
 // ========================================
 // Type Guards;
 // ========================================
 
-export function isStoreWithDistance(store: SDKStoreResponse): store is StoreWithDistance {
+export function isStoreWithDistance(store: StoreResponse): store is StoreWithDistance {
   return 'distance' in store;
 }
 
-export function isStoreWithFees(store: SDKStoreResponse): store is StoreWithFees {
+export function isStoreWithFees(store: StoreResponse): store is StoreWithFees {
   return 'deliveryFee' in store && 'minOrder' in store;
 }
 
-export function isOrderWithDetails(order: SDKOrderResponse): order is OrderWithDetails {
-  return 'store' in order || 'items' in order;
+export function isOrderWithDetails(order: unknown): order is OrderWithDetails {
+  return (
+    order !== null &&
+    typeof order === 'object' &&
+    'id' in order &&
+    'userId' in order &&
+    'storeId' in order &&
+    'status' in order
+  );
 }

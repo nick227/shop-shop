@@ -11,7 +11,7 @@ import { hasValidCoordinates } from '../utils/storeAccessors'
 const processStoresOptimized = (stores: any[], userLocation: any) => ({
   validStores: stores,
   storeLocations: stores.map(store => ({ latitude: store.lat, longitude: store.lng })),
-  nearestStore: stores[0] || null,
+  nearestStore: stores[0] || undefined,
   minDistance: 0,
   maxDistance: 100
 })
@@ -19,7 +19,7 @@ const processStoresOptimized = (stores: any[], userLocation: any) => ({
 export interface MapData {
   validStores: StoreWithDistance[]
   storeLocations: LocationCoordinates[]
-  nearestStore: StoreWithDistance | null
+  nearestStore: StoreWithDistance | undefined
   mapCenter: [number, number]
   mapZoom: number
   minDistance: number
@@ -57,7 +57,7 @@ export function useMapData({
       return {
         validStores: [],
         storeLocations: [],
-        nearestStore: null,
+        nearestStore: undefined,
         mapCenter: defaultCenter,
         mapZoom: defaultZoom,
         minDistance: 0,
@@ -141,7 +141,7 @@ export function useOptimizedMarkers(
       distance?: number
     }[] = []
     
-    let nearestStore: StoreWithDistance | null = null
+    let nearestStore: StoreWithDistance | undefined = undefined
     let minDistance = Infinity
     
     // Process in batches for better performance
@@ -163,7 +163,7 @@ export function useOptimizedMarkers(
         markerData.push({
           store,
           isNearest,
-          position: [store.latitude, store.longitude],
+          position: [Number(store.latitude), Number(store.longitude)],
           distance: store.distance
         })
       }

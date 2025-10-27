@@ -57,7 +57,7 @@ export default function ItemFormPage() {
         isActive: item.isActive ?? true,
         isSoldOut: item.isSoldOut ?? false,
         stockQty: item.stockQty?.toString() || '',
-        sortIndex: item.sortIndex || 0,
+        sortIndex: item.sortIndex ?? 0,
       })
     }
   }, [item])
@@ -73,7 +73,7 @@ export default function ItemFormPage() {
           price: data.price,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
-          stockQty: data.stockQty ? Number.parseInt(data.stockQty) : undefined,
+          stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
         },
       })
@@ -100,7 +100,7 @@ export default function ItemFormPage() {
           price: data.price,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
-          stockQty: data.stockQty ? Number.parseInt(data.stockQty) : undefined,
+          stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
         },
       })
@@ -121,7 +121,7 @@ export default function ItemFormPage() {
     e.preventDefault()
 
     // Validate price
-    if (!formData['price'] || Number.parseFloat(formData['price']) < 0) {
+    if (!formData.price || Number.parseFloat(formData.price) < 0) {
       toast.error('Please enter a valid price')
       return
     }
@@ -129,20 +129,19 @@ export default function ItemFormPage() {
     if (isEdit) {
       updateItemMutation.mutate({
         ...formData,
-        price: parseFloat(formData['price']),
-        stockQty: parseInt(formData['stockQty']) || 0
-      } as any)
+        price: formData.price,
+        stockQty: formData.stockQty || '0'
+      })
     } else {
       createItemMutation.mutate({
         ...formData,
-        storeId: storeId!,
-        price: parseFloat(formData['price']),
-        stockQty: parseInt(formData['stockQty']) || 0
-      } as any)
+        price: formData.price,
+        stockQty: formData.stockQty || '0'
+      })
     }
   }
 
-  const handleChange = (field: keyof typeof formData, value: string | number | boolean) => {
+  const handleChange = (field: keyof typeof formData | 'storeId', value: string | number | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -154,10 +153,12 @@ export default function ItemFormPage() {
     ? [
         ...sections,
         {
+          id: 'media',
+          icon: '📷',
           title: 'Item Media',
           description: 'Upload images and videos to showcase your item',
-          component: <MediaUploader itemId={itemId} maxFiles={5} />,
-        } as any,
+          content: <MediaUploader itemId={itemId} maxFiles={5} />,
+        },
       ]
     : sections
 

@@ -20,7 +20,7 @@ export interface CacheMonitorStats {
 }
 
 class ApiCacheMonitor {
-  private static instance: ApiCacheMonitor | null = null
+  private static instance: ApiCacheMonitor | undefined = undefined
   private stats: CacheMonitorStats[] = []
   private readonly maxStatsHistory = 100
 
@@ -39,17 +39,17 @@ class ApiCacheMonitor {
     const memoryUsage = this?.getMemoryUsage()
     
     const stats: CacheMonitorStats = {
-      cacheSize: (cacheStats as any)?.cacheSize || 0,
-      maxCacheSize: (cacheStats as any)?.maxCacheSize || 1000,
-      memoryUsage: memoryUsage || 0,
+      cacheSize: (cacheStats as unknown as { cacheSize?: number })?.cacheSize ?? 0,
+      maxCacheSize: (cacheStats as unknown as { maxCacheSize?: number })?.maxCacheSize ?? 1000,
+      memoryUsage: memoryUsage ?? 0,
       timestamp: Date.now(),
-      configVersion: (cacheStats as any)?.configVersion,
-      instanceVersions: (cacheStats as any)?.instanceVersions,
-      staleInstances: (cacheStats as any)?.staleInstances,
-      hitRate: (cacheStats as any)?.hitRate,
-      missRate: (cacheStats as any)?.missRate,
-      totalRequests: (cacheStats as any)?.totalRequests,
-      averageAccessTime: (cacheStats as any)?.averageAccessTime
+      configVersion: (cacheStats as unknown as { configVersion?: number })?.configVersion,
+      instanceVersions: (cacheStats as unknown as { instanceVersions?: Record<string, number> })?.instanceVersions,
+      staleInstances: (cacheStats as unknown as { staleInstances?: string[] })?.staleInstances,
+      hitRate: (cacheStats as unknown as { hitRate?: number })?.hitRate,
+      missRate: (cacheStats as unknown as { missRate?: number })?.missRate,
+      totalRequests: (cacheStats as unknown as { totalRequests?: number })?.totalRequests,
+      averageAccessTime: (cacheStats as unknown as { averageAccessTime?: number })?.averageAccessTime
     }
     
     this.stats?.push(stats)
@@ -67,7 +67,7 @@ class ApiCacheMonitor {
    */
   private getMemoryUsage(): number | undefined {
     if ('memory' in performance) {
-      return (performance as any).memory.usedJSHeapSize / 1024 / 1024 // MB
+      return (performance as unknown as { memory: { usedJSHeapSize: number } }).memory.usedJSHeapSize / 1024 / 1024 // MB
     }
     return undefined
   }
@@ -84,12 +84,12 @@ class ApiCacheMonitor {
     if (!latest) return 'No cache statistics available'
     
     const avgCacheSize = this.stats.reduce((sum, stat) => sum + stat.cacheSize, 0) / this.stats.length
-    const memoryStats = this.stats.filter(stat => stat.memoryUsage !== undefined)
+    const memoryStats = this.stats.filter(stat => stat.memoryUsage != undefined)
     const avgMemoryUsage = memoryStats.length > 0 
-      ? memoryStats.reduce((sum, stat) => sum + (stat.memoryUsage || 0), 0) / memoryStats.length
+      ? memoryStats.reduce((sum, stat) => sum + (stat.memoryUsage ?? 0), 0) / memoryStats.length
       : 0
 
-    return ('API Cache Performance Report:\n============================\nCurrent Cache Size: ' + latest.cacheSize + '/' + latest.maxCacheSize + '\nAverage Cache Size: ' + avgCacheSize.toFixed(1) + '\nConfig Version: ' + (latest.configVersion || 0) + '\nMemory Usage: ' + (latest.memoryUsage ? latest.memoryUsage.toFixed(2) + 'MB' : 'N/A') + '\nAverage Memory: ' + (avgMemoryUsage ? avgMemoryUsage.toFixed(2) + 'MB' : 'N/A') + '\n\nPerformance Recommendations:\n' + this.getRecommendations(latest, avgCacheSize, avgMemoryUsage)).trim()
+    return ('API Cache Performance Report:\n============================\nCurrent Cache Size: ' + latest.cacheSize + '/' + latest.maxCacheSize + '\nAverage Cache Size: ' + avgCacheSize.toFixed(1) + '\nConfig Version: ' + (latest.configVersion ?? 0) + '\nMemory Usage: ' + (latest.memoryUsage ? latest.memoryUsage.toFixed(2) + 'MB' : 'N/A') + '\nAverage Memory: ' + (avgMemoryUsage ? avgMemoryUsage.toFixed(2) + 'MB' : 'N/A') + '\n\nPerformance Recommendations:\n' + this.getRecommendations(latest, avgCacheSize, avgMemoryUsage)).trim()
   }
 
   private getRecommendations(
@@ -138,5 +138,5 @@ export const apiCacheMonitor = ApiCacheMonitor.getInstance()
 
 // Development-only: Add to window for debugging
 if (import.meta.env.DEV && typeof window !== 'undefined') {
-  (window as any).apiCacheMonitor = apiCacheMonitor
+  (window as unknown as { apiCacheMonitor: ApiCacheMonitor }).apiCacheMonitor = apiCacheMonitor
 }

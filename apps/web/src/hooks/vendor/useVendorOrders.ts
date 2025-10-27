@@ -3,10 +3,10 @@
  * Enhanced with generated hooks for better type safety and error handling
  */
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores, orders } from '@api/apiWrapper'
 import { useAuth } from '../useAuth'
 import { sortOrdersByDateDesc, isOrderPending } from '@utils/orderHelpers'
-import type { OrderResponse } from '@api/types'
+import type { OrderResponse } from '@api/backend-types'
 
 export interface UseVendorOrdersOptions {
   status?: string;
@@ -16,45 +16,40 @@ export interface UseVendorOrdersOptions {
 export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
   const { user } = useAuth()
 
-  return useQuery<{ data: OrderResponse[]; meta: { total: number; page: number; limit: number } }>({
-    queryKey: ['vendor-orders', user?.id, options.status],
+  return useQuery<OrderResponse[]>({
+    queryKey: ['vendor-orders', (user as unknown as { id: string }).id, options.status],
     queryFn: async () => {
-      // Fetch orders for all vendor's stores;
-      // First get vendor's stores, then fetch orders for each;
-      const storesResponse = await apiClient.stores().listStores({
-        ownerUserId: user!['id']})
+      // Fetch orders for all vendor's stores
+      // First get vendor's stores, then fetch orders for each
+      const vendorStores = await stores.list()
       
-      const stores = storesResponse?.data || []
-      
-      if (stores.length === 0) {
-        return { data: [], meta: { total: 0, page: 1, limit: 100 } }
+      if (vendorStores.length === 0) {
+        return []
       }
 
-      // Fetch orders for all stores;
-      const ordersPromises = stores.map(store =>
-        apiClient.orders().listOrders({
-          storeId: store.id,
-          ...(options.status && { status: options.status as any })})
-      )
+      // Fetch orders for all stores
+      const ordersPromises = vendorStores.map(async () => {
+        const allOrders = await orders.list() as OrderResponse[]
+        // Filter by status if provided
+        if (options.status) {
+          return allOrders.filter((order: OrderResponse) => order.status === options.status)
+        }
+        return allOrders
+      })
 
       const ordersResponses = await Promise.all(ordersPromises)
       
-      // Combine all orders;
-      const allOrders = ordersResponses.flatMap(response => response?.data || [])
+      // Combine all orders
+      const allOrders = ordersResponses.flat()
       
       // Sort by newest first (using consolidated helper)
       allOrders.sort(sortOrdersByDateDesc)
 
-      return {
-        data: allOrders,
-        meta: {
-          total: allOrders.length,
-          page: 1,
-          limit: 100}}
+      return allOrders
     },
     enabled: !!user,
-    refetchInterval: options.refetchInterval || 30_000, // Default: refresh every 30 sec;
-    select: (data) => data?.data || []})
+    refetchInterval: options.refetchInterval ?? 30_000, // Default: refresh every 30 sec
+  })
 }
 
 /**
@@ -64,28 +59,25 @@ export function usePendingOrderCount() {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: ['vendor-pending-orders-count', user?.id],
+    queryKey: ['vendor-pending-orders-count', (user as unknown as { id: string }).id],
     queryFn: async () => {
-      const storesResponse = await apiClient.stores().listStores({
-        ownerUserId: user!['id']})
+      const vendorStores = await stores.list()
       
-      const stores = storesResponse?.data || []
+      if (vendorStores.length === 0) return 0
       
-      if (stores.length === 0) return 0;
-      // Fetch orders for all stores (only active statuses)
-      const ordersPromises = stores.map(store =>
-        apiClient.orders().listOrders({
-          storeId: store.id})
-      )
+      // Fetch orders for all stores
+      const ordersPromises = vendorStores.map(async () => {
+        return await orders.list() as OrderResponse[]
+      })
 
       const ordersResponses = await Promise.all(ordersPromises)
-      const allOrders = ordersResponses.flatMap(response => response?.data || [])
+      const allOrders = ordersResponses.flat()
       
       // Count pending orders (using consolidated helper)
-      return allOrders.filter(order => isOrderPending(order.status)).length;
+      return allOrders.filter((order: OrderResponse) => isOrderPending(order.status)).length
     },
     enabled: !!user,
-    refetchInterval: 15_000, // Refresh every 15 sec for widget;
+    refetchInterval: 15_000, // Refresh every 15 sec for widget
   })
 }
 

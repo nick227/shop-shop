@@ -27,7 +27,7 @@ jest.mock('leaflet', () => ({
 
 jest.mock('@utils/storeAccessors', () => ({
   hasValidCoordinates: jest.fn((store: StoreWithDistance) => 
-    store.latitude != undefined && store.longitude != undefined
+    store.latitude !== undefined && store.longitude !== undefined
   )
 }))
 
@@ -131,7 +131,7 @@ describe('StoreMapOptimized', () => {
       reviewCount: 100,
       prepTimeMin: 30,
       deliveryFee: 2.99,
-      minOrder: 15.00,
+      minOrder: 15,
       serviceFeePercent: 10,
       deliveryRadius: 5,
       isOpen: true,
@@ -161,7 +161,7 @@ describe('StoreMapOptimized', () => {
     render(
       <StoreMapOptimized
         stores={mockStores}
-        userLocation={mockUserLocation as LocationCoordinates}
+        userLocation={mockUserLocation as any}
         radiusMiles={25}
         onStoreClick={mockOnStoreClick}
       />
@@ -227,7 +227,7 @@ describe('StoreMapOptimized', () => {
     render(
       <StoreMapOptimized
         stores={mockStores}
-        userLocation={mockUserLocation as LocationCoordinates}
+        userLocation={mockUserLocation as any}
         radiusMiles={25}
       />
     )
@@ -239,7 +239,7 @@ describe('StoreMapOptimized', () => {
     const { useOptimizedMapData } = require('../hooks/useOptimizedMapData')
     useOptimizedMapData.mockReturnValue({
       validStores: [],
-      nearestStore: null,
+      nearestStore: undefined,
       mapCenter: [40.7505, -73.9934],
       mapZoom: 12
     })

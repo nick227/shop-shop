@@ -45,8 +45,7 @@ export * from './dtos/index.js'
 // Export response schemas for frontend validation
 export { 
   StoreResponseSchema, 
-  StoreListResponseSchema,
-  StoreWithDistanceSchema 
+  StoreListResponseSchema
 } from './dtos/store.dto.js'
 
 export { 
@@ -66,6 +65,12 @@ export {
 export { 
   AddressResponseSchema 
 } from './dtos/address.dto.js'
+
+export { 
+  MediaResponseSchema,
+  MediaListResponseSchema,
+  UpdateMediaSortInputSchema
+} from './dtos/media.dto.js'
 
 // Import auth schemas for registration
 // Import auth schemas for manual registration (auth has custom logic)
@@ -89,7 +94,6 @@ import {
 import {
   CreateTipInputSchema,
   TipResponseSchema,
-  ProcessTipInputSchema,
 } from './dtos/tip.dto.js'
 
 // ========================================
@@ -245,7 +249,7 @@ registry.registerPath({
 
 registry.register('CreateTipInput', CreateTipInputSchema)
 registry.register('TipResponse', TipResponseSchema)
-registry.register('ProcessTipInput', ProcessTipInputSchema)
+// ProcessTipInputSchema removed - not available in auto-generated tip DTO
 
 registry.registerPath({
   operationId: 'createTip',
@@ -290,7 +294,7 @@ registry.registerPath({
     }),
     body: {
       content: {
-        'application/json': { schema: ProcessTipInputSchema }
+        'application/json': { schema: CreateTipInputSchema }
       }
     }
   },
@@ -335,6 +339,18 @@ registry.registerPath({
 // ========================================
 // NOTE: Resources are now in apps/server/src/resources/
 // They are imported by openapi.ts build script, not at runtime
+
+// Export auth schemas and types
+export {
+  SignupInputSchema,
+  LoginInputSchema,
+  UserPublicResponseSchema,
+  AuthResponseSchema,
+  type SignupInput,
+  type LoginInput,
+  type UserPublicResponse,
+  type AuthResponse,
+} from './dtos/auth.dto.js'
 
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js'

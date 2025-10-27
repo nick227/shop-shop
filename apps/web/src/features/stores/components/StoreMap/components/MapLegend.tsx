@@ -12,20 +12,20 @@ export interface MapLegendProps {
 
 export function MapLegend({ userLocation, storeCount, radiusMiles }: MapLegendProps) {
   return (
-    <div className={styles['legend']}>
+    <div className={styles.legend}>
       {userLocation && (
-        <div className={styles['legendItem']}>
-          <span className={styles['legendIcon']}>📍</span>
+        <div className={styles.legendItem}>
+          <span className={styles.legendIcon}>📍</span>
           <span>Your Location</span>
         </div>
       )}
-      <div className={styles['legendItem']}>
-        <span className={styles['legendIcon']}>🍽️</span>
+      <div className={styles.legendItem}>
+        <span className={styles.legendIcon}>🍽️</span>
         <span>Restaurants ({storeCount})</span>
       </div>
       {userLocation && radiusMiles && (
-        <div className={styles['legendItem']}>
-          <span className={styles['legendCircle']}></span>
+        <div className={styles.legendItem}>
+          <span className={styles.legendCircle}></span>
           <span>{radiusMiles} mi radius</span>
         </div>
       )}

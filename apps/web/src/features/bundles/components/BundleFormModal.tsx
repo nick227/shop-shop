@@ -3,22 +3,21 @@
  * Modal for creating and editing bundles
  */
 import { useState, useEffect } from 'react'
-import { Dialog } from '../../../components/ui/Dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/Dialog'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { TextArea } from '../../../components/ui/TextArea'
-import { Select } from '../../../components/ui/Select'
+import { Select, SelectItem } from '../../../components/ui/Select'
 import { BundleItemSelector } from './BundleItemSelector'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import { useBundlePricing } from '../hooks/useBundlePricing'
 import type { Bundle } from '../../../api/types'
 import type { BundleFormData } from '../types/bundle.types'
 
 interface BundleFormModalProps {
-  storeId: string
-  bundle?: Bundle | null
-  onClose: () => void
-  className?: string
+  readonly storeId: string
+  readonly bundle?: Bundle
+  readonly onClose: () => void
+  readonly className?: string
 }
 
 export function BundleFormModal({
@@ -103,7 +102,7 @@ export function BundleFormModal({
     }))
   }
 
-  const handleItemsChange = (items: Array<{ itemId: string; quantity: number; sortIndex: number }>) => {
+  const handleItemsChange = (items: { itemId: string; quantity: number; sortIndex: number }[]) => {
     setFormData(prev => ({
       ...prev,
       items
@@ -114,23 +113,23 @@ export function BundleFormModal({
     const newErrors: Record<string, string> = {}
 
     if (!formData['name'].trim()) {
-      newErrors.name = 'Bundle name is required'
+      newErrors['name'] = 'Bundle name is required'
     }
 
     if (formData['items'].length === 0) {
-      newErrors.items = 'At least one item is required'
+      newErrors['items'] = 'At least one item is required'
     }
 
     if (formData.pricing.pricingType === 'FIXED_PRICE' && (!formData.pricing['fixedPrice'] || formData.pricing['fixedPrice'] <= 0)) {
-      newErrors.fixedPrice = 'Fixed price must be greater than 0'
+      newErrors['fixedPrice'] = 'Fixed price must be greater than 0'
     }
 
     if (formData.pricing.pricingType === 'DISCOUNT_PERCENT' && (!formData.pricing['discountPercent'] || formData.pricing['discountPercent'] <= 0)) {
-      newErrors.discountPercent = 'Discount percentage must be greater than 0'
+      newErrors['discountPercent'] = 'Discount percentage must be greater than 0'
     }
 
     if (formData.pricing.pricingType === 'DISCOUNT_AMOUNT' && (!formData.pricing['discountAmount'] || formData.pricing['discountAmount'] <= 0)) {
-      newErrors.discountAmount = 'Discount amount must be greater than 0'
+      newErrors['discountAmount'] = 'Discount amount must be greater than 0'
     }
 
     setErrors(newErrors)
@@ -147,11 +146,7 @@ export function BundleFormModal({
     setIsSubmitting(true)
 
     try {
-      if (isEditing && bundle) {
-        await updateBundle(bundle.id, formData)
-      } else {
-        await createBundle(formData)
-      }
+      await (isEditing && bundle ? updateBundle(bundle.id, formData) : createBundle(formData));
       
       onClose()
     } catch (error) {
@@ -170,14 +165,12 @@ export function BundleFormModal({
   const isLoading = isCreating || isUpdating || isSubmitting
 
   return (
-    <Dialog
-      isOpen={true}
-      onClose={onClose}
-      title={isEditing ? 'Edit Bundle' : 'Create Bundle'}
-      size="lg"
-      className={className}
-    >
-      <form onSubmit={handleSubmit} className="bundle-form">
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={`max-w-4xl ${className}`}>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Edit Bundle' : 'Create Bundle'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="bundle-form">
         <div className="bundle-form__section">
           <h3>Basic Information</h3>
           
@@ -186,10 +179,10 @@ export function BundleFormModal({
             <Input
               id="name"
               type="text"
-              value={formData.name}
+              value={formData['name']}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="e.g., Burger Combo"
-              error={errors.name}
+              error={errors['name']}
             />
           </div>
 
@@ -222,7 +215,7 @@ export function BundleFormModal({
             storeId={storeId}
             items={formData.items}
             onChange={handleItemsChange}
-            error={errors.items}
+            error={errors['items'] || undefined}
           />
         </div>
 
@@ -232,13 +225,12 @@ export function BundleFormModal({
           <div className="bundle-form__field">
             <label htmlFor="pricingType">Pricing Type</label>
             <Select
-              id="pricingType"
               value={formData.pricing.pricingType}
-              onChange={(e) => handlePricingChange('pricingType', e.target.value)}
+              onValueChange={(value) => handlePricingChange('pricingType', value)}
             >
-              <option value="FIXED_PRICE">Fixed Price</option>
-              <option value="DISCOUNT_PERCENT">Percentage Discount</option>
-              <option value="DISCOUNT_AMOUNT">Amount Discount</option>
+              <SelectItem value="FIXED_PRICE">Fixed Price</SelectItem>
+              <SelectItem value="DISCOUNT_PERCENT">Percentage Discount</SelectItem>
+              <SelectItem value="DISCOUNT_AMOUNT">Amount Discount</SelectItem>
             </Select>
           </div>
 
@@ -251,7 +243,7 @@ export function BundleFormModal({
                 step="0.01"
                 min="0"
                 value={formData.pricing.fixedPrice || ''}
-                onChange={(e) => handlePricingChange('fixedPrice', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handlePricingChange('fixedPrice', Number.parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 error={errors.fixedPrice}
               />
@@ -268,7 +260,7 @@ export function BundleFormModal({
                 min="0"
                 max="100"
                 value={formData.pricing.discountPercent || ''}
-                onChange={(e) => handlePricingChange('discountPercent', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handlePricingChange('discountPercent', Number.parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 error={errors.discountPercent}
               />
@@ -284,7 +276,7 @@ export function BundleFormModal({
                 step="0.01"
                 min="0"
                 value={formData.pricing.discountAmount || ''}
-                onChange={(e) => handlePricingChange('discountAmount', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handlePricingChange('discountAmount', Number.parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 error={errors.discountAmount}
               />
@@ -327,7 +319,8 @@ export function BundleFormModal({
             {isLoading ? 'Saving...' : (isEditing ? 'Update Bundle' : 'Create Bundle')}
           </Button>
         </div>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   )
 }
@@ -337,55 +330,97 @@ export const bundleFormModalStyles = `
 .bundle-form {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-8);
 }
 
 .bundle-form__section {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .bundle-form__section h3 {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: var(--border-width-1) solid var(--color-border-default);
+  padding-bottom: var(--space-2);
+  line-height: var(--leading-tight);
 }
 
 .bundle-form__field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .bundle-form__field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--leading-normal);
+}
+
+.bundle-form__field input,
+.bundle-form__field textarea,
+.bundle-form__field select {
+  min-height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-1) solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  transition: var(--transition-color);
+  background: var(--color-surface-base);
+}
+
+.bundle-form__field input:focus,
+.bundle-form__field textarea:focus,
+.bundle-form__field select:focus {
+  outline: none;
+  border-color: var(--color-border-accent);
+  box-shadow: var(--focus-ring);
 }
 
 .bundle-form__error {
-  padding: 0.75rem;
-  background: var(--error-background);
-  border: 1px solid var(--error-color);
-  border-radius: 0.375rem;
-  color: var(--error-color);
-  margin-bottom: 1rem;
+  padding: var(--space-3);
+  background: var(--color-error-light);
+  border: var(--border-width-1) solid var(--color-error);
+  border-radius: var(--radius-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-4);
 }
 
 .bundle-form__error p {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 .bundle-form__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--border-width-1) solid var(--color-border-default);
+}
+
+.bundle-form__actions button {
+  min-height: var(--button-height-md);
+  padding: var(--button-padding-x-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-color);
+}
+
+.bundle-form__actions button:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.bundle-form__actions button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
 }
 `

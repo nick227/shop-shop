@@ -62,7 +62,7 @@ export default function StoreFormPage() {
     mutationFn: async (data: typeof formData) => {
       return await apiClient.stores().updateStore({
         id: storeId!,
-        updateStoreRequest: data,
+        createStoreRequest: data,
       })
     },
     onSuccess: () => {
@@ -86,14 +86,7 @@ export default function StoreFormPage() {
     if (isEdit) {
       updateStoreMutation.mutate(cleanedData)
     } else {
-      createStoreMutation.mutate({
-        ...cleanedData,
-        latitude: parseFloat(cleanedData.latitude),
-        longitude: parseFloat(cleanedData.longitude),
-        // deliveryRadius: parseFloat(cleanedData.deliveryRadius), // Removed due to type mismatch
-        prepTimeMin: parseInt(cleanedData.prepTimeMin) || 0,
-        deliveryFee: parseFloat(cleanedData["deliveryFee"])
-      } as any)
+      createStoreMutation.mutate(cleanedData as any)
     }
   }
 
@@ -104,8 +97,8 @@ export default function StoreFormPage() {
     if (field === 'name' && !isEdit) {
       const slug = String(value)
         .toLowerCase()
-        .replace(/[^\da-z]+/g, '-')
-        .replace(/^-|-$/g, '')
+        .replaceAll(/[^\da-z]+/g, '-')
+        .replaceAll(/^-|-$/g, '')
       setFormData((prev) => ({ ...prev, slug }))
     }
   }

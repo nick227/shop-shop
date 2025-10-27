@@ -16,7 +16,7 @@ export const DEFAULT_DELIVERY_FEE = 3.99;
 /**
  * Minimum order amount for free delivery;
  */
-export const FREE_DELIVERY_THRESHOLD = 25.00;
+export const FREE_DELIVERY_THRESHOLD = 25;
 /**
  * Service fee percentage;
  */
@@ -24,7 +24,7 @@ export const SERVICE_FEE_RATE = 0.03;
 /**
  * Tip percentages for quick selection;
  */
-export const TIP_PERCENTAGES = [0.15, 0.18, 0.20, 0.25] as const;
+export const TIP_PERCENTAGES = [0.15, 0.18, 0.2, 0.25] as const;
 /**
  * Default tip percentage;
  */
@@ -207,27 +207,27 @@ export function validatePricing({
   const errors: string[] = []
 
   if (subtotal < 0) {
-    errors['push']('Subtotal cannot be negative')
+    errors.push('Subtotal cannot be negative')
   }
 
   if (deliveryFee < 0) {
-    errors['push']('Delivery fee cannot be negative')
+    errors.push('Delivery fee cannot be negative')
   }
 
   if (tax < 0) {
-    errors['push']('Tax cannot be negative')
+    errors.push('Tax cannot be negative')
   }
 
   if (tip < 0) {
-    errors['push']('Tip cannot be negative')
+    errors.push('Tip cannot be negative')
   }
 
   if (serviceFee < 0) {
-    errors['push']('Service fee cannot be negative')
+    errors.push('Service fee cannot be negative')
   }
 
   return {
-    isValid: errors['length'] === 0,
+    isValid: errors.length === 0,
     errors
   }
 }

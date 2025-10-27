@@ -31,7 +31,7 @@ export function Carousel({
   showControls = true,
   className = ''
 }: Readonly<CarouselProps>) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>()
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
 
@@ -120,7 +120,7 @@ export function Carousel({
         )}
 
         <div
-          ref={scrollRef}
+          ref={scrollRef as React.RefObject<HTMLDivElement>}
           className={styles.scrollContainer}
           onScroll={handleScroll}
         >

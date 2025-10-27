@@ -9,11 +9,11 @@ import type { StoreWithDistance } from '@api/types'
 interface ResultsSectionProps {
   searchStatus: 'idle' | 'loading' | 'error' | 'no-results' | 'results'
   stores: StoreWithDistance[] | undefined;
-  geocodingError: string | null;
+  geocodingError: string | undefined;
   onClearGeocodingError: () => void;
   children: React.ReactNode;
-  location: LocationData | null;
-  error: Error | null;
+  location: LocationData | undefined;
+  error: Error | undefined;
   isProd: boolean;
 }
 

@@ -139,7 +139,7 @@ export const SAMPLE_STORES: SampleStore[] = [
 export function getSampleStoresForLocation(
   latitude: number, 
   longitude: number, 
-  radiusMiles: number = 25
+  radiusMiles = 25
 ): SampleStore[] {
   // For development, return all sample stores;
   // In a real implementation, you'd filter by distance;

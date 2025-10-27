@@ -5,14 +5,14 @@ import type { LocationData } from '@/types/location.types'
 import { styles } from '@utils/tailwind-classes'
 
 interface LocationHistoryProps {
-  history: LocationData[]
-  onSelect: (location: LocationData) => void
-  onSetDefault: (location: LocationData) => void
+  readonly history: LocationData[]
+  readonly onSelect: (location: LocationData) => void
+  readonly onSetDefault: (location: LocationData) => void
 }
 
 export function LocationHistory({ history, onSelect, onSetDefault }: LocationHistoryProps) {
   if (history.length === 0) {
-    return null
+    return undefined
   }
 
   const formatLocationName = (location: LocationData): string => {
@@ -20,8 +20,8 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
       return location.displayName
     }
     
-    if (location["city"] && location?.["state"]) {
-      return `${location["city"]}, ${location["state"]}`
+    if (location.city && location?.state) {
+      return `${location.city}, ${location.state}`
     }
     
     if (location?.zip) {
@@ -45,6 +45,8 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
       case 'address': {
         return '🏠'
       }
+      case 'search':
+      case 'manual':
       default: {
         return '📍'
       }
@@ -67,34 +69,43 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
   }
 
   return (
-    <div className={styles['historyContainer']}>
-      <div className={styles['historyHeader']}>
-        <span className={styles['historyIcon']}>🕒</span>
-        <span className={styles['historyTitle']}>Recent Locations</span>
+    <div className={styles.historyContainer}>
+      <div className={styles.historyHeader}>
+        <span className={styles.historyIcon}>🕒</span>
+        <span className={styles.historyTitle}>Recent Locations</span>
       </div>
       
-      <div className={styles['historyList']}>
+      <div className={styles.historyList}>
         {history.map((location, index) => (
           <div
             key={'${location.latitude}-${location.longitude}-' + index + ''}
-            className={styles['historyItem']}
+            className={styles.historyItem}
             onClick={() => onSelect(location)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelect(location)
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Select location: ${formatLocationName(location)}`}
           >
-            <div className={styles['historyItemContent']}>
-              <span className={styles['historyItemIcon']}>
+            <div className={styles.historyItemContent}>
+              <span className={styles.historyItemIcon}>
                 {getLocationIcon(location?.source)}
               </span>
-              <div className={styles['historyItemText']}>
-                <div className={styles['historyItemName']}>
+              <div className={styles.historyItemText}>
+                <div className={styles.historyItemName}>
                   {formatLocationName(location)}
                 </div>
-                <div className={styles['historyItemMeta']}>
+                <div className={styles.historyItemMeta}>
                   {location.radiusMiles}mi radius • {formatTimeAgo(location?.timestamp)}
                 </div>
               </div>
             </div>
             <button
-              className={styles['historyItemButton']}
+              className={styles.historyItemButton}
               onClick={(e) => {
                 e.stopPropagation()
                 onSetDefault(location)

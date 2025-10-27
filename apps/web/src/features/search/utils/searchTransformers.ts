@@ -3,8 +3,7 @@
  * Convert search results to component-specific types
  */
 import type { StoreSearchResult, ProductSearchResult } from '../types/search.types'
-import type { StoreWithDistance } from '@api/types'
-import type { ItemResponse } from '@api/types'
+import type { StoreWithDistance, ItemResponse } from '@api/backend-types'
 
 /**
  * Transform search result to StoreWithDistance
@@ -25,17 +24,35 @@ export function transformStoreResult(result: StoreSearchResult): StoreWithDistan
  * Transform search result to Product
  */
 export function transformProductResult(result: ProductSearchResult): ItemResponse {
-  // Create a minimal ItemResponse with only the required properties
+  // Create a minimal ItemResponse with all required properties
   return {
     id: result.id,
     storeId: result.storeId || '',
+    store: undefined, // Will be populated if needed
     title: result.title || 'Unknown Product',
-    description: result.description || null,
+    description: result.description || '',
     price: typeof result.price === 'number' ? result.price.toString() : (result.price || '0'),
     isActive: result.isActive || false,
     isSoldOut: result.isSoldOut || false,
-    sortIndex: result.sortIndex || 0
-  }
+    sortIndex: result.sortIndex || 0,
+    stockQty: 0, // Default value since stockQty doesn't exist on ProductSearchResult
+    optionsJson: null,
+    allergensJson: null,
+    nutritionJson: null,
+    category: result.category || '',
+    imageUrl: result.imageUrl || '',
+    isVegan: false,
+    isVegetarian: false,
+    isGlutenFree: false,
+    isDairyFree: false,
+    isNutFree: false,
+    isSpicy: false,
+    isOrganic: false,
+    isKeto: false,
+    isLowCarb: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  } as unknown as ItemResponse
 }
 
 /**

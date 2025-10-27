@@ -8,18 +8,16 @@ import type {
   CreateStoreInput, 
   CreateItemInput, 
   CreateAddressInput, 
-  CreateOrderInput, 
-  CreatePostInput,
-  UpdateStoreInput,
-  UpdateItemInput,
-  UpdateAddressInput,
-  UpdateOrderInput,
-  UpdatePostInput
+  CreateOrderInput
 } from '@packages/sdk'
 
 // ========================================
 // Base Form Types
 // ========================================
+
+export type FormFieldType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea' | 'checkbox' | 'select'
+
+export type FormMode = 'create' | 'edit' | 'view'
 
 export interface BaseFormData {
   id?: string
@@ -55,7 +53,7 @@ export interface FormProps<T> {
   onReset?: () => void
   isLoading?: boolean
   errors?: Record<string, string>
-  mode?: 'create' | 'edit' | 'view'
+  mode?: FormMode
   validateOnChange?: boolean
   validateOnBlur?: boolean
   autoSave?: boolean
@@ -65,7 +63,7 @@ export interface FormProps<T> {
 export interface FormFieldProps<T> {
   name: keyof T
   label: string
-  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea' | 'checkbox' | 'select'
+  type?: FormFieldType
   required?: boolean
   placeholder?: string
   helperText?: string
@@ -111,10 +109,6 @@ export type OrderFormData = Required<Pick<CreateOrderInput,
   | 'cartId' | 'deliveryType' | 'addressId' | 'tip'
 >>
 
-// Post Form Data
-export type PostFormData = Required<Pick<CreatePostInput,
-  | 'content' | 'mediaUrls' | 'storeId'
->>
 
 // ========================================
 // Form Validation Types
@@ -128,7 +122,7 @@ export interface FormValidation<T> {
 
 export interface FormValidationRule<T> {
   field: keyof T
-  validator: (value: T[keyof T]) => string | null
+  validator: (value: T[keyof T]) => string | undefined
   message: string
 }
 
@@ -155,7 +149,7 @@ export interface UseFormOptions<T> {
   initialData: T
   onSubmit: (data: T) => void
   validation?: FormValidationRule<T>[]
-  mode?: 'create' | 'edit' | 'view'
+  mode?: FormMode
 }
 
 // ========================================
@@ -183,7 +177,7 @@ export interface FormPageProps<T> {
   onCancel?: () => void
   isLoading?: boolean
   errors?: Record<string, string>
-  mode?: 'create' | 'edit' | 'view'
+  mode?: FormMode
   backLink?: string
   actions?: string[]
 }
@@ -194,7 +188,7 @@ export interface FormPageProps<T> {
 
 export interface FormInitializer<T> {
   createInitial: () => T
-  transformFromEntity: (entity: any) => T
+  transformFromEntity: (entity: unknown) => T
   cleanForSubmission: (data: T) => T
 }
 
@@ -223,6 +217,3 @@ export type OrderFormProps = FormProps<OrderFormData>
 export type OrderFormFieldProps = FormFieldProps<OrderFormData>
 export type OrderFormSectionProps = FormSectionProps<OrderFormData>
 
-export type PostFormProps = FormProps<PostFormData>
-export type PostFormFieldProps = FormFieldProps<PostFormData>
-export type PostFormSectionProps = FormSectionProps<PostFormData>

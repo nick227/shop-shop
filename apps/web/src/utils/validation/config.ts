@@ -17,7 +17,7 @@ const isTest = import.meta.env.MODE === 'test'
 // Default Configuration
 // ============================================
 
-export const defaultany: any = {
+export const defaultConfig: Record<string, unknown> = {
   enableMetrics: true,
   enableLogging: !isProduction, // Disable logging in production for performance
   enableCaching: true,
@@ -29,7 +29,7 @@ export const defaultany: any = {
 // Environment-specific Configurations
 // ============================================
 
-export const developmentConfig: Partial<any> = {
+export const developmentConfig: Partial<Record<string, unknown>> = {
   enableMetrics: true,
   enableLogging: true,
   enableCaching: true,
@@ -37,7 +37,7 @@ export const developmentConfig: Partial<any> = {
   logLevel: 'debug'
 }
 
-export const productionConfig: Partial<any> = {
+export const productionConfig: Partial<Record<string, unknown>> = {
   enableMetrics: true,
   enableLogging: false, // Disable console logging in production
   enableCaching: true,
@@ -45,7 +45,7 @@ export const productionConfig: Partial<any> = {
   logLevel: 'error' // Only log errors in production
 }
 
-export const testConfig: Partial<any> = {
+export const testConfig: Partial<Record<string, unknown>> = {
   enableMetrics: false, // Disable metrics in tests
   enableLogging: false, // Disable logging in tests
   enableCaching: false, // Disable caching in tests for consistency
@@ -59,18 +59,18 @@ export const testConfig: Partial<any> = {
 
 export function getany(): any {
   if (isTest) {
-    return { ...defaultany, ...testConfig }
+    return { ...defaultConfig, ...testConfig }
   }
   
   if (isProduction) {
-    return { ...defaultany, ...productionConfig }
+    return { ...defaultConfig, ...productionConfig }
   }
   
   if (isDevelopment) {
-    return { ...defaultany, ...developmentConfig }
+    return { ...defaultConfig, ...developmentConfig }
   }
   
-  return defaultany
+  return defaultConfig
 }
 
 // ============================================
@@ -168,6 +168,3 @@ export const performanceThresholds = {
 // Export Configuration
 // ============================================
 
-// export {
-//   type any
-// } from './unified' // Removed due to complex type issues

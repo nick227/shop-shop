@@ -5,7 +5,7 @@ import { useState, useRef } from 'react'
 import { Button } from '@ui'
 import { useMediaUpload, useMediaList, useMediaDelete } from '../../hooks/vendor'
 import { toast } from 'sonner'
-import type { MediaResponse } from '@api/types'
+import type { MediaApiResponse } from '@api/types'
 import { 
   compressImage, 
   shouldCompressFile, 
@@ -20,7 +20,7 @@ interface MediaUploaderProps {
 }
 
 export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined)
   const [isCompressing, setIsCompressing] = useState(false)
   const [savedPercent, setSavedPercent] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -87,7 +87,7 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
     })
 
     // Reset state
-    setSelectedFile(null)
+    setSelectedFile(undefined)
     setSavedPercent(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -159,7 +159,7 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
         <div className="text-sm text-gray-500">Loading media...</div>
       ) : (mediaFiles.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {mediaFiles.map((media: MediaResponse) => (
+          {mediaFiles.map((media: MediaApiResponse) => (
             <div key={media.id} className="relative group">
               {/* Media Preview */}
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">

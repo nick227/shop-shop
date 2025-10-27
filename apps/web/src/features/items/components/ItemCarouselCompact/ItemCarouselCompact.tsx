@@ -3,16 +3,16 @@
  */
 import type { TouchEvent } from 'react';
 import { useState, useRef, useCallback, useMemo } from 'react'
-import { Image } from '@ui'
-import { SWIPE_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL } from '@ui/Carousel/constants'
-import type { Item } from '@api/types'
-import { formatCurrency } from '@utils/format'
-import { parsePrice } from '@api/types'
-import { getImageUrl } from '@utils/image'
-import { styles } from '@utils/tailwind-classes'
+import { Image } from '../../../../components/ui'
+import { SWIPE_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL } from '../../../../components/ui/Carousel/constants'
+import type { ItemResponse } from '../../../../api/backend-types'
+import { formatCurrency } from '../../../../utils/format'
+import { parsePrice } from '../../../../utils/format'
+import { getImageUrl } from '../../../../utils/image'
+// import { styles } from '../../../../utils/tailwind-classes' // File not found
 
 export interface ItemCarouselCompactProps {
-  items: Item[]
+  items: ItemResponse[]
   storeName: string
   onClose?: () => void
 }
@@ -65,15 +65,14 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
 
   const currentItem = useMemo(() => items[currentIndex], [items, currentIndex])
   const price = useMemo(() => parsePrice(currentItem?.price || '0'), [currentItem])
-  // @ts-expect-error - imageUrl will be added to Item type when backend supports it
-  const imageUrl = useMemo(() => getImageUrl(currentItem?.imageUrl, currentItem?.id || '', 'item'), [currentItem])
+  const imageUrl = useMemo(() => getImageUrl((currentItem as any)?.imageUrl, currentItem?.id || '', 'item'), [currentItem])
 
-  if (!hasItems) return null
+  if (!hasItems) return undefined
 
   return (
-    <div className={styles['carousel']}>
+    <div className="item-carousel">
       <div 
-        className={styles['slide']}
+        className="item-carousel__slide"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -81,16 +80,16 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
           src={imageUrl}
           alt={currentItem?.title || 'Item'}
           fallbackSeed={currentItem?.id || 'unknown'}
-          className={styles['image']}
+          className="item-carousel__image"
         />
         
-        <div className={styles['overlay']} />
+        <div className="item-carousel__overlay" />
         
-        <div className={styles['content']}>
-          <h1 className={styles['title']}>{currentItem?.title || 'Item'}</h1>
-          <div className={styles['meta']}>
-            <p className={styles['store']}>{storeName}</p>
-            <p className={styles['price']}>{formatCurrency(price)}</p>
+        <div className="item-carousel__content">
+          <h1 className="item-carousel__title">{currentItem?.title || 'Item'}</h1>
+          <div className="item-carousel__meta">
+            <p className="item-carousel__store">{storeName}</p>
+            <p className="item-carousel__price">{formatCurrency(price)}</p>
           </div>
         </div>
       </div>
@@ -99,7 +98,7 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
       {!isFirstSlide && (
         <button
           type="button"
-          className={`${styles['nav']} ${styles['navPrev']}`}
+          className="item-carousel__nav item-carousel__nav--prev"
           onClick={goPrevious}
           aria-label={ARIA_LABEL.PREVIOUS_ITEM}
         >
@@ -110,7 +109,7 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
       {!isLastSlide && (
         <button
           type="button"
-          className={`${styles['nav']} ${styles['navNext']}`}
+          className="item-carousel__nav item-carousel__nav--next"
           onClick={goNext}
           aria-label={ARIA_LABEL.NEXT_ITEM}
         >
@@ -120,12 +119,12 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
 
       {/* Dots Indicator */}
       {hasMultipleItems && (
-        <div className={styles['dots']}>
+        <div className="item-carousel__dots">
           {items.map((_, index) => (
             <button
               key={index}
               type="button"
-              className={`${styles['dot']} ${index === currentIndex ? styles['dotActive'] : ''}`}
+              className={`item-carousel__dot ${index === currentIndex ? 'item-carousel__dot--active' : ''}`}
               onClick={() => goToSlide(index)}
               aria-label={ARIA_LABEL.GO_TO_ITEM(index)}
             />
@@ -137,7 +136,7 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
       {onClose && (
         <button
           type="button"
-          className={styles['close']}
+          className="item-carousel__close"
           onClick={onClose}
           aria-label={ARIA_LABEL.CLOSE_CAROUSEL}
         >

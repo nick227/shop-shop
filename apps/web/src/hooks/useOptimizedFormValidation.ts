@@ -31,7 +31,7 @@ class ValidationPerformanceMonitor {
 
 export interface UseOptimizedFormValidationOptions<T> {
   initialData?: T
-  validators?: Partial<Record<keyof T, (value: any) => string | null>>
+  validators?: Partial<Record<keyof T, (value: any) => string | undefined>>
   requiredFields?: (keyof T)[]
   earlyExitFields?: (keyof T)[]
   debounceMs?: number
@@ -50,7 +50,7 @@ export interface UseOptimizedFormValidationResult<T> {
   setField: (field: keyof T, value: any) => void
   setData: (data: T) => void
   validate: () => OptimizedValidationResult
-  validateField: (field: keyof T) => string | null
+  validateField: (field: keyof T) => string | undefined
   clearErrors: () => void
   reset: () => void
 }
@@ -78,8 +78,8 @@ export function useOptimizedFormValidation<T extends Record<string, any>>(
     earlyExits: 0
   })
   
-  const debounceTimer = useRef<number | null>(null)
-  const validatorRef = useRef<OptimizedFormValidator<T> | null>(null)
+  const debounceTimer = useRef<number | undefined>(undefined)
+  const validatorRef = useRef<OptimizedFormValidator<T> | undefined>(undefined)
   
   // Initialize validator with early exit patterns
   const validator = useMemo(() => {
@@ -103,7 +103,7 @@ export function useOptimizedFormValidation<T extends Record<string, any>>(
   validatorRef.current = validator
   
   // Optimized field validation with early exit
-  const validateField = useCallback((field: keyof T): string | null => {
+  const validateField = useCallback((field: keyof T): string | undefined => {
     const value = (data as any)[field]
     
     // Early exit for empty required fields
@@ -128,7 +128,7 @@ export function useOptimizedFormValidation<T extends Record<string, any>>(
       return validator(value)
     }
     
-    return null
+    return undefined
   }, [data, validators, requiredFields, earlyExitFields])
   
   // Optimized form validation with early exit
@@ -203,7 +203,7 @@ export function useOptimizedFormValidation<T extends Record<string, any>>(
   // Memoized validation state
   const isValid = useMemo(() => {
     return Object.keys(errors).length === 0 && Object.values(data).some(value => 
-      value !== undefined && value !== null && value !== ''
+      value !== undefined && value !== undefined && value !== ''
     )
   }, [errors, data])
   
@@ -248,7 +248,7 @@ const ValidationPatterns = {
     if (!value || (typeof value === 'string' && value.trim() === '')) {
       return 'This field is required'
     }
-    return null
+    return undefined
   },
   
   /**
@@ -258,7 +258,7 @@ const ValidationPatterns = {
     if (value && value.length < min) {
       return 'Must be at least ' + min + ' characters'
     }
-    return null
+    return undefined
   },
   
   /**
@@ -268,7 +268,7 @@ const ValidationPatterns = {
     if (value && value.length > max) {
       return 'Must be no more than ' + max + ' characters'
     }
-    return null
+    return undefined
   },
   
   /**
@@ -278,7 +278,7 @@ const ValidationPatterns = {
     if (value && isNaN(Number(value))) {
       return 'Must be a number'
     }
-    return null
+    return undefined
   },
   
   /**
@@ -286,6 +286,6 @@ const ValidationPatterns = {
    */
   coordinates: (lat: number, lng: number) => {
     const result = locationValidator.validateCoordinates(lat, lng)
-    return result.valid ? null : result.error || 'Invalid coordinates'
+    return result.valid ? undefined : result.error || 'Invalid coordinates'
   }
 } as const

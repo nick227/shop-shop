@@ -9,7 +9,7 @@ import { ResultCard, type CardVariant } from './ResultCard'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult } from '../../types/search.types'
-import type { StoreClickHandler, ProductClickHandler } from '@api/types'
+import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
 import { styles } from '@utils/tailwind-classes'
 
 export type ResultsLayout = 'grid' | 'carousel' | 'mixed'
@@ -42,7 +42,7 @@ function SearchResultsComponent({
   // Early return for empty results (after hooks to follow Rules of Hooks)
   if (results.length === 0) {
     return (
-      <div className={styles['empty']}>
+      <div className={styles.empty}>
         <p>No results found. Try adjusting your search or filters.</p>
       </div>
     )
@@ -51,13 +51,13 @@ function SearchResultsComponent({
   // Grid Layout
   if (layout === 'grid') {
     return (
-      <div className={`${styles['gridLayout']} ${className || ''}`}>
+      <div className={`${styles.gridLayout} ${className || ''}`}>
         {groupByType ? (
           <>
             {transformedStores.length > 0 && (
-              <section className={styles['section']}>
-                <h2 className={styles['sectionTitle']}>Restaurants</h2>
-                <div className={styles['grid']}>
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Restaurants</h2>
+                <div className={styles.grid}>
                   {transformedStores.map(store => (
                     <StoreCardStandard
                       key={store.id}
@@ -70,9 +70,9 @@ function SearchResultsComponent({
             )}
             
             {transformedProducts.length > 0 && (
-              <section className={styles['section']}>
-                <h2 className={styles['sectionTitle']}>Products</h2>
-                <div className={styles['grid']}>
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Products</h2>
+                <div className={styles.grid}>
                   {transformedProducts.map(product => (
                     <ProductCard
                       key={product.id}
@@ -86,7 +86,7 @@ function SearchResultsComponent({
             )}
           </>
         ) : (
-          <div className={styles['grid']}>
+          <div className={styles.grid}>
             {results.map(result => (
               <ResultCard
                 key={result.id}
@@ -105,7 +105,7 @@ function SearchResultsComponent({
   // Carousel Layout
   if (layout === 'carousel') {
     return (
-      <div className={`${styles['carouselLayout']} ${className || ''}`}>
+      <div className={`${styles.carouselLayout} ${className || ''}`}>
         {groupByType ? (
           <>
             {transformedStores.length > 0 && (
@@ -161,11 +161,11 @@ function SearchResultsComponent({
 
   // Mixed Layout
   return (
-    <div className={`${styles['mixedLayout']} ${className || ''}`}>
+    <div className={`${styles.mixedLayout} ${className || ''}`}>
       {transformedStores.length > 0 && (
-        <section className={styles['section']}>
-          <h2 className={styles['sectionTitle']}>Restaurants</h2>
-          <div className={styles['grid']}>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Restaurants</h2>
+          <div className={styles.grid}>
             {transformedStores.map(store => (
               <StoreCardStandard
                 key={store.id}
@@ -178,7 +178,7 @@ function SearchResultsComponent({
       )}
       
       {transformedProducts.length > 0 && (
-        <section className={styles['section']}>
+        <section className={styles.section}>
           <Carousel
             variant="horizontal"
             title="Products"
@@ -186,7 +186,7 @@ function SearchResultsComponent({
             showControls
           >
             {transformedProducts.map(product => (
-              <div key={product.id} className={styles['productCard']}>
+              <div key={product.id} className={styles.productCard}>
                 <ProductCard
                   product={product}
                   onClick={onProductClick}

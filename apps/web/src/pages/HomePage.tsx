@@ -28,7 +28,8 @@ import {
   BenefitsSection,
   UrlParamError,
   ResultsSection,
-  ResultsContainer
+  ResultsContainer,
+  FeaturedBundles
 } from './HomePage/components'
 
 // Radius policy constants - single source of truth
@@ -50,13 +51,13 @@ const getNextRadius = (currentRadius: number) => {
 
 const radiusUtils = {
   // Get display radius (ensures minimum for UI)
-  getDisplay: (location: { radiusMiles?: number } | null | undefined) => {
+  getDisplay: (location: { radiusMiles?: number } | undefined) => {
     const radius = location?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
     return Math.max(radius, RADIUS_POLICY.MIN_MILES)
   },
   
   // Get actual radius (for queries, can be 0)
-  getActual: (location: { radiusMiles?: number } | null | undefined) => {
+  getActual: (location: { radiusMiles?: number } | undefined) => {
     return location?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
   },
   
@@ -72,10 +73,10 @@ export default function HomePage() {
   
   // Extract URL location logic into hook
   const urlLocationResult: {
-    location: LocationData | null
-    urlParamError: string | null
-    setLocation: (location: LocationData | null) => void
-    setUrlParamError: (error: string | null | undefined) => void
+    location: LocationData | undefined
+    urlParamError: string | undefined
+    setLocation: (location: LocationData | undefined) => void
+    setUrlParamError: (error: string | undefined) => void
     clearLocation: () => void
   } = useUrlLocation()
   
@@ -94,19 +95,19 @@ export default function HomePage() {
   const { geocodeLocation, geocodingError, clearError } = useGeocoding()
   
   // Wrapper function to ensure geocoding errors are cleared on any location change
-  const handleLocationChangeWithErrorClear = useCallback((newLocation: LocationData | null) => {
+  const handleLocationChangeWithErrorClear = useCallback((newLocation: LocationData | undefined) => {
     setLocation(newLocation)
     clearError()
   }, [setLocation, clearError])
   
   // Extract location display logic into hook
-  const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores)
+  const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores as StoreWithDistance[] | undefined)
   
   // Extract search orchestration logic into hook
-  const { searchStatus } = useSearchOrchestration(location, stores, isLoading, error)
+  const { searchStatus } = useSearchOrchestration(location, stores as StoreWithDistance[] | undefined, isLoading, error)
   
   // Focus management ref for accessibility
-  const resultsRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLElement>(null)
   const previousHadResults = useRef(false)
   
   // Environment-safe logging helper - Vite approach
@@ -116,7 +117,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!isProd) {
       console.log('🔍 [HomePage] State changed:', {
-        location: location ? 'set' : 'null',
+        location: location ? 'set' : 'undefined',
         stores: stores?.length ?? 0,
         isLoading,
         error: error?.message ?? 'none'
@@ -197,7 +198,7 @@ export default function HomePage() {
         // This will trigger the search with valid coordinates
         handleLocationChangeWithErrorClear(newLocation)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Surface failures via geocodingError - the useGeocoding hook handles this
       if (!isProd) {
         console.error('Geocoding error in handleAvailableLocationClick:', error)
@@ -207,7 +208,7 @@ export default function HomePage() {
 
 
   // Get promotional copy
-  const copy = usePromotionalCopy(locationDisplayName, stores)
+  const copy = usePromotionalCopy(locationDisplayName, stores as StoreWithDistance[] | undefined)
 
   // OPTIMIZED: Simplified conditional logic with early returns
   const currentRadius = radiusUtils.getDisplay(location)
@@ -255,10 +256,13 @@ export default function HomePage() {
           items={copy.benefits.items}
         />
 
+        {/* Featured Bundles */}
+        <FeaturedBundles />
+
         <ResultsSection
           ref={resultsRef}
           searchStatus={searchStatus}
-          stores={stores}
+          stores={stores as StoreWithDistance[] | undefined}
           geocodingError={geocodingError}
           onClearGeocodingError={clearError}
           location={location}
@@ -270,8 +274,8 @@ export default function HomePage() {
             isLoading={isLoading}
             location={location}
             error={error}
-            stores={stores}
-            userLocation={null as LocationCoordinates}
+            stores={stores as StoreWithDistance[] | undefined}
+            userLocation={undefined}
             onStoreClick={handleViewMenu}
             onExpandSearch={handleExpandSearch}
           />

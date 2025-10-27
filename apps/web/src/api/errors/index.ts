@@ -11,11 +11,11 @@ export type { ValidationIssue } from './types'
 /**
  * Parse response body safely
  */
-async function getResponseBody(response: Response): Promise<Record<string, unknown> | null> {
+async function getResponseBody(response: Response): Promise<Record<string, unknown> | undefined> {
   try {
     return await response.clone().json() as Record<string, unknown>
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -30,7 +30,7 @@ async function handleResponseError(error: ResponseError): Promise<AppError> {
   if (!handler) {
     return new AppError('Unknown error', 'UNKNOWN', status, body || undefined)
   }
-  return handler(body || null)
+  return handler(body || undefined)
 }
 
 /**
@@ -50,7 +50,7 @@ function handleFetchError(error: FetchError): AppError {
  * Handle unknown errors
  */
 function handleUnknownError(error: any): AppError {
-  if ((error as any) instanceof Error && error !== null) {
+  if ((error) instanceof Error && error !== undefined) {
     return new AppError(error.message, 'GENERIC_ERROR')
   }
   return new AppError('An unexpected error occurred', 'UNKNOWN')
@@ -60,10 +60,10 @@ function handleUnknownError(error: any): AppError {
  * Main error handler - Routes to appropriate handler
  */
 export async function handleApiError(error: any): Promise<AppError> {
-  if ((error as any) instanceof ResponseError && error !== null) {
+  if ((error) instanceof ResponseError && error !== undefined) {
     return await handleResponseError(error)
   }
-  if ((error as any) instanceof FetchError && error !== null) {
+  if ((error) instanceof FetchError && error !== undefined) {
     return handleFetchError(error)
   }
   return handleUnknownError(error)

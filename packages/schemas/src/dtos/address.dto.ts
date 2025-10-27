@@ -1,78 +1,93 @@
 import { z } from 'zod'
-import { 
-  defineFields,
-  generateCreateInputSchema,
-  generateUpdateInputSchema,
-  generateResponseSchema,
-  generateListResponseSchema,
-} from '../core/dto.generator.js'
 
 // ========================================
-// Address DTOs (Aligned with Prisma Schema)
+// Address DTOs (Auto-Generated from Prisma)
 // ========================================
 
-const addressFields = defineFields([
-  { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'userId', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'label', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'contactName', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'phone', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'line1', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'line2', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'city', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'state', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'postalCode', type: 'String', isOptional: false, hasDefault: false },
-  { name: 'country', type: 'String', isOptional: false, hasDefault: true },
-  { name: 'instructions', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'geo', type: 'Json', isOptional: true, hasDefault: false },
-  { name: 'isDefault', type: 'Boolean', isOptional: false, hasDefault: true },
-  { name: 'isActive', type: 'Boolean', isOptional: false, hasDefault: true },
-  { name: 'externalRef', type: 'String', isOptional: true, hasDefault: false },
-  { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-  { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-  { name: 'archivedAt', type: 'DateTime', isOptional: true, hasDefault: false },
-])
-
-export const CreateAddressInputSchema = generateCreateInputSchema({
-  fields: addressFields,
-  exclude: ['userId'],  // Injected from context
-  overrides: {
-    label: z.string().max(50).optional().describe('Label (e.g., "Home", "Work")'),
-    contactName: z.string().max(100).optional().describe('Recipient name'),
-    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional().describe('Contact phone'),
-    line1: z.string().min(1).max(200).describe('Street address line 1'),
-    line2: z.string().max(200).optional().describe('Street address line 2'),
-    city: z.string().min(1).max(100).describe('City'),
-    state: z.string().min(2).max(2).describe('State code (e.g., CA)'),
-    postalCode: z.string().regex(/^\d{5}(-\d{4})?$/).describe('ZIP code'),
-    instructions: z.string().max(500).optional().describe('Delivery instructions'),
-  },
+export const CreateAddressInputSchema = z.object({
+  userId: z.string(),
+  label: z.string().optional(),
+  contactName: z.string().optional(),
+  phone: z.string().optional(),
+  line1: z.string(),
+  line2: z.string().optional(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  instructions: z.string().optional(),
+  geo: z.record(z.unknown()).optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  externalRef: z.string().optional(),
+  archivedAt: z.string().datetime().optional()
 })
 
-export const UpdateAddressInputSchema = generateUpdateInputSchema({
-  fields: addressFields,
-  overrides: {
-    label: z.string().max(50).optional().describe('Label (e.g., "Home", "Work")'),
-    contactName: z.string().max(100).optional().describe('Recipient name'),
-    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional().describe('Contact phone'),
-    line1: z.string().min(1).max(200).optional().describe('Street address line 1'),
-    line2: z.string().max(200).optional().describe('Street address line 2'),
-    city: z.string().min(1).max(100).optional().describe('City'),
-    state: z.string().min(2).max(2).optional().describe('State code'),
-    postalCode: z.string().regex(/^\d{5}(-\d{4})?$/).optional().describe('ZIP code'),
-    instructions: z.string().max(500).optional().describe('Delivery instructions'),
-  },
+export const UpdateAddressInputSchema = z.object({
+  userId: z.string().optional(),
+  label: z.string().optional(),
+  contactName: z.string().optional(),
+  phone: z.string().optional(),
+  line1: z.string().optional(),
+  line2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  instructions: z.string().optional(),
+  geo: z.record(z.unknown()).optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  externalRef: z.string().optional(),
+  archivedAt: z.string().datetime().optional()
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
+
+export const AddressResponseSchema = z.object({
+  userId: z.string(),
+  user: z.string(),
+  label: z.string().nullable(),
+  contactName: z.string().nullable(),
+  phone: z.string().nullable(),
+  line1: z.string(),
+  line2: z.string().nullable(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  instructions: z.string().nullable(),
+  geo: z.record(z.unknown()).nullable(),
+  isDefault: z.boolean().nullable(),
+  isActive: z.boolean().nullable(),
+  externalRef: z.string().nullable(),
+  orders: z.string(),
+  archivedAt: z.string().datetime().nullable()
 })
 
-export const AddressResponseSchema = generateResponseSchema({
-  fields: addressFields,
+export const AddressListResponseSchema = z.object({
+  data: z.array(AddressResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
 })
 
-export const AddressListResponseSchema = generateListResponseSchema(AddressResponseSchema)
+export const AddressQuerySchema = z.object({
+  page: z.string().transform(Number).default('1'),
+  limit: z.string().transform(Number).default('20'),
+}).transform(data => ({
+  page: data.page,
+  limit: data.limit,
+  filters: Object.keys(data)
+    .filter(k => k !== 'page' && k !== 'limit' && (data as any)[k] !== undefined)
+    .reduce((acc, k) => ({ ...acc, [k]: (data as any)[k] }), {}),
+  orderBy: { createdAt: 'desc' },
+}))
+
+
 
 // Type exports
 export type CreateAddressInput = z.infer<typeof CreateAddressInputSchema>
 export type UpdateAddressInput = z.infer<typeof UpdateAddressInputSchema>
 export type AddressResponse = z.infer<typeof AddressResponseSchema>
 export type AddressListResponse = z.infer<typeof AddressListResponseSchema>
+export type AddressQuery = z.infer<typeof AddressQuerySchema>
 

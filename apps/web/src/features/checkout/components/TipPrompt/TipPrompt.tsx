@@ -23,7 +23,7 @@ export function TipPrompt({
   isProcessing = false}: TipPromptProps) {
   const [amount, setAmount] = useState('')
   const [customAmount, setCustomAmount] = useState('')
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined)
 
   const presetAmounts = [5, 10, 15, 20, 25]
 
@@ -36,7 +36,7 @@ export function TipPrompt({
   const handleCustomAmountChange = (value: string) => {
     setCustomAmount(value)
     setAmount(value)
-    setSelectedPreset(null)
+    setSelectedPreset(undefined)
   }
 
   const handleSubmit = async () => {
@@ -61,17 +61,17 @@ export function TipPrompt({
         <DialogHeader>
           <DialogTitle>Tip Your Driver</DialogTitle>
         </DialogHeader>
-      <div className={styles['container']}>
-        <div className={styles['header']}>
+      <div className={styles.container}>
+        <div className={styles.header}>
           <h2>Thank you for your order!</h2>
           <p>Your order from <strong>{storeName}</strong> has been delivered.</p>
           <p>Would you like to leave a tip for your driver?</p>
         </div>
 
-        <Card className={styles['tipCard']}>
-          <div className={styles['presetAmounts']}>
+        <Card className={styles.tipCard}>
+          <div className={styles.presetAmounts}>
             <h3>Quick tip amounts:</h3>
-            <div className={styles['presetGrid']}>
+            <div className={styles.presetGrid}>
               {presetAmounts.map((preset) => (
                 <Button
                   key={preset}
@@ -86,10 +86,10 @@ export function TipPrompt({
             </div>
           </div>
 
-          <div className={styles['customAmount']}>
+          <div className={styles.customAmount}>
             <h3>Or enter a custom amount:</h3>
-            <div className={styles['inputGroup']}>
-              <span className={styles['dollarSign']}>$</span>
+            <div className={styles.inputGroup}>
+              <span className={styles.dollarSign}>$</span>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -99,16 +99,16 @@ export function TipPrompt({
                 max="1000"
                 step="0.01"
                 disabled={isProcessing}
-                className={styles['amountInput']}
+                className={styles.amountInput}
               />
             </div>
-            <p className={styles['helpText']}>
+            <p className={styles.helpText}>
               Tips are optional and go directly to your driver
             </p>
           </div>
         </Card>
 
-        <div className={styles['actions']}>
+        <div className={styles.actions}>
           <Button
             variant="outline"
             onClick={handleSkip}

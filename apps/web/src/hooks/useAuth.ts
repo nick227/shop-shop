@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { useAuthStore } from '@stores/authStore'
 import { handleApiError, type AppError } from '@api/errors'
-import type { SignupInput, LoginInput, User } from '@api/types'
+import type { SignupInput, LoginInput, UserResponse } from '../api/backend-types'
 
 export function useAuth() {
   const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore()
@@ -20,7 +20,7 @@ export function useAuth() {
       }
     },
     onSuccess: (data) => {
-      const authData = data as { user: User; token: string }
+      const authData = data as { user: UserResponse; token: string }
       setAuth(authData.user, authData.token)
       apiClient.setToken(authData.token)
     }})
@@ -35,14 +35,14 @@ export function useAuth() {
       }
     },
     onSuccess: (data) => {
-      const authData = data as { user: User; token: string }
+      const authData = data as { user: UserResponse; token: string }
       setAuth(authData.user, authData.token)
       apiClient.setToken(authData.token)
     }})
 
   const logout = () => {
     clearAuth()
-    apiClient.setToken(null)
+    apiClient.setToken(undefined)
   }
 
   return {

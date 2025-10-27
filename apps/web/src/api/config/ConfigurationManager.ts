@@ -12,8 +12,8 @@ export interface ConfigurationManagerConfig {
 }
 
 export class ConfigurationManager {
-  private config: Configuration | null = null;
-  private lastToken: string | null = null;
+  private config: Configuration | undefined = undefined;
+  private lastToken: string | undefined = undefined;
   private configVersion = 0;
   private readonly baseUrl: string;
   private readonly middleware: Middleware[]
@@ -27,9 +27,9 @@ export class ConfigurationManager {
   /**
    * Set authentication token and invalidate config if changed;
    */
-  setToken(token: string | null): number {
+  setToken(token: string | undefined): number {
     if (this.lastToken !== token) {
-      this.config = null;
+      this.config = undefined;
       this.lastToken = token;
       this.configVersion++;
     }
@@ -70,7 +70,7 @@ export class ConfigurationManager {
       creationCount: this.creationCount,
       lastCreationTime: this.lastCreationTime,
       configVersion: this.configVersion,
-      isCached: this.config !== null
+      isCached: this.config !== undefined
     };
   }
 
@@ -84,7 +84,7 @@ export class ConfigurationManager {
   /**
    * Get current token;
    */
-  getToken(): string | null {
+  getToken(): string | undefined {
     return this.lastToken;
   }
 
@@ -92,7 +92,7 @@ export class ConfigurationManager {
    * Force refresh configuration;
    */
   refresh(): number {
-    this.config = null;
+    this.config = undefined;
     this.configVersion++;
     return this.configVersion;
   }

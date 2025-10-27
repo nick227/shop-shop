@@ -4,17 +4,17 @@
 import React from 'react'
 
 interface GeocodingErrorProps {
-  geocodingError: string | null
+  geocodingError: string | undefined
   onClearGeocodingError?: () => void
 }
 
 export function GeocodingError({ geocodingError, onClearGeocodingError }: GeocodingErrorProps) {
-  if (!geocodingError) return null
+  if (!geocodingError) return
 
   // Extract city/state from error message for better UX
   const failedLocation = geocodingError.includes('Failed to geocode') 
     ? geocodingError.replace('Failed to geocode ', '').replace(/[,.].*/, '')
-    : null
+    : undefined
 
   return (
     <div className="text-center py-8 px-4 bg-yellow-100 text-yellow-800 rounded-xl my-4" role="alert" aria-live="assertive">
@@ -42,7 +42,7 @@ export function GeocodingError({ geocodingError, onClearGeocodingError }: Geocod
               onClearGeocodingError()
             }
             // Focus on search form for retry
-            const searchInput = document.querySelector('input[type="text"]') as HTMLElement
+            const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement | null
             if (searchInput) {
               searchInput.focus()
             }

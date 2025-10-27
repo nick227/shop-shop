@@ -21,7 +21,7 @@ export function createTestQueryClient() {
  * Test wrapper with all providers;
  */
 interface AllProvidersProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export function AllProviders({ children }: AllProvidersProps) {

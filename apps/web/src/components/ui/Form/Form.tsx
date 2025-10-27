@@ -24,7 +24,7 @@ export interface FormProps<T extends Record<string, unknown>> {
   /** Child elements (FormField components) */
   children: ReactNode
   /** Error message from API or other sources */
-  error?: string | null
+  error?: string | undefined
   /** Loading state during submission */
   isLoading?: boolean
   /** Validate on field change (default: false) */
@@ -151,11 +151,11 @@ export function Form<T extends Record<string, unknown>>({
     <FormProvider value={contextValue}>
       <form
         onSubmit={handleSubmit}
-        className={`${styles['form']} ${className || ''}`}
+        className={`${styles.form} ${className || ''}`}
         noValidate
       >
         {error && (
-          <Alert variant="error" className={styles['formError']}>
+          <Alert variant="error" className={styles.formError}>
             {error}
           </Alert>
         )}

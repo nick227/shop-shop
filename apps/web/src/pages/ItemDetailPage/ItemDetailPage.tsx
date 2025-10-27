@@ -21,7 +21,7 @@ export default function ItemDetailPage() {
   
   // Extract IDs from slugs
   const { id: itemId } = parseItemSlug(itemSlug || '')
-  const { id: storeIdFromSlug } = storeSlug ? parseStoreSlug(storeSlug) : { id: null }
+  const { id: storeIdFromSlug } = storeSlug ? parseStoreSlug(storeSlug) : { id: undefined }
   
   // Fallback to slug if no ID extracted (legacy support)
   const itemIdToUse = itemId || itemSlug
@@ -57,7 +57,7 @@ export default function ItemDetailPage() {
 
   if (isLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading item...</p>
       </div>
@@ -66,7 +66,7 @@ export default function ItemDetailPage() {
 
   if (error || !item) {
     return (
-      <div className={styles['error']}>
+      <div className={styles.error}>
         <h2>Item Not Found</h2>
         <p>{error?.message || 'The item you are looking for does not exist.'}</p>
         <Button onClick={handleBack}>Go Back</Button>
@@ -77,44 +77,44 @@ export default function ItemDetailPage() {
   const price = parsePrice(item.price)
 
   return (
-    <div className={styles['container']}>
-      <div className={styles['backButton']}>
+    <div className={styles.container}>
+      <div className={styles.backButton}>
         <Button variant="ghost" onClick={handleBack}>
           ← Back
         </Button>
       </div>
 
-      <div className={styles['content']}>
-        <div className={styles['header']}>
-          <div className={styles['titleSection']}>
-            <h1 className={styles['title']}>{item.title}</h1>
-            <div className={styles['badges']}>
+      <div className={styles.content}>
+        <div className={styles.header}>
+          <div className={styles.titleSection}>
+            <h1 className={styles.title}>{item.title}</h1>
+            <div className={styles.badges}>
               {item.isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
               {!item.isActive && <Badge variant="warning">Inactive</Badge>}
             </div>
           </div>
-          <div className={styles['price']}>{formatCurrency(price)}</div>
+          <div className={styles.price}>{formatCurrency(price)}</div>
         </div>
 
         {item.description && (
-          <div className={styles['descriptionSection']}>
-            <h2 className={styles['sectionTitle']}>Description</h2>
-            <p className={styles['description']}>{item.description}</p>
+          <div className={styles.descriptionSection}>
+            <h2 className={styles.sectionTitle}>Description</h2>
+            <p className={styles.description}>{item.description}</p>
           </div>
         )}
 
-        {item.stockQty !== null && (
-          <div className={styles['infoSection']}>
-            <h2 className={styles['sectionTitle']}>Availability</h2>
-            <p className={styles['infoText']}>
+        {typeof item.stockQty === 'number' && (
+          <div className={styles.infoSection}>
+            <h2 className={styles.sectionTitle}>Availability</h2>
+            <p className={styles.infoText}>
               {item.stockQty > 0 
-                ? '' + item.stockQty + ' items in stock' 
+                ? `${String(item.stockQty)} items in stock` 
                 : 'Out of stock'}
             </p>
           </div>
         )}
 
-        <div className={styles['actions']}>
+        <div className={styles.actions}>
           <Button 
             variant="primary" 
             size="large"

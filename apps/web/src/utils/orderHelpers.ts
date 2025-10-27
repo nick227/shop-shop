@@ -111,11 +111,11 @@ export function partitionOrdersByStatus<T extends { status: string }>(
  */
 export function getMostRecentOrder<T extends { createdAt: string | Date }>(
   orders: T[]
-): T | null {
-  if (!orders?.length) return null
+): T | undefined {
+  if (!orders?.length) return undefined
 
   let mostRecent = orders[0]
-  if (!mostRecent) return null
+  if (!mostRecent) return undefined
   
   let mostRecentTime = typeof mostRecent.createdAt === 'string' 
     ? new Date(mostRecent.createdAt).getTime()

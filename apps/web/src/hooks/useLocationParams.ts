@@ -4,16 +4,20 @@
  */
 import { useSearchParams as useRouterSearchParams, useNavigate } from 'react-router-dom'
 import { useCallback, useMemo } from 'react'
-import type { ListStoresRequest } from '@packages/sdk'
-
-export type LocationSearchParams = Pick<ListStoresRequest, 'latitude' | 'longitude' | 'radiusMiles' | 'city' | 'state' | 'zip'> & {
+export type LocationSearchParams = {
+  latitude?: string;
+  longitude?: string;
+  radiusMiles?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   source?: string;
 }
 
 /**
  * Safely decode URI component, returning undefined if it fails;
  */
-function safeDecodeURIComponent(value: string | null): string | undefined {
+function safeDecodeURIComponent(value: string | undefined): string | undefined {
   if (!value) return undefined;
   try {
     return decodeURIComponent(value)
@@ -43,8 +47,8 @@ export function useLocationSearchParams() {
       latitude: lat || undefined,
       longitude: lng || undefined,
       radiusMiles: radius || undefined,
-      city: safeDecodeURIComponent(city),
-      state: safeDecodeURIComponent(state),
+      city: safeDecodeURIComponent(city || undefined),
+      state: safeDecodeURIComponent(state || undefined),
       zip: zip || undefined,
       source: source || undefined}
   }, [searchParams])
@@ -76,10 +80,10 @@ export function useUpdateLocationParams() {
       newParams.delete('lng')
       newParams.delete('city')
       newParams.delete('state')
-    } else if (params["city"] && params["state"]) {
+    } else if (params.city && params.state) {
       // City/State-based search (readable URL)
-      newParams.set('city', params["city"])
-      newParams.set('state', params["state"])
+      newParams.set('city', params.city)
+      newParams.set('state', params.state)
       if (params.source) newParams.set('source', params.source)
       if (params.radiusMiles) newParams.set('radius', params.radiusMiles)
       // Remove other location params;
@@ -93,8 +97,8 @@ export function useUpdateLocationParams() {
       if (params.source) newParams.set('source', params.source)
       if (params.radiusMiles) newParams.set('radius', params.radiusMiles)
       // Keep city/state if available (for display)
-      if (params["city"]) newParams.set('city', params["city"])
-      if (params["state"]) newParams.set('state', params["state"])
+      if (params.city) newParams.set('city', params.city)
+      if (params.state) newParams.set('state', params.state)
       // Remove zip since we're using coordinates;
       newParams.delete('zip')
     }

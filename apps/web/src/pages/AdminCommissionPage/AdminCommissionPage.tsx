@@ -9,7 +9,7 @@ import { styles } from '@utils/tailwind-classes'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 
 export default function AdminCommissionPage() {
-  const [editingStore, setEditingStore] = useState<string | null>(null)
+  const [editingStore, setEditingStore] = useState<string | undefined>()
   const [commissionRate, setCommissionRate] = useState('')
   const queryClient = useQueryClient()
 
@@ -43,7 +43,7 @@ export default function AdminCommissionPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stores'] })
-      setEditingStore(null)
+      setEditingStore(undefined)
       setCommissionRate('')
     },
   })
@@ -69,13 +69,13 @@ export default function AdminCommissionPage() {
   }
 
   const handleCancel = () => {
-    setEditingStore(null)
+    setEditingStore(undefined)
     setCommissionRate('')
   }
 
   if (isLoading) {
     return (
-      <div className={styles['loading']}>
+      <div className={styles.loading}>
         <Spinner size="large" />
         <p>Loading stores...</p>
       </div>
@@ -83,29 +83,29 @@ export default function AdminCommissionPage() {
   }
 
   return (
-    <div className={styles['container']}>
-      <div className={styles['header']}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <h1>Commission Rate Management</h1>
         <p>Set commission rates for stores. These rates apply to both orders and tips.</p>
       </div>
 
-      <div className={styles['storesList']}>
+      <div className={styles.storesList}>
         {stores?.data?.map((store: StoreWithDistance) => (
-          <Card key={store.id} className={styles['storeCard']}>
-            <div className={styles['storeInfo']}>
-              <div className={styles['storeHeader']}>
+          <Card key={store.id} className={styles.storeCard}>
+            <div className={styles.storeInfo}>
+              <div className={styles.storeHeader}>
                 <h3>{store.name}</h3>
                 <Badge variant="outline">@{store.slug}</Badge>
               </div>
-              <p className={styles['owner']}>
+              <p className={styles.owner}>
                 Owner: {(store as any).owner?.name || (store as any).owner?.email || 'Unknown'}
               </p>
             </div>
 
-            <div className={styles['commissionSection']}>
+            <div className={styles.commissionSection}>
               {editingStore === store.id ? (
-                <div className={styles['editForm']}>
-                  <div className={styles['inputGroup']}>
+                <div className={styles.editForm}>
+                  <div className={styles.inputGroup}>
                     <label>Commission Rate (%)</label>
                     <Input
                       type="number"
@@ -117,7 +117,7 @@ export default function AdminCommissionPage() {
                       placeholder="2.9"
                     />
                   </div>
-                  <div className={styles['editActions']}>
+                  <div className={styles.editActions}>
                     <Button
                       variant="primary"
                       size="small"
@@ -136,10 +136,10 @@ export default function AdminCommissionPage() {
                   </div>
                 </div>
               ) : (
-                <div className={styles['commissionDisplay']}>
-                  <div className={styles['rateDisplay']}>
-                    <span className={styles['rateLabel']}>Current Rate:</span>
-                    <span className={styles['rateValue']}>
+                <div className={styles.commissionDisplay}>
+                  <div className={styles.rateDisplay}>
+                    <span className={styles.rateLabel}>Current Rate:</span>
+                    <span className={styles.rateValue}>
                       {store.commissionRate ? '' + store.commissionRate + '%' : 'Not Set (Default: 2.9%)'}
                     </span>
                   </div>
@@ -158,7 +158,7 @@ export default function AdminCommissionPage() {
       </div>
 
       {stores?.data?.length === 0 && (
-        <div className={styles['emptyState']}>
+        <div className={styles.emptyState}>
           <p>No stores found.</p>
         </div>
       )}

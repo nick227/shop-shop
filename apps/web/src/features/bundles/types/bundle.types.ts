@@ -51,7 +51,7 @@ export interface BundleDisplayData {
 }
 
 // Type transformers (simplified to work with SDK types)
-export function formDataToCreateInput(formData: BundleFormData, storeId: string): Record<string, unknown> {
+export function formDataToCreateInput(formData: BundleFormData, storeId: string): any {
   return {
     storeId,
     name: formData.name,
@@ -64,7 +64,7 @@ export function formDataToCreateInput(formData: BundleFormData, storeId: string)
   }
 }
 
-export function formDataToUpdateInput(formData: Partial<BundleFormData>): Record<string, unknown> {
+export function formDataToUpdateInput(formData: Partial<BundleFormData>): any {
   return {
     name: formData.name,
     description: formData.description,
