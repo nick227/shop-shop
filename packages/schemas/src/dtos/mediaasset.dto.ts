@@ -57,8 +57,6 @@ export const MediaAssetQuerySchema = z.object({
 
 
 // Additional schemas
-export const MediaResponseSchema = MediaAssetResponseSchema
-export const MediaListResponseSchema = MediaAssetListResponseSchema
 export const UpdateMediaSortInputSchema = z.object({
   sortIndex: z.number().int().min(0),
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
@@ -70,6 +68,4 @@ export type UpdateMediaAssetInput = z.infer<typeof UpdateMediaAssetInputSchema>
 export type MediaAssetResponse = z.infer<typeof MediaAssetResponseSchema>
 export type MediaAssetListResponse = z.infer<typeof MediaAssetListResponseSchema>
 export type MediaAssetQuery = z.infer<typeof MediaAssetQuerySchema>
-export type MediaResponse = z.infer<typeof MediaResponseSchema>
-export type MediaListResponse = z.infer<typeof MediaListResponseSchema>
 export type UpdateMediaSortInput = z.infer<typeof UpdateMediaSortInputSchema>

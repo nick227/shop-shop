@@ -1,7 +1,7 @@
 import { defineResource } from '@packages/schemas/core'
 import {
-  MediaResponseSchema,
-  MediaListResponseSchema,
+  MediaAssetResponseSchema,
+  MediaAssetListResponseSchema,
   UpdateMediaSortInputSchema,
 } from '@packages/schemas/dtos'
 import { z } from 'zod'
@@ -25,8 +25,8 @@ export const mediaResource = defineResource({
   schemas: {
     // No create schema - upload is handled separately with multipart/form-data
     update: UpdateMediaSortInputSchema,
-    response: MediaResponseSchema,
-    list: MediaListResponseSchema,
+    response: MediaAssetResponseSchema,
+    list: MediaAssetListResponseSchema,
     query: MediaQuerySchema,
   },
   access: {

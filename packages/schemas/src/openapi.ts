@@ -1,6 +1,6 @@
 import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
 import { registry, registerAllResourcesInOpenAPI, ErrorResponseSchema } from './index.js'
-import { MediaResponseSchema, UploadMediaInputSchema } from './dtos/index.js'
+import { MediaAssetResponseSchema, UploadMediaInputSchema } from './dtos/index.js'
 import { z } from 'zod'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -39,7 +39,7 @@ registry.registerPath({
   responses: {
     201: {
       description: 'Media uploaded successfully',
-      content: { 'application/json': { schema: MediaResponseSchema } }
+      content: { 'application/json': { schema: MediaAssetResponseSchema } }
     },
     400: {
       description: 'Validation error',

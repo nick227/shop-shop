@@ -218,5 +218,4 @@ function formatDistance(distance: number): string {
   return '' + distance.toFixed(1) + ' mi'
 }
 
-// Default export for compatibility
-export default StoreMapOptimized
+// Named export only - no default export to avoid duplication
