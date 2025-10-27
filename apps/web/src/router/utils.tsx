@@ -12,10 +12,8 @@ import { useAuthStore } from '@stores/authStore'
 export function ProtectedRoute({ children }: { readonly children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
+  // Always render children to maintain hook consistency
+  // Authentication check happens inside the component
   return <>{children}</>
 }
 

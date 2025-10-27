@@ -6,7 +6,8 @@
  * Enhanced: Input validation, URL encoding, browser navigation support
  */
 import { useCallback, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@stores/authStore'
 import { useUrlLocation } from '@hooks/useUrlLocation'
 import { useStoreSearch } from '@hooks/useStoreSearch'
 import { useGeocoding } from '@hooks/useGeocoding'
@@ -70,6 +71,7 @@ const radiusUtils = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   
   // Extract URL location logic into hook
   const urlLocationResult: {
@@ -209,6 +211,11 @@ export default function HomePage() {
 
   // Get promotional copy
   const copy = usePromotionalCopy(locationDisplayName, stores as StoreWithDistance[] | undefined)
+
+  // Authentication check - redirect if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
 
   // OPTIMIZED: Simplified conditional logic with early returns
   const currentRadius = radiusUtils.getDisplay(location)
