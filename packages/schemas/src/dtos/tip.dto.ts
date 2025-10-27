@@ -54,7 +54,20 @@ export const TipQuerySchema = z.object({
   orderBy: { createdAt: 'desc' },
 }))
 
+// ========================================
+// Manual Additions (not auto-generated)
+// ========================================
 
+export const ProcessTipInputSchema = z.object({
+  paymentMethodId: z.string().min(1, 'Payment method is required'),
+})
+
+export const TipStatusUpdateSchema = z.object({
+  status: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']),
+  stripeChargeId: z.string().optional(),
+  stripeTransferId: z.string().optional(),
+  stripeApplicationFeeId: z.string().optional(),
+})
 
 // Type exports
 export type CreateTipInput = z.infer<typeof CreateTipInputSchema>
@@ -62,4 +75,6 @@ export type UpdateTipInput = z.infer<typeof UpdateTipInputSchema>
 export type TipResponse = z.infer<typeof TipResponseSchema>
 export type TipListResponse = z.infer<typeof TipListResponseSchema>
 export type TipQuery = z.infer<typeof TipQuerySchema>
+export type ProcessTipInput = z.infer<typeof ProcessTipInputSchema>
+export type TipStatusUpdate = z.infer<typeof TipStatusUpdateSchema>
 

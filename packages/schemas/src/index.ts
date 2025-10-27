@@ -55,7 +55,11 @@ export {
 
 export { 
   OrderResponseSchema, 
-  OrderListResponseSchema 
+  OrderListResponseSchema,
+  CreateOrderInputSchema,
+  UpdateOrderStatusSchema,
+  type CreateOrderInput,
+  type UpdateOrderStatus,
 } from './dtos/order.dto.js'
 
 export { 
@@ -380,10 +384,44 @@ export {
 // Export tip schemas and types
 export {
   CreateTipInputSchema,
+  UpdateTipInputSchema,
   TipResponseSchema,
+  TipListResponseSchema,
+  TipQuerySchema,
+  ProcessTipInputSchema,
+  TipStatusUpdateSchema,
   type CreateTipInput,
+  type UpdateTipInput,
   type TipResponse,
+  type TipListResponse,
+  type TipQuery,
+  type ProcessTipInput,
+  type TipStatusUpdate,
 } from './dtos/tip.dto.js'
+
+// Export river schemas and types
+export {
+  CreatePostInputSchema,
+  PostResponseSchema,
+  PostListResponseSchema,
+  PostQuerySchema,
+  CreateCommentInputSchema,
+  CommentResponseSchema,
+  CommentListResponseSchema,
+  CommentQuerySchema,
+  LikePostInputSchema,
+  UnlikePostInputSchema,
+  type CreatePostInput,
+  type PostResponse,
+  type PostListResponse,
+  type PostQuery,
+  type CreateCommentInput,
+  type CommentResponse,
+  type CommentListResponse,
+  type CommentQuery,
+  type LikePostInput,
+  type UnlikePostInput,
+} from './dtos/river.dto.js'
 
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js'
