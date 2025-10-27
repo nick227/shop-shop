@@ -3,6 +3,11 @@
   "entry": ["src/main.tsx"],
   "project": ["src/**/*.ts", "src/**/*.tsx"],
   "ignore": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/__tests__/**"],
-  "ignoreDependencies": ["@vitejs/plugin-react-swc"]
+  "ignoreDependencies": ["@vitejs/plugin-react-swc"],
+  "compilers": {
+    "typescript": {
+      "config": "./tsconfig.json"
+    }
+  }
 }
 
