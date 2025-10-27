@@ -352,5 +352,33 @@ export {
   type AuthResponse,
 } from './dtos/auth.dto.js'
 
+// Export payment schemas and types
+export {
+  CreatePaymentIntentInputSchema,
+  PaymentIntentResponseSchema,
+  CreateConnectAccountInputSchema,
+  ConnectAccountResponseSchema,
+  ConnectAccountStatusSchema,
+  StripeWebhookEventSchema,
+  PaymentMethodResponseSchema,
+  PaymentMethodListResponseSchema,
+  type CreatePaymentIntentInput,
+  type PaymentIntentResponse,
+  type CreateConnectAccountInput,
+  type ConnectAccountResponse,
+  type ConnectAccountStatus,
+  type StripeWebhookEvent,
+  type PaymentMethodResponse,
+  type PaymentMethodListResponse,
+} from './dtos/payment.dto.js'
+
+// Export tip schemas and types
+export {
+  CreateTipInputSchema,
+  TipResponseSchema,
+  type CreateTipInput,
+  type TipResponse,
+} from './dtos/tip.dto.js'
+
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js'
