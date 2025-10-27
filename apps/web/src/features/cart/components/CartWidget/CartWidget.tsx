@@ -20,13 +20,8 @@ export function CartWidget() {
   const { cart, deleteCart, isDeleting, isLoading } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 
-  // Early return if not authenticated to prevent unnecessary API calls
-  if (!isAuthenticated) {
-    return undefined
-  }
-
   // Direct computation - optimized for performance
-  const itemCount = (() => {
+  const itemCount = useMemo(() => {
     if (!cart?.items) return 0
     try {
       const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
@@ -34,9 +29,9 @@ export function CartWidget() {
     } catch {
       return 0
     }
-  })()
+  }, [cart?.items])
 
-  // Handlers
+  // Handlers - always call hooks to maintain consistency
   const handleCheckout = useCallback(() => {
     setIsOpen(false)
     navigate('/checkout')
@@ -57,9 +52,9 @@ export function CartWidget() {
     if (itemCount > 0) setIsOpen(true)
   }, [itemCount])
 
-  // Early return for performance
-  if (isLoading || itemCount === 0) {
-    return undefined
+  // Conditional rendering instead of early returns
+  if (!isAuthenticated || isLoading || itemCount === 0) {
+    return null
   }
 
   return (
