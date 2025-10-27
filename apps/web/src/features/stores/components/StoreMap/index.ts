@@ -6,7 +6,7 @@
 // Main components;
 export { default as StoreMap } from './StoreMap'
 export { default as StoreMapRefactored } from './StoreMapRefactored'
-export { default as StoreMapOptimized } from './StoreMapOptimized'
+export { StoreMapOptimized } from './StoreMapOptimized'
 export { default as StoreMapUltraOptimized } from './StoreMapUltraOptimized'
 export type { StoreMapProps } from './StoreMap'
 export type { StoreMapOptimizedProps } from './StoreMapOptimized'
