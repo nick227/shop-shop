@@ -67,9 +67,14 @@ export {
 } from './dtos/address.dto.js'
 
 export { 
+  UploadMediaInputSchema,
   MediaResponseSchema,
   MediaListResponseSchema,
-  UpdateMediaSortInputSchema
+  UpdateMediaSortInputSchema,
+  type UploadMediaInput,
+  type MediaResponse,
+  type MediaListResponse,
+  type UpdateMediaSortInput,
 } from './dtos/media.dto.js'
 
 // Import auth schemas for registration
