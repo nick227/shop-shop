@@ -66,7 +66,7 @@ export function usePromotionalCopy(
   stores?: StoreWithDistance[]
 ): PromotionalCopy {
   return useMemo(() => {
-    const storeCount = stores?.length || 0
+    const storeCount = stores?.length ?? 0
     const hasStores = storeCount > 0
     const timeOfDay = getTimeOfDay()
     
@@ -79,11 +79,14 @@ export function usePromotionalCopy(
     }
 
     // Hero section - changes based on context
+    const verbText = storeCount === 1 ? 'is' : 'are'
+    const headlineText = locationName
+      ? `${getStoreCountText(storeCount)} ${verbText} ready to serve you ${locationName}`
+      : `${getStoreCountText(storeCount)} ${verbText} waiting to serve you`
+    
     const hero = hasStores
       ? {
-          headline: locationName
-            ? `${getStoreCountText(storeCount)} ${storeCount === 1 ? 'is' : 'are'} ready to serve you ${locationName}`
-            : `${getStoreCountText(storeCount)} ${storeCount === 1 ? 'is' : 'are'} waiting to serve you`,
+          headline: headlineText,
           subheadline: getHeroSubheadline(timeOfDay),
           cta: 'Browse Restaurants'
         }
