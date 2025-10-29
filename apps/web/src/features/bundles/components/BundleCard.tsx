@@ -3,9 +3,9 @@
  * Displays bundle information with pricing and actions
  */
 import React from 'react'
-import { Card, Button, Badge } from '../../../components/ui'
+import { Card, Button, Badge } from '@shared/ui/primitives'
 import { BundlePricing } from './BundlePricing'
-import type { Bundle } from '../../../api/backend-types'
+import type { Bundle } from '@api/backend-types'
 
 interface BundleCardProps {
   bundle: Bundle

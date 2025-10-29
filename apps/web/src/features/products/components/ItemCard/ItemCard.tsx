@@ -2,12 +2,12 @@
  * ItemCard - Display menu item with SEO-friendly URLs;
  */
 import { Link } from 'react-router-dom'
-import { Card, Badge, Button, Image } from '../../../../components/ui'
-import { useAddToCart } from '../../../../hooks/useAddToCart'
-import { getItemRouteSimple } from '../../../../utils/navigation/routes'
-import type { ItemResponse } from '../../../../api/backend-types'
-import { formatCurrency } from '../../../../utils/format'
-import { parsePrice } from '../../../../utils/format'
+import { Card, Badge, Button, Image } from '@shared/ui/primitives'
+import { useAddToCart } from '@shared/hooks/useAddToCart'
+import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
+import type { ItemResponse } from '@api/backend-types'
+import { formatCurrency } from '@shared/lib/utils/format'
+import { parsePrice } from '@shared/lib/utils/format'
 // import { styles } from '../../../../utils/tailwind-classes' // File not found
 
 export interface ItemCardProps {

@@ -6,7 +6,7 @@ import React, { useState } from 'react'
 import { Button, Input, Badge } from '@shared/ui/primitives'
 import { BundleCard } from './BundleCard'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { Bundle } from '../../../api/backend-types'
+import type { Bundle } from '@api/backend-types'
 
 interface BundleListProps {
   readonly storeId: string
