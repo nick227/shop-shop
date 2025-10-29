@@ -19,7 +19,7 @@ import type {
   ListPromotions200ResponseDataInner,
   ListStores200ResponseDataInner,
   ListUsers200ResponseDataInner
-} from './types'
+} from '../../../packages/sdk/src/models'
 
 // ========================================
 // Base Type Exports (From SDK)

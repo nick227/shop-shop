@@ -80,7 +80,7 @@ export type {
   ListBundles200ResponseDataInner,
   ListBundleItems200ResponseDataInner,
   ListBundlePricings200ResponseDataInner
-} from '../../../../packages/sdk/src'
+} from '@packages/sdk'
 
 // ============================================
 // Type Validation Utilities

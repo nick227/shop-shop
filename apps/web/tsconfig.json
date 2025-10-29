@@ -27,7 +27,7 @@
       "@services": ["./src/services"],
       "@services/*": ["./src/services/*"],
       "@packages/schemas": ["../../packages/schemas/src"],
-      "@packages/sdk": ["../../packages/sdk/src"],
+      "@packages/sdk": ["../../packages/sdk/dist"],
       "@packages/realtime": ["../../packages/realtime/src"]
     }
   },
