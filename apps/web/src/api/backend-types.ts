@@ -6,9 +6,9 @@
  * To regenerate: pnpm gen:types
  */
 
- 
- 
- 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable unicorn/no-null */
 
 import type {
   ListUsers200ResponseDataInner,
@@ -352,11 +352,6 @@ export interface CartItemData {
   notes?: string | null
 }
 
-export type CartResponse = ListCarts200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
 
 export type CartWithTotals = CartResponse & {
   items: CartItemData[]
@@ -440,46 +435,7 @@ export type DeliveryType = 'PICKUP' | 'DELIVERY'
 // User Types
 // ========================================
 
-export interface UserResponse {
-  id: string
-  email: string
-  firstName: string | null
-  lastName: string | null
-  name?: string  // Computed from firstName + lastName
-  phone: string | null
-  role: 'USER' | 'VENDOR' | 'ADMIN'
-  createdAt: string
-  updatedAt: string
-}
-
 export type User = UserResponse
-
-export type PromotionResponse = ListPromotions200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface PostResponse {
-  id: string
-  storeId: string
-  content: string
-  mediaUrls: string[]
-  createdAt: string
-  updatedAt: string
-  media: MediaItem[]
-}
-
-export interface CommentResponse {
-  id: string
-  postId: string
-  userId: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  userName?: string
-  userImage?: string
-}
 
 export interface MediaResponse {
   id: string

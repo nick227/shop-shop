@@ -14,8 +14,8 @@
 
 import React, { memo, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { cn } from '../../utils/cn'
-import { spacing } from '../../utils/spacing'
+import { cn } from '@shared/lib/utils/cn'
+import { spacing } from '@shared/lib/utils/spacing'
 
 // ========================================
 // Types & Interfaces

@@ -4,7 +4,7 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Button } from '@shared/ui/primitives'
-import type { SearchInputType } from '../../types/search.types'
+import type { SearchInputType } from '@shared/types'
 import styles from './SearchBar.module.css'
 
 export interface SearchBarProps {

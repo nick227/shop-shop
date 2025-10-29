@@ -2,8 +2,8 @@
  * PageHeader - Reusable page header for vendor pages;
  */
 import type { ReactNode } from 'react'
-import { Button } from '../../components/ui'
-import { styles } from '../../utils/tailwind-classes'
+import { Button } from '@shared/ui/primitives'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface PageHeaderProps {
   title: string;

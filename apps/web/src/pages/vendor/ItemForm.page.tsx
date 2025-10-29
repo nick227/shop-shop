@@ -4,13 +4,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../../api/client'
+import { apiClient } from '@api/client'
 import { toast } from 'sonner'
-import { handleApiError } from '../../api/errors'
-import { FormPageTemplate } from '../../components/templates/FormPageTemplate'
-import type { FormSection } from '../../components/templates/FormPageTemplate'
-import { createItemFormSections } from '../../features/auth'
-import { MediaUploader } from '../../features/media'
+import { handleApiError } from '@api/errors'
+import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
+import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
+import { createItemFormSections } from '@features/auth'
+import { MediaUploader } from '@features/media'
 
 export default function ItemFormPage() {
   const { storeId, itemId } = useParams<{ storeId: string; itemId?: string }>()

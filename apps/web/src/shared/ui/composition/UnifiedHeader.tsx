@@ -15,9 +15,9 @@
 import React, { memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Home, Menu, X } from 'lucide-react'
-import { Button } from '../../components/ui/Button'
-import { cn } from '../../utils/cn'
-import { spacing } from '../../utils/spacing'
+import { Button } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/utils/cn'
+import { spacing } from '@shared/lib/utils/spacing'
 
 // ========================================
 // Types & Interfaces

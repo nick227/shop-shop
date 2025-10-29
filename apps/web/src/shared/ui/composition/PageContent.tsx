@@ -13,8 +13,8 @@
  */
 
 import React, { memo, useMemo } from 'react'
-import { cn } from '../../utils/cn'
-import { spacing, semanticSpacing } from '../../utils/spacing'
+import { cn } from '@shared/lib/utils/cn'
+import { spacing, semanticSpacing } from '@shared/lib/utils/spacing'
 
 // ========================================
 // Types & Interfaces

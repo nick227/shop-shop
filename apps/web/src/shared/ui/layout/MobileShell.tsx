@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Home, Store, ShoppingCart, User, Menu } from 'lucide-react'
-import { cn } from '../../utils/cn'
+import { cn } from '@shared/lib/utils/cn'
 import { useState } from 'react'
-import { BottomSheet } from '../../components/ui/BottomSheet'
+import { BottomSheet } from '@shared/ui/primitives'
 
 interface MobileShellProps {
   children: React.ReactNode;

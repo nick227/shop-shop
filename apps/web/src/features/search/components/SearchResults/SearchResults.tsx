@@ -8,7 +8,7 @@ import { groupAndTransformResults } from '../../utils/searchOptimizations'
 import { ResultCard, type CardVariant } from './ResultCard'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
-import type { SearchResult } from '../../types/search.types'
+import type { SearchResult } from '@shared/types'
 import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
 import { styles } from '@shared/lib/tailwind-classes'
 
