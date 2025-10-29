@@ -5,14 +5,14 @@
  * 
  * To regenerate: pnpm gen:hooks
  */
-import { createResourceHooks } from './createResourceHooks'
-import * as apiWrapper from '../api/apiWrapper'
+import { createResourceHooks } from '../../hooks/createResourceHooks'
+import * as apiWrapper from '../apiWrapper'
 import type { 
   StoreResponse as Store, ItemResponse as Item, CartWithTotals, OrderResponse as Order, AddressResponse as Address, Bundle,
-} from '../api/backend-types'
+} from '../generated/backend-types'
 import type { 
   AddCartItemInput, CreateOrderInput, CreateAddressInput, CreateBundleInput,
-} from '../api/apiWrapper'
+} from '../apiWrapper'
 
 // ============================================
 // Stores Hooks

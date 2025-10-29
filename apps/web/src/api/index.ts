@@ -1,16 +1,27 @@
 /**
- * API Module - Main Entry Point;
- * Provides unified access to API client, validation, and types;
+ * API Module - Main Entry Point
+ * 
+ * Provides unified access to API operations through a clean, SDK-first interface.
+ * All features should import from this module, never directly from @packages/sdk.
  */
 
-// Core API client (low-level SDK access)
-export { apiClient } from './client'
+// Main API client adapter (recommended for all operations)
+export { api } from './client-adapter'
 
-// Enhanced API with automatic validation (recommended)
-export * as api from './apiWrapper'
+// Query and mutation functions
+export * from './queries'
+export * from './mutations'
 
-// Types and validation;
-export * from './types'
-export * from './validation'
+// React Query hooks
+export * from './hooks'
+
+// Validation schemas and adapters
+export * from './adapters'
+
+// Error handling
 export * from './errors'
+
+// Legacy exports (for backward compatibility during migration)
+export { apiClient } from './client'
+export * as legacyApi from './apiWrapper'
 

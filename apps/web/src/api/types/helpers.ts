@@ -6,7 +6,7 @@
 import type {
   StoreResponse,
   ListItems200ResponseDataInner
-} from '@packages/sdk'
+} from '../types'
 import type { CartWithTotals } from '../backend-types'
 
 // Cart item data - extends SDK cart item with computed fields
