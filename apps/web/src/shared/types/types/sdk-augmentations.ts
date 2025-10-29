@@ -13,7 +13,7 @@ import type {
   ListCarts200ResponseDataInner as SDKCartResponse,
   ListStores200ResponseDataInner as SDKListStoreResponse,
   ListOrders200ResponseDataInner as SDKListOrderResponse
-} from '@packages/sdk'
+} from '@api/backend-types'
 
 // ========================================
 // Augmented SDK Types with Missing Fields

@@ -3,6 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "types": ["vite/client", "@testing-library/jest-dom", "jest"],
     "baseUrl": ".",
     "strict": true,
@@ -27,7 +29,7 @@
       "@services": ["./src/services"],
       "@services/*": ["./src/services/*"],
       "@packages/schemas": ["../../packages/schemas/src"],
-      "@packages/sdk": ["../../packages/sdk/dist"],
+      "@packages/sdk": ["../../packages/sdk/src"],
       "@packages/realtime": ["../../packages/realtime/src"]
     }
   },
