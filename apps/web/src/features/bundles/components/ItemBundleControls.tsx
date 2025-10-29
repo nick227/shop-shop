@@ -10,11 +10,11 @@ import {
   useEffect,
   type MouseEvent as ReactMouseEvent,
 } from 'react'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
-import { useBundles } from '../../../hooks/generated'
+import { Button } from '@shared/ui/primitives'
+import { Badge } from '@shared/ui/primitives'
+import { useBundles } from '@api/hooks/generated'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { ItemResponse } from '../../../api/backend-types'
+import type { ItemResponse } from '@api/backend-types'
 import type { BundleFormData } from '../types/bundle.types'
 
 // Types

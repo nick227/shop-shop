@@ -2,11 +2,11 @@
  * Enhanced Item Card Component
  * Item card with integrated bundle management controls
  */
-import { Card } from '../../../components/ui/Card'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Card } from '@shared/ui/primitives'
+import { Button } from '@shared/ui/primitives'
+import { Badge } from '@shared/ui/primitives'
 import { ItemBundleControls } from './ItemBundleControls'
-import type { ItemResponse } from '../../../api/backend-types'
+import type { ItemResponse } from '@api/backend-types'
 
 interface Bundle {
   id: string
