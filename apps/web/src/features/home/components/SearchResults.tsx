@@ -1,10 +1,10 @@
 /**
  * SearchResults - Component for displaying search results
  */
-import { StoreGrid } from '../../../features/stores/components/StoreGrid/StoreGrid'
-import { StoreMapLazy } from '../../../features/stores/components/StoreMapLazy'
-import type { LocationData } from '../../../types/location.types'
-import type { StoreResponse, StoreWithDistance } from '../../../api/backend-types'
+import { StoreGrid } from '@features/stores/components/StoreGrid/StoreGrid'
+import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
+import type { LocationData } from '@shared/types'
+import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
 
 interface SearchResultsProps {
   error: Error | undefined

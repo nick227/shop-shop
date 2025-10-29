@@ -5,8 +5,8 @@
  * Now uses schema-derived types for consistency
  */
 
-import type { CreateBundleInput } from '../../../api/types'
-import type { Bundle } from '../../../api/backend-types'
+import type { CreateBundleInput } from '@api/types'
+import type { Bundle } from '@api/backend-types'
 
 // Frontend form data for bundle creation/editing
 // Derived from schema to ensure consistency
