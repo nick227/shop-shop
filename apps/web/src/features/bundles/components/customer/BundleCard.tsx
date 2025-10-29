@@ -6,10 +6,10 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Card, Badge, Button, Image } from '@shared/ui/primitives'
 // import { useAddBundleToCart } from '../../../hooks/useAddBundleToCart'
-import { getItemRouteSimple } from '../../../../utils/navigation/routes'
-import type { Bundle } from '../../../../api/backend-types'
-import { formatCurrency } from '../../../../utils/format'
-import { parsePrice } from '../../../../utils/format'
+import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
+import type { Bundle } from '@api/backend-types'
+import { formatCurrency } from '@shared/lib/utils/format'
+import { parsePrice } from '@shared/lib/utils/format'
 // import { styles } from '../../../utils/tailwind-classes' // File not found
 
 export interface BundleCardProps {

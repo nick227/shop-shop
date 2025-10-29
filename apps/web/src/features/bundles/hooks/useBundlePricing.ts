@@ -3,7 +3,7 @@
  * Handles bundle pricing calculations and validation
  */
 import { useMemo, useCallback } from 'react'
-import type { Bundle, ItemResponse } from '../../../api/backend-types'
+import type { Bundle, ItemResponse } from '@api/backend-types'
 
 export interface BundlePricingResult {
   individualTotal: number

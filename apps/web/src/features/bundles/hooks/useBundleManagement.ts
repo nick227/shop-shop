@@ -9,10 +9,10 @@ import {
   useCreateBundle, 
   useUpdateBundle, 
   useDeleteBundle 
-} from '../../../hooks/generated'
+} from '@api/hooks/generated'
 import { formDataToCreateInput, formDataToUpdateInput } from '../types/bundle.types'
-import type { Bundle } from '../../../api/backend-types'
-import type { CreateBundleInput } from '../../../api/apiWrapper'
+import type { Bundle } from '@api/backend-types'
+import type { CreateBundleInput } from '@api/apiWrapper'
 import type { BundleFormData, BundleManagementOptions } from '../types/bundle.types'
 
 // Type alias for update operations (uses same structure as create)
