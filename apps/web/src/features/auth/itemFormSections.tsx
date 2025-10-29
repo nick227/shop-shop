@@ -2,7 +2,7 @@
  * Item Form Sections Builder;
  * Extracts section definitions from ItemFormPage for cleaner code;
  */
-import { Input, TextArea, Checkbox } from '@ui'
+import { Input, TextArea, Checkbox } from '@shared/ui/primitives'
 import { CharCount, FormRow, CheckboxGroup } from '../../components/templates'
 import type { FormSection } from '../../components/templates'
 import type { ItemFormData } from '@api/types'

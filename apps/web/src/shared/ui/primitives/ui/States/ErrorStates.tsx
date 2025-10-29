@@ -14,8 +14,8 @@
 
 import React, { memo } from 'react'
 import { AlertCircle, XCircle, AlertTriangle, Info, RefreshCw, X } from 'lucide-react'
-import { Button } from '@ui/Button'
-import { cn } from '@utils/cn'
+import { Button } from '@shared/ui/primitives/Button'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

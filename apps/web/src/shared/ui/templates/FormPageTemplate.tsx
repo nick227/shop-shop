@@ -3,7 +3,7 @@
  * Eliminates 200+ lines of boilerplate per form page;
  */
 import type { ReactNode } from 'react'
-import { Button, Spinner } from '@ui'
+import { Button, Spinner } from '@shared/ui/primitives'
 
 export interface FormSection {
   id: string;

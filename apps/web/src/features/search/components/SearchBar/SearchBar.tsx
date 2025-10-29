@@ -3,7 +3,7 @@
  * Supports keyword search, location search, and filters
  */
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Button } from '@ui'
+import { Button } from '@shared/ui/primitives'
 import type { SearchInputType } from '../../types/search.types'
 import styles from './SearchBar.module.css'
 

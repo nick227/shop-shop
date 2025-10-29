@@ -2,7 +2,7 @@
  * MapLegend - Component for rendering map legend;
  * Single Responsibility: Map legend display;
  */
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface MapLegendProps {
   userLocation?: { latitude: number; longitude: number }

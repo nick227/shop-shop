@@ -3,9 +3,9 @@
  * CRITICAL: Always visible, shows pending orders, links to orders page;
  */
 import { useNavigate } from 'react-router-dom'
-import { usePendingOrderCount } from '@hooks/vendor/useVendorOrders'
-import { Button, Badge } from '@ui'
-import { styles } from '@utils/tailwind-classes'
+import { usePendingOrderCount } from '@shared/hooks/vendor/useVendorOrders'
+import { Button, Badge } from '@shared/ui/primitives'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export function OrderCountWidget() {
   const navigate = useNavigate()

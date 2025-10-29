@@ -1,5 +1,5 @@
 import { Drawer } from 'vaul'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 interface BottomSheetProps {
   open: boolean

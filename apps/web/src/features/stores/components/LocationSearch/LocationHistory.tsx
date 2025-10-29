@@ -2,7 +2,7 @@
  * LocationHistory - Display recent locations with quick access
  */
 import type { LocationData } from '@/types/location.types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 interface LocationHistoryProps {
   readonly history: LocationData[]

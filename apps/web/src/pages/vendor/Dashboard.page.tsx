@@ -5,10 +5,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import { useAuth } from '@hooks/useAuth'
-import { Button, SearchInput, Badge, Spinner } from '@ui'
+import { useAuth } from '@shared/hooks/useAuth'
+import { Button, SearchInput, Badge, Spinner } from '@shared/ui/primitives'
 import type { StoreResponse, Store } from '@api/backend-types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate()

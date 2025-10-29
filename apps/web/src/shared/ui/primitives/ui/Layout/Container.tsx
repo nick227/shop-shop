@@ -14,8 +14,8 @@
 
 import React, { forwardRef } from 'react'
 import { tv, type VariantProps } from 'tailwind-variants'
-import { cn } from '@utils/cn'
-import { spacing, semanticSpacing } from '@utils/spacing'
+import { cn } from '@shared/lib/cn'
+import { spacing, semanticSpacing } from '@shared/lib/spacing'
 
 // ========================================
 // Container Variants

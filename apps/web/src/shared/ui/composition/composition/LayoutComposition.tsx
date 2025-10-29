@@ -9,7 +9,7 @@
  */
 
 import React, { memo, useMemo } from 'react'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

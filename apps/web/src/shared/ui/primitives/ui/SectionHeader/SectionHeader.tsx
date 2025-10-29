@@ -5,7 +5,7 @@
  */
 
 import { Button } from '../Button'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface SectionHeaderProps {
   title: string;

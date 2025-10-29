@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Button } from '@ui/Button'
-import { Card } from '@ui/Card'
+import { Button } from '@shared/ui/primitives/Button'
+import { Card } from '@shared/ui/primitives/Card'
 import { MediaPreview } from '../MediaPreview'
-import { useMediaDetection } from '@hooks/useMediaDetection'
+import { useMediaDetection } from '@shared/hooks/useMediaDetection'
 import type { MediaItem } from '@api/types'
 
 interface PostComposerProps {

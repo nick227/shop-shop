@@ -3,11 +3,11 @@
  * Designed for search results and featured product sections
  */
 import { memo, useCallback, useMemo } from 'react'
-import { Card, Image } from '@ui'
-import { ICON, ASPECT_RATIO, LABEL } from '@ui/Carousel/constants'
-import { getImageUrl } from '@utils/image'
+import { Card, Image } from '@shared/ui/primitives'
+import { ICON, ASPECT_RATIO, LABEL } from '@shared/ui/primitives/Carousel/constants'
+import { getImageUrl } from '@shared/lib/image'
 import type { ProductClickHandler, ItemResponse } from '@api/backend-types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface ProductCardProps {
   product: ItemResponse

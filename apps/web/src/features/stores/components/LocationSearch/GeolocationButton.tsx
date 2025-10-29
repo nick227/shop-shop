@@ -2,7 +2,7 @@
  * GeolocationButton - Browser geolocation trigger;
  */
 import { memo } from 'react'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 interface GeolocationButtonProps {
   onGetLocation: () => void;

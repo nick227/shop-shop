@@ -2,7 +2,7 @@
  * Route generation utilities with SEO-friendly slugs;
  * Centralized route building for consistent URL structure;
  */
-import { createStoreSlug, createItemSlug } from '@utils/slugify'
+import { createStoreSlug, createItemSlug } from '@shared/lib/slugify'
 
 export interface Store {
   id: string;

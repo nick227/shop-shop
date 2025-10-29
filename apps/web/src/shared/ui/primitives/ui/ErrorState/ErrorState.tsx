@@ -1,6 +1,6 @@
 import { AlertCircle } from 'lucide-react'
-import { Button } from '@ui'
-import { cn } from '@utils/cn'
+import { Button } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 /**
  * ErrorState - Modern error state with Tailwind;

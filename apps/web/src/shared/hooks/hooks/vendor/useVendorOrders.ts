@@ -5,7 +5,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { stores, orders } from '@api/apiWrapper'
 import { useAuth } from '../useAuth'
-import { sortOrdersByDateDesc, isOrderPending } from '@utils/orderHelpers'
+import { sortOrdersByDateDesc, isOrderPending } from '@shared/lib/orderHelpers'
 import type { OrderResponse } from '@api/backend-types'
 
 export interface UseVendorOrdersOptions {

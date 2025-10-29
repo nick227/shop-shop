@@ -3,7 +3,7 @@
  * Migrated to Tailwind (removed CSS module)
  */
 import { Loader2 } from 'lucide-react'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface SpinnerProps {
   size?: 'small' | 'medium' | 'large'

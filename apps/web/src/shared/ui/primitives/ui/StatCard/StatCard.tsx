@@ -5,7 +5,7 @@
  */
 
 import { Card } from '../Card'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface StatCardProps {
   icon?: string;

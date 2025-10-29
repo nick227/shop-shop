@@ -3,14 +3,14 @@
  * Optimized version with extracted helpers and components
  */
 import { memo, useMemo } from 'react'
-import { Carousel } from '@ui'
+import { Carousel } from '@shared/ui/primitives'
 import { groupAndTransformResults } from '../../utils/searchOptimizations'
 import { ResultCard, type CardVariant } from './ResultCard'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult } from '../../types/search.types'
 import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export type ResultsLayout = 'grid' | 'carousel' | 'mixed'
 

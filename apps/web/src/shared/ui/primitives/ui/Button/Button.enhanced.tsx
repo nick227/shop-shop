@@ -16,8 +16,8 @@
 import React, { forwardRef, memo } from 'react'
 import { tv, type VariantProps } from 'tailwind-variants'
 import { Loader2 } from 'lucide-react'
-import { LoadingStates } from '@ui/States'
-import { cn } from '@utils/cn'
+import { LoadingStates } from '@shared/ui/primitives/States'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Enhanced Button Variants

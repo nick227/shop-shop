@@ -2,8 +2,8 @@
  * Tip Prompt Component - Shows after successful delivery;
  */
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Input, Card } from '@ui'
-import { styles } from '@utils/tailwind-classes'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Input, Card } from '@shared/ui/primitives'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface TipPromptProps {
   isOpen: boolean;

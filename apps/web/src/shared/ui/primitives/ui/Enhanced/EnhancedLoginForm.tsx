@@ -12,11 +12,11 @@
 
 import React, { memo, useCallback, useState, useEffect } from 'react'
 import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button, Input } from '@ui'
-import { MicroInteraction, RippleEffect } from '@ui/Enhancements/MicroInteractions'
-import { SmartSuggestion } from '@ui/Enhancements/SmartSuggestions'
-import { VisualCue } from '@ui/Enhancements/VisualHierarchy'
-import { cn } from '@utils/cn'
+import { Button, Input } from '@shared/ui/primitives'
+import { MicroInteraction, RippleEffect } from '@shared/ui/primitives/Enhancements/MicroInteractions'
+import { SmartSuggestion } from '@shared/ui/primitives/Enhancements/SmartSuggestions'
+import { VisualCue } from '@shared/ui/primitives/Enhancements/VisualHierarchy'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

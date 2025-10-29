@@ -18,6 +18,31 @@ import type {
   ListBundles200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListPromotions200ResponseDataInner,
+  ListUsers200ResponseDataInner,
+  ListGeocodingCaches200ResponseDataInner,
+  ListMediaAssets200ResponseDataInner,
+  ListCartItems200ResponseDataInner,
+  ListOrderItems200ResponseDataInner,
+  ListOrderEvents200ResponseDataInner,
+  ListTips200ResponseDataInner,
+  ListSystemSettings200ResponseDataInner,
+  ListPaymentWebhooks200ResponseDataInner,
+  ListPaymentMethods200ResponseDataInner,
+  ListPromotionRedemptions200ResponseDataInner,
+  ListPosts200ResponseDataInner,
+  ListPostLikes200ResponseDataInner,
+  ListComments200ResponseDataInner,
+  ListAffiliates200ResponseDataInner,
+  ListCommissions200ResponseDataInner,
+  ListAffiliatePayouts200ResponseDataInner,
+  ListDeliveryZones200ResponseDataInner,
+  ListVendorVerifications200ResponseDataInner,
+  ListTeamMembers200ResponseDataInner,
+  ListInvitations200ResponseDataInner,
+  ListFavoriteStores200ResponseDataInner,
+  ListFavoriteItems200ResponseDataInner,
+  ListBundleItems200ResponseDataInner,
+  ListBundlePricings200ResponseDataInner
 } from '@packages/sdk'
 
 // ========================================
@@ -25,11 +50,6 @@ import type {
 // ========================================
 
 
-export type UserResponse = ListUsers200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
 
 export type StoreResponse = ListStores200ResponseDataInner & {
   id: string
@@ -53,12 +73,6 @@ export type ItemResponse = ListItems200ResponseDataInner & {
 }
 
 export type MediaAssetResponse = ListMediaAssets200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type CartResponse = ListCarts200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -127,31 +141,13 @@ export type PaymentMethodResponse = ListPaymentMethods200ResponseDataInner & {
   updatedAt: string
 }
 
-export type PromotionResponse = ListPromotions200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
 export type PromotionRedemptionResponse = ListPromotionRedemptions200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type PostResponse = ListPosts200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
 export type PostLikeResponse = ListPostLikes200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type CommentResponse = ListComments200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -220,13 +216,6 @@ export type BundleResponse = ListBundles200ResponseDataInner & {
   bundlePrice: number
   savings: number
   savingsPercent: number
-} & {
-  // Computed bundle pricing
-  totalItems: sdk.items?.length || 0,
-  individualPrice: sdk.items?.reduce((sum, item) => sum + (item.item?.price || 0) * item.quantity, 0) || 0,
-  bundlePrice: sdk.pricing?.fixedPrice || sdk.individualPrice || 0,
-  savings: Math.max(0, (sdk.individualPrice || 0) - (sdk.bundlePrice || 0)),
-  savingsPercent: sdk.individualPrice > 0 ? ((sdk.savings || 0) / sdk.individualPrice) * 100 : 0,
 }
 
 export type BundleItemResponse = ListBundleItems200ResponseDataInner & {
@@ -596,10 +585,7 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
     updatedAt: timestamps.updatedAt,
     deliveryFee: extractNumber(sdk, 'deliveryFee'),
     minOrder: extractNumber(sdk, 'minOrder'),
-    distance: extractNumber(sdk, 'distance'),
-    // Computed from fees JSON,
-    deliveryFee: (sdk.fees as any)?.deliveryFee ?? 0,,
-    minOrder: (sdk.fees as any)?.minOrder ?? 0,,
+    distance: extractNumber(sdk, 'distance')
   }
 }
 
@@ -678,14 +664,11 @@ export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    stripePaymentIntentId: sdk.stripePaymentIntentId ?? '',
-    stripeChargeId: sdk.stripeChargeId ?? '',
-    store: sdk.store ?? '',
+    stripePaymentIntentId: sdk.stripePaymentIntentId ?? null,
+    stripeChargeId: sdk.stripeChargeId ?? null,
+    store: sdk.store ?? undefined,
     items: sdk.items,
-    addressSnapshot: sdk.addressSnapshot,
-    // Backend should include these but doesn't yet,
-    stripePaymentIntentId: null,,
-    stripeChargeId: null,,
+    addressSnapshot: sdk.addressSnapshot
   }
 }
 
@@ -976,13 +959,7 @@ export function mapBundle(sdk: ListBundles200ResponseDataInner): BundleResponse 
     individualPrice: extractNumber(sdk, 'individualPrice'),
     bundlePrice: extractNumber(sdk, 'bundlePrice'),
     savings: extractNumber(sdk, 'savings'),
-    savingsPercent: extractNumber(sdk, 'savingsPercent'),
-    // Computed bundle pricing,
-    totalItems: sdk.items?.length || 0,,
-    individualPrice: sdk.items?.reduce((sum, item) => sum + (item.item?.price || 0) * item.quantity, 0) || 0,,
-    bundlePrice: sdk.pricing?.fixedPrice || sdk.individualPrice || 0,,
-    savings: Math.max(0, (sdk.individualPrice || 0) - (sdk.bundlePrice || 0)),,
-    savingsPercent: sdk.individualPrice > 0 ? ((sdk.savings || 0) / sdk.individualPrice) * 100 : 0,,
+    savingsPercent: extractNumber(sdk, 'savingsPercent')
   }
 }
 

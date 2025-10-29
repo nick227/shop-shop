@@ -5,15 +5,15 @@
  *   /stores/:storeSlug/items/:itemSlug
  */
 import { useParams, useNavigate } from 'react-router-dom'
-import { useItem } from '@hooks/generated'
-import { useStore } from '@hooks/generated'
-import { useAddToCart } from '@hooks/useAddToCart'
-import { parseItemSlug, parseStoreSlug } from '@utils/slugify'
-import { getStoreRoute } from '@utils/navigation/routes'
-import { Button, Spinner, Badge } from '@ui'
-import { formatCurrency } from '@utils/format'
+import { useItem } from '@shared/hooks/generated'
+import { useStore } from '@shared/hooks/generated'
+import { useAddToCart } from '@shared/hooks/useAddToCart'
+import { parseItemSlug, parseStoreSlug } from '@shared/lib/slugify'
+import { getStoreRoute } from '@shared/lib/navigation/routes'
+import { Button, Spinner, Badge } from '@shared/ui/primitives'
+import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export default function ItemDetailPage() {
   const { itemSlug, storeSlug } = useParams<{ itemSlug: string; storeSlug?: string }>()

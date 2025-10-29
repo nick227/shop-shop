@@ -4,18 +4,18 @@
  */
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useStore } from '@hooks/generated'
-import { useItems } from '@hooks/generated'
-import { useBundles } from '@hooks/generated'
-import { useRiverPosts } from '@hooks/river'
+import { useStore } from '@shared/hooks/generated'
+import { useItems } from '@shared/hooks/generated'
+import { useBundles } from '@shared/hooks/generated'
+import { useRiverPosts } from '@shared/hooks/river'
 import { StoreHeader } from '../../features/stores/components/StoreHeader'
 import { StoreMapLazy } from '../../features/stores/components/StoreMapLazy'
 import { ItemCard, ItemCarouselCompact } from '../../features/products/components'
 import { BundleGrid } from '../../features/bundles/components/customer'
 // import { RiverFeed } from '../../features/river' // Disabled until Posts API is available
-import { Button, Spinner, DataState } from '@ui'
+import { Button, Spinner, DataState } from '@shared/ui/primitives'
 import type { StoreWithDistance } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 import { PageCompositionFactory, LayoutCompositionFactory, CardCompositionFactory } from '@components/composition'
 
 export default function StoreDetailPage() {

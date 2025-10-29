@@ -2,8 +2,8 @@
  * ConfirmDialog - Proper friction for critical actions
  * Replaces window.confirm() with emotional, controlled experience
  */
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/Dialog'
-import { Button } from '@ui/Button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@shared/ui/primitives/Dialog'
+import { Button } from '@shared/ui/primitives/Button'
 import { useState, useCallback } from 'react'
 
 export interface ConfirmDialogProps {

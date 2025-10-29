@@ -7,9 +7,9 @@
 
 import React, { memo, useMemo } from 'react'
 import { MapPin, Clock, Star, DollarSign, Eye } from 'lucide-react'
-import { BaseCard, type BaseCardProps } from '@ui/BaseCard'
-import { getStoreImageUrl } from '@utils/storeAccessors'
-import { formatDistance, formatCurrency } from '@utils/format'
+import { BaseCard, type BaseCardProps } from '@shared/ui/primitives/BaseCard'
+import { getStoreImageUrl } from '@shared/lib/storeAccessors'
+import { formatDistance, formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import type { StoreWithDistance } from '@api/types'
 

@@ -1,7 +1,7 @@
 /**
  * RadiusControl - Slider for search radius adjustment;
  */
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 interface RadiusControlProps {
   readonly radius: number;

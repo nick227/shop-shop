@@ -17,8 +17,8 @@ import { Card, CardContent, CardHeader, CardFooter } from '../Card'
 import { Badge } from '../Badge'
 import { Button } from '../Button'
 import { Image } from '../Image'
-import { cn } from '@utils/cn'
-import { tokenBased } from '@utils/tailwind-classes/token-based'
+import { cn } from '@shared/lib/cn'
+import { tokenBased } from '@shared/lib/tailwind-classes/token-based'
 
 // ========================================
 // Type Definitions

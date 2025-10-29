@@ -1,7 +1,7 @@
 import { MapPin, Phone, Clock } from 'lucide-react'
-import { Badge } from '@ui'
+import { Badge } from '@shared/ui/primitives'
 import type { StoreResponse } from '../../../../api/backend-types'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 /**
  * StoreHeader - Modern store header with Tailwind + icons

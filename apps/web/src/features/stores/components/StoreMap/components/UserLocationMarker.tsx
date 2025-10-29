@@ -5,7 +5,7 @@
 import { Marker, Popup, Circle } from 'react-leaflet'
 import { IconService } from '../services/iconService'
 import { ColorService } from '../services/colorService'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 import type { LocationCoordinates } from '@/types/component-props'
 
 export interface UserLocationMarkerProps {

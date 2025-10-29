@@ -6,7 +6,7 @@
  */
 import { useState, useCallback } from 'react'
 import type { ZodSchema } from 'zod'
-// import { validationService, type ValidationResult } from '@utils/validation/unified' // Removed due to missing export
+// import { validationService, type ValidationResult } from '@shared/lib/validation/unified' // Removed due to missing export
 
 export function useFormValidation<T extends Record<string, unknown>>(schema?: ZodSchema<T>) {
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({})

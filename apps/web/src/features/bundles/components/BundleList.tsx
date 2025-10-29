@@ -3,7 +3,7 @@
  * Displays a list of bundles with filtering and actions
  */
 import React, { useState } from 'react'
-import { Button, Input, Badge } from '@ui'
+import { Button, Input, Badge } from '@shared/ui/primitives'
 import { BundleCard } from './BundleCard'
 import { useBundleManagement } from '../hooks/useBundleManagement'
 import type { Bundle } from '../../../api/backend-types'

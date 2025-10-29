@@ -5,12 +5,12 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrders } from '@hooks/generated'
-import { useCustomerRealtimeOrder } from '@hooks/useCustomerRealtimeOrder'
-import { useAuth } from '@hooks/useAuth'
+import { useOrders } from '@shared/hooks/generated'
+import { useCustomerRealtimeOrder } from '@shared/hooks/useCustomerRealtimeOrder'
+import { useAuth } from '@shared/hooks/useAuth'
 import { OrderCard } from '../../features/orders/components/OrderCard'
-import { Button, Spinner, Card } from '@ui'
-import { getOrderAge, getEstimatedReadyTime } from '@utils/orderHelpers'
+import { Button, Spinner, Card } from '@shared/ui/primitives'
+import { getOrderAge, getEstimatedReadyTime } from '@shared/lib/orderHelpers'
 import type { AddressSnapshot } from '@api/types'
 
 export default function CustomerDeliveriesPage() {

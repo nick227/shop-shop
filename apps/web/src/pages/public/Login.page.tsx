@@ -5,7 +5,7 @@
  */
 import { Link, useNavigate } from 'react-router-dom'
 import { LoginForm } from '../features/auth'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/ui/primitives'
 import { MobileShell } from '@layouts/MobileShell'
 
 export default function LoginPage() {

@@ -13,7 +13,7 @@
  */
 
 import React, { memo, useCallback, useState, useEffect } from 'react'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

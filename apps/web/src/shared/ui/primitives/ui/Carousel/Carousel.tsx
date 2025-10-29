@@ -5,7 +5,7 @@
 import type { ReactNode, UIEvent } from 'react';
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { SCROLL_AMOUNT_MULTIPLIER, SCROLL_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL, SCROLL_DIRECTION } from './constants'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export type CarouselVariant = 'compact' | 'horizontal' | 'vertical'
 export type { ScrollDirection } from './constants'

@@ -4,16 +4,16 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCart } from '@hooks/useCart'
-import { usePayment } from '@hooks/usePayment'
+import { useCart } from '@shared/hooks/useCart'
+import { usePayment } from '@shared/hooks/usePayment'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
-import { TAX_RATE, DEFAULT_DELIVERY_FEE } from '@utils/pricing'
-import { Button, Spinner } from '@ui'
+import { TAX_RATE, DEFAULT_DELIVERY_FEE } from '@shared/lib/pricing'
+import { Button, Spinner } from '@shared/ui/primitives'
 import { CartSummary } from '../../features/cart/components/CartSummary'
 import { PaymentSection } from '../../features/checkout/components/PaymentSection'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()

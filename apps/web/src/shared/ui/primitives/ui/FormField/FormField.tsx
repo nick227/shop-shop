@@ -6,7 +6,7 @@ import type { ReactNode} from 'react';
 import { useCallback } from 'react'
 import { Input, type InputProps } from '../Input'
 import { useFormContext } from '../Form/FormContextUtils'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface FormFieldProps extends Omit<InputProps, 'label'> {
   /** Field name/identifier */

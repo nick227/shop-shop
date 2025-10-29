@@ -4,7 +4,7 @@
  * Always shows search controls to allow new location searches
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useLocation } from '@hooks/useLocation'
+import { useLocation } from '@shared/hooks/useLocation'
 import type { LocationData } from '@/types/location.types'
 import { CurrentLocationBadge } from './CurrentLocationBadge'
 import { GeolocationButton } from './GeolocationButton'

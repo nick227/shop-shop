@@ -1,7 +1,7 @@
 /**
  * Image utility functions;
  */
-import { PLACEHOLDER_PREFIX } from '@ui/Carousel/constants'
+import { PLACEHOLDER_PREFIX } from '@shared/ui/primitives/Carousel/constants'
 
 type PlaceholderType = 'item' | 'store' | 'product'
 

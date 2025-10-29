@@ -2,9 +2,9 @@
  * VendorOrderCard - Individual order card for vendor dashboard
  * Extracted from VendorOrdersPage with Tailwind styling
  */
-import { Badge, Button } from '@ui'
-import { formatPriceCurrency } from '@utils/format'
-import { getOrderAge } from '@utils/orderHelpers'
+import { Badge, Button } from '@shared/ui/primitives'
+import { formatPriceCurrency } from '@shared/lib/format'
+import { getOrderAge } from '@shared/lib/orderHelpers'
 import type { OrderResponse } from '@api/types'
 
 export interface VendorOrderCardProps {

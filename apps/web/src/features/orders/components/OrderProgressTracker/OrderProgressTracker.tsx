@@ -2,7 +2,7 @@
  * OrderProgressTracker - Visual progress indicator for order status
  * Extracted from OrderTrackingPage for SRP compliance
  */
-import { Badge } from '@ui'
+import { Badge } from '@shared/ui/primitives'
 
 const ORDER_STATUS_STEPS = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'] as const
 

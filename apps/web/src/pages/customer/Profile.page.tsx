@@ -4,10 +4,10 @@
  */
 
 import { useState } from 'react'
-import { useAuth } from '@hooks/useAuth'
-import { useCustomerStats } from '@hooks/customer/useCustomerStats'
-import { Button, Card, Spinner } from '@ui'
-import { formatCurrency, formatDate } from '@utils/format'
+import { useAuth } from '@shared/hooks/useAuth'
+import { useCustomerStats } from '@shared/hooks/customer/useCustomerStats'
+import { Button, Card, Spinner } from '@shared/ui/primitives'
+import { formatCurrency, formatDate } from '@shared/lib/format'
 
 export default function CustomerProfilePage() {
   const { user } = useAuth()

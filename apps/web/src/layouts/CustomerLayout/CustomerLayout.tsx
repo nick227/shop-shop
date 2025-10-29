@@ -4,9 +4,9 @@
  */
 
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useCustomerStats } from '@hooks/customer/useCustomerStats'
-import { useAuth } from '@hooks/useAuth'
-import { Button } from '@ui'
+import { useCustomerStats } from '@shared/hooks/customer/useCustomerStats'
+import { useAuth } from '@shared/hooks/useAuth'
+import { Button } from '@shared/ui/primitives'
 import styles from './CustomerLayout.module.css'
 
 export function CustomerLayout() {

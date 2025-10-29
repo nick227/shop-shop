@@ -4,9 +4,9 @@
  * Performance: Native lazy loading, memoized colors, optimized rendering
  */
 import { useMemo, memo } from 'react'
-import { useImageLoader } from '@hooks/useImageLoader'
-import { generateColorFromSeed } from '@utils/colorGenerator'
-import { styles } from '@utils/tailwind-classes'
+import { useImageLoader } from '@shared/hooks/useImageLoader'
+import { generateColorFromSeed } from '@shared/lib/colorGenerator'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string

@@ -1,5 +1,5 @@
 import type { RiverComment } from '@api/types'
-import { Button } from '@ui'
+import { Button } from '@shared/ui/primitives'
 
 interface PostCommentListProps {
   comments: RiverComment[]

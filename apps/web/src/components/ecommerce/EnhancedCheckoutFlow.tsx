@@ -11,11 +11,11 @@
 
 import React, { memo, useCallback, useState, useMemo } from 'react'
 import { CreditCard, Shield, Truck, Clock, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react'
-import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Progress } from '@ui'
-import { MicroInteraction, RippleEffect, PulseAnimation } from '@ui/Enhancements/MicroInteractions'
-import { VisualCue, ContentPriority } from '@ui/Enhancements/VisualHierarchy'
-import { cn } from '@utils/cn'
-import { formatCurrency } from '@utils/format'
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Progress } from '@shared/ui/primitives'
+import { MicroInteraction, RippleEffect, PulseAnimation } from '@shared/ui/primitives/Enhancements/MicroInteractions'
+import { VisualCue, ContentPriority } from '@shared/ui/primitives/Enhancements/VisualHierarchy'
+import { cn } from '@shared/lib/cn'
+import { formatCurrency } from '@shared/lib/format'
 
 // ========================================
 // Types & Interfaces

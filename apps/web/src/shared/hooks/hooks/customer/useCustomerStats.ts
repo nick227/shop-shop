@@ -4,7 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import { parsePrice } from '@utils/format'
+import { parsePrice } from '@shared/lib/format'
 
 export interface CustomerStats {
   totalOrders: number;

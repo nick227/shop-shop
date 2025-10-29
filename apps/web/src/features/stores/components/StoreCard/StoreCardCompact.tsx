@@ -4,12 +4,12 @@
  * Migrated to Tailwind (removed CSS module)
  */
 import { memo, useCallback } from 'react'
-import { Image } from '@ui'
-import { ICON, TIME_SUFFIX, ASPECT_RATIO, ARIA_LABEL } from '@ui/Carousel/constants'
-import { formatDistance } from '@utils/format'
-import { getImageUrl } from '@utils/image'
+import { Image } from '@shared/ui/primitives'
+import { ICON, TIME_SUFFIX, ASPECT_RATIO, ARIA_LABEL } from '@shared/ui/primitives/Carousel/constants'
+import { formatDistance } from '@shared/lib/format'
+import { getImageUrl } from '@shared/lib/image'
 import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface StoreCardCompactProps {
   readonly store: StoreWithDistance

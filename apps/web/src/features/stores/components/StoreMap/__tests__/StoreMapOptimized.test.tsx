@@ -25,13 +25,13 @@ jest.mock('leaflet', () => ({
   divIcon: jest.fn()
 }))
 
-jest.mock('@utils/storeAccessors', () => ({
+jest.mock('@shared/lib/storeAccessors', () => ({
   hasValidCoordinates: jest.fn((store: StoreWithDistance) => 
     store.latitude !== undefined && store.longitude !== undefined
   )
 }))
 
-jest.mock('@utils/tailwind-classes', () => ({
+jest.mock('@shared/lib/tailwind-classes', () => ({
   styles: {
     container: 'container-class',
     map: 'map-class',

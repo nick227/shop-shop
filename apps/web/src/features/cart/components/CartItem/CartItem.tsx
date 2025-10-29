@@ -1,11 +1,11 @@
 /**
  * CartItem - Display cart line item with quantity controls
  */
-import { Button, Image } from '@ui'
+import { Button, Image } from '@shared/ui/primitives'
 import type { CartItemData } from '@api/types'
-import { formatCurrency } from '@utils/format'
+import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface CartItemProps {
   item: CartItemData

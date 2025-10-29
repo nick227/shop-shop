@@ -4,8 +4,8 @@
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Input, Spinner, Badge } from '@ui'
-import { styles } from '@utils/tailwind-classes'
+import { Button, Card, Input, Spinner, Badge } from '@shared/ui/primitives'
+import { styles } from '@shared/lib/tailwind-classes'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 
 export default function AdminCommissionPage() {

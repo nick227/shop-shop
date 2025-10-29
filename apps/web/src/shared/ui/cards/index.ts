@@ -6,7 +6,7 @@
  */
 
 // Base card component
-export { BaseCard } from '@ui/BaseCard'
+export { BaseCard } from '@shared/ui/primitives/BaseCard'
 export type { 
   BaseCardProps, 
   CardMetaItem, 
@@ -14,7 +14,7 @@ export type {
   CardBadge, 
   CardImage, 
   CardVariant 
-} from '@ui/BaseCard'
+} from '@shared/ui/primitives/BaseCard'
 
 // Specialized card components
 export { StoreCard } from './StoreCard'

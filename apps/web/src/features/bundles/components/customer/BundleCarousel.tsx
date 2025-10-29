@@ -2,7 +2,7 @@
  * BundleCarousel - Carousel for featured bundles (reuses ItemCarouselCompact pattern)
  */
 import React, { useState } from 'react'
-import { Button } from '@ui'
+import { Button } from '@shared/ui/primitives'
 import { BundleCard } from './BundleCard'
 import type { Bundle } from '../../../../api/backend-types'
 

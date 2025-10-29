@@ -4,13 +4,13 @@
  * Memoized for performance optimization
  */
 import { memo, useMemo } from 'react'
-import { Card, CardContent, Badge } from '@ui'
+import { Card, CardContent, Badge } from '@shared/ui/primitives'
 import { MapPin, Clock, Star, DollarSign } from 'lucide-react'
 import { parseStore } from '@api/backend-types'
-import { formatDistance } from '@utils/format'
-import { getStoreImageUrl } from '@utils/storeAccessors'
+import { formatDistance } from '@shared/lib/format'
+import { getStoreImageUrl } from '@shared/lib/storeAccessors'
 import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface StoreCardProps {
   readonly store: StoreWithDistance

@@ -5,7 +5,7 @@
  * npm install @stripe/stripe-js @stripe/react-stripe-js
  */
 import { useState } from 'react'
-import { Button, Badge } from '@ui'
+import { Button, Badge } from '@shared/ui/primitives'
 import { env } from '@/env'
 import styles from './PaymentSection.module.css'
 

@@ -1,6 +1,6 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 import { forwardRef } from 'react'
 import { tv } from 'tailwind-variants'
 

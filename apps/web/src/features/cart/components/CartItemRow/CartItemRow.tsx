@@ -2,13 +2,13 @@
  * CartItemRow - Individual cart item with actions
  * Modern implementation with Tailwind
  */
-import { Badge } from '@ui'
-import { Button } from '@ui'
+import { Badge } from '@shared/ui/primitives'
+import { Button } from '@shared/ui/primitives'
 import { Plus } from 'lucide-react'
-import { formatCurrency } from '@utils/format'
+import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import type { CartItemData } from '@api/types'
-import { useAddToCart } from '@hooks/useAddToCart'
+import { useAddToCart } from '@shared/hooks/useAddToCart'
 import { toast } from 'sonner'
 
 export interface CartItemRowProps {

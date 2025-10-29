@@ -1,7 +1,7 @@
 /**
  * NewestStores - Display the 6 newest stores;
  */
-import { useNewestStores } from '@hooks/store'
+import { useNewestStores } from '@shared/hooks/store'
 import { StoreCarousel } from '../StoreCarousel'
 
 export function NewestStores() {

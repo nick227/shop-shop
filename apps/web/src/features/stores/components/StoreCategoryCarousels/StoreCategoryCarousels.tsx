@@ -2,7 +2,7 @@
  * StoreCategoryCarousels - Display stores grouped by category themes;
  * Categories inferred from store names/descriptions;
  */
-import { useStores } from '@hooks/generated'
+import { useStores } from '@shared/hooks/generated'
 import { StoreCarousel } from '../StoreCarousel'
 import { useMemo } from 'react'
 import type { StoreResponse, Store, StoreWithDistance } from '../../../../api/backend-types'

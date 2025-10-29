@@ -4,7 +4,7 @@
  */
 import { useMemo } from 'react'
 import { Button } from '../Button'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface PaginationProps {
   /** Current page (1-indexed) */

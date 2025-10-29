@@ -8,8 +8,8 @@
 import React, { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Truck, Radio, CreditCard, Clock } from 'lucide-react'
-import { BaseCard, type BaseCardProps } from '@ui/BaseCard'
-import { formatCurrency, formatRelativeTime, formatDate } from '@utils/format'
+import { BaseCard, type BaseCardProps } from '@shared/ui/primitives/BaseCard'
+import { formatCurrency, formatRelativeTime, formatDate } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import type { OrderResponse, UpdateOrderRequestStatusEnum } from '@api/types'
 

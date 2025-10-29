@@ -22,7 +22,7 @@ const MIGRATION_RULES: MigrationRule[] = [
     description: "Keep zod import"
   },
   {
-    from: "import { emailSchema, passwordSchema } from '@utils/validation'",
+    from: "import { emailSchema, passwordSchema } from '@shared/lib/validation'",
     to: "import { emailSchema, passwordSchema } from '@schemas/ConsistentSchemas'",
     description: "Update validation imports"
   },

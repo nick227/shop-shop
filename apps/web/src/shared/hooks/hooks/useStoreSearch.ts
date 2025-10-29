@@ -3,7 +3,7 @@
  * Extracts store search logic from HomePage for better separation of concerns;
  */
 import { useMemo, useCallback } from 'react'
-import { useStores } from '@hooks/generated'
+import { useStores } from '@shared/hooks/generated'
 import { useLocationParams } from './useLocationParams'
 import { useAnalytics } from './useAnalytics'
 import type { LocationData } from '@/types/location.types'

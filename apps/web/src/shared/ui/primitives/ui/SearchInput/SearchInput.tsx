@@ -1,7 +1,7 @@
 import { forwardRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
-import { Input } from '@ui'
-import { cn } from '@utils/cn'
+import { Input } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 /**
  * SearchInput - Modern search input with Tailwind;

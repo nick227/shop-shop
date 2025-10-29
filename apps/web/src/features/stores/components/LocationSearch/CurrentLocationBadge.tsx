@@ -1,7 +1,7 @@
 /**
  * CurrentLocationBadge - Display current selected location;
  */
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 interface CurrentLocationBadgeProps {
   readonly locationName: string;

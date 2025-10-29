@@ -2,7 +2,7 @@
  * Carousel Examples - Demonstrates all carousel variants with stores and products
  * Shows how to integrate with search/filter system
  */
-import { Carousel } from '@ui'
+import { Carousel } from '@shared/ui/primitives'
 import { StoreCardCompact, StoreCardExpanded } from '../StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { StoreResponse, ItemResponse, StoreWithDistance, StoreClickHandler, ProductClickHandler } from '../../../../api/backend-types'

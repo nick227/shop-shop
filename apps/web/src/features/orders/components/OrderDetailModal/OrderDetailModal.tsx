@@ -2,12 +2,12 @@
  * OrderDetailModal - Detailed order view with items and status
  * Migrated from Modal to Dialog
  */
-import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Badge, Spinner } from '@ui'
-import { useOrder } from '@hooks/generated'
-import { formatCurrency, formatDateLong } from '@utils/format'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Badge, Spinner } from '@shared/ui/primitives'
+import { useOrder } from '@shared/hooks/generated'
+import { formatCurrency, formatDateLong } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import type { OrderStatus } from '@api/types'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface OrderDetailModalProps {
   orderId: string

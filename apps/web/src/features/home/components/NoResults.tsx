@@ -2,7 +2,7 @@
  * NoResults - Component for displaying no results state
  */
 import React from 'react'
-import { NoResults as NoResultsUI } from '@ui/NoResults'
+import { NoResults as NoResultsUI } from '@shared/ui/primitives/NoResults'
 import type { LocationData } from '@/types/location.types'
 import type { StoreWithDistance } from '@api/backend-types'
 

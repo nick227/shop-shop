@@ -2,7 +2,7 @@
  * ZipCodeInput - ZIP code search form;
  */
 import { useState } from 'react'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 interface ZipCodeInputProps {
   readonly onZipSubmit: (zipCode: string) => void;

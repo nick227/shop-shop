@@ -12,7 +12,7 @@
  * 
  * Usage:
  * ```tsx
- * import { styles } from '@utils/tailwind-classes'
+ * import { styles } from '@shared/lib/tailwind-classes'
  * 
  * <div className={styles['container']}>
  *   <h1 className={styles['title']}>Title</h1>

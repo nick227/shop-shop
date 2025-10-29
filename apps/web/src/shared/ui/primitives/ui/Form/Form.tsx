@@ -5,10 +5,10 @@
 import type { FormEvent, ReactNode} from 'react';
 import { useState, useCallback, useMemo, useRef } from 'react'
 import type { ZodSchema } from 'zod'
-import { useFormValidation } from '@hooks/useFormValidation'
+import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { Alert } from '../Alert'
 import { FormProvider } from './FormContext'
-import { styles } from '@utils/tailwind-classes'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export interface FormProps<T extends Record<string, unknown>> {
   /** Zod schema for validation */

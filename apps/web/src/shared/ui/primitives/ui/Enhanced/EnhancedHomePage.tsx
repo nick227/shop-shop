@@ -12,11 +12,11 @@
 
 import React, { memo, useCallback, useState, useEffect, useRef } from 'react'
 import { Search, MapPin, Star, Clock, DollarSign, Filter, SortAsc } from 'lucide-react'
-import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@ui'
-import { MicroInteraction, RippleEffect, PulseAnimation } from '@ui/Enhancements/MicroInteractions'
-import { SmartSuggestion, PredictiveSearch } from '@ui/Enhancements/SmartSuggestions'
-import { VisualHierarchy, ContentPriority, ScanningPattern, VisualCue } from '@ui/Enhancements/VisualHierarchy'
-import { cn } from '@utils/cn'
+import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives'
+import { MicroInteraction, RippleEffect, PulseAnimation } from '@shared/ui/primitives/Enhancements/MicroInteractions'
+import { SmartSuggestion, PredictiveSearch } from '@shared/ui/primitives/Enhancements/SmartSuggestions'
+import { VisualHierarchy, ContentPriority, ScanningPattern, VisualCue } from '@shared/ui/primitives/Enhancements/VisualHierarchy'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

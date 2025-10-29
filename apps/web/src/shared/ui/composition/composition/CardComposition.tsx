@@ -9,9 +9,9 @@
  */
 
 import React, { memo, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui'
-import { Button, Badge, Image, Icon } from '@ui'
-import { cn } from '@utils/cn'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/ui/primitives'
+import { Button, Badge, Image, Icon } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

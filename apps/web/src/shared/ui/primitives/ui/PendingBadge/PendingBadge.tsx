@@ -4,7 +4,7 @@
  * Migrated to Tailwind (removed CSS module)
  */
 
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export interface PendingBadgeProps {
   count: number;

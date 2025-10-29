@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { SignupForm } from '@features/auth/SignupForm'
 import { MobileShell } from '@layouts/MobileShell'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/primitives'
 
 /**
  * SignupPage - Modern registration page;

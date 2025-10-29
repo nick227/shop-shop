@@ -16,7 +16,7 @@ import React, { memo } from 'react'
 import { MarketingLayout } from '@layouts/UnifiedLayout'
 import { PageHeader } from '@components/layout/PageHeader'
 import { PageSection } from '@components/layout/PageSection'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

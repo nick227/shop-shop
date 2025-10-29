@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import type { StoreWithDistance } from '@api/backend-types'
 import type { LocationData } from '@/types/location.types'
 import type { LocationCoordinates } from '@/types/component-props'
-import { hasValidCoordinates } from '@utils/storeAccessors'
+import { hasValidCoordinates } from '@shared/lib/storeAccessors'
 
 export interface OptimizedMapData {
   validStores: StoreWithDistance[]

@@ -2,7 +2,7 @@
  * OrderDetailsCard - Order details display
  * Extracted from OrderTrackingPage for SRP compliance
  */
-import { formatPriceCurrency } from '@utils/format'
+import { formatPriceCurrency } from '@shared/lib/format'
 import type { AddressSnapshot, OrderItem } from '@api/types'
 
 export interface OrderDetailsCardProps {

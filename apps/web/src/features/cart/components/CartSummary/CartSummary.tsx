@@ -2,10 +2,10 @@
  * CartSummary - Cart totals and checkout button;
  * Modern implementation with Tailwind;
  */
-import { Button } from '@ui'
+import { Button } from '@shared/ui/primitives'
 import { CreditCard } from 'lucide-react'
-import { formatCurrency } from '@utils/format'
-import { TAX_RATE, DEFAULT_DELIVERY_FEE } from '@utils/pricing'
+import { formatCurrency } from '@shared/lib/format'
+import { TAX_RATE, DEFAULT_DELIVERY_FEE } from '@shared/lib/pricing'
 import type { CartWithTotals } from '@api/types'
 
 export interface CartSummaryProps {

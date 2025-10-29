@@ -3,15 +3,15 @@
  */
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrders } from '@hooks/generated'
-import { useCustomerRealtimeOrder } from '@hooks/useCustomerRealtimeOrder'
-import { usePaginatedList } from '@hooks/usePaginatedList'
-import { useAuth } from '@hooks/useAuth'
+import { useOrders } from '@shared/hooks/generated'
+import { useCustomerRealtimeOrder } from '@shared/hooks/useCustomerRealtimeOrder'
+import { usePaginatedList } from '@shared/hooks/usePaginatedList'
+import { useAuth } from '@shared/hooks/useAuth'
 import { OrderCard } from '../../features/orders/components/OrderCard'
 import { OrderDetailModal } from '../../features/orders/components/OrderDetailModal'
-import { Button, Spinner, Pagination } from '@ui'
-import { sortOrdersByDateDesc } from '@utils/orderHelpers'
-import { styles } from '@utils/tailwind-classes'
+import { Button, Spinner, Pagination } from '@shared/ui/primitives'
+import { sortOrdersByDateDesc } from '@shared/lib/orderHelpers'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export default function OrderHistoryPage() {
   const { data: orders, isLoading, error } = useOrders()

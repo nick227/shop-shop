@@ -14,7 +14,7 @@
 
 import React, { memo } from 'react'
 import { Loader2, MoreHorizontal } from 'lucide-react'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

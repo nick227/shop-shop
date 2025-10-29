@@ -3,7 +3,7 @@
  * Consolidates status display logic from VendorOrdersPage, OrderCard, OrderTrackingPage
  * Config-driven for easy maintenance and extension
  */
-import { Badge } from '@ui'
+import { Badge } from '@shared/ui/primitives'
 import type { UpdateOrderRequestStatusEnum } from '@api/types'
 
 export type OrderStatus = UpdateOrderRequestStatusEnum

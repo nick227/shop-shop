@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import { useCarts, useCreateCart, useDeleteCart } from './generated'
 import type { CartWithTotals } from '@api/backend-types'
 import { calculateCartTotals } from '@api/types/helpers'
-import { useAuth } from '@hooks/useAuth'
+import { useAuth } from '@shared/hooks/useAuth'
 
 export function useCart() {
   const { isAuthenticated } = useAuth()

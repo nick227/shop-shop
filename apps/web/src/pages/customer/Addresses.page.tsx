@@ -2,7 +2,7 @@
  * CustomerAddressesPage - Manage saved addresses;
  */
 
-import { Button, Card } from '@ui'
+import { Button, Card } from '@shared/ui/primitives'
 
 export default function CustomerAddressesPage() {
   return (

@@ -4,15 +4,15 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useCustomerStats } from '@hooks/customer/useCustomerStats'
-import { useOrders } from '@hooks/generated'
-import { useCustomerRealtimeOrder } from '@hooks/useCustomerRealtimeOrder'
-import { useAuth } from '@hooks/useAuth'
+import { useCustomerStats } from '@shared/hooks/customer/useCustomerStats'
+import { useOrders } from '@shared/hooks/generated'
+import { useCustomerRealtimeOrder } from '@shared/hooks/useCustomerRealtimeOrder'
+import { useAuth } from '@shared/hooks/useAuth'
 import { OrderCard } from '../../features/orders/components/OrderCard'
-import { Button, Spinner, Card } from '@ui'
-import { formatCurrency, formatRelativeTime } from '@utils/format'
-import { isOrderPending, sortOrdersByDateDesc } from '@utils/orderHelpers'
-import { styles } from '@utils/tailwind-classes'
+import { Button, Spinner, Card } from '@shared/ui/primitives'
+import { formatCurrency, formatRelativeTime } from '@shared/lib/format'
+import { isOrderPending, sortOrdersByDateDesc } from '@shared/lib/orderHelpers'
+import { styles } from '@shared/lib/tailwind-classes'
 
 export default function CustomerDashboardPage() {
   const navigate = useNavigate()

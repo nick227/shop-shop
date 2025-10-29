@@ -3,7 +3,7 @@
  * Extracts location display logic from HomePage for better separation of concerns
  */
 import { useMemo } from 'react'
-import { getStoreCitiesContextDual } from '@utils/storeHelpers'
+import { getStoreCitiesContextDual } from '@shared/lib/storeHelpers'
 import type { LocationData } from '@/types/location.types'
 import type { StoreWithDistance } from '@api/types'
 import type { LocationCoordinates } from '@/types/component-props'

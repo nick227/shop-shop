@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { useCart } from '@hooks/useCart'
+import { useCart } from '@shared/hooks/useCart'
 import { MobileShell } from '@layouts/MobileShell'
-import { Button } from '@ui'
-import { SkeletonList } from '@ui/Skeleton'
+import { Button } from '@shared/ui/primitives'
+import { SkeletonList } from '@shared/ui/primitives/Skeleton'
 import { 
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@ui/Dialog'
+} from '@shared/ui/primitives/Dialog'
 import { ShoppingCart, ArrowLeft, Trash2 } from 'lucide-react'
 import { CartItemRow } from '@features/cart/components/CartItemRow'
 import { CartSummary } from '@features/cart/components/CartSummary'

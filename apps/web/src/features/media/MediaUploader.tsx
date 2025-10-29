@@ -2,7 +2,7 @@
  * MediaUploader - Upload and manage media files for stores and items
  */
 import { useState, useRef } from 'react'
-import { Button } from '@ui'
+import { Button } from '@shared/ui/primitives'
 import { useMediaUpload, useMediaList, useMediaDelete } from '../../hooks/vendor'
 import { toast } from 'sonner'
 import type { MediaApiResponse } from '@api/types'

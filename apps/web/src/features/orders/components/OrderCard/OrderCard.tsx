@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { Card, CardHeader, CardContent, CardFooter, Badge } from '@ui'
-import { Button } from '@ui'
+import { Card, CardHeader, CardContent, CardFooter, Badge } from '@shared/ui/primitives'
+import { Button } from '@shared/ui/primitives'
 import { Radio, Package, Truck, CheckCircle, XCircle } from 'lucide-react'
 import type { OrderResponse } from '@api/types'
 import type { OrderStatus } from '@api/safe-types'
-import { formatCurrency, formatRelativeTime, formatDate } from '@utils/format'
+import { formatCurrency, formatRelativeTime, formatDate } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 
 /**

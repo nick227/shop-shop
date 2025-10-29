@@ -4,8 +4,8 @@
  */
 import { Marker, Popup } from 'react-leaflet'
 import type L from 'leaflet'
-import { formatDistance } from '@utils/format'
-import { styles } from '@utils/tailwind-classes'
+import { formatDistance } from '@shared/lib/format'
+import { styles } from '@shared/lib/tailwind-classes'
 import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 
 export interface StoreMarkerProps {

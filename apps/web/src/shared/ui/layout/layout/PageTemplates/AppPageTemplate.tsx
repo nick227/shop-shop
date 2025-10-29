@@ -17,7 +17,7 @@ import { AppLayout } from '@layouts/UnifiedLayout'
 import { PageHeader } from '@components/layout/PageHeader'
 import { PageActions } from '@components/layout/PageActions'
 import { PageSection } from '@components/layout/PageSection'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 // ========================================
 // Types & Interfaces

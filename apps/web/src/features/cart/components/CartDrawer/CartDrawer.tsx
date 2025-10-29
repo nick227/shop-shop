@@ -2,11 +2,11 @@
  * CartDrawer - Shopping cart sidebar
  * Migrated from Drawer to BottomSheet (mobile-native)
  */
-import { BottomSheet, Button, Spinner, useConfirm } from '@ui'
+import { BottomSheet, Button, Spinner, useConfirm } from '@shared/ui/primitives'
 import { CartItem } from '../CartItem'
-import { useCart } from '@hooks/useCart'
-import { useAuth } from '@hooks/useAuth'
-import { formatCurrency } from '@utils/format'
+import { useCart } from '@shared/hooks/useCart'
+import { useAuth } from '@shared/hooks/useAuth'
+import { formatCurrency } from '@shared/lib/format'
 
 export interface CartDrawerProps {
   readonly isOpen: boolean

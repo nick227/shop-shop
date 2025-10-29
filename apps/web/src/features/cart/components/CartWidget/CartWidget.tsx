@@ -4,15 +4,15 @@
  */
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCart } from '@hooks/useCart'
-import { useAuth } from '@hooks/useAuth'
-import { Button } from '@ui'
-import { BottomSheet } from '@ui/BottomSheet'
+import { useCart } from '@shared/hooks/useCart'
+import { useAuth } from '@shared/hooks/useAuth'
+import { Button } from '@shared/ui/primitives'
+import { BottomSheet } from '@shared/ui/primitives/BottomSheet'
 import { ShoppingCart, Trash2 } from 'lucide-react'
 import { CartItemRow } from '../CartItemRow'
 import { CartSummary } from '../CartSummary'
 import { toast } from 'sonner'
-import { cn } from '@utils/cn'
+import { cn } from '@shared/lib/cn'
 
 export function CartWidget() {
   const navigate = useNavigate()
