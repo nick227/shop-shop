@@ -35,7 +35,6 @@ import { orders } from './features/orders'
 import { river } from './features/river'
 import { stores } from './features/stores'
 import { admin } from './features/admin'
-import { items } from './features/items'
 import { products } from './features/products'
 import { search } from './features/search'
 
@@ -57,7 +56,6 @@ export const styles = {
   ...river,
   ...stores,
   ...admin,
-  ...items,
   ...products,
   ...search,
 } as const
@@ -82,6 +80,5 @@ export {orders} from './features/orders'
 export {river} from './features/river'
 export {stores} from './features/stores'
 export {admin} from './features/admin'
-export {items} from './features/items'
 export {products} from './features/products'
 export {search} from './features/search'

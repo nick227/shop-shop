@@ -10,7 +10,7 @@ import { useBundles } from '@hooks/generated'
 import { useRiverPosts } from '@hooks/river'
 import { StoreHeader } from '../../features/stores/components/StoreHeader'
 import { StoreMapLazy } from '../../features/stores/components/StoreMapLazy'
-import { ItemCard, ItemCarouselCompact } from '../../features/items/components'
+import { ItemCard, ItemCarouselCompact } from '../../features/products/components'
 import { BundleGrid } from '../../features/bundles/components/customer'
 // import { RiverFeed } from '../../features/river' // Disabled until Posts API is available
 import { Button, Spinner, DataState } from '@ui'

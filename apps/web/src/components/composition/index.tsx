@@ -12,7 +12,7 @@
  * - Accessibility composition guidelines
  * - Performance optimized with proper memoization
  */
-
+import React from 'react'
 // ========================================
 // Page Composition
 // ========================================
@@ -105,7 +105,7 @@ export { useResponsivePageComposition } from './PageComposition'
 // ========================================
 export const CompositionUtils = {
   // Create responsive configuration
-  createResponsiveConfig: <T>(config: {
+  createResponsiveConfig: <T,>(config: {
     mobile: T
     tablet: T
     desktop: T

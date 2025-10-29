@@ -5,7 +5,7 @@
  * Enables consistent composition patterns and responsive behavior.
  */
 
-import React, { createContext, useContext, useMemo, ReactNode } from 'react'
+import React, { createContext, useContext, useMemo, ReactNode, memo } from 'react'
 import { useResponsiveLayout } from '@layouts/UnifiedLayout/hooks/useResponsiveLayout'
 
 // ========================================
@@ -179,7 +179,7 @@ export const useComposition = (): CompositionContextValue => {
 /**
  * Hook for responsive composition values
  */
-export const useResponsiveComposition = <T>(config: {
+export const useResponsiveComposition = <T,>(config: {
   mobile: T
   tablet: T
   desktop: T
