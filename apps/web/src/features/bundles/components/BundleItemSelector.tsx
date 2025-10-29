@@ -3,12 +3,12 @@
  * Allows selection of items for a bundle with quantities
  */
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Button } from '../../../components/ui/Button'
-import { Input } from '../../../components/ui/Input'
-import { Card } from '../../../components/ui/Card'
-import { Badge } from '../../../components/ui/Badge'
-import { useItems } from '../../../hooks/generated'
-import type { ItemResponse } from '../../../api/backend-types'
+import { Button } from '@shared/ui/primitives'
+import { Input } from '@shared/ui/primitives'
+import { Card } from '@shared/ui/primitives'
+import { Badge } from '@shared/ui/primitives'
+import { useItems } from '@api/hooks/generated'
+import type { ItemResponse } from '@api/backend-types'
 
 // Utility to handle cents vs dollars ambiguity
 const toDollars = (v: string | number | undefined): number => {

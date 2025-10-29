@@ -3,14 +3,14 @@
  * Modal for creating and editing bundles
  */
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/Dialog'
-import { Button } from '../../../components/ui/Button'
-import { Input } from '../../../components/ui/Input'
-import { TextArea } from '../../../components/ui/TextArea'
-import { Select, SelectItem } from '../../../components/ui/Select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@shared/ui/primitives'
+import { Button } from '@shared/ui/primitives'
+import { Input } from '@shared/ui/primitives'
+import { TextArea } from '@shared/ui/primitives'
+import { Select, SelectItem } from '@shared/ui/primitives'
 import { BundleItemSelector } from './BundleItemSelector'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { Bundle } from '../../../api/types'
+import type { Bundle } from '@api/types'
 import type { BundleFormData } from '../types/bundle.types'
 
 interface BundleFormModalProps {

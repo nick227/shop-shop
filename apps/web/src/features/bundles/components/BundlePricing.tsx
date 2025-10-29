@@ -3,7 +3,7 @@
  * Displays bundle pricing information and savings
  */
 import React from 'react'
-import { Badge } from '../../../components/ui/Badge'
+import { Badge } from '@shared/ui/primitives'
 import { BundleSavingsBadge } from './BundleSavingsBadge'
 
 // Local type definitions to avoid circular dependencies

@@ -3,7 +3,7 @@
  * Displays bundle savings with visual emphasis
  */
 import React from 'react'
-import { Badge } from '../../../components/ui/Badge'
+import { Badge } from '@shared/ui/primitives'
 
 interface BundleSavingsBadgeProps {
   readonly savings: number
