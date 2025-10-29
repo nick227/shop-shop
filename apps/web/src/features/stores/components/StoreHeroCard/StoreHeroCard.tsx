@@ -2,10 +2,10 @@
  * StoreHeroCard - Full-screen hero card for store discovery
  * Single-focus UX: Bold, immersive design
  */
-import { Button, Image } from '../../../../components/ui'
-import { parseStore } from '../../../../api/backend-types'
-import { formatDistance } from '../../../../utils/format'
-import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
+import { Button, Image } from '@shared/ui/primitives'
+import { parseStore } from '@api/backend-types'
+import { formatDistance } from '@shared/lib/utils/format'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
 import styles from './StoreHeroCard.module.css'
 
 export interface StoreHeroCardProps {

@@ -5,7 +5,7 @@
 import { useStores } from '@shared/hooks/generated'
 import { StoreCarousel } from '../StoreCarousel'
 import { useMemo } from 'react'
-import type { StoreResponse, Store, StoreWithDistance } from '../../../../api/backend-types'
+import type { StoreResponse, Store, StoreWithDistance } from '@api/backend-types'
 
 interface CategoryConfig {
   title: string;

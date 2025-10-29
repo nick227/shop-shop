@@ -6,13 +6,13 @@ import type { ErrorInfo, ReactNode} from 'react';
 import { useEffect, useRef, memo, Suspense, Component, useCallback } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
-import type { LocationCoordinates } from '../../../../types/component-props'
-import { formatDistance } from '../../../../utils/format'
-import { hasValidCoordinates } from '../../../../utils/storeAccessors'
-import { styles } from '../../../../utils/tailwind-classes'
-import { ObjectPool } from '../../../../utils/memory/ObjectPool'
-import { useMapData } from '../../../../hooks/useMapData'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
+import type { LocationCoordinates } from '@shared/types'
+import { formatDistance } from '@shared/lib/utils/format'
+import { hasValidCoordinates } from '@shared/lib/utils/storeAccessors'
+import { styles } from '@shared/lib/tailwind-classes'
+import { ObjectPool } from '@shared/lib/utils/memory/ObjectPool'
+import { useMapData } from '@shared/hooks/useMapData'
 
 // Object pools for marker and icon reuse (performance optimization)
 const markerPool = new ObjectPool(
