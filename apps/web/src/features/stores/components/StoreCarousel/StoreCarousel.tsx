@@ -3,7 +3,7 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { StoreCardCompact } from '../StoreCard/StoreCardCompact'
-import type { StoreResponse, Store, StoreWithDistance } from '../../../../api/backend-types'
+import type { StoreResponse, Store, StoreWithDistance } from '@api/backend-types'
 
 interface StoreCarouselProps {
   readonly stores: StoreWithDistance[]

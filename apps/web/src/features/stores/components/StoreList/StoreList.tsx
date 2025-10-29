@@ -5,10 +5,10 @@
  * This component is kept for backward compatibility but delegates to StoreGrid;
  * Migrated to Tailwind (removed CSS module)
  */
-import { useStores } from '../../../../hooks/generated'
+import { useStores } from '@api/hooks/generated'
 import { StoreGrid } from '../StoreGrid'
-import { Spinner } from '../../../../components/ui'
-import type { StoreResponse, StoreWithDistance } from '../../../../api/backend-types'
+import { Spinner } from '@shared/ui/primitives'
+import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
 import { useNavigate } from 'react-router-dom'
 
 export function StoreList() {

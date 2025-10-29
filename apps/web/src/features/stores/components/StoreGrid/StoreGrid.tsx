@@ -1,8 +1,8 @@
-import { GridView } from '../../../../utils/page-builder'
+import { GridView } from '@shared/lib/utils/page-builder'
 import { StoreCard } from '../StoreCard'
-import type { StoreWithDistance, StoreClickHandler } from '../../../../api/backend-types'
-import type { ViewConfig } from '../../../../types/page-config.types'
-import { cn } from '../../../../utils/cn'
+import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
+import type { ViewConfig } from '@shared/types'
+import { cn } from '@shared/lib/utils/cn'
 
 /**
  * StoreGrid - Declarative grid view for stores;
