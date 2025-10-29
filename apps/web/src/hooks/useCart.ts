@@ -4,7 +4,7 @@
  */
 import { useMemo } from 'react'
 import { useCarts, useCreateCart, useDeleteCart } from './generated'
-import type { CartWithTotals } from '@api/types/helpers'
+import type { CartWithTotals } from '@api/backend-types'
 import { calculateCartTotals } from '@api/types/helpers'
 import { useAuth } from '@hooks/useAuth'
 
@@ -21,7 +21,7 @@ export function useCart() {
 
   // Find active cart from the list
   const activeCart = useMemo(() => {
-    if (!carts || carts.length === 0) return undefined
+    if (!carts || carts.length === 0) return
     return carts.find(cart => cart.status === 'ACTIVE') || undefined
   }, [carts])
 

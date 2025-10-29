@@ -12,7 +12,7 @@ interface BundleItem {
   bundleId: string
   itemId: string
   quantity: number
-  sortIndex: number
+  sortIndex?: number
   item?: {
     id: string
     title: string

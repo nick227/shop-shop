@@ -49,7 +49,7 @@ function handleFetchError(error: FetchError): AppError {
 /**
  * Handle unknown errors
  */
-function handleUnknownError(error: any): AppError {
+function handleUnknownError(error: unknown): AppError {
   if ((error) instanceof Error && error !== undefined) {
     return new AppError(error.message, 'GENERIC_ERROR')
   }
@@ -59,7 +59,7 @@ function handleUnknownError(error: any): AppError {
 /**
  * Main error handler - Routes to appropriate handler
  */
-export async function handleApiError(error: any): Promise<AppError> {
+export async function handleApiError(error: unknown): Promise<AppError> {
   if ((error) instanceof ResponseError && error !== undefined) {
     return await handleResponseError(error)
   }

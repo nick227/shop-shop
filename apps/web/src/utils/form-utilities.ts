@@ -28,11 +28,28 @@ import type {
 
 export function createInitialStoreFormData(): StoreFormData {
   return {
-    name: '', slug: '', description: '', companyName: '', taxId: '', phone: '', email: '', website: '',
-    isPublished: false, deliveryEnabled: true, pickupEnabled: true, prepTimeMin: 15,
-    deliveryDistance: '', deliveryCharge: '',
-    addressStreet: '', addressCity: '', addressState: '', addressZip: '', addressCountry: 'US',
-    latitude: '', longitude: '',
+    name: '',
+    slug: '',
+    description: '',
+    companyName: '',
+    taxId: '',
+    phone: '',
+    email: '',
+    website: '',
+    isPublished: false,
+    deliveryEnabled: true,
+    pickupEnabled: true,
+    prepTimeMin: 0,
+    deliveryDistance: '0',
+    deliveryCharge: '0',
+    latitude: '0',
+    longitude: '0',
+    addressStreet: '',
+    addressCity: '',
+    addressState: '',
+    addressZip: '',
+    addressCountry: 'US',
+    commissionRate: '0'
   }
 }
 
@@ -45,8 +62,13 @@ export function createInitialItemFormData(): ItemFormData {
 
 export function createInitialAddressFormData(): AddressFormData {
   return {
-    line1: '', line2: '', city: '', state: '', postalCode: '', country: 'US',
-    isDefault: false, label: ''
+    line1: '', 
+    city: '', 
+    state: '', 
+    postalCode: '', 
+    country: 'US',
+    line2: '', 
+    instructions: ''
   }
 }
 
@@ -69,17 +91,28 @@ export function createInitialOrderFormData(): OrderFormData {
 
 export function transformStoreToFormData(store: StoreResponse): StoreFormData {
   return {
-    name: store.name ?? '', slug: store.slug ?? '', description: store.description ?? '',
-    companyName: store.companyName ?? '', taxId: store.taxId ?? '', phone: store.phone ?? '',
-    email: store.email ?? '', website: store.website ?? '',
-    isPublished: store.isPublished ?? false, deliveryEnabled: store.deliveryEnabled ?? true,
-    pickupEnabled: store.pickupEnabled ?? true, prepTimeMin: store.prepTimeMin ?? 15,
-    deliveryDistance: store.deliveryDistance?.toString() ?? '',
-    deliveryCharge: store.deliveryCharge?.toString() ?? '',
-    addressStreet: store.addressStreet ?? '', addressCity: store.addressCity ?? '',
-    addressState: store.addressState ?? '', addressZip: store.addressZip ?? '',
+    name: store.name ?? '', 
+    slug: store.slug ?? '',
+    description: store.description ?? '',
+    companyName: store.companyName ?? '',
+    taxId: store.taxId ?? '',
+    phone: store.phone ?? '',
+    email: store.email ?? '',
+    website: store.website ?? '',
+    isPublished: store.isPublished ?? false,
+    deliveryEnabled: store.deliveryEnabled ?? true,
+    pickupEnabled: store.pickupEnabled ?? true,
+    prepTimeMin: store.prepTimeMin ?? 0,
+    deliveryDistance: store.deliveryDistance ?? '0',
+    deliveryCharge: store.deliveryCharge ?? '0',
+    latitude: store.latitude ?? '0',
+    longitude: store.longitude ?? '0',
+    addressStreet: store.addressStreet ?? '',
+    addressCity: store.addressCity ?? '',
+    addressState: store.addressState ?? '',
+    addressZip: store.addressZip ?? '',
     addressCountry: store.addressCountry ?? 'US',
-    latitude: store.latitude?.toString() ?? '', longitude: store.longitude?.toString() ?? '',
+    commissionRate: store.commissionRate ?? '0'
   }
 }
 
@@ -93,9 +126,13 @@ export function transformItemToFormData(item: ItemResponse): ItemFormData {
 
 export function transformAddressToFormData(address: AddressResponse): AddressFormData {
   return {
-    line1: address.line1 ?? '', line2: address.line2 ?? '', city: address.city ?? '', 
-    state: address.state ?? '', postalCode: address.postalCode ?? '', country: address.country ?? 'US',
-    isDefault: address.isDefault ?? false, label: address.label ?? ''
+    line1: address.line1 ?? '',
+    city: address.city ?? '', 
+    state: address.state ?? '', 
+    postalCode: address.postalCode ?? '',
+    country: address.country ?? 'US',
+    line2: address.line2 ?? '',
+    instructions: address.instructions ?? ''
   }
 }
 
@@ -160,10 +197,11 @@ export function cleanFormData<T extends Record<string, any>>(
 export function cleanStoreFormData(formData: StoreFormData): StoreFormData {
   return cleanFormData(
     formData,
-    ['name', 'slug', 'description', 'companyName', 'taxId', 'phone', 'email', 'website', 
-     'deliveryDistance', 'deliveryCharge', 'addressStreet', 'addressCity', 'addressState', 
-     'addressZip', 'addressCountry', 'latitude', 'longitude'],
+    // String fields that need trimming
+    ['name', 'slug', 'description', 'companyName', 'taxId', 'phone', 'email', 'website', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
+    // Number fields
     ['prepTimeMin'],
+    // Boolean fields
     ['isPublished', 'deliveryEnabled', 'pickupEnabled']
   )
 }
@@ -180,9 +218,9 @@ export function cleanItemFormData(formData: ItemFormData): ItemFormData {
 export function cleanAddressFormData(formData: AddressFormData): AddressFormData {
   return cleanFormData(
     formData,
-    ['line1', 'line2', 'city', 'state', 'postalCode', 'country', 'label'],
-    [],
-    ['isDefault']
+    ['line1', 'city', 'state', 'postalCode', 'country', 'line2', 'instructions'], 
+    [], 
+    []
   )
 }
 
@@ -242,26 +280,38 @@ export function validateFormData<T extends Record<string, any>>(
 }
 
 export function validateStoreFormData(formData: StoreFormData): { isValid: boolean; errors: Record<string, string> } {
-  // SDK-first validation: Check if form data matches SDK CreateStoreInput structure
+  // Schema-first validation: Check if form data matches schema structure
   const errors: Record<string, string> = {}
   
-  // Required fields validation using SDK structure
+  // Required fields validation using schema structure
   if (!formData.name || formData.name?.trim() === '') {
-    errors['name'] = 'Store name is required'
+    errors.name = 'Store name is required'
   }
   if (!formData.slug || formData.slug?.trim() === '') {
-    errors['slug'] = 'Store slug is required'
+    errors.slug = 'Store slug is required'
+  }
+  if (!formData.description || formData.description?.trim() === '') {
+    errors.description = 'Store description is required'
+  }
+  if (!formData.phone || formData.phone?.trim() === '') {
+    errors.phone = 'Phone number is required'
+  }
+  if (!formData.email || formData.email?.trim() === '') {
+    errors.email = 'Email is required'
+  }
+  if (!formData.website || formData.website?.trim() === '') {
+    errors.website = 'Website is required'
   }
   
-  // Type validation for SDK compatibility
+  // Type validation for schema compatibility
   if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/?.test(formData.email)) {
-    errors['email'] = 'Invalid email format'
+    errors.email = 'Invalid email format'
   }
   if (formData.phone && !/^\+?[\d\s-()]+$/?.test(formData.phone)) {
-    errors['phone'] = 'Invalid phone format'
+    errors.phone = 'Invalid phone format'
   }
   if (formData.website && !/^https?:\/\/.+/?.test(formData.website)) {
-    errors['website'] = 'Website must start with http:// or https://'
+    errors.website = 'Website must start with http:// or https://'
   }
   
   return {
@@ -276,21 +326,21 @@ export function validateItemFormData(formData: ItemFormData): { isValid: boolean
   
   // Required fields validation using SDK structure
   if (!formData.storeId || formData.storeId?.trim() === '') {
-    errors['storeId'] = 'Store ID is required'
+    errors.storeId = 'Store ID is required'
   }
   if (!formData.title || formData.title?.trim() === '') {
-    errors['title'] = 'Title is required'
+    errors.title = 'Title is required'
   }
   if (!formData.price || formData.price?.trim() === '') {
-    errors['price'] = 'Price is required'
+    errors.price = 'Price is required'
   }
   
   // Type validation for SDK compatibility
   if (formData.stockQty !== undefined && (typeof formData.stockQty !== 'number' || formData.stockQty < 0)) {
-    errors['stockQty'] = 'Stock quantity must be a non-negative number'
+    errors.stockQty = 'Stock quantity must be a non-negative number'
   }
   if (formData.sortIndex !== undefined && (typeof formData.sortIndex !== 'number' || formData.sortIndex < 0)) {
-    errors['sortIndex'] = 'Sort index must be a non-negative number'
+    errors.sortIndex = 'Sort index must be a non-negative number'
   }
   
   return {
@@ -300,26 +350,21 @@ export function validateItemFormData(formData: ItemFormData): { isValid: boolean
 }
 
 export function validateAddressFormData(formData: AddressFormData): { isValid: boolean; errors: Record<string, string> } {
-  // SDK-first validation: Check if form data matches SDK CreateAddressInput structure
+  // Schema-first validation: Check if form data matches schema structure
   const errors: Record<string, string> = {}
   
-  // Required fields validation using SDK structure
+  // Required fields validation using schema structure
   if (!formData.line1 || formData.line1?.trim() === '') {
-    errors['line1'] = 'Address line 1 is required'
+    errors.line1 = 'Street address is required'
   }
   if (!formData.city || formData.city?.trim() === '') {
-    errors['city'] = 'City is required'
+    errors.city = 'City is required'
   }
   if (!formData.state || formData.state?.trim() === '') {
-    errors['state'] = 'State is required'
+    errors.state = 'State is required'
   }
   if (!formData.postalCode || formData.postalCode?.trim() === '') {
-    errors['postalCode'] = 'Postal code is required'
-  }
-  
-  // Type validation for SDK compatibility
-  if (formData.isDefault !== undefined && typeof formData.isDefault !== 'boolean') {
-    errors['isDefault'] = 'Default flag must be a boolean'
+    errors.postalCode = 'Postal code is required'
   }
   
   return {
@@ -334,18 +379,18 @@ export function validateOrderFormData(formData: OrderFormData): { isValid: boole
   
   // Required fields validation using SDK structure
   if (!formData.cartId || formData.cartId?.trim() === '') {
-    errors['cartId'] = 'Cart ID is required'
+    errors.cartId = 'Cart ID is required'
   }
   if (!formData.deliveryType || formData.deliveryType?.trim() === '') {
-    errors['deliveryType'] = 'Delivery type is required'
+    errors.deliveryType = 'Delivery type is required'
   }
   
   // Type validation for SDK compatibility
   if (formData.addressId !== undefined && (typeof formData.addressId !== 'string' || formData.addressId?.trim() === '')) {
-    errors['addressId'] = 'Address ID must be a valid string'
+    errors.addressId = 'Address ID must be a valid string'
   }
   if (formData.tip !== undefined && (typeof formData.tip !== 'string' || formData.tip?.trim() === '')) {
-    errors['tip'] = 'Tip must be a valid string'
+    errors.tip = 'Tip must be a valid string'
   }
   
   return {

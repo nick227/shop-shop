@@ -25,7 +25,7 @@ export function CartWidget() {
     if (!cart?.items) return 0
     try {
       const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
-      return items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+      return items.reduce((sum: number, item: { quantity?: number }) => sum + (item.quantity || 0), 0)
     } catch {
       return 0
     }
@@ -109,13 +109,13 @@ export function CartWidget() {
               {(() => {
                 try {
                   const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
-                  return items.map((item: any) => (
+                  return items.map((item: { id: string; titleSnapshot?: string; price?: number; quantity?: number }) => (
                     <CartItemRow
                       key={item.id}
                       cartItem={{
                         ...item,
                         itemTitle: String(item.titleSnapshot || 'Item'),
-                        lineTotal: String((((item as any).price || 0) * (item.quantity || 1)).toString()),
+                        lineTotal: String((((item).price || 0) * (item.quantity || 1)).toString()),
                         createdAt: new Date().toISOString()
                       }}
                       storeId={cart.storeId}

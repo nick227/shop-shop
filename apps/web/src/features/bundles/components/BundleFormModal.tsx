@@ -77,7 +77,7 @@ export function BundleFormModal({
     }
   }, [bundle])
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -92,7 +92,7 @@ export function BundleFormModal({
     }
   }
 
-  const handlePricingChange = (field: string, value: any) => {
+  const handlePricingChange = (field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       pricing: {
@@ -102,7 +102,7 @@ export function BundleFormModal({
     }))
   }
 
-  const handleItemsChange = (items: { itemId: string; quantity: number; sortIndex: number }[]) => {
+  const handleItemsChange = (items: { itemId: string; quantity: number; sortIndex?: number }[]) => {
     setFormData(prev => ({
       ...prev,
       items
@@ -112,24 +112,24 @@ export function BundleFormModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData['name'].trim()) {
-      newErrors['name'] = 'Bundle name is required'
+    if (!formData.name.trim()) {
+      newErrors.name = 'Bundle name is required'
     }
 
-    if (formData['items'].length === 0) {
-      newErrors['items'] = 'At least one item is required'
+    if (formData.items.length === 0) {
+      newErrors.items = 'At least one item is required'
     }
 
-    if (formData.pricing.pricingType === 'FIXED_PRICE' && (!formData.pricing['fixedPrice'] || formData.pricing['fixedPrice'] <= 0)) {
-      newErrors['fixedPrice'] = 'Fixed price must be greater than 0'
+    if (formData.pricing.pricingType === 'FIXED_PRICE' && (!formData.pricing.fixedPrice || formData.pricing.fixedPrice <= 0)) {
+      newErrors.fixedPrice = 'Fixed price must be greater than 0'
     }
 
-    if (formData.pricing.pricingType === 'DISCOUNT_PERCENT' && (!formData.pricing['discountPercent'] || formData.pricing['discountPercent'] <= 0)) {
-      newErrors['discountPercent'] = 'Discount percentage must be greater than 0'
+    if (formData.pricing.pricingType === 'DISCOUNT_PERCENT' && (!formData.pricing.discountPercent || formData.pricing.discountPercent <= 0)) {
+      newErrors.discountPercent = 'Discount percentage must be greater than 0'
     }
 
-    if (formData.pricing.pricingType === 'DISCOUNT_AMOUNT' && (!formData.pricing['discountAmount'] || formData.pricing['discountAmount'] <= 0)) {
-      newErrors['discountAmount'] = 'Discount amount must be greater than 0'
+    if (formData.pricing.pricingType === 'DISCOUNT_AMOUNT' && (!formData.pricing.discountAmount || formData.pricing.discountAmount <= 0)) {
+      newErrors.discountAmount = 'Discount amount must be greater than 0'
     }
 
     setErrors(newErrors)
@@ -179,10 +179,10 @@ export function BundleFormModal({
             <Input
               id="name"
               type="text"
-              value={formData['name']}
+              value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="e.g., Burger Combo"
-              error={errors['name']}
+              error={errors.name}
             />
           </div>
 
@@ -215,7 +215,7 @@ export function BundleFormModal({
             storeId={storeId}
             items={formData.items}
             onChange={handleItemsChange}
-            error={errors['items'] || undefined}
+            error={errors.items || undefined}
           />
         </div>
 

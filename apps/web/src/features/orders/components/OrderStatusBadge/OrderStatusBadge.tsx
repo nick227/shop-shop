@@ -4,7 +4,7 @@
  * Config-driven for easy maintenance and extension
  */
 import { Badge } from '@ui'
-import type { UpdateOrderRequestStatusEnum } from '@packages/sdk'
+import type { UpdateOrderRequestStatusEnum } from '@api/types'
 
 export type OrderStatus = UpdateOrderRequestStatusEnum
 
@@ -15,12 +15,12 @@ interface StatusConfig {
 }
 
 const ORDER_STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  PLACED: { icon: '🔔', label: 'New Order', variant: 'warning' },
-  ACCEPTED: { icon: '✅', label: 'Accepted', variant: 'secondary' },
+  PENDING: { icon: '🔔', label: 'New Order', variant: 'warning' },
+  CONFIRMED: { icon: '✅', label: 'Accepted', variant: 'secondary' },
   PREPARING: { icon: '👨‍🍳', label: 'Preparing', variant: 'default' },
   READY: { icon: '🎉', label: 'Ready', variant: 'success' },
-  COMPLETED: { icon: '✅', label: 'Done', variant: 'default' },
-  CANCELED: { icon: '❌', label: 'Canceled', variant: 'destructive' },
+  DELIVERED: { icon: '✅', label: 'Done', variant: 'default' },
+  CANCELLED: { icon: '❌', label: 'Canceled', variant: 'destructive' },
 }
 
 export interface OrderStatusBadgeProps {
@@ -67,18 +67,18 @@ export function isOrderPending(status: OrderStatus): boolean {
  * Check if order is in active state (customer waiting)
  */
 export function isOrderActive(status: OrderStatus): boolean {
-  return ['PLACED', 'ACCEPTED', 'PREPARING', 'READY'].includes(status)
+  return ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(status)
 }
 
 /**
  * Get status progression for tracking
  */
 export const ORDER_STATUS_PROGRESSION: OrderStatus[] = [
-  'PLACED',
-  'ACCEPTED',
+  'PENDING',
+  'CONFIRMED',
   'PREPARING',
   'READY',
-  'COMPLETED',
+  'DELIVERED',
 ]
 
 /**

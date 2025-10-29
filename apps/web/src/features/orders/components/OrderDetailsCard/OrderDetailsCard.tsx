@@ -3,13 +3,7 @@
  * Extracted from OrderTrackingPage for SRP compliance
  */
 import { formatPriceCurrency } from '@utils/format'
-import type { AddressSnapshot } from '@api/types'
-
-interface OrderItem {
-  quantity: number
-  titleSnapshot: string
-  unitPrice: string | number
-}
+import type { AddressSnapshot, OrderItem } from '@api/types'
 
 export interface OrderDetailsCardProps {
   storeName?: string

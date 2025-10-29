@@ -19,7 +19,7 @@ export function AvailableLocations({ onLocationClick }: AvailableLocationsProps)
   }
 
   if (!data || (data.cities.length === 0 && data.zipCodes.length === 0)) {
-    return undefined;
+    return;
   }
 
   const topCities = data.cities.slice(0, 8)

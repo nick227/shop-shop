@@ -11,14 +11,14 @@ interface UseUrlLocationResult {
   location: LocationData | undefined
   urlParamError: string | undefined
   setLocation: (location: LocationData | undefined) => void
-  setUrlParamError: (error: string | undefined | undefined) => void
+  setUrlParamError: (error: string | undefined  ) => void
   clearLocation: () => void
 }
 
 export function useUrlLocation(): UseUrlLocationResult {
   const { params: urlParams, updateParams, clearParams } = useLocationParams()
-  const [location, setLocation] = useState<LocationData | undefined>(undefined)
-  const [urlParamError, setUrlParamError] = useState<string | undefined>(undefined)
+  const [location, setLocation] = useState<LocationData | undefined>()
+  const [urlParamError, setUrlParamError] = useState<string | undefined>()
   const isInitialMount = useRef(true)
   
   // Helper function to check if two locations are the same

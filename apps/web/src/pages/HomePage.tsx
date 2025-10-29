@@ -4,6 +4,7 @@
  * Optimized: Extracted logic into composable hooks, clean render flow
  * URL Parameters: lat, lng, radius, city, state, zip for shareable searches
  * Enhanced: Input validation, URL encoding, browser navigation support
+ * Composition: Uses unified page composition system for consistent layout
  */
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
@@ -32,6 +33,7 @@ import {
   ResultsContainer,
   FeaturedBundles
 } from './HomePage/components'
+import { PageCompositionFactory, LayoutCompositionFactory } from '@components/composition'
 
 // Radius policy constants - single source of truth
 const RADIUS_POLICY = {
@@ -229,7 +231,13 @@ export default function HomePage() {
   })()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700">
+    <PageCompositionFactory.Marketing
+      layout="top-nav"
+      sections={['header', 'content']}
+      responsive={true}
+      accessibility={true}
+      className="min-h-screen bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700"
+    >
       <Header
         locationDisplayName={locationDisplayName}
         currentRadius={currentRadius}
@@ -238,8 +246,12 @@ export default function HomePage() {
         onNavigateToVendor={() => navigate('/vendor')}
       />
 
-      {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <LayoutCompositionFactory.Stack
+        direction="column"
+        gap="lg"
+        responsive={true}
+        className="max-w-6xl mx-auto px-4 py-8"
+      >
         <UrlParamError 
           error={urlParamError} 
           onDismiss={() => setUrlParamError(undefined)} 
@@ -311,7 +323,7 @@ export default function HomePage() {
         <div className="my-8">
           <StoreCategoryCarousels />
         </div>
-      </main>
-    </div>
+      </LayoutCompositionFactory.Stack>
+    </PageCompositionFactory.Marketing>
   )
 }

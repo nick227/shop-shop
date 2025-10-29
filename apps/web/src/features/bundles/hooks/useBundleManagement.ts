@@ -72,7 +72,7 @@ export function useBundleManagement(options: BundleManagementOptions = {}) {
   // Memoized update handler
   const updateBundle = useCallback(async (id: string, formData: Partial<BundleFormData>) => {
     const input = formDataToUpdateInput(formData)
-    return updateBundleMutation.mutateAsync({ id, input }, {
+    return updateBundleMutation.mutateAsync({ id, input: input as Partial<CreateBundleInput> }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['bundles'] })
         queryClient.invalidateQueries({ queryKey: ['bundle', id] })

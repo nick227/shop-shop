@@ -1,7 +1,7 @@
 /**
  * Type Mappers - SDK to Application Types
  * ⚠️  AUTO-GENERATED - DO NOT EDIT MANUALLY
- * Generated from: DTO schemas
+ * Generated from: Resource configurations (100% schema-driven)
  * 
  * To regenerate: pnpm gen:types
  */
@@ -24,22 +24,51 @@ import type {
 // Base Type Exports (From SDK)
 // ========================================
 
-export type StoreResponse = Omit<ListStores200ResponseDataInner, 'media'> & {
+
+export type UserResponse = ListUsers200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type StoreResponse = ListStores200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
   deliveryFee: number
   minOrder: number
-  distance?: number
-  // Flattened address fields for convenience
-  city?: string
-  state?: string
-  zipCode?: string
-  // Override media field type from string to MediaItem[]
-  media: MediaItem[]
+  distance: number | undefined
+} & {
+  // Computed from fees JSON
+  deliveryFee: (sdk.fees as any)?.deliveryFee ?? 0,
+  minOrder: (sdk.fees as any)?.minOrder ?? 0,
+}
+
+export type GeocodingCacheResponse = ListGeocodingCaches200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type ItemResponse = ListItems200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type MediaAssetResponse = ListMediaAssets200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CartResponse = ListCarts200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CartItemResponse = ListCartItems200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -51,25 +80,204 @@ export type OrderResponse = ListOrders200ResponseDataInner & {
   updatedAt: string
   stripePaymentIntentId: string | null
   stripeChargeId: string | null
-  store?: { id: string; name: string }
-  items?: OrderItem[]
-  addressSnapshot?: AddressSnapshot
-  // Ensure required fields are always present
-  status: string
-  deliveryType: string
-  paymentStatus: string
+  store: { id: string; name: string } | undefined
+  items: OrderItem[] | undefined
+  addressSnapshot: AddressSnapshot | undefined
+} & {
+  // Backend should include these but doesn't yet
+  stripePaymentIntentId: null,
+  stripeChargeId: null,
+}
+
+export type OrderItemResponse = ListOrderItems200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type OrderEventResponse = ListOrderEvents200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type TipResponse = ListTips200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type AddressResponse = ListAddresss200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
-  lat?: number
-  lng?: number
 }
 
-// Alias for backward compatibility
-export type Address = AddressResponse
+export type SystemSettingResponse = ListSystemSettings200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaymentWebhookResponse = ListPaymentWebhooks200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaymentMethodResponse = ListPaymentMethods200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PromotionResponse = ListPromotions200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PromotionRedemptionResponse = ListPromotionRedemptions200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PostResponse = ListPosts200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PostLikeResponse = ListPostLikes200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CommentResponse = ListComments200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type AffiliateResponse = ListAffiliates200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CommissionResponse = ListCommissions200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type AffiliatePayoutResponse = ListAffiliatePayouts200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type DeliveryZoneResponse = ListDeliveryZones200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type VendorVerificationResponse = ListVendorVerifications200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type TeamMemberResponse = ListTeamMembers200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type InvitationResponse = ListInvitations200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type FavoriteStoreResponse = ListFavoriteStores200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type FavoriteItemResponse = ListFavoriteItems200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type BundleResponse = ListBundles200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+  totalItems: number
+  individualPrice: number
+  bundlePrice: number
+  savings: number
+  savingsPercent: number
+} & {
+  // Computed bundle pricing
+  totalItems: sdk.items?.length || 0,
+  individualPrice: sdk.items?.reduce((sum, item) => sum + (item.item?.price || 0) * item.quantity, 0) || 0,
+  bundlePrice: sdk.pricing?.fixedPrice || sdk.individualPrice || 0,
+  savings: Math.max(0, (sdk.individualPrice || 0) - (sdk.bundlePrice || 0)),
+  savingsPercent: sdk.individualPrice > 0 ? ((sdk.savings || 0) / sdk.individualPrice) * 100 : 0,
+}
+
+export type BundleItemResponse = ListBundleItems200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type BundlePricingResponse = ListBundlePricings200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+
+// ========================================
+// Supporting Types
+// ========================================
+
+export interface OrderItem {
+  id: string
+  orderId: string
+  itemId: string
+  quantity: number
+  unitPrice: number
+  titleSnapshot: string
+  optionsSnapshot?: Record<string, unknown>
+}
+
+export interface AddressSnapshot {
+  line1: string
+  line2?: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+export interface MediaItem {
+  type: 'youtube' | 'image' | 'video' | 'link'
+  url: string
+  thumbnail?: string
+  title?: string
+  provider?: string
+  width?: number
+  height?: number
+}
 
 export interface BundleItem {
   id: string
@@ -121,6 +329,19 @@ export interface Bundle {
   savingsPercent: number
 }
 
+export interface CartItemData {
+  id: string
+  cartId: string
+  itemId: string
+  item: ItemResponse
+  currentItem?: ItemResponse
+  quantity: number
+  unitPrice: number
+  titleSnapshot: string
+  options?: Record<string, unknown>
+  notes?: string | null
+}
+
 export type CartResponse = ListCarts200ResponseDataInner & {
   id: string
   createdAt: string
@@ -136,54 +357,6 @@ export type CartWithTotals = CartResponse & {
   fees: number
   total: number
 }
-
-// ========================================
-// Supporting Types
-// ========================================
-
-export interface OrderItem {
-  id: string
-  orderId: string
-  itemId: string
-  quantity: number
-  unitPrice: number
-  titleSnapshot: string
-  optionsSnapshot?: Record<string, unknown>
-}
-
-export interface AddressSnapshot {
-  line1: string
-  line2?: string
-  city: string
-  state: string
-  postalCode: string
-  country: string
-}
-
-export interface CartItemData {
-  id: string
-  cartId: string
-  itemId: string
-  item: ItemResponse
-  currentItem?: ItemResponse
-  quantity: number
-  unitPrice: number
-  titleSnapshot: string
-  options?: Record<string, unknown>
-  notes?: string | null
-}
-
-export interface MediaItem {
-  type: 'youtube' | 'image' | 'video' | 'link'
-  url: string
-  thumbnail?: string
-  title?: string
-  provider?: string
-  width?: number
-  height?: number
-}
-
-// Note: Type aliases removed to avoid redundancy - use full type names
 
 // ========================================
 // Input Types (Re-exported for convenience)
@@ -229,55 +402,16 @@ export interface LoginInput {
 }
 
 // ========================================
-// Supporting Types
+// Utility Types for UI Components
 // ========================================
 
-// Note: Cart alias removed to avoid redundancy - use CartResponse
+export type StoreClickHandler = (store: StoreWithDistance) => void
+export type ProductClickHandler = (item: ItemResponse) => void
+export type Address = AddressResponse
+export type Store = StoreResponse
 
-export interface OrderItem {
-  id: string
-  orderId: string
-  itemId: string
-  quantity: number
-  unitPrice: number
-  titleSnapshot: string
-  optionsSnapshot?: Record<string, unknown>
-}
-
-export interface AddressSnapshot {
-  line1: string
-  line2?: string
-  city: string
-  state: string
-  postalCode: string
-  country: string
-}
-
-export interface MediaItem {
-  type: 'youtube' | 'image' | 'video' | 'link'
-  url: string
-  thumbnail?: string
-  title?: string
-  provider?: string
-  width?: number
-  height?: number
-}
-
-export interface RiverComment {
-  id: string
-  postId: string
-  userId: string
-  userName: string
-  userImage?: string
-  content: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface RiverFilters {
-  sortBy?: 'recent' | 'popular' | 'trending'
-  hasMedia?: boolean
-  storeId?: string
+export interface StoreWithDistance extends StoreResponse {
+  distance?: number
 }
 
 export type OrderStatus =
@@ -326,85 +460,30 @@ export interface PostResponse {
   media: MediaItem[]
 }
 
-// ========================================
-// StoreWithDistance
-// ========================================
-
-export interface StoreWithDistance extends StoreResponse {
-  distance?: number
-  // Media is already MediaItem[] from StoreResponse
-}
-
-// Alias for backward compatibility
-export type Store = StoreResponse
-
-// Event handler types
-export type StoreClickHandler = (store: StoreResponse | StoreWithDistance) => void
-export type ProductClickHandler = (item: ItemResponse) => void
-
-// Utility functions
-export function parseStore(store: unknown | StoreWithDistance): StoreResponse {
-  if (!store || typeof store !== 'object') {
-    throw new Error('Invalid store data')
-  }
-  
-  // If it's already a StoreWithDistance, return it as StoreResponse
-  if ('distance' in store && 'media' in store && Array.isArray(store.media)) {
-    return store as StoreResponse
-  }
-  
-  const storeObj = store as Record<string, unknown>
-  
-  return {
-    ...storeObj,
-    id: String(storeObj.id || ''),
-    name: String(storeObj.name || ''),
-    description: String(storeObj.description || ''),
-    createdAt: String(storeObj.createdAt || new Date().toISOString()),
-    updatedAt: String(storeObj.updatedAt || new Date().toISOString()),
-    deliveryFee: Number(storeObj.deliveryFee || 0),
-    minOrder: Number(storeObj.minOrder || 0),
-    distance: storeObj.distance ? Number(storeObj.distance) : undefined,
-    city: storeObj.city ? String(storeObj.city) : undefined,
-    state: storeObj.state ? String(storeObj.state) : undefined,
-    zipCode: storeObj.zipCode ? String(storeObj.zipCode) : undefined,
-    media: Array.isArray(storeObj.media) ? storeObj.media as MediaItem[] : [],
-    // Add other required fields
-    isPublished: Boolean(storeObj.isPublished),
-    prepTimeMin: Number(storeObj.prepTimeMin || 0),
-    addressCity: storeObj.addressCity ? String(storeObj.addressCity) : undefined,
-    addressState: storeObj.addressState ? String(storeObj.addressState) : undefined,
-    addressZip: storeObj.addressZip ? String(storeObj.addressZip) : undefined,
-    addressStreet: storeObj.addressStreet ? String(storeObj.addressStreet) : undefined,
-    addressCountry: storeObj.addressCountry ? String(storeObj.addressCountry) : undefined,
-    latitude: storeObj.latitude ? Number(storeObj.latitude) : undefined,
-    longitude: storeObj.longitude ? Number(storeObj.longitude) : undefined,
-    phone: storeObj.phone ? String(storeObj.phone) : undefined,
-    email: storeObj.email ? String(storeObj.email) : undefined,
-    companyName: storeObj.companyName ? String(storeObj.companyName) : undefined,
-  } as unknown as StoreResponse
-}
-
-// ========================================
-// Cart Types (already defined above as types)
-// ========================================
-
-export interface CartItemData {
+export interface CommentResponse {
   id: string
-  cartId: string
-  itemId: string
-  item: ItemResponse
-  currentItem?: ItemResponse  // Current item data
-  quantity: number
-  unitPrice: number
-  titleSnapshot: string
-  options?: Record<string, unknown>
-  notes?: string | null
+  postId: string
+  userId: string
+  content: string
+  createdAt: string
+  updatedAt: string
+  userName?: string
+  userImage?: string
 }
 
-// ========================================
-// Type Mappers (SDK → App Types) - Type-Safe
-// ========================================
+export interface MediaResponse {
+  id: string
+  url: string
+  filename: string
+  mimeType: string
+  size: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type BundlePricingType = 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
+
+
 
 /**
  * Type guard to check if SDK data has frontend-expected fields
@@ -490,37 +569,62 @@ function parseJsonField<T>(data: unknown, field: string, fallback: T): T {
   return fallback
 }
 
-export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
+
+// ========================================
+
+// Type Mappers (SDK → App Types)
+
+// ========================================
+
+export function mapUser(sdk: ListUsers200ResponseDataInner): UserResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'store-' + Date.now())
-  
-  // Parse fees JSON
-  const fees = parseJsonField(sdk, 'feesJson', {})
-  const deliveryFee = extractNumber(fees, 'deliveryFee', 0)
-  const minOrder = extractNumber(fees, 'minOrder', 0)
-  
-  // Parse media JSON
-  const media = parseJsonField(sdk, 'media', [])
-  
+  const id = extractId(sdk, 'user-' + Date.now())
+
   return {
     ...sdk,
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    deliveryFee,
-    minOrder,
-    media: Array.isArray(media) ? media as MediaItem[] : [],
-    // Map address fields
-    city: sdk.addressCity ?? undefined,
-    state: sdk.addressState ?? undefined,
-    zipCode: sdk.addressZip ?? undefined,
   }
 }
+
+
+export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'store-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+    deliveryFee: extractNumber(sdk, 'deliveryFee'),
+    minOrder: extractNumber(sdk, 'minOrder'),
+    distance: extractNumber(sdk, 'distance'),
+    // Computed from fees JSON,
+    deliveryFee: (sdk.fees as any)?.deliveryFee ?? 0,,
+    minOrder: (sdk.fees as any)?.minOrder ?? 0,,
+  }
+}
+
+
+export function mapGeocodingCache(sdk: ListGeocodingCaches200ResponseDataInner): GeocodingCacheResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'geocodingcache-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
 
 export function mapItem(sdk: ListItems200ResponseDataInner): ItemResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'item-' + Date.now())
-  
+
   return {
     ...sdk,
     id,
@@ -529,87 +633,24 @@ export function mapItem(sdk: ListItems200ResponseDataInner): ItemResponse {
   }
 }
 
-export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
+
+export function mapMediaAsset(sdk: ListMediaAssets200ResponseDataInner): MediaAssetResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'order-' + Date.now())
-  
+  const id = extractId(sdk, 'mediaasset-' + Date.now())
+
   return {
     ...sdk,
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    stripePaymentIntentId: null,
-    stripeChargeId: null,
-    status: 'PENDING',
-    deliveryType: 'DELIVERY',
-    paymentStatus: 'PENDING',
-    // Convert null to undefined for type compatibility
-    addressSnapshot: sdk.addressSnapshot ?? undefined,
-  } as OrderResponse
-}
-
-export function mapAddress(sdk: ListAddresss200ResponseDataInner): AddressResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'address-' + Date.now())
-  
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-    lat: extractNumber(sdk, 'lat'),
-    lng: extractNumber(sdk, 'lng'),
   }
 }
 
-export function mapBundle(sdk: ListBundles200ResponseDataInner): Bundle {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'bundle-' + Date.now())
-  
-  // Parse JSON strings from SDK
-  const items = parseJsonField(sdk, 'items', [])
-  const pricing = parseJsonField(sdk, 'pricing', {})
-  
-  // Transform items to include required fields
-  const bundleItems: BundleItem[] = items.map((item: unknown, index: number) => {
-    const itemData = item as Record<string, unknown>
-    return {
-      id: extractId(itemData, 'bundle-item-' + index),
-      bundleId: id,
-      itemId: extractId(itemData, 'itemId') ?? extractId(itemData, 'id'),
-      quantity: extractNumber(itemData, 'quantity', 1),
-      sortIndex: extractNumber(itemData, 'sortIndex', index),
-      price: extractNumber(itemData, 'price'),
-      title: typeof itemData.title === 'string' ? itemData.title : undefined,
-    }
-  })
-  
-  return {
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-    storeId: sdk.storeId,
-    // store: sdk.store, // SDK store field is a string, not StoreResponse
-    name: sdk.name,
-    description: sdk.description,
-    imageUrl: sdk.imageUrl,
-    isActive: extractBoolean(sdk, 'isActive', false),
-    sortIndex: extractNumber(sdk, 'sortIndex', 0),
-    items: bundleItems,
-    pricing: pricing as BundlePricing,
-    // Calculate computed fields
-    totalItems: bundleItems.length,
-    individualPrice: bundleItems.reduce((sum, item) => sum + (item.price ?? 0), 0),
-    bundlePrice: extractNumber(pricing, 'fixedPrice', 0),
-    savings: 0, // Will be calculated based on pricing type
-    savingsPercent: 0, // Will be calculated based on pricing type
-  }
-}
 
 export function mapCart(sdk: ListCarts200ResponseDataInner): CartResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'cart-' + Date.now())
-  
+
   return {
     ...sdk,
     id,
@@ -617,11 +658,137 @@ export function mapCart(sdk: ListCarts200ResponseDataInner): CartResponse {
     updatedAt: timestamps.updatedAt,
   }
 }
+
+
+export function mapCartItem(sdk: ListCartItems200ResponseDataInner): CartItemResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'cartitem-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'order-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+    stripePaymentIntentId: sdk.stripePaymentIntentId ?? '',
+    stripeChargeId: sdk.stripeChargeId ?? '',
+    store: sdk.store ?? '',
+    items: sdk.items,
+    addressSnapshot: sdk.addressSnapshot,
+    // Backend should include these but doesn't yet,
+    stripePaymentIntentId: null,,
+    stripeChargeId: null,,
+  }
+}
+
+
+export function mapOrderItem(sdk: ListOrderItems200ResponseDataInner): OrderItemResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'orderitem-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapOrderEvent(sdk: ListOrderEvents200ResponseDataInner): OrderEventResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'orderevent-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapTip(sdk: ListTips200ResponseDataInner): TipResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'tip-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapAddress(sdk: ListAddresss200ResponseDataInner): AddressResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'address-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapSystemSetting(sdk: ListSystemSettings200ResponseDataInner): SystemSettingResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'systemsetting-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapPaymentWebhook(sdk: ListPaymentWebhooks200ResponseDataInner): PaymentWebhookResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'paymentwebhook-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapPaymentMethod(sdk: ListPaymentMethods200ResponseDataInner): PaymentMethodResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'paymentmethod-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
 
 export function mapPromotion(sdk: ListPromotions200ResponseDataInner): PromotionResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'promotion-' + Date.now())
-  
+
   return {
     ...sdk,
     id,
@@ -630,4 +797,221 @@ export function mapPromotion(sdk: ListPromotions200ResponseDataInner): Promotion
   }
 }
 
-// Note: mapPost function removed - Posts API not available in SDK
+
+export function mapPromotionRedemption(sdk: ListPromotionRedemptions200ResponseDataInner): PromotionRedemptionResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'promotionredemption-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapPost(sdk: ListPosts200ResponseDataInner): PostResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'post-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapPostLike(sdk: ListPostLikes200ResponseDataInner): PostLikeResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'postlike-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapComment(sdk: ListComments200ResponseDataInner): CommentResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'comment-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapAffiliate(sdk: ListAffiliates200ResponseDataInner): AffiliateResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'affiliate-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapCommission(sdk: ListCommissions200ResponseDataInner): CommissionResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'commission-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapAffiliatePayout(sdk: ListAffiliatePayouts200ResponseDataInner): AffiliatePayoutResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'affiliatepayout-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapDeliveryZone(sdk: ListDeliveryZones200ResponseDataInner): DeliveryZoneResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'deliveryzone-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapVendorVerification(sdk: ListVendorVerifications200ResponseDataInner): VendorVerificationResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'vendorverification-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapTeamMember(sdk: ListTeamMembers200ResponseDataInner): TeamMemberResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'teammember-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapInvitation(sdk: ListInvitations200ResponseDataInner): InvitationResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'invitation-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapFavoriteStore(sdk: ListFavoriteStores200ResponseDataInner): FavoriteStoreResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'favoritestore-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapFavoriteItem(sdk: ListFavoriteItems200ResponseDataInner): FavoriteItemResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'favoriteitem-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapBundle(sdk: ListBundles200ResponseDataInner): BundleResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'bundle-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+    totalItems: extractNumber(sdk, 'totalItems'),
+    individualPrice: extractNumber(sdk, 'individualPrice'),
+    bundlePrice: extractNumber(sdk, 'bundlePrice'),
+    savings: extractNumber(sdk, 'savings'),
+    savingsPercent: extractNumber(sdk, 'savingsPercent'),
+    // Computed bundle pricing,
+    totalItems: sdk.items?.length || 0,,
+    individualPrice: sdk.items?.reduce((sum, item) => sum + (item.item?.price || 0) * item.quantity, 0) || 0,,
+    bundlePrice: sdk.pricing?.fixedPrice || sdk.individualPrice || 0,,
+    savings: Math.max(0, (sdk.individualPrice || 0) - (sdk.bundlePrice || 0)),,
+    savingsPercent: sdk.individualPrice > 0 ? ((sdk.savings || 0) / sdk.individualPrice) * 100 : 0,,
+  }
+}
+
+
+export function mapBundleItem(sdk: ListBundleItems200ResponseDataInner): BundleItemResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'bundleitem-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}
+
+
+export function mapBundlePricing(sdk: ListBundlePricings200ResponseDataInner): BundlePricingResponse {
+  const timestamps = extractTimestamps(sdk)
+  const id = extractId(sdk, 'bundlepricing-' + Date.now())
+
+  return {
+    ...sdk,
+    id,
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  }
+}

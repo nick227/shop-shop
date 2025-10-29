@@ -80,7 +80,7 @@ export const MediaPreview = ({
 
           <div className="flex items-center gap-2 p-2 bg-muted rounded">
             <span className="text-sm text-muted-foreground truncate" title={item.url ?? ''}>
-              {truncateUrl(item.url!, 40)}
+              {truncateUrl(item.url, 40)}
             </span>
           </div>
         </div>

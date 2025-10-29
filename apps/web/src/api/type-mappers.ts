@@ -47,12 +47,8 @@ import type {
   PromotionResponse
 } from './types'
 
-import type {
-  AuthResponse,
-  PaymentIntentResponse,
-  TipResponse,
-  UserPublicResponse
-} from './types'
+// Note: AuthResponse, PaymentIntentResponse, TipResponse, UserPublicResponse 
+// are not available in ./types, using SDK types directly
 
 // ============================================
 // Utility Types for SDK Data
@@ -367,59 +363,27 @@ export function mapUser(sdk: ListUsers200ResponseDataInner): UserResponse {
 /**
  * Map SDK auth data to frontend AuthResponse
  */
-export function mapAuth(sdk: SDKAuthResponse): AuthResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `auth-${Date.now()}`)
-  
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
+export function mapAuth(sdk: SDKAuthResponse): SDKAuthResponse {
+  return sdk
 }
 
 /**
  * Map SDK payment intent data to frontend PaymentIntentResponse
  */
-export function mapPaymentIntent(sdk: SDKPaymentIntentResponse): PaymentIntentResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `payment-${Date.now()}`)
-  
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
+export function mapPaymentIntent(sdk: SDKPaymentIntentResponse): SDKPaymentIntentResponse {
+  return sdk
 }
 
 /**
  * Map SDK tip data to frontend TipResponse
  */
-export function mapTip(sdk: SDKTipResponse): TipResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `tip-${Date.now()}`)
-  
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
+export function mapTip(sdk: SDKTipResponse): SDKTipResponse {
+  return sdk
 }
 
 /**
  * Map SDK user public data to frontend UserPublicResponse
  */
-export function mapUserPublic(sdk: SDKUserPublicResponse): UserPublicResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `user-public-${Date.now()}`)
-  
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
+export function mapUserPublic(sdk: SDKUserPublicResponse): SDKUserPublicResponse {
+  return sdk
 }

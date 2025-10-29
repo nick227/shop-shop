@@ -1,44 +1,52 @@
 /**
- * useAuth Hook - Authentication logic;
+ * useAuth Hook - Authentication logic with standardized patterns
  */
 import { useMutation } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
-import { useAuthStore } from '@stores/authStore'
-import { handleApiError, type AppError } from '@api/errors'
-import type { SignupInput, LoginInput, UserResponse } from '../api/backend-types'
+import { apiClient } from '../api/client'
+import { useAuthStore } from '../stores/authStore'
+import { createMutationErrorHandler, createMutationOnError, mutationRetryConfig, type CategorizedError } from './utils/errorHandling'
+import type { SignupInput, LoginInput, UserResponse } from '../api/types'
 
 export function useAuth() {
   const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore()
 
-  const loginMutation = useMutation<unknown, AppError, LoginInput>({
+  const loginMutation = useMutation<unknown, CategorizedError, LoginInput>({
     mutationFn: async (credentials) => {
       try {
         return await apiClient.auth().login({
-          loginRequest: credentials})
-      } catch (error: any) {
-        throw await handleApiError(error)
+          loginRequest: credentials
+        })
+      } catch (error: unknown) {
+        return await createMutationErrorHandler()(error)
       }
     },
     onSuccess: (data) => {
       const authData = data as { user: UserResponse; token: string }
       setAuth(authData.user, authData.token)
       apiClient.setToken(authData.token)
-    }})
+    },
+    onError: createMutationOnError(),
+    ...mutationRetryConfig
+  })
 
-  const signupMutation = useMutation<unknown, AppError, SignupInput>({
+  const signupMutation = useMutation<unknown, CategorizedError, SignupInput>({
     mutationFn: async (input) => {
       try {
         return await apiClient.auth().signup({
-          signupRequest: input})
-      } catch (error: any) {
-        throw await handleApiError(error)
+          signupRequest: input
+        })
+      } catch (error: unknown) {
+        return await createMutationErrorHandler()(error)
       }
     },
     onSuccess: (data) => {
       const authData = data as { user: UserResponse; token: string }
       setAuth(authData.user, authData.token)
       apiClient.setToken(authData.token)
-    }})
+    },
+    onError: createMutationOnError(),
+    ...mutationRetryConfig
+  })
 
   const logout = () => {
     clearAuth()

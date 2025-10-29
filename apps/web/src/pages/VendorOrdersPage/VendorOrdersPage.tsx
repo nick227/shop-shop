@@ -14,7 +14,7 @@ import { VendorOrderCard } from '../../features/orders/components/vendor'
 import { formatPriceCurrency } from '../../utils/format'
 import { toast } from 'sonner'
 import type { OrderResponse } from '../../api/types'
-import type { UpdateOrderRequestStatusEnum } from '@packages/sdk'
+import type { UpdateOrderRequestStatusEnum, UpdateOrderRequest } from '@api/types'
 
 type OrderStatus = UpdateOrderRequestStatusEnum
 
@@ -24,11 +24,11 @@ interface VendorUser {
 
 const STATUS_FILTERS: { value: OrderStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All Orders' },
-  { value: 'PLACED', label: 'New' },
-  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'PENDING', label: 'New' },
+  { value: 'CONFIRMED', label: 'Accepted' },
   { value: 'PREPARING', label: 'Preparing' },
   { value: 'READY', label: 'Ready' },
-  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'DELIVERED', label: 'Completed' },
 ]
 
 export default function VendorOrdersPage() {
@@ -163,7 +163,7 @@ export default function VendorOrdersPage() {
             onClick={() => setSelectedFilter(filter.value)}
           >
             {filter.label}
-            {filter.value === 'PLACED' && pendingCount?.count ? (
+            {filter.value === 'PENDING' && pendingCount?.count ? (
               <Badge variant="destructive">{pendingCount.count}</Badge>
             ) : undefined}
           </button>
@@ -239,20 +239,38 @@ export default function VendorOrdersPage() {
 
 // Order Details Modal Component with Tailwind
 interface OrderDetailsModalProps {
-  order: OrderResponse
-  onClose: () => void
-  onStatusUpdate?: (orderId: string, status: OrderStatus) => void
+  readonly order: OrderResponse
+  readonly onClose: () => void
+  readonly onStatusUpdate?: (orderId: string, status: OrderStatus) => void
 }
 
 function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose()
+    }
+  }
+
   return (
     <div 
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onClick={handleBackdropClick}
+      onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Order details modal"
+      tabIndex={-1}
     >
       <div 
         className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold">Order #{order.id.slice(0, 8).toUpperCase()}</h2>
@@ -261,7 +279,7 @@ function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
         <div className="p-6 space-y-6">
           <div className="pb-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold mb-2">Customer</h3>
-            <p className="text-gray-900">{order.user?.name || 'Customer'}</p>
+            <p className="text-gray-900">{order.user?.name ?? 'Customer'}</p>
             {order.user?.phone && <p className="text-gray-600">📞 {order.user.phone}</p>}
             {order.user?.email && <p className="text-gray-600">📧 {order.user.email}</p>}
           </div>
@@ -276,12 +294,12 @@ function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
             ))}
           </div>
 
-          {order.deliveryType === 'DELIVERY' && order.addressId && (
+          {order.deliveryType === 'DELIVERY' && order.addressSnapshot && (
             <div className="pb-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold mb-2">Delivery Address</h3>
-              <p className="text-gray-900">{(order.addressId as any).line1}</p>
-              {(order.addressId as any).line2 && <p className="text-gray-900">{(order.addressId as any).line2}</p>}
-              <p className="text-gray-900">{(order.addressId as any).city}, {(order.addressId as any).state} {(order.addressId as any).postalCode}</p>
+              <p className="text-gray-900">{order.addressSnapshot.line1}</p>
+              {order.addressSnapshot.line2 && <p className="text-gray-900">{order.addressSnapshot.line2}</p>}
+              <p className="text-gray-900">{order.addressSnapshot.city}, {order.addressSnapshot.state} {order.addressSnapshot.postalCode}</p>
             </div>
           )}
 

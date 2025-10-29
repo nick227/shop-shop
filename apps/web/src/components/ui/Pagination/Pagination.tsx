@@ -89,7 +89,7 @@ export function Pagination({
   }, [currentPage, totalPages])
 
   if (totalPages <= 1) {
-    return undefined;
+    return;
   }
 
   const startItem = (currentPage - 1) * pageSize + 1;

@@ -26,7 +26,7 @@ export function useAddBundleToCart() {
       const bundle = await apiClient.bundles().getBundleById({ id: params.bundleId })
       
       // Parse the items JSON string
-      const bundleItems = JSON.parse(bundle.items || '[]')
+      const bundleItems = Array.isArray(bundle.items) ? bundle.items : JSON.parse(bundle.items || '[]')
       
       if (bundleItems.length === 0) {
         throw new Error('Bundle has no items')
@@ -36,7 +36,6 @@ export function useAddBundleToCart() {
       const cartPromises = bundleItems.map((bundleItem: any) => 
         apiClient.carts().createCart({
           createCartRequest: {
-            storeId: params.storeId,
             itemId: bundleItem.itemId,
             quantity: bundleItem.quantity * params.quantity
           }

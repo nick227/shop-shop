@@ -1,148 +1,290 @@
 /**
- * Frontend Extension Types;
- * Extends SDK types with frontend-specific computed fields;
+ * Frontend Extensions - Computed Fields
  * 
- * These types add computed properties that don't exist in the API;
- * but are useful for frontend display and functionality;
+ * These types extend base SDK types with computed fields
+ * that are commonly needed by frontend components.
  */
 
-import type { 
+import type {
   StoreResponse,
-  StoreWithDistance,
   UserResponse,
+  OrderResponse,
   ItemResponse,
-  AddressResponse
-} from '../api/backend-types'
+  AddressResponse,
+  PostResponse,
+  CommentResponse
+} from '../api/types'
 
-// Note: SDK types are not directly used in this file
-// All interfaces are defined independently for frontend-specific needs
-
-// ========================================
+// ============================================
 // Store Extensions
-// ========================================
+// ============================================
 
-// StoreWithDistance is now imported from backend-types
-export type { StoreWithDistance }
-
+/** Store with computed location data */
 export interface StoreWithLocation extends StoreResponse {
-  city?: string    // Flattened from addressCity;
-  state?: string   // Flattened from addressState;
-  zipCode?: string // Flattened from addressZip;
+  /** Computed distance from user's location */
+  distance?: number
+  /** Formatted address string */
+  fullAddress?: string
+  /** Coordinates for mapping */
+  coordinates?: {
+    lat: number
+    lng: number
+  }
 }
 
-export interface StoreWithFees extends StoreResponse {
-  deliveryFee: number;
-  minOrder: number;
-  serviceFeePercent: number;
+/** Store with computed fee information */
+export interface StoreWithFees extends Omit<StoreResponse, 'deliveryFee'> {
+  /** Computed delivery fee */
+  deliveryFee?: number
+  /** Computed service fee */
+  serviceFee?: number
+  /** Computed tax rate */
+  taxRate?: number
+  /** Total fees breakdown */
+  feesBreakdown?: {
+    delivery: number
+    service: number
+    tax: number
+    total: number
+  }
 }
 
-// ========================================
-// User Extensions;
-// ========================================
+/** Store with computed rating and review data */
+export interface StoreWithRating extends StoreResponse {
+  /** Average rating */
+  averageRating?: number
+  /** Total number of reviews */
+  reviewCount?: number
+  /** Rating distribution */
+  ratingDistribution?: {
+    5: number
+    4: number
+    3: number
+    2: number
+    1: number
+  }
+}
 
+// ============================================
+// User Extensions
+// ============================================
+
+/** User with computed display name */
 export interface UserWithName extends UserResponse {
-  name: string  // Computed from firstName + lastName;
-  displayName?: string // Formatted display name;
+  /** Computed display name (name or email) */
+  displayName?: string
+  /** User's initials for avatar */
+  initials?: string
+  /** Avatar URL if available */
+  avatarUrl?: string
 }
 
-// ========================================
-// Order Extensions;
-// ========================================
-
-export interface OrderWithDetails {
-  // Base order properties
-  id: string;
-  userId: string;
-  storeId: string;
-  cartId: string | null;
-  status: string;
-  deliveryType: string;
-  paymentStatus: string;
-  subtotal: string;
-  fees: string;
-  tax: string;
-  tip: string;
-  total: string;
-  serviceFeePercent: string;
-  serviceFeeAmount: string;
-  netToVendor: string;
-  createdAt: string;
-  updatedAt?: string;
-  
-  // Extended properties
-  store?: { id: string; name: string }
-  user?: { name?: string; phone?: string; email?: string }
-  items?: OrderItem[]
-  totalAmount?: number
-  addressSnapshot?: AddressSnapshot
-  stripePaymentIntentId?: string;
-  stripeChargeId?: string;
+/** User with computed role information */
+export interface UserWithRole extends UserResponse {
+  /** Human-readable role name */
+  roleDisplayName?: string
+  /** Role permissions */
+  permissions?: string[]
+  /** Is admin user */
+  isAdmin?: boolean
+  /** Is vendor user */
+  isVendor?: boolean
 }
 
-// ========================================
-// Item Extensions;
-// ========================================
+// ============================================
+// Order Extensions
+// ============================================
 
-export interface ItemWithStore extends ItemResponse {
-  storeName?: string;
-  storeSlug?: string;
+/** Order with computed details */
+export interface OrderWithDetails extends OrderResponse {
+  /** Formatted order number */
+  orderNumber?: string
+  /** Order status display name */
+  statusDisplayName?: string
+  /** Estimated delivery time */
+  estimatedDelivery?: string
+  /** Order items with details */
+  itemsWithDetails?: {
+    id: string
+    name: string
+    quantity: number
+    price: number
+    total: number
+    imageUrl?: string
+  }[]
+  /** Total order value */
+  totalValue?: number
+  /** Order timeline */
+  timeline?: {
+    status: string
+    timestamp: string
+    description: string
+  }[]
 }
 
-// ========================================
-// Address Extensions;
-// ========================================
+/** Order with computed delivery information */
+export interface OrderWithDelivery extends OrderResponse {
+  /** Delivery address details */
+  deliveryAddress?: AddressResponse
+  /** Delivery instructions */
+  deliveryInstructions?: string
+  /** Delivery status */
+  deliveryStatus?: 'pending' | 'in_transit' | 'delivered' | 'failed'
+  /** Delivery tracking information */
+  trackingInfo?: {
+    trackingNumber?: string
+    carrier?: string
+    estimatedDelivery?: string
+    currentLocation?: string
+  }
+}
 
+// ============================================
+// Item Extensions
+// ============================================
+
+/** Item with store information */
+export interface ItemWithStore extends Omit<ItemResponse, 'store'> {
+  /** Store details */
+  store?: StoreResponse
+  /** Store name */
+  storeName?: string
+  /** Store image */
+  storeImage?: string
+  /** Store rating */
+  storeRating?: number
+}
+
+/** Item with computed pricing */
+export interface ItemWithPricing extends ItemResponse {
+  /** Formatted price */
+  formattedPrice?: string
+  /** Original price if on sale */
+  originalPrice?: number
+  /** Discount amount */
+  discountAmount?: number
+  /** Discount percentage */
+  discountPercentage?: number
+  /** Is on sale */
+  isOnSale?: boolean
+}
+
+// ============================================
+// Address Extensions
+// ============================================
+
+/** Address with computed coordinates */
 export interface AddressWithCoordinates extends AddressResponse {
-  lat?: number;
-  lng?: number;
+  /** Latitude */
+  latitude?: number
+  /** Longitude */
+  longitude?: number
+  /** Formatted address */
+  formattedAddress?: string
+  /** Address components */
+  components?: {
+    street?: string
+    city?: string
+    state?: string
+    zip?: string
+    country?: string
+  }
 }
 
-// ========================================
-// Supporting Types;
-// ========================================
+// ============================================
+// Post Extensions
+// ============================================
 
-// Order item interface for order details
-// Note: Cart items become order items when order is created
-export interface OrderItem {
-  id: string;
-  orderId: string; // Replace cartId with orderId for order context
-  itemId: string;
-  quantity: number;
-  unitPrice: string;
-  titleSnapshot?: string;
-  optionsSnapshot?: Record<string, unknown> // Rename optionsJson for consistency
-  weight?: number;
+/** Post with computed engagement data */
+export interface PostWithEngagement extends PostResponse {
+  /** Is liked by current user */
+  isLiked?: boolean
+  /** Is bookmarked by current user */
+  isBookmarked?: boolean
+  /** Engagement rate */
+  engagementRate?: number
+  /** Time since posted */
+  timeAgo?: string
+  /** Post author information */
+  author?: {
+    id: string
+    name: string
+    avatar?: string
+    isVerified?: boolean
+  }
 }
 
-// Address snapshot interface for order details
-export interface AddressSnapshot {
-  line1: string;
-  line2: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
+/** Post with computed media data */
+export interface PostWithMedia extends PostResponse {
+  /** Processed media items */
+  mediaItems?: {
+    id: string
+    url: string
+    type: 'image' | 'video' | 'youtube' | 'link'
+    thumbnail?: string
+    duration?: number
+    dimensions?: {
+      width: number
+      height: number
+    }
+  }[]
+  /** Has media */
+  hasMedia?: boolean
+  /** Media count */
+  mediaCount?: number
 }
 
-// ========================================
-// Type Guards;
-// ========================================
+// ============================================
+// Comment Extensions
+// ============================================
 
-export function isStoreWithDistance(store: StoreResponse): store is StoreWithDistance {
-  return 'distance' in store;
+/** Comment with computed user data */
+export interface CommentWithUser extends CommentResponse {
+  /** Comment author information */
+  author?: {
+    id: string
+    name: string
+    avatar?: string
+    isVerified?: boolean
+  }
+  /** Time since commented */
+  timeAgo?: string
+  /** Is edited */
+  isEdited?: boolean
+  /** Reply count */
+  replyCount?: number
 }
 
-export function isStoreWithFees(store: StoreResponse): store is StoreWithFees {
-  return 'deliveryFee' in store && 'minOrder' in store;
+// ============================================
+// Utility Types
+// ============================================
+
+/** Generic entity with computed fields */
+export type EntityWithComputed<T, K extends keyof any> = T & Record<K, any>
+
+/** Paginated response with computed fields */
+export interface PaginatedWithComputed<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+  /** Computed pagination info */
+  pagination?: {
+    totalPages: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+    nextPage?: number
+    prevPage?: number
+  }
 }
 
-export function isOrderWithDetails(order: unknown): order is OrderWithDetails {
-  return (
-    order !== null &&
-    typeof order === 'object' &&
-    'id' in order &&
-    'userId' in order &&
-    'storeId' in order &&
-    'status' in order
-  );
+/** Search result with computed relevance */
+export interface SearchResultWithRelevance<T> {
+  item: T
+  /** Relevance score */
+  relevanceScore?: number
+  /** Matched fields */
+  matchedFields?: string[]
+  /** Highlighted text */
+  highlightedText?: string
 }

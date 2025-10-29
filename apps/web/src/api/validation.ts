@@ -12,8 +12,8 @@ import {
   OrderResponseSchema,
   OrderListResponseSchema,
   CartResponseSchema,
-  AddressResponseSchema
-} from '@packages/schemas'
+  // AddressResponseSchema // TODO: Add when needed
+} from './schemas/UnifiedSchemas'
 
 export class ValidationError extends Error {
   constructor(
@@ -118,7 +118,7 @@ export const validators = {
   
   cart: (data: unknown) => validateResponse(data, CartResponseSchema, 'Cart'),
   
-  address: (data: unknown) => validateResponse(data, AddressResponseSchema, 'Address'),
+  // address: (data: unknown) => validateResponse(data, AddressResponseSchema, 'Address'), // TODO: Add when needed
   addressList: (data: unknown) => data,
   
   post: (data: unknown) => data,

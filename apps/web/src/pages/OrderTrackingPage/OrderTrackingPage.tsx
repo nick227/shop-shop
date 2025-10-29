@@ -37,9 +37,12 @@ function parseOrderItems(orderItemsString: string | null | undefined) {
   try {
     const parsed: unknown = JSON.parse(orderItemsString)
     // Convert to the format expected by OrderDetailsCard
-    return Array.isArray(parsed) ? parsed.map((item: unknown) => {
+    return Array.isArray(parsed) ? parsed.map((item: unknown, index: number) => {
       const orderItem = item as Record<string, unknown>
       return {
+        id: (orderItem.id as string) ?? `item-${index}`,
+        orderId: (orderItem.orderId as string) ?? '',
+        itemId: (orderItem.itemId as string) ?? (orderItem.id as string) ?? `item-${index}`,
         quantity: (orderItem.quantity as number) ?? 1,
         titleSnapshot: (orderItem.titleSnapshot as string) ?? (orderItem.title as string) ?? 'Unknown Item',
         unitPrice: (orderItem.unitPrice as number) ?? (orderItem.price as number) ?? 0,

@@ -137,7 +137,7 @@ export function useMediaDetection(
       const item = prev[index]
       if (item?.url) {
         // Track removed URL so it doesn't re-appear
-        setUserRemovedUrls(s => new Set(s).add(item.url!))
+        setUserRemovedUrls(s => new Set(s).add(item.url))
       }
       return prev.filter((_, i) => i !== index)
     })

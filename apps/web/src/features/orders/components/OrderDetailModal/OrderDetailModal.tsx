@@ -108,8 +108,8 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Delivery Address</span>
                 <span className={styles.detailValue}>
-                  {order.addressSnapshot["line1"]}<br />
-                  {order.addressSnapshot["city"]}, {order.addressSnapshot["state"]} {order.addressSnapshot["postalCode"]}
+                  {order.addressSnapshot.line1}<br />
+                  {order.addressSnapshot.city}, {order.addressSnapshot.state} {order.addressSnapshot.postalCode}
                 </span>
               </div>
             )}

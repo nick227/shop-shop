@@ -18,7 +18,7 @@ export function PendingBadge({
   label = 'Pending',
   onClick,
   className}: PendingBadgeProps) {
-  if (count <= 0) return undefined;
+  if (count <= 0) return;
   const Component = onClick ? 'button' : 'div'
 
   return (

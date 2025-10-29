@@ -42,7 +42,7 @@ export function useCustomerRealtimeOrder(options: UseCustomerRealtimeOrderOption
       console.error('[Customer Realtime] Connection failed:', error)
     })
 
-    let unsubscribe: (() => void) | undefined = undefined
+    let unsubscribe: (() => void) | undefined
 
     // Subscribe to customer topic or specific order
     if (orderId) {

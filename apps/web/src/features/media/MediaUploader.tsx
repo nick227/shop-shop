@@ -14,21 +14,21 @@ import {
 } from '../../utils/media-compression'
 
 interface MediaUploaderProps {
-  storeId?: string
-  itemId?: string
-  maxFiles?: number
+  readonly storeId?: string
+  readonly itemId?: string
+  readonly maxFiles?: number
 }
 
 export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderProps) {
-  const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined)
+  const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [isCompressing, setIsCompressing] = useState(false)
   const [savedPercent, setSavedPercent] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const uploadMutation = useMediaUpload()
   const { data: mediaFiles = [], isLoading } = useMediaList({ 
-    storeId: storeId || '', 
-    itemId: itemId || '' 
+    storeId: storeId ?? '', 
+    itemId: itemId ?? '' 
   })
   const deleteMutation = useMediaDelete()
 
@@ -61,7 +61,7 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
       // Show success message for significant compression
       if (isSignificantCompression(result)) {
         toast.success(
-          'Image optimized: ${result.savedPercent}% smaller (saved ' + formatFileSize(result.savedBytes) + ')'
+          `Image optimized: ${result.savedPercent}% smaller (saved ${formatFileSize(result.savedBytes)})`
         )
       }
     } else {
@@ -75,22 +75,27 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
     if (!selectedFile) return
 
     if (mediaFiles.length >= maxFiles) {
-      toast.error('Maximum ' + maxFiles + ' files allowed')
+      toast.error(`Maximum ${maxFiles} files allowed`)
       return
     }
 
-    await uploadMutation.mutateAsync({
-      file: selectedFile,
-      storeId: storeId || '',
-      itemId: itemId || '',
-      sortIndex: mediaFiles.length,
-    })
+    try {
+      await uploadMutation.mutateAsync({
+        file: selectedFile,
+        storeId: storeId ?? '',
+        itemId: itemId ?? '',
+        sortIndex: mediaFiles.length,
+      })
 
-    // Reset state
-    setSelectedFile(undefined)
-    setSavedPercent(0)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      // Reset state only on success
+      setSelectedFile(undefined)
+      setSavedPercent(0)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (error) {
+      // Error handling is already done in the mutation's onError callback
+      console.error('Upload failed:', error)
     }
   }
 
@@ -99,8 +104,8 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
     
     await deleteMutation.mutateAsync({
       mediaId,
-      storeId: storeId || '',
-      itemId: itemId || '',
+      storeId: storeId ?? '',
+      itemId: itemId ?? '',
     })
   }
 
@@ -117,18 +122,22 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
             ref={fileInputRef}
             type="file"
             accept="image/*,video/*"
-            onChange={handleFileSelect}
+            onChange={(e) => void handleFileSelect(e)}
             className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             disabled={uploadMutation.isPending || mediaFiles.length >= maxFiles || isCompressing}
           />
           
           <Button
-            onClick={handleUpload}
+            onClick={() => void handleUpload()}
             disabled={!selectedFile || uploadMutation.isPending || isCompressing}
             variant="primary"
             size="small"
           >
-            {uploadMutation.isPending ? 'Uploading...' : (isCompressing ? 'Optimizing...' : 'Upload')}
+            {(() => {
+              if (uploadMutation.isPending) return 'Uploading...'
+              if (isCompressing) return 'Optimizing...'
+              return 'Upload'
+            })()}
           </Button>
         </div>
 
@@ -155,53 +164,68 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
       </div>
 
       {/* Media Grid */}
-      {isLoading ? (
-        <div className="text-sm text-gray-500">Loading media...</div>
-      ) : (mediaFiles.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {mediaFiles.map((media: MediaApiResponse) => (
-            <div key={media.id} className="relative group">
-              {/* Media Preview */}
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                {media.kind === 'IMAGE' ? (
-                  <img
-                    src={media.url}
-                    alt={media.altText || 'Media'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={media.url}
-                    className="w-full h-full object-cover"
-                    controls
-                  />
-                )}
-              </div>
+      {(() => {
+        if (isLoading) {
+          return <div className="text-sm text-gray-500">Loading media...</div>
+        }
+        
+        if (mediaFiles.length > 0) {
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {mediaFiles.map((media: MediaApiResponse) => (
+                <div key={media.id} className="relative group">
+                  {/* Media Preview */}
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    {(() => {
+                      if (media.kind === 'IMAGE') {
+                        return (
+                          <img
+                            src={media.url}
+                            alt={media.altText ?? 'Media'}
+                            className="w-full h-full object-cover"
+                          />
+                        )
+                      }
+                      return (
+                        <video
+                          src={media.url}
+                          className="w-full h-full object-cover"
+                          controls
+                        >
+                          <track kind="captions" />
+                        </video>
+                      )
+                    })()}
+                  </div>
 
-              {/* Delete Button */}
-              <button
-                onClick={() => handleDelete(media.id)}
-                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                disabled={deleteMutation.isPending}
-                title="Delete media"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => void handleDelete(media.id)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    disabled={deleteMutation.isPending}
+                    title="Delete media"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
 
-              {/* Media Type Badge */}
-              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                {media.kind}
-              </div>
+                  {/* Media Type Badge */}
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                    {media.kind}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-          No media uploaded yet. Add images or videos to showcase your {storeId ? 'store' : 'item'}.
-        </div>
-      ))}
+          )
+        }
+        
+        return (
+          <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+            No media uploaded yet. Add images or videos to showcase your {storeId ? 'store' : 'item'}.
+          </div>
+        )
+      })()}
     </div>
   )
 }

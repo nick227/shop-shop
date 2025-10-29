@@ -1,20 +1,14 @@
 /**
  * Validation Utilities - Client-side validation helpers
- * DEPRECATED: Use unified validation service instead
- * @deprecated Use @utils/validation/unified for new code
+ * DEPRECATED: Use ConsistentSchemas instead
+ * @deprecated Use @schemas/ConsistentSchemas for new code
  */
 import { z } from 'zod'
 
-// Re-export from unified validation service for backward compatibility
-// export {
-//   formValidator,
-//   type ValidationResult
-// } from './validation/unified' // Removed due to complex type issues
-
-// Legacy schema exports for backward compatibility
-export const emailSchema = z.string().email('Invalid email address')
-export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters')
-export const phoneSchema = z
+// Define schemas directly to avoid import chain issues
+const emailSchema = z.string().email('Invalid email address')
+const passwordSchema = z.string().min(8, 'Password must be at least 8 characters')
+const phoneSchema = z
   .string()
   .regex(/^[\d\s()-]+$/, 'Invalid phone number')
   .transform((val) => val.replaceAll(/\D/g, ''))
@@ -22,23 +16,23 @@ export const phoneSchema = z
     message: 'Phone number must be 10 or 11 digits',
   })
 
+// Re-export schemas for backward compatibility
+export { emailSchema, passwordSchema, phoneSchema }
+
 // Legacy function exports for backward compatibility
 export const isValidEmail = (email: string): boolean => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const result = require('./validation/unified').formValidator.validateEmail(email)
-  return result.valid
+  const result = emailSchema.safeParse(email)
+  return result.success
 }
 
 export const isValidPassword = (password: string): boolean => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const result = require('./validation/unified').formValidator.validatePassword(password)
-  return result.valid
+  const result = passwordSchema.safeParse(password)
+  return result.success
 }
 
 export const isValidPhone = (phone: string): boolean => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const result = require('./validation/unified').formValidator.validatePhone(phone)
-  return result.valid
+  const result = phoneSchema.safeParse(phone)
+  return result.success
 }
 
 export const isRequired = (value: string | undefined): boolean => {

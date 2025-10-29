@@ -67,7 +67,7 @@ export function ItemCarouselCompact({ items, storeName, onClose }: ItemCarouselC
   const price = useMemo(() => parsePrice(currentItem?.price || '0'), [currentItem])
   const imageUrl = useMemo(() => getImageUrl((currentItem as any)?.imageUrl, currentItem?.id || '', 'item'), [currentItem])
 
-  if (!hasItems) return undefined
+  if (!hasItems) return
 
   return (
     <div className="item-carousel">

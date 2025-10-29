@@ -8,9 +8,9 @@ import type { LocationData } from '../types/location.types'
 import type { LocationCoordinates } from '../types/component-props'
 import { hasValidCoordinates } from '../utils/storeAccessors'
 // Simple implementation for missing function
-const processStoresOptimized = (stores: any[], userLocation: any) => ({
+const processStoresOptimized = (stores: StoreWithDistance[], userLocation: unknown) => ({
   validStores: stores,
-  storeLocations: stores.map(store => ({ latitude: store.lat, longitude: store.lng })),
+  storeLocations: stores.map(store => ({ latitude: store.latitude, longitude: store.longitude })),
   nearestStore: stores[0] || undefined,
   minDistance: 0,
   maxDistance: 100
@@ -141,7 +141,7 @@ export function useOptimizedMarkers(
       distance?: number
     }[] = []
     
-    let nearestStore: StoreWithDistance | undefined = undefined
+    let nearestStore: StoreWithDistance | undefined
     let minDistance = Infinity
     
     // Process in batches for better performance

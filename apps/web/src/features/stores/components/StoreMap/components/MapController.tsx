@@ -28,5 +28,5 @@ export function MapController({ center, zoom }: MapControllerProps) {
     }
   }, [center, zoom, map])
   
-  return undefined;
+  return;
 }

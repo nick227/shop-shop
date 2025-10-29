@@ -4,7 +4,7 @@
  */
 import { useSearchParams as useRouterSearchParams, useNavigate } from 'react-router-dom'
 import { useCallback, useMemo } from 'react'
-export type LocationSearchParams = {
+export interface LocationSearchParams {
   latitude?: string;
   longitude?: string;
   radiusMiles?: string;

@@ -1,7 +1,10 @@
 /**
  * Unified Search Types;
  * Flexible architecture for multi-entity search (stores, products, etc.)
+ * Now extends schema-derived types for consistency
  */
+
+import type { StoreResponse, ItemResponse } from '@packages/schemas'
 
 /**
  * Search result types;
@@ -23,6 +26,7 @@ export interface SearchResultItem {
 
 /**
  * Store search result;
+ * Extends schema-derived StoreResponse
  */
 export interface StoreSearchResult extends SearchResultItem {
   type: 'store'
@@ -31,10 +35,13 @@ export interface StoreSearchResult extends SearchResultItem {
   prepTimeMin: number;
   isOpen?: boolean;
   category?: string;
+  // Include all StoreResponse fields
+  store: StoreResponse;
 }
 
 /**
  * Product search result;
+ * Extends schema-derived ItemResponse
  */
 export interface ProductSearchResult extends SearchResultItem {
   type: 'product'
@@ -47,6 +54,8 @@ export interface ProductSearchResult extends SearchResultItem {
   isActive?: boolean;
   isSoldOut?: boolean;
   sortIndex?: number;
+  // Include all ItemResponse fields
+  item: ItemResponse;
 }
 
 /**

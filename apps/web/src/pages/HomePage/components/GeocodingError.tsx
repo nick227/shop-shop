@@ -42,7 +42,7 @@ export function GeocodingError({ geocodingError, onClearGeocodingError }: Geocod
               onClearGeocodingError()
             }
             // Focus on search form for retry
-            const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement | null
+            const searchInput = document.querySelector('input[type="text"]')
             if (searchInput) {
               searchInput.focus()
             }

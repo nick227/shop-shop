@@ -146,7 +146,12 @@ export default function ItemFormPage() {
   }
 
   const isSubmitting = createItemMutation.isPending || updateItemMutation.isPending
-  const sections = createItemFormSections({ ...formData, storeId: storeId! }, handleChange)
+  const sections = createItemFormSections({ 
+    ...formData, 
+    storeId: storeId!,
+    price: Number.parseFloat(formData.price) || 0,
+    stockQty: Number.parseInt(formData.stockQty) || 0
+  }, handleChange)
 
   // Add media section if editing (can't upload media until item is created)
   const sectionsWithMedia: FormSection[] = isEdit && itemId

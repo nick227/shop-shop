@@ -47,7 +47,7 @@ export default function App() {
   // Don't render app until auth store is hydrated from localStorage;
   // This prevents flash of unauthenticated content while preserving access to login/signup;
   if (!useAuthStore.persist.hasHydrated()) {
-    return undefined;
+    return;
   }
 
   return (

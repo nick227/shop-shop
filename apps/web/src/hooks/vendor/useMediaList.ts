@@ -4,6 +4,7 @@
  * This is a mock implementation that returns empty data
  */
 import { useQuery } from '@tanstack/react-query'
+import type { MediaApiResponse } from '@api/types'
 
 interface UseMediaListParams {
   storeId?: string;
@@ -11,9 +12,9 @@ interface UseMediaListParams {
 }
 
 export function useMediaList({ storeId, itemId }: UseMediaListParams) {
-  return useQuery({
+  return useQuery<MediaApiResponse[]>({
     queryKey: ['media', 'list', { storeId, itemId }],
-    queryFn: async () => {
+    queryFn: async (): Promise<MediaApiResponse[]> => {
       // Mock implementation - return empty array since API is not available
       return []
     },

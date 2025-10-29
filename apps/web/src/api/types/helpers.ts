@@ -5,23 +5,9 @@
 
 import type {
   StoreResponse,
-  ListCarts200ResponseDataInner
+  ListItems200ResponseDataInner
 } from '@packages/sdk'
-// import type { OrderItem, AddressSnapshot } from '@/types/extensions'
-
-// Cart with totals interface - extends SDK cart with computed fields
-export interface CartWithTotals extends ListCarts200ResponseDataInner {
-  id: string  // Add missing id field
-  // Computed fields for frontend display
-  itemCount: number
-  subtotal: number
-  totalWeight?: number
-  tax: number
-  deliveryFee: number
-  fees: number  // Total fees
-  total: number
-  taxAmount?: number
-}
+import type { CartWithTotals } from '../backend-types'
 
 // Cart item data - extends SDK cart item with computed fields
 // CartItemData - SDK doesn't have ListCarts200ResponseDataInnerItemsInner
@@ -33,8 +19,8 @@ export interface CartItemData {
   titleSnapshot?: string  // Add missing titleSnapshot field
   notes?: string  // Add missing notes field
   // Additional computed fields for frontend
-  item?: import('@packages/sdk').ListItems200ResponseDataInner
-  currentItem?: import('@packages/sdk').ListItems200ResponseDataInner
+  item?: ListItems200ResponseDataInner
+  currentItem?: ListItems200ResponseDataInner
   weight?: number // Weight in pounds/kilograms
 }
 
@@ -64,44 +50,29 @@ export function calculateCartTotals(
   // Single-pass calculation for all values
   let subtotal = 0
   let itemCount = 0
-  let totalWeight = 0
   
-  // Note: SDK cart.items is a string, not an array
-  // This is a limitation of the current SDK
-  // For now, we'll use default values
-  if (typeof cart.items === 'string' && cart.items) {
-    // Parse items from string if needed
-    try {
-      const items = JSON.parse(cart.items)
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]
-        if (!item) continue
-        
-        const price = typeof item.unitPrice === 'string' 
-          ? Number.parseFloat(item.unitPrice) 
-          : item.unitPrice || 0
-        
-        subtotal += price * (item.quantity || 1)
-        itemCount += item.quantity || 1
-        
-        // Calculate weight if available
-        if (item.weight) {
-          totalWeight += item.weight * (item.quantity || 1)
-        }
-      }
-    } catch (error) {
-      // If parsing fails, use default values
-      console.warn('Failed to parse cart items:', error)
+  // Process cart items - they should be CartItemData[]
+  if (Array.isArray(cart.items)) {
+    for (const item of cart.items) {
+      if (!item) continue
+      
+      const price = typeof item.unitPrice === 'string' 
+        ? Number.parseFloat(item.unitPrice) 
+        : Number(item.unitPrice) || 0
+      
+      const quantity = item.quantity ?? 1
+      subtotal += price * quantity
+      itemCount += quantity
     }
   }
 
   const taxRate = 0.1 // 10% tax
   const tax = subtotal * taxRate
 
-  const deliveryFee = storeFees?.deliveryFee || 5.99;
+  const deliveryFee = storeFees?.deliveryFee ?? 5.99
   const serviceFee = storeFees?.serviceFeePercent
     ? subtotal * (storeFees.serviceFeePercent / 100)
-    : 0;
+    : 0
 
   const fees = deliveryFee + serviceFee
   const total = subtotal + tax + fees
@@ -113,7 +84,6 @@ export function calculateCartTotals(
     fees,
     total,
     itemCount,
-    totalWeight,
   }
 }
 
@@ -125,11 +95,26 @@ export function parseStore(store: StoreResponse): StoreResponse & {
   hours: Record<string, unknown> | undefined
   address: Record<string, unknown> | undefined
 } {
+  const storeWithJson = store as StoreResponse & {
+    feesJson?: string
+    hoursJson?: string
+    addressJson?: string
+  }
+  
+  const parseJsonField = (jsonString: string | undefined): Record<string, unknown> | undefined => {
+    if (!jsonString) return undefined
+    try {
+      return JSON.parse(jsonString) as Record<string, unknown>
+    } catch {
+      return undefined
+    }
+  }
+
   return {
     ...store,
-    fees: (store as any).feesJson || undefined,
-    hours: (store as any).hoursJson || undefined,
-    address: (store as any).addressJson || undefined,
+    fees: parseJsonField(storeWithJson.feesJson),
+    hours: parseJsonField(storeWithJson.hoursJson),
+    address: parseJsonField(storeWithJson.addressJson),
   }
 }
 

@@ -14,11 +14,11 @@ interface OptimizedValidationResult {
 }
 
 class OptimizedFormValidator<T> {
-  validate(data: T, validators: any): OptimizedValidationResult {
+  validate(data: T, validators: Record<string, unknown>): OptimizedValidationResult {
     return { isValid: true, errors: {}, fieldErrors: {}, performance: { duration: 0 } }
   }
   
-  addFieldValidator(field: keyof T, validator: any, options?: any): void {
+  addFieldValidator(field: keyof T, validator: (value: unknown) => string | undefined, options?: Record<string, unknown>): void {
     // Simple implementation
   }
 }
@@ -31,7 +31,7 @@ class ValidationPerformanceMonitor {
 
 export interface UseOptimizedFormValidationOptions<T> {
   initialData?: T
-  validators?: Partial<Record<keyof T, (value: any) => string | undefined>>
+  validators?: Partial<Record<keyof T, (value: unknown) => string | undefined>>
   requiredFields?: (keyof T)[]
   earlyExitFields?: (keyof T)[]
   debounceMs?: number
@@ -47,7 +47,7 @@ export interface UseOptimizedFormValidationResult<T> {
     fieldsChecked: number
     earlyExits: number
   }
-  setField: (field: keyof T, value: any) => void
+  setField: (field: keyof T, value: unknown) => void
   setData: (data: T) => void
   validate: () => OptimizedValidationResult
   validateField: (field: keyof T) => string | undefined
@@ -159,7 +159,7 @@ export function useOptimizedFormValidation<T extends Record<string, any>>(
   }, [validate, debounceMs])
   
   // Optimized field setter with early exit
-  const setField = useCallback((field: keyof T, value: any) => {
+  const setField = useCallback((field: keyof T, value: unknown) => {
     setData(prev => ({ ...prev, [field]: value }))
     setIsDirty(true)
     
@@ -244,11 +244,11 @@ const ValidationPatterns = {
   /**
    * Required field validation
    */
-  required: (value: any) => {
+  required: (value: unknown) => {
     if (!value || (typeof value === 'string' && value.trim() === '')) {
       return 'This field is required'
     }
-    return undefined
+    return
   },
   
   /**
@@ -258,7 +258,7 @@ const ValidationPatterns = {
     if (value && value.length < min) {
       return 'Must be at least ' + min + ' characters'
     }
-    return undefined
+    return
   },
   
   /**
@@ -268,17 +268,17 @@ const ValidationPatterns = {
     if (value && value.length > max) {
       return 'Must be no more than ' + max + ' characters'
     }
-    return undefined
+    return
   },
   
   /**
    * Numeric validation
    */
-  numeric: (value: any) => {
+  numeric: (value: unknown) => {
     if (value && isNaN(Number(value))) {
       return 'Must be a number'
     }
-    return undefined
+    return
   },
   
   /**

@@ -4,25 +4,20 @@
  */
 import type { FormEvent } from 'react';
 import { useState } from 'react'
-import { z } from 'zod'
 import { Button, Input, Alert } from '@ui'
 import { useAuth } from '@hooks/useAuth'
 import { useFormValidation } from '@hooks/useFormValidation'
-import { emailSchema } from '@utils/validation'
+import { loginFormSchema, type LoginFormData } from '@/schemas/ConsistentSchemas'
 
 export interface LoginFormProps {
   onSuccess?: () => void;
 }
 
-const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, 'Password is required')})
-
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login, isLoggingIn, loginError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { errors, validate } = useFormValidation(loginSchema)
+  const { errors, validate } = useFormValidation(loginFormSchema)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()

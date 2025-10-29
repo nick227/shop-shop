@@ -7,7 +7,7 @@ import { geocodeCity } from '@services/geocoding'
 import type { LocationData } from '@/types/location.types'
 
 interface UseGeocodingResult {
-  geocodeLocation: (city: string, state: string, currentLocation?: LocationData | undefined) => Promise<LocationData | undefined>
+  geocodeLocation: (city: string, state: string, currentLocation?: LocationData  ) => Promise<LocationData | undefined>
   isGeocoding: boolean
   geocodingError: string | undefined
   clearError: () => void
@@ -39,7 +39,7 @@ export function useGeocoding(): UseGeocodingResult {
 
   // Debounce helper
   const debounce = useCallback((fn: Function, delay: number) => {
-    return (...args: any[]) => {
+    return (...args: unknown[]) => {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current)
       }
@@ -50,7 +50,7 @@ export function useGeocoding(): UseGeocodingResult {
   const geocodeLocation = useCallback(async (
     city: string, 
     state: string, 
-    currentLocation?: LocationData | undefined
+    currentLocation?: LocationData  
   ): Promise<LocationData | undefined> => {
     const cacheKey = '${city},' + state + ''
     
@@ -81,7 +81,7 @@ export function useGeocoding(): UseGeocodingResult {
       debounceTimer.current = setTimeout(async () => {
         // Check if this request was already aborted
         if (currentAbortController.signal.aborted) {
-          resolve(undefined)
+          resolve()
           return
         }
 
@@ -98,7 +98,7 @@ export function useGeocoding(): UseGeocodingResult {
 
           // Check if request was aborted during geocoding
           if (currentAbortController.signal.aborted) {
-            resolve(undefined)
+            resolve()
             return
           }
 
@@ -131,12 +131,12 @@ export function useGeocoding(): UseGeocodingResult {
               console.warn('[useGeocoding] ' + errorMsg + '')
             }
             
-            resolve(undefined)
+            resolve()
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Ignore abort errors
           if ((error) instanceof Error && error !== undefined && (error.name === 'AbortError' || currentAbortController.signal.aborted)) {
-            resolve(undefined)
+            resolve()
             return
           }
 
@@ -147,7 +147,7 @@ export function useGeocoding(): UseGeocodingResult {
             console.error('[useGeocoding] ' + errorMsg + '')
           }
 
-          resolve(undefined)
+          resolve()
         } finally {
           isGeocodingRef.current = false
           abortController.current = undefined

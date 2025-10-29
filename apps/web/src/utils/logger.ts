@@ -4,30 +4,30 @@
  */
 
 export interface Logger {
-  debug: (message: string, data?: any) => void
-  info: (message: string, data?: any) => void
-  warn: (message: string, data?: any) => void
-  error: (message: string, data?: any) => void
+  debug: (message: string, data?: unknown) => void
+  info: (message: string, data?: unknown) => void
+  warn: (message: string, data?: unknown) => void
+  error: (message: string, data?: unknown) => void
 }
 
 class AppLogger implements Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development'
+  private readonly isDevelopment = process.env.NODE_ENV === 'development'
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     if (this.isDevelopment) {
       console.log(`[DEBUG] ${message}`, data || '')
     }
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     console.log(`[INFO] ${message}`, data || '')
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     console.warn(`[WARN] ${message}`, data || '')
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: unknown): void {
     console.error(`[ERROR] ${message}`, data || '')
   }
 }

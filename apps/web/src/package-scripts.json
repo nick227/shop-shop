@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "sdk:update": "tsx scripts/sdk-update-workflow.ts",
+    "sdk:rollback": "tsx scripts/sdk-update-workflow.ts rollback",
+    "sdk:validate": "tsx scripts/developer-tools.ts validate-types",
+    "sdk:auto-fix": "tsx scripts/developer-tools.ts auto-fix",
+    "sdk:generate-hooks": "tsx scripts/developer-tools.ts generate-hooks",
+    "sdk:generate-component": "tsx scripts/developer-tools.ts generate-component",
+    "sdk:generate-tests": "tsx scripts/developer-tools.ts generate-tests",
+    "sdk:generate-docs": "tsx scripts/developer-tools.ts generate-docs",
+    "types:validate": "tsx scripts/developer-tools.ts validate-types",
+    "types:fix": "tsx scripts/developer-tools.ts auto-fix",
+    "types:docs": "tsx scripts/developer-tools.ts generate-docs",
+    "dev:generate": "tsx scripts/developer-tools.ts",
+    "dev:check": "npm run types:validate && npm run lint && npm run test",
+    "dev:fix": "npm run types:fix && npm run lint:fix"
+  }
+}

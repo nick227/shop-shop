@@ -2,30 +2,16 @@
  * Bundle Types
  * Frontend-specific types for bundle management
  * 
- * Simplified to work with SDK-generated types
+ * Now uses schema-derived types for consistency
  */
 
+import type { CreateBundleInput } from '../../../api/types'
+import type { Bundle } from '../../../api/backend-types'
+
 // Frontend form data for bundle creation/editing
-export interface BundleFormData {
-  name: string
-  description?: string
-  imageUrl?: string
-  isActive: boolean
-  sortIndex: number
-  items: {
-    itemId: string
-    quantity: number
-    sortIndex: number
-  }[]
-  pricing: {
-    pricingType: 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
-    fixedPrice?: number
-    discountPercent?: number
-    discountAmount?: number
-    minSavings?: number
-    showSavings: boolean
-    savingsLabel?: string
-  }
+// Derived from schema to ensure consistency
+export type BundleFormData = Omit<CreateBundleInput, 'storeId'> & {
+  storeId?: string // Optional for form editing
 }
 
 // Bundle management options
@@ -35,23 +21,14 @@ export interface BundleManagementOptions {
 }
 
 // Bundle display data with computed fields
-export interface BundleDisplayData {
-  id: string
-  storeId: string
-  name: string
-  description?: string
-  imageUrl?: string
-  isActive: boolean
-  sortIndex: number
-  totalItems: number
-  individualPrice: number
-  bundlePrice: number
-  savings: number
-  savingsPercent: number
+// Extends schema-derived Bundle type with computed fields
+export type BundleDisplayData = Bundle & {
+  // Computed fields are already included in the schema-derived Bundle type
+  // totalItems, individualPrice, bundlePrice, savings, savingsPercent
 }
 
-// Type transformers (simplified to work with SDK types)
-export function formDataToCreateInput(formData: BundleFormData, storeId: string): any {
+// Type transformers (using schema-derived types)
+export function formDataToCreateInput(formData: BundleFormData, storeId: string): CreateBundleInput {
   return {
     storeId,
     name: formData.name,
@@ -64,7 +41,7 @@ export function formDataToCreateInput(formData: BundleFormData, storeId: string)
   }
 }
 
-export function formDataToUpdateInput(formData: Partial<BundleFormData>): any {
+export function formDataToUpdateInput(formData: Partial<BundleFormData>): Partial<CreateBundleInput> {
   return {
     name: formData.name,
     description: formData.description,
@@ -76,26 +53,21 @@ export function formDataToUpdateInput(formData: Partial<BundleFormData>): any {
   }
 }
 
-export function bundleToFormData(bundle: Record<string, unknown>): BundleFormData {
+export function bundleToFormData(bundle: Bundle): BundleFormData {
   return {
-    name: bundle['name'] as string,
-    description: (bundle['description'] as string) ?? '',
-    imageUrl: (bundle['imageUrl'] as string) ?? '',
-    isActive: bundle['isActive'] as boolean,
-    sortIndex: bundle['sortIndex'] as number,
-    items: (bundle['items'] as Record<string, unknown>[])?.map(item => ({
-      itemId: item['itemId'] as string,
-      quantity: item['quantity'] as number,
-      sortIndex: item['sortIndex'] as number
+    name: bundle.name,
+    description: bundle.description ?? '',
+    imageUrl: bundle.imageUrl ?? '',
+    isActive: bundle.isActive ?? true,
+    sortIndex: bundle.sortIndex ?? 0,
+    items: bundle.items?.map(item => ({
+      itemId: item.itemId,
+      quantity: item.quantity,
+      sortIndex: item.sortIndex ?? 0
     })) ?? [],
-    pricing: {
-      pricingType: (bundle['pricing'] as Record<string, unknown>)?.['pricingType'] as 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL' ?? 'FIXED_PRICE',
-      fixedPrice: (bundle['pricing'] as Record<string, unknown>)?.['fixedPrice'] as number,
-      discountPercent: (bundle['pricing'] as Record<string, unknown>)?.['discountPercent'] as number,
-      discountAmount: (bundle['pricing'] as Record<string, unknown>)?.['discountAmount'] as number,
-      minSavings: (bundle['pricing'] as Record<string, unknown>)?.['minSavings'] as number,
-      showSavings: (bundle['pricing'] as Record<string, unknown>)?.['showSavings'] as boolean ?? true,
-      savingsLabel: (bundle['pricing'] as Record<string, unknown>)?.['savingsLabel'] as string
+    pricing: bundle.pricing ?? {
+      pricingType: 'FIXED_PRICE' as const,
+      showSavings: true
     }
   }
 }

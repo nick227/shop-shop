@@ -1,319 +1,448 @@
 /**
- * Generic Component Props
- * Reduces 61+ Props interfaces to ~10 reusable generic types
+ * Component Props - Generic component prop type definitions
+ * 
+ * These types provide consistent prop interfaces for reusable components
+ * across the application.
  */
 
-import type { ReactNode, MouseEvent, FocusEvent } from 'react'
-import type { StoreWithDistance } from '@api/types'
+import type { ReactNode, CSSProperties, HTMLAttributes } from 'react'
+import type { Address } from '@api/generated-types'
 
-// Import SDK response types directly
-import type { 
-  ItemResponse, 
-  OrderResponse, 
-  AddressResponse
-} from '@packages/sdk'
+// ============================================
+// Base Component Props
+// ============================================
 
-// Location coordinate type derived from SDK
+/** Location coordinates for maps and location-based components */
 export interface LocationCoordinates {
   latitude: number
   longitude: number
 }
 
-// ========================================
-// Base Generic Props
-// ========================================
-
-// Helper type for entities with ID - flexible for different ID keys
-export interface WithId {
-  id: string
-}
-
-// Alternative ID key support
-export type WithIdKey<K extends string = 'id'> = Record<K, string>
-
-// Centralized variant unions to prevent drift
-export type CardVariant = 'standard' | 'compact' | 'expanded'
-export type SizeVariant = 'small' | 'medium' | 'large'
-export type StatusVariant = 'success' | 'warning' | 'error' | 'info'
-export type LayoutVariant = 'grid' | 'list'
-export type DrawerSize = SizeVariant | 'full'
-
+/** Base props for all components */
 export interface BaseProps {
-  className: string | undefined
-  children: ReactNode | undefined
+  className?: string
+  style?: CSSProperties
+  children?: ReactNode
+  id?: string
+  'data-testid'?: string
 }
 
-export interface ClickableProps<T extends HTMLElement = HTMLElement> extends BaseProps {
-  onClick: ((event: MouseEvent<T>) => void) | undefined
-  disabled: boolean | undefined
+/** Props for clickable elements */
+export interface ClickableProps extends BaseProps {
+  onClick?: () => void
+  disabled?: boolean
+  loading?: boolean
 }
 
-export interface InteractiveProps<T extends HTMLElement = HTMLElement> extends ClickableProps<T> {
-  onMouseEnter?: (event: MouseEvent<T>) => void
-  onMouseLeave?: (event: MouseEvent<T>) => void
-  onFocus?: (event: FocusEvent<T>) => void
-  onBlur?: (event: FocusEvent<T>) => void
+/** Props for interactive elements */
+export interface InteractiveProps extends ClickableProps {
+  onHover?: () => void
+  onFocus?: () => void
+  onBlur?: () => void
+  tabIndex?: number
 }
 
-// Focusable element constraints
-export type FocusableElement = HTMLButtonElement | HTMLAnchorElement | HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+// ============================================
+// Entity Component Props
+// ============================================
 
-// ========================================
-// Entity-Specific Props
-// ========================================
-
-export interface EntityCardProps<T> extends ClickableProps {
+/** Base props for entity cards */
+export interface EntityCardProps<T = any> extends BaseProps {
   entity: T
-  variant?: CardVariant
-  showDetails?: boolean
+  onClick?: (entity: T) => void
+  onEdit?: (entity: T) => void
+  onDelete?: (entity: T) => void
+  actions?: ReactNode
+  loading?: boolean
+  error?: string
 }
 
-export interface EntityListProps<T extends WithId> extends BaseProps {
-  entities: T[]
-  onEntityClick?: (entity: T) => void
-  isHighlighted?: (entity: T) => boolean
+/** Base props for entity lists */
+export interface EntityListProps<T = any> extends BaseProps {
+  items: T[]
+  loading?: boolean
+  error?: string
   emptyMessage?: string
+  onItemClick?: (item: T) => void
+  onItemEdit?: (item: T) => void
+  onItemDelete?: (item: T) => void
+  renderItem?: (item: T) => ReactNode
+  itemKey?: (item: T) => string
 }
 
-export interface EntityModalProps<T> extends BaseProps {
+/** Base props for entity modals */
+export interface EntityModalProps<T = any> extends BaseProps {
   entity?: T
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSave?: (entity: T) => void | Promise<void>
-  mode: 'create' | 'edit'
-  // Accessibility hooks
-  ariaLabelledBy?: string
-  ariaDescribedBy?: string
-  role?: 'dialog' | 'alertdialog'
+  isOpen: boolean
+  onClose: () => void
+  onSave?: (entity: T) => void
+  onDelete?: (entity: T) => void
+  loading?: boolean
+  error?: string
+  title?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-// ========================================
-// Form Props
-// ========================================
+// ============================================
+// Form Component Props
+// ============================================
 
-export interface FormProps<T> extends BaseProps {
-  data: T
+/** Base form props */
+export interface FormProps<T = unknown> extends BaseProps {
   onSubmit: (data: T) => void | Promise<void>
   onCancel?: () => void
-  isLoading?: boolean
-  errors?: FormErrors<T>
-}
-
-export interface FormFieldProps<T> extends BaseProps {
-  name: keyof T
-  label: string
-  required?: boolean
+  loading?: boolean
   error?: string
-  helperText?: string
+  disabled?: boolean
+  initialData?: T
 }
 
-// Improved form error typing for nested paths
-export type FormErrors<T> = {
-  [K in keyof T]?: T[K] extends object 
-    ? T[K] extends (infer U)[]
-      ? FormErrors<U>[]
-      : FormErrors<T[K]>
-    : string
+/** Form field props */
+export interface FormFieldProps<T = unknown> extends BaseProps {
+  name: string
+  label?: string
+  placeholder?: string
+  value: T
+  onChange: (value: T) => void
+  error?: string
+  disabled?: boolean
+  required?: boolean
+  type?: string
+  options?: { value: T; label: string }[]
 }
 
-// ========================================
-// Layout Props
-// ========================================
+/** Form section props */
+export interface FormSectionProps extends BaseProps {
+  title: string
+  description?: string
+  collapsible?: boolean
+  defaultExpanded?: boolean
+  children: ReactNode
+}
 
+// ============================================
+// Page Component Props
+// ============================================
+
+/** Base page props */
 export interface PageProps extends BaseProps {
-  title: string
-  subtitle?: string
-  backLink?: { href: string; label: string }
+  title?: string
+  description?: string
+  loading?: boolean
+  error?: string
+  breadcrumbs?: { label: string; href?: string }[]
   actions?: ReactNode
 }
 
+/** Section props */
 export interface SectionProps extends BaseProps {
-  title: string
-  icon?: ReactNode
+  title?: string
   subtitle?: string
   actions?: ReactNode
+  collapsible?: boolean
+  defaultExpanded?: boolean
+  children: ReactNode
 }
 
-// ========================================
-// State Props
-// ========================================
+// ============================================
+// State Component Props
+// ============================================
 
+/** Loading state props */
 export interface LoadingProps extends BaseProps {
   message?: string
-  size?: SizeVariant
+  size?: 'sm' | 'md' | 'lg'
+  fullScreen?: boolean
 }
 
+/** Error state props */
 export interface ErrorProps extends BaseProps {
   title?: string
-  message: string
-  error?: ApiError
+  message?: string
   onRetry?: () => void
+  showRetry?: boolean
 }
 
+/** Empty state props */
 export interface EmptyProps extends BaseProps {
   title?: string
-  message: string
+  message?: string
   icon?: ReactNode
   action?: ReactNode
 }
 
-// ========================================
-// Data Props
-// ========================================
-
-// Shared error type
-export interface ApiError {
-  message: string
-  code?: string
-  details?: Record<string, unknown>
+/** Data state props */
+export interface DataStateProps<T = unknown> extends Omit<BaseProps, 'children'> {
+  data: T
+  loading?: boolean
+  error?: string
+  emptyMessage?: string
+  onRetry?: () => void
+  children: (data: T) => ReactNode
 }
 
-// Discriminated union for data state
-export type DataState<T> = 
-  | { status: 'loading' }
-  | { status: 'error'; error: ApiError; onRetry?: () => void }
-  | { status: 'success'; data: T[] }
-  | { status: 'empty'; emptyMessage?: string }
+// ============================================
+// Store Component Props
+// ============================================
 
-export interface DataStateProps<T> extends BaseProps {
-  state: DataState<T>
+/** Store card props */
+export interface StoreCardProps extends EntityCardProps {
+  showDistance?: boolean
+  showRating?: boolean
+  showFees?: boolean
+  compact?: boolean
 }
 
-// ========================================
-// Specific Entity Props (Type Aliases)
-// ========================================
+/** Store list props */
+export interface StoreListProps extends EntityListProps {
+  showDistance?: boolean
+  showRating?: boolean
+  showFees?: boolean
+  sortBy?: 'distance' | 'name' | 'rating'
+  filterBy?: string
+}
 
-export type StoreCardProps = EntityCardProps<StoreWithDistance>
-export type StoreListProps = EntityListProps<StoreWithDistance>
-export type StoreModalProps = EntityModalProps<StoreWithDistance>
+/** Store modal props */
+export interface StoreModalProps extends EntityModalProps {
+  showMap?: boolean
+  showItems?: boolean
+  showReviews?: boolean
+}
 
-export type ItemCardProps = EntityCardProps<ItemResponse>
-export type ItemListProps = EntityListProps<WithId & ItemResponse>
-export type ItemModalProps = EntityModalProps<ItemResponse>
+// ============================================
+// Item Component Props
+// ============================================
 
-export type OrderCardProps = EntityCardProps<OrderResponse>
-export type OrderListProps = EntityListProps<WithId & OrderResponse>
-export type OrderModalProps = EntityModalProps<OrderResponse>
+/** Item card props */
+export interface ItemCardProps extends EntityCardProps {
+  showPrice?: boolean
+  showStock?: boolean
+  showStore?: boolean
+  compact?: boolean
+  imageSize?: 'sm' | 'md' | 'lg'
+}
 
-export type AddressCardProps = EntityCardProps<AddressResponse>
-export type AddressListProps = EntityListProps<WithId & AddressResponse>
-export type AddressModalProps = EntityModalProps<AddressResponse>
+/** Item list props */
+export interface ItemListProps extends EntityListProps {
+  showPrice?: boolean
+  showStock?: boolean
+  showStore?: boolean
+  sortBy?: 'name' | 'price' | 'category'
+  filterBy?: string
+  category?: string
+}
 
-// ========================================
-// Map Props (Using SDK Types)
-// ========================================
+/** Item modal props */
+export interface ItemModalProps extends EntityModalProps {
+  showImages?: boolean
+  showVariants?: boolean
+  showReviews?: boolean
+  allowAddToCart?: boolean
+}
 
-// Shared map callback type
-export type StoreClickCallback = (store: StoreWithDistance) => void
+// ============================================
+// Order Component Props
+// ============================================
 
+/** Order card props */
+export interface OrderCardProps extends EntityCardProps {
+  showStatus?: boolean
+  showTotal?: boolean
+  showDate?: boolean
+  showItems?: boolean
+  compact?: boolean
+}
+
+/** Order list props */
+export interface OrderListProps extends EntityListProps {
+  showStatus?: boolean
+  showTotal?: boolean
+  showDate?: boolean
+  sortBy?: 'date' | 'status' | 'total'
+  filterBy?: string
+  status?: string
+}
+
+/** Order modal props */
+export interface OrderModalProps extends EntityModalProps {
+  showTimeline?: boolean
+  showItems?: boolean
+  showAddress?: boolean
+  allowStatusUpdate?: boolean
+}
+
+// ============================================
+// Address Component Props
+// ============================================
+
+/** Address card props */
+export interface AddressCardProps extends EntityCardProps {
+  showDefault?: boolean
+  showActions?: boolean
+  compact?: boolean
+}
+
+/** Address list props */
+export interface AddressListProps extends EntityListProps {
+  showDefault?: boolean
+  showActions?: boolean
+  allowSelection?: boolean
+  selectedId?: string
+  onSelect?: (address: Address) => void
+}
+
+/** Address modal props */
+export interface AddressModalProps extends EntityModalProps {
+  showMap?: boolean
+  allowGeocoding?: boolean
+  showValidation?: boolean
+}
+
+// ============================================
+// Map Component Props
+// ============================================
+
+/** Map props */
 export interface MapProps extends BaseProps {
-  stores: StoreWithDistance[]
-  userLocation?: LocationCoordinates
-  radius?: number // Unit-agnostic radius
-  radiusUnit?: 'miles' | 'kilometers' | 'meters'
-  onStoreClick?: StoreClickCallback
+  center?: { lat: number; lng: number }
+  zoom?: number
+  markers?: {
+    id: string
+    position: { lat: number; lng: number }
+    title?: string
+    onClick?: () => void
+  }[]
+  onMapClick?: (position: { lat: number; lng: number }) => void
+  onMarkerClick?: (marker: { id: string; position: [number, number]; data?: unknown }) => void
+  height?: string | number
+  interactive?: boolean
 }
 
+/** Map marker props */
 export interface MapMarkerProps extends BaseProps {
-  store: StoreWithDistance
-  isNearest?: boolean
-  onStoreClick?: StoreClickCallback
+  position: { lat: number; lng: number }
+  title?: string
+  onClick?: () => void
+  icon?: string | ReactNode
+  color?: string
+  size?: 'sm' | 'md' | 'lg'
 }
 
-// ========================================
-// Search Props
-// ========================================
+// ============================================
+// Search Component Props
+// ============================================
 
-// Submit-based search (uncontrolled)
-export interface SearchSubmitProps extends BaseProps {
-  onSearch: (query: string) => void
+/** Search props */
+export interface SearchProps extends BaseProps {
   placeholder?: string
-  showClearButton?: boolean
-}
-
-// Controlled input search
-export interface SearchInputProps extends BaseProps {
   value: string
   onChange: (value: string) => void
-  placeholder?: string
-  showClearButton?: boolean
+  onSearch?: (query: string) => void
+  onClear?: () => void
+  loading?: boolean
+  suggestions?: string[]
+  onSuggestionClick?: (suggestion: string) => void
+  debounceMs?: number
 }
 
-// Union type for flexibility
-export type SearchProps = SearchSubmitProps | SearchInputProps
-
-export interface SearchResultsProps<T> extends BaseProps {
+/** Search results props */
+export interface SearchResultsProps<T = unknown> extends BaseProps {
+  query: string
   results: T[]
-  layout?: LayoutVariant
-  cardVariant?: CardVariant
+  loading?: boolean
+  error?: string
   onResultClick?: (result: T) => void
-}
-
-// ========================================
-// Navigation Props
-// ========================================
-
-export interface PaginationProps extends BaseProps {
-  currentPage: number // 1-based indexing, must be >= 1
-  totalPages: number // must be >= 0
-  pageSize?: number
-  totalItems?: number
-  onPageChange: (page: number) => void
-  showInfo?: boolean
-  // Zero-state handling
+  renderResult?: (result: T) => ReactNode
   emptyMessage?: string
-  showEmptyState?: boolean
 }
 
-export interface BreadcrumbProps extends BaseProps {
-  items: { 
+// ============================================
+// Pagination Component Props
+// ============================================
+
+/** Pagination props */
+export interface PaginationProps extends BaseProps {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  showFirstLast?: boolean
+  showPrevNext?: boolean
+  maxVisiblePages?: number
+  disabled?: boolean
+}
+
+// ============================================
+// Breadcrumb Component Props
+// ============================================
+
+/** Breadcrumb props */
+export interface BreadcrumbProps<T = unknown> extends BaseProps {
+  items: {
     label: string
     href?: string
-    ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true
+    active?: boolean
   }[]
+  separator?: ReactNode
+  onItemClick?: (item: T) => void
 }
 
-// ========================================
-// Status Props
-// ========================================
+// ============================================
+// Status Badge Component Props
+// ============================================
 
+/** Status badge props */
 export interface StatusBadgeProps extends BaseProps {
-  variant: StatusVariant
+  status: string
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral'
+  size?: 'sm' | 'md' | 'lg'
   showIcon?: boolean
+  customColor?: string
 }
 
+// ============================================
+// Stat Card Component Props
+// ============================================
+
+/** Stat card props */
 export interface StatCardProps extends BaseProps {
-  icon?: ReactNode
+  title: string
   value: string | number
-  label: string
-  trend?: 'up' | 'down' | 'neutral'
+  change?: {
+    value: number
+    type: 'increase' | 'decrease' | 'neutral'
+    period?: string
+  }
+  icon?: ReactNode
+  color?: string
+  loading?: boolean
 }
 
-// ========================================
-// Utility Props
-// ========================================
+// ============================================
+// Dialog Component Props
+// ============================================
 
+/** Confirm dialog props */
 export interface ConfirmDialogProps extends BaseProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  isOpen: boolean
   title: string
-  description: string
+  message: string
   confirmText?: string
   cancelText?: string
-  onConfirm: () => void | Promise<void>
-  // Accessibility hooks
-  role?: 'alertdialog' | 'dialog'
-  ariaLabelledBy?: string
-  ariaDescribedBy?: string
-  destructive?: boolean // For destructive actions
+  onConfirm: () => void
+  onCancel: () => void
+  variant?: 'danger' | 'warning' | 'info'
+  loading?: boolean
 }
 
+/** Drawer props */
 export interface DrawerProps extends BaseProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  isOpen: boolean
+  onClose: () => void
   title?: string
-  size?: DrawerSize
-  // Accessibility hooks
-  ariaLabelledBy?: string
-  ariaDescribedBy?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  position?: 'left' | 'right' | 'top' | 'bottom'
+  children: ReactNode
+  footer?: ReactNode
+  closeOnOverlayClick?: boolean
+  closeOnEscape?: boolean
 }

@@ -1,399 +1,474 @@
 /**
- * Type Transformers - Utility functions for data transformation
- * Provides common data transformation and formatting functions
+ * Type Transformers - Utility functions for data transformations
+ * 
+ * These functions transform base SDK types into enhanced types
+ * with computed fields for frontend use.
  */
 
+import type {
+  StoreResponse,
+  UserResponse,
+  OrderResponse,
+  ItemResponse,
+  AddressResponse,
+  PostResponse,
+  CommentResponse
+} from '../api/types'
+
+import type {
+  StoreWithLocation,
+  StoreWithFees,
+  StoreWithRating,
+  UserWithName,
+  UserWithRole,
+  OrderWithDetails,
+  OrderWithDelivery,
+  ItemWithStore,
+  ItemWithPricing,
+  AddressWithCoordinates,
+  PostWithEngagement,
+  PostWithMedia,
+  CommentWithUser
+} from '../types/extensions'
+
 // ============================================
-// Price Transformation Functions
+// Store Transformers
 // ============================================
 
 /**
- * Parse price from string or number to number
+ * Add distance to store from user's location
  */
-export function parsePrice(price: string | number | undefined): number {
-  if (price === undefined) return 0
+export function addDistanceToStore(
+  store: StoreResponse,
+  userLat?: number,
+  userLng?: number
+): StoreWithLocation {
+  const storeLat = Number.parseFloat(store.latitude || '0')
+  const storeLng = Number.parseFloat(store.longitude || '0')
   
-  if (typeof price === 'number') return price
-  
-  if (typeof price === 'string') {
-    // Remove currency symbols and parse
-    const cleaned = price.replaceAll(/[^\d.-]/g, '')
-    const parsed = Number.parseFloat(cleaned)
-    return Number.isNaN(parsed) ? 0 : parsed
+  let distance: number | undefined
+  if (userLat && userLng && storeLat && storeLng) {
+    distance = calculateDistance(userLat, userLng, storeLat, storeLng)
   }
-  
-  return 0
+
+  return {
+    ...store,
+    distance,
+    fullAddress: formatStoreAddress(store),
+    coordinates: storeLat && storeLng ? { lat: storeLat, lng: storeLng } : undefined
+  }
 }
 
 /**
- * Format price as currency string
+ * Add fee information to store
  */
-export function formatPrice(price: number | string | undefined, currency = 'USD'): string {
-  const numericPrice = parsePrice(price)
+export function addFeesToStore(store: StoreResponse): StoreWithFees {
+  const deliveryFee = Number.parseFloat(store.deliveryCharge || '0')
+  const serviceFee = 0.1 // 10% service fee (example)
+  const taxRate = 0.08 // 8% tax rate (example)
   
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(numericPrice)
-}
+  const feesBreakdown = {
+    delivery: deliveryFee,
+    service: serviceFee,
+    tax: taxRate,
+    total: deliveryFee + serviceFee + taxRate
+  }
 
-// ============================================
-// Distance Calculation Functions
-// ============================================
-
-/**
- * Calculate distance between two coordinates using Haversine formula
- */
-export function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-  unit: 'km' | 'miles' = 'miles'
-): number {
-  const R = unit === 'km' ? 6371 : 3959 // Earth's radius in km or miles
-  
-  const dLat = toRadians(lat2 - lat1)
-  const dLon = toRadians(lon2 - lon1)
-  
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  
-  return R * c
+  return {
+    ...store,
+    deliveryFee,
+    serviceFee,
+    taxRate,
+    feesBreakdown
+  }
 }
 
 /**
- * Convert degrees to radians
+ * Add rating information to store
  */
-function toRadians(degrees: number): number {
-  return degrees * (Math.PI / 180)
+export function addRatingToStore(store: StoreResponse): StoreWithRating {
+  // Mock rating data - in real app, this would come from reviews
+  const averageRating = 4.2
+  const reviewCount = 127
+  const ratingDistribution = {
+    5: 45,
+    4: 38,
+    3: 25,
+    2: 12,
+    1: 7
+  }
+
+  return {
+    ...store,
+    averageRating,
+    reviewCount,
+    ratingDistribution
+  }
 }
 
 // ============================================
-// Order Transformation Functions
+// User Transformers
 // ============================================
 
 /**
- * Add details to order object
+ * Add display name to user
  */
-export function addDetailsToOrder<T extends Record<string, unknown>>(
-  order: T,
-  details: Partial<T>
-): T {
+export function addNameToUser(user: UserResponse): UserWithName {
+  const displayName = user.name || user.email
+  const initials = getInitials(displayName)
+  const avatarUrl = undefined // Would come from user profile
+
+  return {
+    ...user,
+    displayName,
+    initials,
+    avatarUrl
+  }
+}
+
+/**
+ * Add role information to user
+ */
+export function addRoleToUser(user: UserResponse): UserWithRole {
+  const roleDisplayName = getUserRoleDisplayName(user.role)
+  const permissions = getUserPermissions(user.role)
+  const isAdmin = user.role === 'ADMIN'
+  const isVendor = user.role === 'VENDOR'
+
+  return {
+    ...user,
+    roleDisplayName,
+    permissions,
+    isAdmin,
+    isVendor
+  }
+}
+
+// ============================================
+// Order Transformers
+// ============================================
+
+/**
+ * Add details to order
+ */
+export function addDetailsToOrder(order: OrderResponse): OrderWithDetails {
+  const orderNumber = `#${order.id.slice(-8).toUpperCase()}`
+  const statusDisplayName = getOrderStatusDisplayName(order.status)
+  const estimatedDelivery = getEstimatedDeliveryTime(order.createdAt)
+  const totalValue = calculateOrderTotal(order)
+
   return {
     ...order,
-    ...details,
-    updatedAt: new Date().toISOString()
+    orderNumber,
+    statusDisplayName,
+    estimatedDelivery,
+    totalValue,
+    itemsWithDetails: [], // Would be populated from order items
+    timeline: [] // Would be populated from order events
+  }
+}
+
+/**
+ * Add delivery information to order
+ */
+export function addDeliveryToOrder(order: OrderResponse): OrderWithDelivery {
+  return {
+    ...order,
+    deliveryAddress: undefined, // Would come from order data
+    deliveryInstructions: undefined,
+    deliveryStatus: 'pending',
+    trackingInfo: undefined
   }
 }
 
 // ============================================
-// Store Transformation Functions
+// Item Transformers
 // ============================================
 
 /**
  * Add store information to item
  */
-export function addStoreToItem<T extends Record<string, unknown>>(
-  item: T,
-  store: { id: string; name: string; slug: string }
-): T & { store: { id: string; name: string; slug: string } } {
+export function addStoreToItem(item: ItemResponse, store?: StoreResponse): ItemWithStore {
   return {
     ...item,
-    store: {
-      id: store.id,
-      name: store.name,
-      slug: store.slug
-    }
+    store,
+    storeName: store?.name,
+    storeImage: store?.media?.[0]?.url, // Get first media URL
+    storeRating: 4.2 // Would come from store rating
+  }
+}
+
+/**
+ * Add pricing information to item
+ */
+export function addPricingToItem(item: ItemResponse): ItemWithPricing {
+  const price = Number.parseFloat(item.price.toString())
+  const formattedPrice = formatPrice(price)
+  const isOnSale = false // Would come from item data
+  const originalPrice = isOnSale ? price * 1.2 : undefined
+  const discountAmount = originalPrice ? originalPrice - price : 0
+  const discountPercentage = originalPrice ? (discountAmount / originalPrice) * 100 : 0
+
+  return {
+    ...item,
+    formattedPrice,
+    originalPrice,
+    discountAmount,
+    discountPercentage,
+    isOnSale
   }
 }
 
 // ============================================
-// Address Transformation Functions
+// Address Transformers
 // ============================================
 
 /**
- * Add coordinates to address object
+ * Add coordinates to address
  */
-export function addCoordinatesToAddress<T extends Record<string, unknown>>(
-  address: T,
-  coordinates: { latitude: number; longitude: number }
-): T & { latitude: number; longitude: number } {
+export function addCoordinatesToAddress(address: AddressResponse): AddressWithCoordinates {
+  // Extract coordinates from geo field if available
+  const geo = address.geo as { latitude?: number; longitude?: number } | null
+  const latitude = geo?.latitude || 0
+  const longitude = geo?.longitude || 0
+  const formattedAddress = formatAddress(address)
+  
+  const components = {
+    street: address.line1,
+    city: address.city,
+    state: address.state,
+    zip: address.postalCode,
+    country: address.country
+  }
+
   return {
     ...address,
-    latitude: coordinates.latitude,
-    longitude: coordinates.longitude
+    latitude: latitude || undefined,
+    longitude: longitude || undefined,
+    formattedAddress,
+    components
   }
 }
 
+// ============================================
+// Post Transformers
+// ============================================
+
 /**
- * Add distance to store object
+ * Add engagement data to post
  */
-export function addDistanceToStore<T extends Record<string, unknown>>(
-  store: T,
-  distance: number
-): T & { distance: number } {
+export function addEngagementToPost(post: PostResponse): PostWithEngagement {
+  const isLiked = false // Would come from user data
+  const isBookmarked = false // Would come from user data
+  const engagementRate = calculateEngagementRate(post)
+  const timeAgo = getTimeAgo(post.createdAt)
+
   return {
-    ...store,
-    distance: roundToDecimals(distance, 2)
+    ...post,
+    isLiked,
+    isBookmarked,
+    engagementRate,
+    timeAgo,
+    author: undefined // Would come from user data
   }
 }
 
 /**
- * Flatten store address object
+ * Add media data to post
  */
-export function flattenStoreAddress<T extends Record<string, unknown>>(
-  store: T
-): T & { 
-  addressStreet?: string
-  addressCity?: string
-  addressState?: string
-  addressZip?: string
-  addressCountry?: string
-} {
-  const address = store.addressJson
-  if (!address || typeof address !== 'object') {
-    return store
-  }
+export function addMediaToPost(post: PostResponse): PostWithMedia {
+  const mediaItems = processMediaUrls(post.mediaUrls)
+  const hasMedia = mediaItems.length > 0
+  const mediaCount = mediaItems.length
 
-  const addressObj = address as Record<string, unknown>
-  
   return {
-    ...store,
-    addressStreet: (addressObj.street as string) ?? (addressObj.addressStreet as string),
-    addressCity: (addressObj.city as string) ?? (addressObj.addressCity as string),
-    addressState: (addressObj.state as string) ?? (addressObj.addressState as string),
-    addressZip: (addressObj.zip as string) ?? (addressObj.addressZip as string),
-    addressCountry: (addressObj.country as string) ?? (addressObj.addressCountry as string) ?? 'US'
+    ...post,
+    mediaItems,
+    hasMedia,
+    mediaCount
   }
 }
 
+// ============================================
+// Comment Transformers
+// ============================================
+
 /**
- * Add fees to store object
+ * Add user data to comment
  */
-export function addFeesToStore<T extends Record<string, unknown>>(
-  store: T,
-  fees: { deliveryFee?: number; serviceFee?: number; taxRate?: number }
-): T & { 
-  deliveryFee?: number
-  serviceFee?: number
-  taxRate?: number
-} {
+export function addUserToComment(comment: CommentResponse): CommentWithUser {
+  const timeAgo = getTimeAgo(comment.createdAt)
+  const isEdited = comment.updatedAt !== comment.createdAt
+  const replyCount = 0 // Would come from comment data
+
   return {
-    ...store,
-    deliveryFee: fees.deliveryFee,
-    serviceFee: fees.serviceFee,
-    taxRate: fees.taxRate
-  }
-}
-
-/**
- * Add name to user object
- */
-export function addNameToUser<T extends Record<string, unknown>>(
-  user: T,
-  name: string
-): T & { name: string } {
-  return {
-    ...user,
-    name: toTitleCase(name.trim())
+    ...comment,
+    timeAgo,
+    isEdited,
+    replyCount,
+    author: undefined // Would come from user data
   }
 }
 
 // ============================================
-// String Transformation Functions
+// Utility Functions
 // ============================================
 
 /**
- * Convert string to title case
+ * Calculate distance between two coordinates using Haversine formula
  */
-export function toTitleCase(str: string): string {
-  return str.replaceAll(/\w\S*/g, (txt) => 
-    txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
-  )
+export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371 // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 /**
- * Convert string to slug
+ * Format store address
  */
-export function toSlug(str: string): string {
-  let result = str
-    .toLowerCase()
-    .trim()
-    .replaceAll(/[^\s\w-]/g, '')
-    .replaceAll(/[\s_-]+/g, '-')
-    .replaceAll(/^-+/, '')
+export function formatStoreAddress(store: StoreResponse): string {
+  const parts = [
+    store.addressStreet,
+    store.addressCity,
+    store.addressState,
+    store.addressZip
+  ].filter(Boolean)
   
-  // Remove trailing dashes more efficiently
-  while (result.endsWith('-')) {
-    result = result.slice(0, -1)
+  return parts.join(', ')
+}
+
+/**
+ * Format address
+ */
+export function formatAddress(address: AddressResponse): string {
+  const parts = [
+    address.line1,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country
+  ].filter(Boolean)
+  
+  return parts.join(', ')
+}
+
+/**
+ * Format price
+ */
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(price)
+}
+
+/**
+ * Get user initials
+ */
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+/**
+ * Get user role display name
+ */
+export function getUserRoleDisplayName(role: string): string {
+  const roleMap: Record<string, string> = {
+    'USER': 'Customer',
+    'VENDOR': 'Vendor',
+    'ADMIN': 'Administrator'
   }
-  
-  return result
+  return roleMap[role] || role
 }
 
 /**
- * Truncate string to specified length
+ * Get user permissions
  */
-export function truncateString(str: string, length: number, suffix = '...'): string {
-  if (str.length <= length) return str
-  return str.slice(0, Math.max(0, length - suffix.length)) + suffix
-}
-
-// ============================================
-// Number Transformation Functions
-// ============================================
-
-/**
- * Format number with commas
- */
-export function formatNumber(num: number | string): string {
-  const numeric = typeof num === 'string' ? Number.parseFloat(num) : num
-  if (Number.isNaN(numeric)) return '0'
-  
-  return new Intl.NumberFormat('en-US').format(numeric)
-}
-
-/**
- * Format percentage
- */
-export function formatPercentage(value: number, decimals = 1): string {
-  return '' + (value * 100).toFixed(decimals) + '%'
-}
-
-/**
- * Round to specified decimal places
- */
-export function roundToDecimals(num: number, decimals = 2): number {
-  return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
-}
-
-// ============================================
-// Date Transformation Functions
-// ============================================
-
-/**
- * Format date to readable string
- */
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
-  
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+export function getUserPermissions(role: string): string[] {
+  const permissionMap: Record<string, string[]> = {
+    'USER': ['read:profile', 'read:orders', 'create:orders'],
+    'VENDOR': ['read:profile', 'read:orders', 'create:orders', 'manage:store', 'manage:items'],
+    'ADMIN': ['*']
   }
-  
-  return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(dateObj)
+  return permissionMap[role] || []
 }
 
 /**
- * Format date to relative time (e.g., "2 hours ago")
+ * Get order status display name
  */
-export function formatRelativeTime(date: string | Date): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+export function getOrderStatusDisplayName(status: string): string {
+  const statusMap: Record<string, string> = {
+    'PENDING': 'Pending',
+    'CONFIRMED': 'Confirmed',
+    'PREPARING': 'Preparing',
+    'READY': 'Ready for Pickup',
+    'OUT_FOR_DELIVERY': 'Out for Delivery',
+    'DELIVERED': 'Delivered',
+    'CANCELLED': 'Cancelled'
+  }
+  return statusMap[status] || status
+}
+
+/**
+ * Get estimated delivery time
+ */
+export function getEstimatedDeliveryTime(createdAt: string): string {
+  const created = new Date(createdAt)
+  const estimated = new Date(created.getTime() + 30 * 60 * 1000) // 30 minutes
+  return estimated.toLocaleString()
+}
+
+/**
+ * Calculate order total
+ */
+export function calculateOrderTotal(order: OrderResponse): number {
+  // This would calculate from order items
+  return 0
+}
+
+/**
+ * Calculate engagement rate
+ */
+export function calculateEngagementRate(post: PostResponse): number {
+  const total = (post.likesCount || 0) + (post.commentsCount || 0) + (post.sharesCount || 0)
+  return total / 100 // Mock calculation
+}
+
+/**
+ * Get time ago string
+ */
+export function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
   const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000)
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
   
   if (diffInSeconds < 60) return 'just now'
-  if (diffInSeconds < 3600) return '' + Math.floor(diffInSeconds / 60) + ' minutes ago'
-  if (diffInSeconds < 86_400) return '' + Math.floor(diffInSeconds / 3600) + ' hours ago'
-  if (diffInSeconds < 2_592_000) return '' + Math.floor(diffInSeconds / 86_400) + ' days ago'
-  
-  return formatDate(dateObj)
-}
-
-// ============================================
-// Array Transformation Functions
-// ============================================
-
-/**
- * Transform array items with mapping function
- */
-export function transformArray<T, U>(
-  array: T[],
-  transformer: (item: T, index: number) => U
-): U[] {
-  return array.map((item, index) => transformer(item, index))
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+  if (diffInSeconds < 86_400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+  return `${Math.floor(diffInSeconds / 86_400)}d ago`
 }
 
 /**
- * Group array items by key
+ * Process media URLs
  */
-export function groupBy<T, K extends keyof T>(
-  array: T[],
-  key: K
-): Record<string, T[]> {
-  return array.reduce((groups, item) => {
-    const groupKey = String(item[key])
-    if (!groups[groupKey]) {
-      groups[groupKey] = []
-    }
-    groups[groupKey].push(item)
-    return groups
-  }, {} as Record<string, T[]>)
-}
-
-/**
- * Sort array by key
- */
-export function sortBy<T, K extends keyof T>(
-  array: T[],
-  key: K,
-  direction: 'asc' | 'desc' = 'asc'
-): T[] {
-  return [...array].sort((a, b) => {
-    const aVal = a[key]
-    const bVal = b[key]
-    
-    if (aVal < bVal) return direction === 'asc' ? -1 : 1
-    if (aVal > bVal) return direction === 'asc' ? 1 : -1
-    return 0
-  })
-}
-
-// ============================================
-// Object Transformation Functions
-// ============================================
-
-/**
- * Pick specific keys from object
- */
-export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  const result = {} as Pick<T, K>
-  for (const key of keys) {
-    if (key in obj) {
-      result[key] = obj[key]
-    }
-  }
-  return result
-}
-
-/**
- * Omit specific keys from object
- */
-export function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
-  const result = { ...obj }
-  for (const key of keys) {
-    delete result[key]
-  }
-  return result
-}
-
-/**
- * Deep merge objects
- */
-export function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
-  const result = { ...target }
-  
-  for (const key in source) {
-    result[key] = source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) ? deepMerge(result[key] || {}, source[key]) as T[Extract<keyof T, string>] : source[key] as T[Extract<keyof T, string>];
-  }
-  
-  return result
+export function processMediaUrls(mediaUrls: Record<string, unknown>): {
+  id: string
+  url: string
+  type: 'image' | 'video' | 'youtube' | 'link'
+  thumbnail?: string
+  duration?: number
+  dimensions?: { width: number; height: number }
+}[] {
+  // This would process the mediaUrls object into structured media items
+  return []
 }

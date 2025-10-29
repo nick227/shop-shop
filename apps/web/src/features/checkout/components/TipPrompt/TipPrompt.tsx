@@ -23,7 +23,7 @@ export function TipPrompt({
   isProcessing = false}: TipPromptProps) {
   const [amount, setAmount] = useState('')
   const [customAmount, setCustomAmount] = useState('')
-  const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined)
+  const [selectedPreset, setSelectedPreset] = useState<string | undefined>()
 
   const presetAmounts = [5, 10, 15, 20, 25]
 

@@ -27,9 +27,9 @@ export interface UseLocationReturn {
 }
 
 export function useLocation(): UseLocationReturn {
-  const [currentLocation, setCurrentLocation] = useState<LocationData | undefined>(undefined)
+  const [currentLocation, setCurrentLocation] = useState<LocationData | undefined>()
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<string | undefined>()
   const [locationHistory, setLocationHistory] = useState<LocationData[]>([])
   const [preferences, setPreferences] = useState<LocationPreferences>(locationService.getPreferences())
 

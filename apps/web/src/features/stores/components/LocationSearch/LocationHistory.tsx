@@ -12,7 +12,7 @@ interface LocationHistoryProps {
 
 export function LocationHistory({ history, onSelect, onSetDefault }: LocationHistoryProps) {
   if (history.length === 0) {
-    return undefined
+    return
   }
 
   const formatLocationName = (location: LocationData): string => {

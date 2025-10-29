@@ -4,28 +4,21 @@
  */
 import type { FormEvent } from 'react';
 import { useState } from 'react'
-import { z } from 'zod'
 import { Button, Input, Alert } from '@ui'
 import { useAuth } from '@hooks/useAuth'
 import { useFormValidation } from '@hooks/useFormValidation'
-import { emailSchema, passwordSchema } from '@utils/validation'
+import { signupFormSchema, type SignupFormData } from '@/schemas/ConsistentSchemas'
 
 export interface SignupFormProps {
   onSuccess?: () => void
 }
-
-const signupSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  name: z.string().optional(),
-})
 
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const { signup, isSigningUp, signupError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const { errors, validate } = useFormValidation(signupSchema)
+  const { errors, validate } = useFormValidation(signupFormSchema)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()

@@ -55,7 +55,7 @@ export function useOptimizedMapData({
     }
 
     // Find nearest store in single pass (avoid sorting)
-    let nearestStore: StoreWithDistance | undefined = undefined
+    let nearestStore: StoreWithDistance | undefined
     let nearestDistance = Infinity
     for (const store of validStores) {
       if (store.distance !== undefined && store.distance < nearestDistance) {

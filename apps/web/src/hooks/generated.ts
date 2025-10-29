@@ -182,7 +182,7 @@ export const useDeleteAddress = addressesHooks.useDelete
 // Bundles Hooks
 // ============================================
 // @ts-expect-error - Custom update signature, acceptable (works at runtime)
-const bundlesHooks = createResourceHooks<Bundle, CreateBundleInput>('bundles', apiWrapper.bundles)
+const bundlesHooks = createResourceHooks<Bundle, CreateBundleInput, Partial<CreateBundleInput>>('bundles', apiWrapper.bundles)
 
 /**
  * Fetch list of bundles

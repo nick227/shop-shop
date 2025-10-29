@@ -20,7 +20,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   // Early return if not authenticated
   if (!isAuthenticated) {
-    return undefined
+    return
   }
 
   const handleCheckout = () => {
@@ -80,7 +80,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               {(() => {
                 try {
                   const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
-                  return items.map((item: any) => (
+                  return items.map((item: { id: string; titleSnapshot?: string; price?: number; quantity?: number }) => (
                     <CartItem
                       key={item.id}
                       item={item}

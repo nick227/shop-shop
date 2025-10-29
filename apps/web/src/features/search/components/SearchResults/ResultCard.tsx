@@ -33,7 +33,7 @@ function ResultCardComponent({
       return renderProductCard(result, variant, onProductClick)
     }
     default: {
-      return undefined
+      return
     }
   }
 }

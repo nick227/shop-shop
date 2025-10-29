@@ -3,7 +3,7 @@
  * Global test configuration and utilities
  */
 
-import { expect } from 'vitest'
+import { expect, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
 // Extend expect with custom matchers
@@ -22,12 +22,16 @@ global.IntersectionObserver = class IntersectionObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-}
+  takeRecords() { return [] }
+  root = null
+  rootMargin = ''
+  thresholds = []
+} as any
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
     onchange: null,

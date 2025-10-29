@@ -11,7 +11,7 @@ import type { LocationCoordinates } from '../../../../types/component-props'
 import { formatDistance } from '../../../../utils/format'
 import { hasValidCoordinates } from '../../../../utils/storeAccessors'
 import { styles } from '../../../../utils/tailwind-classes'
-import { ObjectPool } from '../../../../utils/performance/memory-pool'
+import { ObjectPool } from '../../../../utils/memory/ObjectPool'
 import { useMapData } from '../../../../hooks/useMapData'
 
 // Object pools for marker and icon reuse (performance optimization)
@@ -110,6 +110,15 @@ function PureLeafletMap({
       return
     }
 
+    // Validate center coordinates before creating map
+    if (!center || !Array.isArray(center) || center.length !== 2 || 
+        typeof center[0] !== 'number' || typeof center[1] !== 'number' ||
+        Number.isNaN(center[0]) || Number.isNaN(center[1])) {
+      console.error('Invalid center coordinates for map:', center)
+      console.error('Map data context:', { stores, userLocation, radiusMiles })
+      return
+    }
+
     try {
       const map = L.map(container, {
         center,
@@ -173,6 +182,14 @@ function PureLeafletMap({
   useEffect(() => {
     if (!mapRef.current || !userLocation) return
 
+    // Validate user location coordinates
+    const lat = Number(userLocation.latitude)
+    const lng = Number(userLocation.longitude)
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      console.error('Invalid user location coordinates:', userLocation)
+      return
+    }
+
     const map = mapRef.current
 
     try {
@@ -194,14 +211,14 @@ function PureLeafletMap({
         iconAnchor: [15, 15]
       })
 
-      userMarkerRef.current = L.marker([Number(userLocation.latitude), Number(userLocation.longitude)], { icon: userIcon })
+      userMarkerRef.current = L.marker([lat, lng], { icon: userIcon })
         .addTo(map)
         .bindPopup('<div><strong>Your Location</strong></div>')
 
       // Add search radius circle
       if (radiusMiles) {
         const radiusMeters = radiusMiles * 1609.34 // Convert miles to meters
-        circleRef.current = L.circle([userLocation.latitude, userLocation.longitude], {
+        circleRef.current = L.circle([lat, lng], {
           radius: radiusMeters,
           color: '#10b981',
           fillColor: '#10b981',
@@ -216,11 +233,19 @@ function PureLeafletMap({
 
   // Optimized marker creation with object pooling
   const createMarker = useCallback((store: StoreWithDistance, isNearest: boolean) => {
+    // Validate store coordinates
+    const lat = Number(store.latitude)
+    const lng = Number(store.longitude)
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      console.error('Invalid store coordinates:', store)
+      return null
+    }
+
     const icon = iconPool.acquire()
     icon.options.html = '<div style="background: ' + (isNearest ? '#f59e0b' : '#3b82f6') + '; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">' + (isNearest ? '★' : '🏪') + '</div>'
     
     const marker = markerPool.acquire()
-    marker.setLatLng([Number(store.latitude), Number(store.longitude)])
+    marker.setLatLng([lat, lng])
     marker.setIcon(icon)
     
     // Optimized popup content
@@ -281,8 +306,10 @@ function PureLeafletMap({
         for (const store of batch) {
           const isNearest = store.distance !== undefined && store.distance === nearestDistance
           const marker = createMarker(store, isNearest)
-          marker.addTo(map)
-          markersRef.current.push(marker)
+          if (marker) {
+            marker.addTo(map)
+            markersRef.current.push(marker)
+          }
         }
       }
     } catch (error: unknown) {
@@ -342,7 +369,7 @@ function StoreMapComponent({
             zoom={mapData.mapZoom}
             mapRef={mapRef}
             stores={mapData.validStores}
-            userLocation={userLocation!}
+            userLocation={userLocation}
             radiusMiles={radiusMiles}
             onStoreClick={onStoreClick}
           />

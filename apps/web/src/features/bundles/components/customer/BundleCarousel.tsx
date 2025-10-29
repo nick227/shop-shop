@@ -34,7 +34,7 @@ export function BundleCarousel({
   }
 
   if (bundles?.length === 0) {
-    return undefined
+    return
   }
 
   const visibleBundles = bundles.slice(currentIndex, currentIndex + itemsPerView)                                                                               

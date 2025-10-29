@@ -52,10 +52,10 @@ export function SearchBar({
   }, [])
 
   return (
-    <form onSubmit={handleSubmit} className={`${styles['searchBar']} ${className || ''}`}>
-      <div className={styles['inputWrapper']}>
+    <form onSubmit={handleSubmit} className={`${styles.searchBar} ${className || ''}`}>
+      <div className={styles.inputWrapper}>
         {/* Input type indicator */}
-        <span className={styles['inputIcon']}>
+        <span className={styles.inputIcon}>
           {inputType === 'keyword' ? '🔍' : '📍'}
         </span>
 
@@ -69,7 +69,7 @@ export function SearchBar({
             ? placeholder 
             : 'Enter ZIP code or city...'
           }
-          className={styles['input']}
+          className={styles.input}
           aria-label="Search"
         />
 
@@ -78,7 +78,7 @@ export function SearchBar({
           <button
             type="button"
             onClick={() => setQuery('')}
-            className={styles['clearButton']}
+            className={styles.clearButton}
             aria-label="Clear search"
           >
             ✕
@@ -87,12 +87,12 @@ export function SearchBar({
       </div>
 
       {/* Action buttons */}
-      <div className={styles['actions']}>
+      <div className={styles.actions}>
         {showLocationToggle && (
           <button
             type="button"
             onClick={handleInputTypeToggle}
-            className={styles['toggleButton']}
+            className={styles.toggleButton}
             aria-label={'Switch to ' + inputType === 'keyword' ? 'location' : 'keyword' + ' search'}
             title={inputType === 'keyword' ? 'Search by location' : 'Search by keyword'}
           >
@@ -103,7 +103,7 @@ export function SearchBar({
         {showFilters && (
           <button
             type="button"
-            className={styles['filterButton']}
+            className={styles.filterButton}
             aria-label="Open filters"
             title="Filters"
           >
@@ -116,7 +116,7 @@ export function SearchBar({
           variant="primary"
           size="large"
           disabled={!query.trim()}
-          className={styles['submitButton']}
+          className={styles.submitButton}
         >
           Search
         </Button>

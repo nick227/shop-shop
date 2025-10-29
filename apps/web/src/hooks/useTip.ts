@@ -23,7 +23,7 @@ export interface ProcessTipInput {
 
 export function useTip() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<string | undefined>()
 
   const createTip = async (input: CreateTipInput): Promise<TipData> => {
     setIsLoading(true)

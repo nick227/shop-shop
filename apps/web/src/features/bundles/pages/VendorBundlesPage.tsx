@@ -12,7 +12,7 @@ import type { Bundle } from '../../../api/backend-types'
 export function VendorBundlesPage() {
   const { storeId } = useParams<{ storeId: string }>()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingBundle, setEditingBundle] = useState<Bundle | undefined>(undefined)
+  const [editingBundle, setEditingBundle] = useState<Bundle | undefined>()
 
   if (!storeId) {
     return (

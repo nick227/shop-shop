@@ -7,14 +7,7 @@ import type { StoreWithDistance } from '../api/types'
 import type { LocationData } from '../types/location.types'
 import type { LocationCoordinates } from '../types/component-props'
 import { hasValidCoordinates } from '../utils/storeAccessors'
-// Simple implementation for missing function
-const processStoresOptimized = (stores: any[], userLocation: any) => ({
-  validStores: stores,
-  storeLocations: stores.map(store => ({ latitude: store.lat, longitude: store.lng })),
-  nearestStore: stores[0] || undefined,
-  minDistance: 0,
-  maxDistance: 100
-})
+import { processStoresOptimized } from '../utils/performance/optimized-loops'
 
 export interface MapData {
   validStores: StoreWithDistance[]
@@ -71,21 +64,51 @@ export function useMapData({
     lastProcessedStores.current = stores
     lastProcessedUserLocation.current = userLocation
     
+    // Filter and convert stores to the expected format for processStoresOptimized
+    const validStores = stores.filter(store => 
+      store.latitude !== null && 
+      store.longitude !== null && 
+      !isNaN(Number(store.latitude)) && 
+      !isNaN(Number(store.longitude))
+    ).map(store => ({
+      ...store,
+      latitude: Number(store.latitude),
+      longitude: Number(store.longitude)
+    }))
+    
     // Single-pass processing using optimized utility
-    const processed = processStoresOptimized(stores, {
+    const processed = processStoresOptimized(validStores, {
       findNearest: true,
       filterValid: true,
       sortByDistance: true
     })
     
-    // Calculate map center efficiently
+    // Debug logging
+    console.log('useMapData processed:', {
+      storesCount: stores.length,
+      validStoresCount: processed.validStores.length,
+      storeLocationsCount: processed.storeLocations.length,
+      userLocation,
+      processedStoreLocations: processed.storeLocations.slice(0, 3) // First 3 for debugging
+    })
+    
+    // Calculate map center efficiently with additional validation
     let mapCenter: [number, number]
-    if (userLocation) {
+    if (userLocation && 
+        typeof userLocation.latitude === 'number' && 
+        typeof userLocation.longitude === 'number' &&
+        !Number.isNaN(userLocation.latitude) && 
+        !Number.isNaN(userLocation.longitude)) {
       mapCenter = [userLocation.latitude, userLocation.longitude]
-    } else if (processed.storeLocations.length > 0 && processed.storeLocations[0]) {
+    } else if (processed.storeLocations.length > 0 && processed.storeLocations[0] && 
+               typeof processed.storeLocations[0].latitude === 'number' && 
+               typeof processed.storeLocations[0].longitude === 'number' &&
+               !Number.isNaN(processed.storeLocations[0].latitude) && 
+               !Number.isNaN(processed.storeLocations[0].longitude)) {
       // Use first store location (already sorted by distance)
       mapCenter = [processed.storeLocations[0].latitude, processed.storeLocations[0].longitude]
     } else {
+      console.warn('No valid coordinates found, using default center:', defaultCenter)
       mapCenter = defaultCenter
     }
     
@@ -107,9 +130,9 @@ export function useMapData({
     }
     
     return {
-      validStores: processed.validStores,
-      storeLocations: processed.storeLocations,
-      nearestStore: processed.nearestStore,
+      validStores: processed.validStores as unknown as StoreWithDistance[],
+      storeLocations: processed.storeLocations as LocationCoordinates[],
+      nearestStore: processed.nearestStore as unknown as StoreWithDistance | undefined,
       mapCenter,
       mapZoom,
       minDistance: processed.minDistance,
@@ -141,7 +164,7 @@ export function useOptimizedMarkers(
       distance?: number
     }[] = []
     
-    let nearestStore: StoreWithDistance | undefined = undefined
+    let nearestStore: StoreWithDistance | undefined
     let minDistance = Infinity
     
     // Process in batches for better performance

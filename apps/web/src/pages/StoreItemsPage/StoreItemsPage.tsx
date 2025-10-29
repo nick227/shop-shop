@@ -173,7 +173,7 @@ export default function StoreItemsPage() {
             {paginatedList.items.map((item) => (
               <ItemCard
                 key={item.id}
-                item={item as ItemResponse}
+                item={item}
                 onEdit={() => navigate(`/vendor/stores/${storeId}/items/${item.id}/edit`)}
                 onDelete={() => handleDeleteItem(item.id, item.title)}
                 isDeleting={deleteItemMutation.isPending}

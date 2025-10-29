@@ -1,6 +1,11 @@
 /**
- * Zod Schemas for API Validation
- * Comprehensive schemas for all API endpoints
+ * DEPRECATED: Manual Zod Schemas for API Validation
+ * 
+ * ⚠️  DEPRECATED - Use UnifiedSchemas instead
+ * This file is kept for backward compatibility only
+ * 
+ * @deprecated Use './schemas/UnifiedSchemas' for new code
+ * @see ./schemas/UnifiedSchemas.ts
  */
 
 import { z } from 'zod'
@@ -11,7 +16,7 @@ import { z } from 'zod'
 
 export const IdSchema = z.string().min(1, 'ID is required')
 export const EmailSchema = z.string().email('Invalid email format')
-export const PhoneSchema = z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone format')
+export const PhoneSchema = z.string().regex(/^\+?[\d\s()\-]+$/, 'Invalid phone format')
 export const UrlSchema = z.string().url('Invalid URL format')
 export const DateStringSchema = z.string().datetime('Invalid date format')
 

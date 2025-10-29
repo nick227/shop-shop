@@ -12,22 +12,24 @@ const mockPosts: PostResponse[] = [
   {
     id: '1',
     content: 'Check out our new menu items! 🍕',
-    authorId: 'user1',
     storeId: 'store1',
+    mediaUrls: {},
+    likesCount: 0,
+    commentsCount: 0,
+    sharesCount: 0,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isLiked: false,
-    storeName: 'Sample Store'
+    updatedAt: new Date().toISOString()
   },
   {
     id: '2',
     content: 'Fresh ingredients delivered daily! 🥬',
-    authorId: 'user2',
     storeId: 'store1',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    isLiked: true,
-    storeName: 'Sample Store'
+    mediaUrls: {},
+    likesCount: 5,
+    commentsCount: 2,
+    sharesCount: 1,
+    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 86_400_000).toISOString()
   }
 ]
 
@@ -70,12 +72,13 @@ export const useCreatePost = () => {
       const newPost: PostResponse = {
         id: Date.now().toString(),
         content: params.content,
-        authorId: 'current-user',
         storeId: params.storeId,
+        mediaUrls: params.mediaUrls ? Object.fromEntries(params.mediaUrls.map((url, index) => [index.toString(), url])) : {},
+        likesCount: 0,
+        commentsCount: 0,
+        sharesCount: 0,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isLiked: false,
-        storeName: 'Current Store'
+        updatedAt: new Date().toISOString()
       }
       
       // In a real implementation, this would make an API call

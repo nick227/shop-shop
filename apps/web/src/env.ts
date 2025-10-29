@@ -17,12 +17,12 @@ function validateEnv() {
   try {
     return envSchema.parse({
       VITE_API_URL: import.meta.env.VITE_API_URL,
-      VITE_WS_URL: import.meta.env['VITE_WS_URL'],
-      VITE_STRIPE_PUBLISHABLE_KEY: import.meta.env['VITE_STRIPE_PUBLISHABLE_KEY'],
-      VITE_PORT: import.meta.env['VITE_PORT'],
+      VITE_WS_URL: import.meta.env.VITE_WS_URL,
+      VITE_STRIPE_PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+      VITE_PORT: import.meta.env.VITE_PORT,
       MODE: import.meta.env.MODE,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Invalid environment variables:', error)
     throw new Error('Environment validation failed. Check your .env file.')
   }

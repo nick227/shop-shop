@@ -29,7 +29,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
 
       // Fetch orders for all stores
       const ordersPromises = vendorStores.map(async () => {
-        const allOrders = await orders.list() as OrderResponse[]
+        const allOrders = await orders.list()
         // Filter by status if provided
         if (options.status) {
           return allOrders.filter((order: OrderResponse) => order.status === options.status)
@@ -67,7 +67,7 @@ export function usePendingOrderCount() {
       
       // Fetch orders for all stores
       const ordersPromises = vendorStores.map(async () => {
-        return await orders.list() as OrderResponse[]
+        return await orders.list()
       })
 
       const ordersResponses = await Promise.all(ordersPromises)

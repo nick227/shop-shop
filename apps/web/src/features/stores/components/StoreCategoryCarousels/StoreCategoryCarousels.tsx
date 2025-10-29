@@ -104,7 +104,7 @@ export function StoreCategoryCarousels() {
     <div className="space-y-8">
       {CATEGORIES.map(category => {
         const categoryStores = categorizedStores[category.title]
-        if (!categoryStores || categoryStores.length === 0) return undefined;
+        if (categoryStores?.length === 0) return;
         return (
           <StoreCarousel
             key={category.title}

@@ -49,7 +49,7 @@ const getItemImageUrl = (item: ItemResponse): string | undefined => {
 interface BundleItem {
   itemId: string
   quantity: number
-  sortIndex: number
+  sortIndex?: number
 }
 
 interface BundleItemSelectorProps {

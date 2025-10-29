@@ -9,9 +9,9 @@ import { AlertCircle, Inbox } from 'lucide-react'
  */
 
 export interface DataStateProps<T> {
-  data: T[] | undefined | undefined
+  data: T[] | undefined  
   isLoading: boolean
-  error: Error | undefined | undefined
+  error: Error | undefined  
   children: (data: T[]) => ReactNode
   emptyMessage?: string
   errorMessage?: string
