@@ -1,8 +1,8 @@
-import type { RiverPost } from '../../../../api/types'
-import { Card } from '../../../../components/ui'
+import type { RiverPost } from '@api/types'
+import { Card } from '@shared/ui/primitives'
 import { PostMedia } from '../PostMedia'
 import { PostActions } from '../PostActions'
-import { formatRelativeTime } from '../../../../utils/format'
+import { formatRelativeTime } from '@shared/lib/utils/format'
 
 interface PostCardProps {
   readonly post: RiverPost

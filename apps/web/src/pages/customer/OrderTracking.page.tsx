@@ -6,20 +6,20 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { ordersApi } from '../../api/orders'
-import { useCustomerRealtimeOrder } from '../../hooks/useCustomerRealtimeOrder'
-import { useTip } from '../../hooks/useTip'
-import { useStore } from '../../hooks/generated'
-import { Button, Spinner, Badge } from '../../components/ui'
-import { TipPrompt } from '../../features/checkout/components/TipPrompt'
-import { OrderProgressTracker } from '../../features/orders/components/OrderProgressTracker'
-import { OrderDetailsCard } from '../../features/orders/components/OrderDetailsCard'
+import { ordersApi } from '@api/orders'
+import { useCustomerRealtimeOrder } from '@shared/hooks/useCustomerRealtimeOrder'
+import { useTip } from '@shared/hooks/useTip'
+import { useStore } from '@api/hooks/generated'
+import { Button, Spinner, Badge } from '@shared/ui/primitives'
+import { TipPrompt } from '@features/checkout/components/TipPrompt'
+import { OrderProgressTracker } from '@features/orders/components/OrderProgressTracker'
+import { OrderDetailsCard } from '@features/orders/components/OrderDetailsCard'
 import { 
   getOrderAge, 
   getEstimatedReadyTime
-} from '../../utils/orderHelpers'
-import type { OrderStatus, DeliveryType } from '../../api/backend-types'
-import { mapOrder } from '../../api/backend-types'
+} from '@shared/lib/utils/orderHelpers'
+import type { OrderStatus, DeliveryType } from '@api/backend-types'
+import { mapOrder } from '@api/backend-types'
 
 // Helper function to determine badge variant
 function getBadgeVariant(status: OrderStatus, isCanceled: boolean, isCompleted: boolean) {

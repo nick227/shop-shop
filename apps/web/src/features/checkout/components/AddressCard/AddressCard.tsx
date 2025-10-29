@@ -2,7 +2,7 @@
  * AddressCard - Display address with edit/delete actions
  */
 import { Card, Button } from '@shared/ui/primitives'
-import type { Address } from '../../../../api/backend-types'
+import type { Address } from '@api/backend-types'
 import { styles } from '@shared/lib/tailwind-classes'
 
 export interface AddressCardProps {

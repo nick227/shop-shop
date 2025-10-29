@@ -5,15 +5,15 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ordersApi } from '../../api/orders'
-import { useVendorRealtimeOrders } from '../../hooks/vendor/useVendorRealtimeOrders'
-import { useAuth } from '../../hooks/useAuth'
-import { usePagination } from '../../hooks/usePagination'
-import { Button, Badge, Spinner, Pagination } from '../../components/ui'
-import { VendorOrderCard } from '../../features/orders/components/vendor'
-import { formatPriceCurrency } from '../../utils/format'
+import { ordersApi } from '@api/orders'
+import { useVendorRealtimeOrders } from '@shared/hooks/vendor/useVendorRealtimeOrders'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePagination } from '@shared/hooks/usePagination'
+import { Button, Badge, Spinner, Pagination } from '@shared/ui/primitives'
+import { VendorOrderCard } from '@features/orders/components/vendor'
+import { formatPriceCurrency } from '@shared/lib/utils/format'
 import { toast } from 'sonner'
-import type { OrderResponse } from '../../api/types'
+import type { OrderResponse } from '@api/types'
 import type { UpdateOrderRequestStatusEnum, UpdateOrderRequest } from '@api/types'
 
 type OrderStatus = UpdateOrderRequestStatusEnum

@@ -1,5 +1,5 @@
-import type { RiverPost } from '../../../../api/types'
-import { formatCount } from '../../../../utils/media'
+import type { RiverPost } from '@api/types'
+import { formatCount } from '@shared/lib/utils/media'
 
 interface PostActionsProps {
   readonly post: RiverPost

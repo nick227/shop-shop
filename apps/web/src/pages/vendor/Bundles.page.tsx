@@ -5,9 +5,9 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PageHeader } from '@layouts/PageHeader'
-import { BundleList } from '../components/BundleList'
-import { BundleFormModal } from '../components/BundleFormModal'
-import type { Bundle } from '../../../api/backend-types'
+import { BundleList } from '@features/bundles/components/BundleList'
+import { BundleFormModal } from '@features/bundles/components/BundleFormModal'
+import type { Bundle } from '@api/backend-types'
 
 export function VendorBundlesPage() {
   const { storeId } = useParams<{ storeId: string }>()

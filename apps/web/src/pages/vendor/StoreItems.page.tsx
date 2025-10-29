@@ -4,13 +4,13 @@
 import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../../api/client'
+import { apiClient } from '@api/client'
 import { toast } from 'sonner'
-import { handleApiError } from '../../api/errors'
-import { Button, SearchInput, Badge, Spinner, Pagination } from '../../components/ui'
-import { usePaginatedList } from '../../hooks/usePaginatedList'
-import type { ItemResponse } from '../../api/backend-types'
-import { formatCurrency, parsePrice } from '../../utils/format'
+import { handleApiError } from '@api/errors'
+import { Button, SearchInput, Badge, Spinner, Pagination } from '@shared/ui/primitives'
+import { usePaginatedList } from '@shared/hooks/usePaginatedList'
+import type { ItemResponse } from '@api/backend-types'
+import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 
 export default function StoreItemsPage() {
   const { storeId } = useParams<{ storeId: string }>()

@@ -3,8 +3,8 @@
  * Extracts section definitions from StoreFormPage for cleaner code
  */
 import { Input, TextArea, Checkbox } from '@shared/ui/primitives'
-import { CharCount, FormRow, CheckboxGroup } from '../../components/templates'
-import type { FormSection } from '../../components/templates'
+import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
+import type { FormSection } from '@shared/ui/templates'
 import type { StoreFormData } from '@api/types'
 
 export function createStoreFormSections(
