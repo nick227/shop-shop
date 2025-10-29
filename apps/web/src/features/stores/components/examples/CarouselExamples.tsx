@@ -5,7 +5,7 @@
 import { Carousel } from '@shared/ui/primitives'
 import { StoreCardCompact, StoreCardExpanded } from '../StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
-import type { StoreResponse, ItemResponse, StoreWithDistance, StoreClickHandler, ProductClickHandler } from '../../../../api/backend-types'
+import type { StoreResponse, ItemResponse, StoreWithDistance, StoreClickHandler, ProductClickHandler } from '@api/backend-types'
 
 interface ExampleProps {
   stores: StoreWithDistance[]

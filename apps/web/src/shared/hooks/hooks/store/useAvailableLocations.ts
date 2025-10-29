@@ -3,7 +3,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import type { StoreResponse, Store } from '../../api/backend-types'
+import type { StoreResponse, Store } from '@api/backend-types'
 
 interface LocationInfo {
   cities: { city: string; state: string; count: number }[]

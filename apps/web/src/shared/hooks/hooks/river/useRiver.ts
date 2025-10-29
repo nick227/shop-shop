@@ -3,7 +3,7 @@
  * Handles fetching and managing river posts for stores
  */
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../../api/client'
+import { apiClient } from '@api/client'
 import { createQueryErrorHandler, queryRetryConfig } from '../utils/errorHandling'
 
 interface UseRiverOptions {
