@@ -26,9 +26,9 @@ import type {
   ListUsers200ResponseDataInner,
   AuthResponse as SDKAuthResponse,
   PaymentIntentResponse as SDKPaymentIntentResponse,
-  TipResponse as SDKTipResponse,
+  SDKTipResponse as SDKTipResponse,
   UserPublicResponse as SDKUserPublicResponse
-} from '@packages/sdk'
+} from './types'
 
 import type {
   StoreResponse,
@@ -39,8 +39,7 @@ import type {
   CartResponse,
   UserResponse,
   BundleItem,
-  BundlePricing,
-  MediaItem
+  BundlePricing
 } from './backend-types'
 
 import type {
@@ -185,9 +184,6 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
   const deliveryFee = extractNumber(fees, 'deliveryFee', 0)
   const minOrder = extractNumber(fees, 'minOrder', 0)
   
-  // Parse media JSON
-  const media = parseJsonField(sdk, 'media', [])
-  
   return {
     ...sdk,
     id,
@@ -195,7 +191,7 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
     updatedAt: timestamps.updatedAt,
     deliveryFee,
     minOrder,
-    media: Array.isArray(media) ? media as MediaItem[] : [],
+    distance: undefined, // Add missing distance property
     // Map address fields
     city: sdk.addressCity ?? undefined,
     state: sdk.addressState ?? undefined,

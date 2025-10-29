@@ -8,12 +8,12 @@
  */
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { useAuthStore } from '@stores/authStore'
-import { useUrlLocation } from '@hooks/useUrlLocation'
-import { useStoreSearch } from '@hooks/useStoreSearch'
-import { useGeocoding } from '@hooks/useGeocoding'
-import { useLocationDisplay } from '@hooks/useLocationDisplay'
-import { useSearchOrchestration } from '@hooks/useSearchOrchestration'
+import { useAuthStore } from '../../stores/authStore'
+import { useUrlLocation } from '../../hooks/useUrlLocation'
+import { useStoreSearch } from '../../hooks/useStoreSearch'
+import { useGeocoding } from '../../hooks/useGeocoding'
+import { useLocationDisplay } from '../../hooks/useLocationDisplay'
+import { useSearchOrchestration } from '../../hooks/useSearchOrchestration'
 import { 
   LocationSearch, 
   NewestStores,
@@ -22,7 +22,7 @@ import {
   AvailableLocations
 } from '@features/stores/components'
 import type { StoreWithDistance } from '@api/types'
-import type { LocationData } from '../types/location.types'
+import type { LocationData } from '../../types/location.types'
 import { usePromotionalCopy } from '@features/content/hooks/usePromotionalCopy'
 import {
   Header,
@@ -32,7 +32,7 @@ import {
   ResultsSection,
   ResultsContainer,
   FeaturedBundles
-} from './HomePage/components'
+} from '../../features/home/components'
 import { PageCompositionFactory, LayoutCompositionFactory } from '@components/composition'
 
 // Radius policy constants - single source of truth

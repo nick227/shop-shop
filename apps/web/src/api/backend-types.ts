@@ -600,10 +600,7 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
     updatedAt: timestamps.updatedAt,
     deliveryFee: extractNumber(sdk, 'deliveryFee'),
     minOrder: extractNumber(sdk, 'minOrder'),
-    distance: extractNumber(sdk, 'distance'),
-    // Computed from fees JSON,
-    deliveryFee: (sdk.fees as any)?.deliveryFee ?? 0,,
-    minOrder: (sdk.fees as any)?.minOrder ?? 0,,
+    distance: extractNumber(sdk, 'distance')
   }
 }
 
