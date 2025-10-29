@@ -3,7 +3,7 @@
  */
 import React, { forwardRef } from 'react'
 import { GeocodingError, DebugInfo } from './index'
-import type { LocationData } from '../../../types/location.types'
+import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 
 interface ResultsSectionProps {

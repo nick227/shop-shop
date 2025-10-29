@@ -2,8 +2,8 @@
  * ResultsContainer - Component for rendering search results based on status;
  */
 import { LoadingState, ErrorState, NoResults, SearchResults } from './index'
-import type { LocationData } from '../../../types/location.types'
-import type { StoreWithDistance } from '../../../api/types'
+import type { LocationData } from '@shared/types'
+import type { StoreWithDistance } from '@api/types'
 
 interface ResultsContainerProps {
   searchStatus: 'idle' | 'loading' | 'error' | 'no-results' | 'results'

@@ -3,7 +3,7 @@
  */
 import { useState, useRef } from 'react'
 import { Button } from '@shared/ui/primitives'
-import { useMediaUpload, useMediaList, useMediaDelete } from '../../hooks/vendor'
+import { useMediaUpload, useMediaList, useMediaDelete } from '@shared/hooks/vendor'
 import { toast } from 'sonner'
 import type { MediaApiResponse } from '@api/types'
 import { 
@@ -11,7 +11,7 @@ import {
   shouldCompressFile, 
   formatFileSize,
   isSignificantCompression 
-} from '../../utils/media-compression'
+} from '@shared/lib/utils/media-compression'
 
 interface MediaUploaderProps {
   readonly storeId?: string

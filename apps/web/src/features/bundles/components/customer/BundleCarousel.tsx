@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { Button } from '@shared/ui/primitives'
 import { BundleCard } from './BundleCard'
-import type { Bundle } from '../../../../api/backend-types'
+import type { Bundle } from '@api/backend-types'
 
 export interface BundleCarouselProps {
   readonly bundles: Bundle[]

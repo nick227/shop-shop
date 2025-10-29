@@ -2,8 +2,8 @@
  * FeaturedBundles - Featured bundles section for home page
  */
 import React from 'react'
-import { BundleCarousel } from '../../../features/bundles/components/customer'
-import { useBundles } from '../../../hooks/generated'
+import { BundleCarousel } from '@features/bundles/components/customer'
+import { useBundles } from '@api/hooks/generated'
 
 interface FeaturedBundlesProps {
   className?: string
