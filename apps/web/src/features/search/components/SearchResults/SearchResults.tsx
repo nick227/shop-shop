@@ -4,7 +4,7 @@
  */
 import { memo, useMemo } from 'react'
 import { Carousel } from '@shared/ui/primitives'
-import { groupAndTransformResults } from '../../utils/searchOptimizations'
+import { groupAndTransformResults } from '@shared/lib/utils/searchOptimizations'
 import { ResultCard, type CardVariant } from './ResultCard'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'

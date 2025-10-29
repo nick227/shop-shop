@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { validateSchemaConsistency, getSchemaUsageStats, generateConsistencyReport } from '../SchemaConsistencyValidator'
-import { schemas as unifiedSchemas } from '../../api/schemas/UnifiedSchemas'
+import { schemas as unifiedSchemas } from '@api/schemas/UnifiedSchemas'
 import { schemas as consistentSchemas } from '../ConsistentSchemas'
 
 describe('Schema Consistency', () => {

@@ -13,9 +13,6 @@
 import type {
   ListAddresss200ResponseDataInner,
   ListBundles200ResponseDataInner,
-  ListBundles200ResponseDataInner,
-  ListBundles200ResponseDataInner,
-  ListBundles200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListItems200ResponseDataInner,
   ListOrders200ResponseDataInner,
@@ -29,67 +26,49 @@ import type {
 // ========================================
 
 
-export type AddressesResponse = ListAddresss200ResponseDataInner & {
+export type AddressResponse = ListAddresss200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type BundlesResponse = ListBundles200ResponseDataInner & {
+export type BundleResponse = ListBundles200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type BundlesResponse = ListBundles200ResponseDataInner & {
+export type CartResponse = ListCarts200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type BundlesResponse = ListBundles200ResponseDataInner & {
+export type ItemResponse = ListItems200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type BundlesResponse = ListBundles200ResponseDataInner & {
+export type OrderResponse = ListOrders200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type CartsResponse = ListCarts200ResponseDataInner & {
+export type PromotionResponse = ListPromotions200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type ItemsResponse = ListItems200ResponseDataInner & {
+export type StoreResponse = ListStores200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
-export type OrdersResponse = ListOrders200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type PromotionsResponse = ListPromotions200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type StoresResponse = ListStores200ResponseDataInner & {
-  id: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type UsersResponse = ListUsers200ResponseDataInner & {
+export type UserResponse = ListUsers200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -382,7 +361,7 @@ function parseJsonField<T>(data: unknown, field: string, fallback: T): T {
 
 // ========================================
 
-export function mapAddresses(sdk: ListAddresss200ResponseDataInner): AddressesResponse {
+export function mapAddresses(sdk: ListAddresss200ResponseDataInner): AddressResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'addresses-' + Date.now())
 
@@ -395,7 +374,7 @@ export function mapAddresses(sdk: ListAddresss200ResponseDataInner): AddressesRe
 }
 
 
-export function mapBundles(sdk: ListBundles200ResponseDataInner): BundlesResponse {
+export function mapBundles(sdk: ListBundles200ResponseDataInner): BundleResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'bundles-' + Date.now())
 
@@ -408,46 +387,7 @@ export function mapBundles(sdk: ListBundles200ResponseDataInner): BundlesRespons
 }
 
 
-export function mapBundles(sdk: ListBundles200ResponseDataInner): BundlesResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'bundles-' + Date.now())
-
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
-}
-
-
-export function mapBundles(sdk: ListBundles200ResponseDataInner): BundlesResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'bundles-' + Date.now())
-
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
-}
-
-
-export function mapBundles(sdk: ListBundles200ResponseDataInner): BundlesResponse {
-  const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, 'bundles-' + Date.now())
-
-  return {
-    ...sdk,
-    id,
-    createdAt: timestamps.createdAt,
-    updatedAt: timestamps.updatedAt,
-  }
-}
-
-
-export function mapCarts(sdk: ListCarts200ResponseDataInner): CartsResponse {
+export function mapCarts(sdk: ListCarts200ResponseDataInner): CartResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'carts-' + Date.now())
 
@@ -460,7 +400,7 @@ export function mapCarts(sdk: ListCarts200ResponseDataInner): CartsResponse {
 }
 
 
-export function mapItems(sdk: ListItems200ResponseDataInner): ItemsResponse {
+export function mapItems(sdk: ListItems200ResponseDataInner): ItemResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'items-' + Date.now())
 
@@ -473,7 +413,7 @@ export function mapItems(sdk: ListItems200ResponseDataInner): ItemsResponse {
 }
 
 
-export function mapOrders(sdk: ListOrders200ResponseDataInner): OrdersResponse {
+export function mapOrders(sdk: ListOrders200ResponseDataInner): OrderResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'orders-' + Date.now())
 
@@ -486,7 +426,7 @@ export function mapOrders(sdk: ListOrders200ResponseDataInner): OrdersResponse {
 }
 
 
-export function mapPromotions(sdk: ListPromotions200ResponseDataInner): PromotionsResponse {
+export function mapPromotions(sdk: ListPromotions200ResponseDataInner): PromotionResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'promotions-' + Date.now())
 
@@ -499,7 +439,7 @@ export function mapPromotions(sdk: ListPromotions200ResponseDataInner): Promotio
 }
 
 
-export function mapStores(sdk: ListStores200ResponseDataInner): StoresResponse {
+export function mapStores(sdk: ListStores200ResponseDataInner): StoreResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'stores-' + Date.now())
 
@@ -512,7 +452,7 @@ export function mapStores(sdk: ListStores200ResponseDataInner): StoresResponse {
 }
 
 
-export function mapUsers(sdk: ListUsers200ResponseDataInner): UsersResponse {
+export function mapUsers(sdk: ListUsers200ResponseDataInner): UserResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'users-' + Date.now())
 

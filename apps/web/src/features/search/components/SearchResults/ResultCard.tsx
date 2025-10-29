@@ -7,7 +7,7 @@ import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@feature
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult, StoreSearchResult, ProductSearchResult } from '@shared/types'
 import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
-import { transformStoreResult, transformProductResult } from '../../utils/searchTransformers'
+import { transformStoreResult, transformProductResult } from '@shared/lib/utils/searchTransformers'
 
 export type CardVariant = 'compact' | 'standard' | 'expanded'
 
