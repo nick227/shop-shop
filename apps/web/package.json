@@ -12,6 +12,9 @@
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:validation": "vitest run src/__tests__/validation",
+    "test:validation:ui": "vitest src/__tests__/validation --ui",
+    "test:validation:coverage": "vitest run src/__tests__/validation --coverage",
     "test:types": "vitest run src/types/__tests__ --config src/types/__tests__/vitest.config.ts",
     "test:types:coverage": "vitest run src/types/__tests__ --config src/types/__tests__/vitest.config.ts --coverage",
     "test:types:ui": "vitest src/types/__tests__ --config src/types/__tests__/vitest.config.ts --ui",
@@ -50,7 +53,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^3.1.1",
     "vaul": "^1.0.0",
-    "zod": "^3.23.8",
+    "zod": "^3.25.76",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

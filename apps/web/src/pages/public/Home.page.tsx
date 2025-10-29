@@ -8,12 +8,12 @@
  */
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { useAuthStore } from '../../stores/authStore'
-import { useUrlLocation } from '../../hooks/useUrlLocation'
-import { useStoreSearch } from '../../hooks/useStoreSearch'
-import { useGeocoding } from '../../hooks/useGeocoding'
-import { useLocationDisplay } from '../../hooks/useLocationDisplay'
-import { useSearchOrchestration } from '../../hooks/useSearchOrchestration'
+import { useAuthStore } from '@stores/authStore'
+import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
+import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearch'
+import { useGeocoding } from '@shared/hooks/hooks/useGeocoding'
+import { useLocationDisplay } from '@shared/hooks/hooks/useLocationDisplay'
+import { useSearchOrchestration } from '@shared/hooks/hooks/useSearchOrchestration'
 import { 
   LocationSearch, 
   NewestStores,
@@ -22,7 +22,7 @@ import {
   AvailableLocations
 } from '@features/stores/components'
 import type { StoreWithDistance } from '@api/types'
-import type { LocationData } from '../../types/location.types'
+import type { LocationData } from '@shared/types'
 import { usePromotionalCopy } from '@features/content/hooks/usePromotionalCopy'
 import {
   Header,
@@ -32,8 +32,8 @@ import {
   ResultsSection,
   ResultsContainer,
   FeaturedBundles
-} from '../../features/home/components'
-import { PageCompositionFactory, LayoutCompositionFactory } from '@components/composition'
+} from '@features/home/components'
+import { PageComposition as PageCompositionFactory, LayoutComposition as LayoutCompositionFactory } from '@shared/ui/composition'
 
 // Radius policy constants - single source of truth
 const RADIUS_POLICY = {

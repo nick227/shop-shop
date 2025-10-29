@@ -44,6 +44,45 @@ export type {
 } from '../backend-types'
 
 // ============================================
+// SDK List Item Types (re-exported for generators)
+// ============================================
+// Expose all List*200ResponseDataInner types so generated mappers can import from './types'
+export type {
+  ListUsers200ResponseDataInner,
+  ListStores200ResponseDataInner,
+  ListGeocodingCaches200ResponseDataInner,
+  ListItems200ResponseDataInner,
+  ListMediaAssets200ResponseDataInner,
+  ListCarts200ResponseDataInner,
+  ListCartItems200ResponseDataInner,
+  ListOrders200ResponseDataInner,
+  ListOrderItems200ResponseDataInner,
+  ListOrderEvents200ResponseDataInner,
+  ListTips200ResponseDataInner,
+  ListAddresss200ResponseDataInner,
+  ListSystemSettings200ResponseDataInner,
+  ListPaymentWebhooks200ResponseDataInner,
+  ListPaymentMethods200ResponseDataInner,
+  ListPromotions200ResponseDataInner,
+  ListPromotionRedemptions200ResponseDataInner,
+  ListPosts200ResponseDataInner,
+  ListPostLikes200ResponseDataInner,
+  ListComments200ResponseDataInner,
+  ListAffiliates200ResponseDataInner,
+  ListCommissions200ResponseDataInner,
+  ListAffiliatePayouts200ResponseDataInner,
+  ListDeliveryZones200ResponseDataInner,
+  ListVendorVerifications200ResponseDataInner,
+  ListTeamMembers200ResponseDataInner,
+  ListInvitations200ResponseDataInner,
+  ListFavoriteStores200ResponseDataInner,
+  ListFavoriteItems200ResponseDataInner,
+  ListBundles200ResponseDataInner,
+  ListBundleItems200ResponseDataInner,
+  ListBundlePricings200ResponseDataInner
+} from '../../../../packages/sdk/src'
+
+// ============================================
 // Type Validation Utilities
 // ============================================
 

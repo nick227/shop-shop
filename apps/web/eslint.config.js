@@ -83,6 +83,19 @@ export default tseslint.config(
       'sonarjs/prefer-immediate-return': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
       
+      // SDK Import Rules - Prevent direct SDK imports in components
+      'no-restricted-imports': [
+        'error',
+        {
+          'patterns': [
+            {
+              'group': ['@packages/sdk'],
+              'message': 'Use @api/types instead of direct SDK imports. This ensures consistent type management and single source of truth.'
+            }
+          ]
+        }
+      ],
+
       // Unicorn rules (simplified)
       'unicorn/better-regex': 'error',
       'unicorn/catch-error-name': 'error',

@@ -6,28 +6,27 @@
  * To regenerate: pnpm gen:types
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable unicorn/no-null */
+ 
+ 
+ 
 
 import type {
-  ListStores200ResponseDataInner,
-  ListItems200ResponseDataInner,
-  ListOrders200ResponseDataInner,
-  ListAddresss200ResponseDataInner,
-  ListBundles200ResponseDataInner,
-  ListCarts200ResponseDataInner,
-  ListPromotions200ResponseDataInner,
   ListUsers200ResponseDataInner,
+  ListStores200ResponseDataInner,
   ListGeocodingCaches200ResponseDataInner,
+  ListItems200ResponseDataInner,
   ListMediaAssets200ResponseDataInner,
+  ListCarts200ResponseDataInner,
   ListCartItems200ResponseDataInner,
+  ListOrders200ResponseDataInner,
   ListOrderItems200ResponseDataInner,
   ListOrderEvents200ResponseDataInner,
   ListTips200ResponseDataInner,
+  ListAddresss200ResponseDataInner,
   ListSystemSettings200ResponseDataInner,
   ListPaymentWebhooks200ResponseDataInner,
   ListPaymentMethods200ResponseDataInner,
+  ListPromotions200ResponseDataInner,
   ListPromotionRedemptions200ResponseDataInner,
   ListPosts200ResponseDataInner,
   ListPostLikes200ResponseDataInner,
@@ -41,15 +40,21 @@ import type {
   ListInvitations200ResponseDataInner,
   ListFavoriteStores200ResponseDataInner,
   ListFavoriteItems200ResponseDataInner,
+  ListBundles200ResponseDataInner,
   ListBundleItems200ResponseDataInner,
   ListBundlePricings200ResponseDataInner
-} from '@packages/sdk'
+} from './types'
 
 // ========================================
 // Base Type Exports (From SDK)
 // ========================================
 
 
+export type UserResponse = ListUsers200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
 
 export type StoreResponse = ListStores200ResponseDataInner & {
   id: string
@@ -78,6 +83,12 @@ export type MediaAssetResponse = ListMediaAssets200ResponseDataInner & {
   updatedAt: string
 }
 
+export type CartResponse = ListCarts200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type CartItemResponse = ListCartItems200ResponseDataInner & {
   id: string
   createdAt: string
@@ -93,10 +104,6 @@ export type OrderResponse = ListOrders200ResponseDataInner & {
   store: { id: string; name: string } | undefined
   items: OrderItem[] | undefined
   addressSnapshot: AddressSnapshot | undefined
-} & {
-  // Backend should include these but doesn't yet
-  stripePaymentIntentId: null,
-  stripeChargeId: null,
 }
 
 export type OrderItemResponse = ListOrderItems200ResponseDataInner & {
@@ -141,13 +148,31 @@ export type PaymentMethodResponse = ListPaymentMethods200ResponseDataInner & {
   updatedAt: string
 }
 
+export type PromotionResponse = ListPromotions200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type PromotionRedemptionResponse = ListPromotionRedemptions200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
 }
 
+export type PostResponse = ListPosts200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type PostLikeResponse = ListPostLikes200ResponseDataInner & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CommentResponse = ListComments200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -585,7 +610,7 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
     updatedAt: timestamps.updatedAt,
     deliveryFee: extractNumber(sdk, 'deliveryFee'),
     minOrder: extractNumber(sdk, 'minOrder'),
-    distance: extractNumber(sdk, 'distance')
+    distance: extractNumber(sdk, 'distance'),
   }
 }
 
@@ -664,11 +689,11 @@ export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    stripePaymentIntentId: sdk.stripePaymentIntentId ?? null,
-    stripeChargeId: sdk.stripeChargeId ?? null,
-    store: sdk.store ?? undefined,
+    stripePaymentIntentId: sdk.stripePaymentIntentId ?? '',
+    stripeChargeId: sdk.stripeChargeId ?? '',
+    store: sdk.store ?? '',
     items: sdk.items,
-    addressSnapshot: sdk.addressSnapshot
+    addressSnapshot: sdk.addressSnapshot,
   }
 }
 
@@ -959,7 +984,7 @@ export function mapBundle(sdk: ListBundles200ResponseDataInner): BundleResponse 
     individualPrice: extractNumber(sdk, 'individualPrice'),
     bundlePrice: extractNumber(sdk, 'bundlePrice'),
     savings: extractNumber(sdk, 'savings'),
-    savingsPercent: extractNumber(sdk, 'savingsPercent')
+    savingsPercent: extractNumber(sdk, 'savingsPercent'),
   }
 }
 

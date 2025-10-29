@@ -8,15 +8,15 @@ import { useStore } from '@shared/hooks/generated'
 import { useItems } from '@shared/hooks/generated'
 import { useBundles } from '@shared/hooks/generated'
 import { useRiverPosts } from '@shared/hooks/river'
-import { StoreHeader } from '../../features/stores/components/StoreHeader'
-import { StoreMapLazy } from '../../features/stores/components/StoreMapLazy'
-import { ItemCard, ItemCarouselCompact } from '../../features/products/components'
-import { BundleGrid } from '../../features/bundles/components/customer'
+import { StoreHeader } from '@features/stores/components/StoreHeader'
+import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
+import { ItemCard, ItemCarouselCompact } from '@features/products/components'
+import { BundleGrid } from '@features/bundles/components/customer'
 // import { RiverFeed } from '../../features/river' // Disabled until Posts API is available
 import { Button, Spinner, DataState } from '@shared/ui/primitives'
-import type { StoreWithDistance } from '@api/types'
+import type { StoreWithDistance } from '@shared/types'
 import { styles } from '@shared/lib/tailwind-classes'
-import { PageCompositionFactory, LayoutCompositionFactory, CardCompositionFactory } from '@components/composition'
+import { PageComposition as PageCompositionFactory, LayoutComposition as LayoutCompositionFactory, CardComposition as CardCompositionFactory } from '@shared/ui/composition'
 
 export default function StoreDetailPage() {
   // Get storeId from URL parameters (matches router.tsx :storeId)
