@@ -17,7 +17,7 @@ import {
   type UseQueryOptions,
   type UseMutationOptions
 } from '@tanstack/react-query'
-import { handleApiError } from '@api/errors'
+import { handleApiError } from '../api/errors'
 
 // ============================================
 // Types;

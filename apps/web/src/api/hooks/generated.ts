@@ -6,18 +6,15 @@
  * To regenerate: pnpm gen:hooks
  */
 import { createResourceHooks } from '../../hooks/createResourceHooks'
-import * as apiWrapper from '../apiWrapper'
+import * as api from '../resource-apis'
 import type { 
   StoreResponse as Store, ItemResponse as Item, CartWithTotals, OrderResponse as Order, AddressResponse as Address, Bundle,
-} from '../generated/backend-types'
-import type { 
-  AddCartItemInput, CreateOrderInput, CreateAddressInput, CreateBundleInput,
-} from '../apiWrapper'
+} from '../backend-types'
 
 // ============================================
 // Stores Hooks
 // ============================================
-const storesHooks = createResourceHooks<Store>('stores', apiWrapper.stores)
+const storesHooks = createResourceHooks<Store>('stores', api.stores)
 
 /**
  * Fetch list of stores
@@ -38,7 +35,7 @@ export const useStore = storesHooks.useOne
 // ============================================
 // Items Hooks
 // ============================================
-const itemsHooks = createResourceHooks<Item>('items', apiWrapper.items)
+const itemsHooks = createResourceHooks<Item>('items', api.items)
 
 /**
  * Fetch list of items
@@ -59,7 +56,7 @@ export const useItem = itemsHooks.useOne
 // ============================================
 // Carts Hooks
 // ============================================
-const cartsHooks = createResourceHooks<CartWithTotals, AddCartItemInput>('carts', apiWrapper.carts)
+const cartsHooks = createResourceHooks<CartWithTotals>('carts', api.carts)
 
 /**
  * Fetch list of carts
@@ -96,8 +93,7 @@ export const useDeleteCart = cartsHooks.useDelete
 // ============================================
 // Orders Hooks
 // ============================================
-// @ts-expect-error - Custom update signature, acceptable (works at runtime)
-const ordersHooks = createResourceHooks<Order, CreateOrderInput>('orders', apiWrapper.orders,
+const ordersHooks = createResourceHooks<Order>('orders', api.orders,
   { invalidates: ['orders', 'cart'] })
 
 /**
@@ -135,8 +131,7 @@ export const useUpdateOrder = ordersHooks.useUpdate
 // ============================================
 // Addresses Hooks
 // ============================================
-// @ts-expect-error - Custom update signature, acceptable (works at runtime)
-const addressesHooks = createResourceHooks<Address, CreateAddressInput>('addresses', apiWrapper.addresses)
+const addressesHooks = createResourceHooks<Address>('addresses', api.addresses)
 
 /**
  * Fetch list of addresses
@@ -181,8 +176,7 @@ export const useDeleteAddress = addressesHooks.useDelete
 // ============================================
 // Bundles Hooks
 // ============================================
-// @ts-expect-error - Custom update signature, acceptable (works at runtime)
-const bundlesHooks = createResourceHooks<Bundle, CreateBundleInput, Partial<CreateBundleInput>>('bundles', apiWrapper.bundles)
+const bundlesHooks = createResourceHooks<Bundle>('bundles', api.bundles)
 
 /**
  * Fetch list of bundles

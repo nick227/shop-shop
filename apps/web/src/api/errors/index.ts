@@ -1,7 +1,6 @@
 /**
  * Error Handling - Simplified with handler map pattern
  */
-import { ResponseError, FetchError } from '@packages/sdk'
 import { AppError } from './types'
 import { httpErrorHandlers } from './handlers'
 
@@ -22,7 +21,7 @@ async function getResponseBody(response: Response): Promise<Record<string, unkno
 /**
  * Handle HTTP errors (ResponseError from SDK)
  */
-async function handleResponseError(error: ResponseError): Promise<AppError> {
+async function handleResponseError(error: { response: Response }): Promise<AppError> {
   const status = error.response.status
   const body = await getResponseBody(error.response)
 
@@ -36,7 +35,7 @@ async function handleResponseError(error: ResponseError): Promise<AppError> {
 /**
  * Handle network errors (FetchError from SDK)
  */
-function handleFetchError(error: FetchError): AppError {
+function handleFetchError(error: { cause?: unknown }): AppError {
   const cause = error.cause instanceof Error ? error.cause.message : undefined
   return new AppError(
     'Network error. Please check your internet connection.',
@@ -60,11 +59,11 @@ function handleUnknownError(error: unknown): AppError {
  * Main error handler - Routes to appropriate handler
  */
 export async function handleApiError(error: unknown): Promise<AppError> {
-  if ((error) instanceof ResponseError && error !== undefined) {
-    return await handleResponseError(error)
+  if (error && typeof error === 'object' && 'response' in (error as any)) {
+    return await handleResponseError(error as { response: Response })
   }
-  if ((error) instanceof FetchError && error !== undefined) {
-    return handleFetchError(error)
+  if (error && typeof error === 'object' && 'cause' in (error as any)) {
+    return handleFetchError(error as { cause?: unknown })
   }
   return handleUnknownError(error)
 }

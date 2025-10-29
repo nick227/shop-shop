@@ -5,8 +5,8 @@
 
 import type {
   StoreResponse,
-  ListItems200ResponseDataInner
-} from '../types'
+  ItemResponse
+} from '../backend-types'
 import type { CartWithTotals } from '../backend-types'
 
 // Cart item data - extends SDK cart item with computed fields
@@ -19,8 +19,8 @@ export interface CartItemData {
   titleSnapshot?: string  // Add missing titleSnapshot field
   notes?: string  // Add missing notes field
   // Additional computed fields for frontend
-  item?: ListItems200ResponseDataInner
-  currentItem?: ListItems200ResponseDataInner
+  item?: ItemResponse
+  currentItem?: ItemResponse
   weight?: number // Weight in pounds/kilograms
 }
 
@@ -56,9 +56,9 @@ export function calculateCartTotals(
     for (const item of cart.items) {
       if (!item) continue
       
-      const price = typeof item.unitPrice === 'string' 
-        ? Number.parseFloat(item.unitPrice) 
-        : Number(item.unitPrice) || 0
+      const price = typeof item.price === 'string'
+        ? Number.parseFloat(item.price)
+        : Number(item.price) || 0
       
       const quantity = item.quantity ?? 1
       subtotal += price * quantity
@@ -81,9 +81,9 @@ export function calculateCartTotals(
     ...cart,
     subtotal,
     tax,
-    fees,
+    // fees, // Removed - not in CartWithTotals interface
     total,
-    itemCount,
+    // itemCount, // Removed - not in CartWithTotals interface
   }
 }
 
