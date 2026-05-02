@@ -45,41 +45,101 @@ export * from './dtos/index.js'
 // Export response schemas for frontend validation
 export { 
   StoreResponseSchema, 
-  StoreListResponseSchema
+  StoreListResponseSchema,
+  CreateStoreInputSchema,
+  UpdateStoreInputSchema,
+  type CreateStoreInput,
+  type UpdateStoreInput,
 } from './dtos/store.dto.js'
 
 export { 
   ItemResponseSchema, 
-  ItemListResponseSchema 
+  ItemListResponseSchema,
+  CreateItemInputSchema,
+  UpdateItemInputSchema,
+  type CreateItemInput,
+  type UpdateItemInput,
 } from './dtos/item.dto.js'
 
-export { 
-  OrderResponseSchema, 
+export {
+  OrderResponseSchema,
   OrderListResponseSchema,
+  OrderPlacementInputSchema,
+  OrderFullRowCreateInputSchema,
   CreateOrderInputSchema,
   UpdateOrderStatusSchema,
+  type OrderPlacementInput,
+  type OrderFullRowCreateInput,
   type CreateOrderInput,
   type UpdateOrderStatus,
 } from './dtos/order.dto.js'
 
 export { 
-  CartResponseSchema 
+  CartResponseSchema,
+  AddToCartInputSchema,
+  UpdateCartInputSchema,
+  type AddToCartInput,
+  type UpdateCartInput,
 } from './dtos/cart.dto.js'
 
+// Add missing cart input schemas for UnifiedSchemas
+export { AddToCartInputSchema as AddCartItemInputSchema } from './dtos/cart.dto.js'
+export { UpdateCartInputSchema as UpdateCartItemInputSchema } from './dtos/cart.dto.js'
+
 export { 
-  AddressResponseSchema 
+  AddressResponseSchema,
+  CreateAddressInputSchema,
+  UpdateAddressInputSchema,
+  type CreateAddressInput,
+  type UpdateAddressInput,
 } from './dtos/address.dto.js'
+
+export { 
+  BundleResponseSchema,
+  CreateBundleInputSchema,
+  UpdateBundleInputSchema,
+  type CreateBundleInput,
+  type UpdateBundleInput,
+  type BundleResponse,
+  type BundlePricingType,
+} from './dtos/bundle.dto.js'
+
+export { 
+  PromotionResponseSchema,
+  CreatePromotionInputSchema,
+  UpdatePromotionInputSchema,
+  type CreatePromotionInput,
+  type UpdatePromotionInput,
+} from './dtos/promotion.dto.js'
+
+// Bundle exports already added above
+
+export { 
+  LoginInputSchema,
+  SignupInputSchema,
+  AuthResponseSchema,
+  UserPublicResponseSchema,
+  type LoginInput,
+  type SignupInput,
+  type AuthResponse,
+  type UserPublicResponse,
+} from './dtos/auth.dto.js'
 
 export { 
   UploadMediaInputSchema,
   MediaResponseSchema,
   MediaListResponseSchema,
-  UpdateMediaSortInputSchema,
   type UploadMediaInput,
   type MediaResponse,
   type MediaListResponse,
-  type UpdateMediaSortInput,
 } from './dtos/media.dto.js'
+
+export {
+  UpdateMediaSortInputSchema,
+  type UpdateMediaSortInput,
+} from './dtos/mediaasset.dto.js'
+
+// Promotion exports already added above
 
 // Import auth schemas for registration
 // Import auth schemas for manual registration (auth has custom logic)
@@ -349,17 +409,7 @@ registry.registerPath({
 // NOTE: Resources are now in apps/server/src/resources/
 // They are imported by openapi.ts build script, not at runtime
 
-// Export auth schemas and types
-export {
-  SignupInputSchema,
-  LoginInputSchema,
-  UserPublicResponseSchema,
-  AuthResponseSchema,
-  type SignupInput,
-  type LoginInput,
-  type UserPublicResponse,
-  type AuthResponse,
-} from './dtos/auth.dto.js'
+// Auth schemas already exported above
 
 // Export payment schemas and types
 export {
@@ -422,6 +472,12 @@ export {
   type LikePostInput,
   type UnlikePostInput,
 } from './dtos/river.dto.js'
+
+// Export post update schema from post.dto.js
+export {
+  UpdatePostInputSchema,
+  type UpdatePostInput,
+} from './dtos/post.dto.js'
 
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js'

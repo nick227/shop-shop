@@ -60,11 +60,14 @@ enum CartStatus {
 }
 
 enum OrderStatus {
+  PENDING_PAYMENT // awaiting Stripe payment confirmation
   PLACED
   ACCEPTED
   PREPARING
   READY
-  COMPLETED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  COMPLETED // legacy terminal state
   CANCELED
 }
 
@@ -347,7 +350,7 @@ model Order {
   serviceFeePercent      Decimal       @db.Decimal(5, 2)
   serviceFeeAmount       Decimal       @db.Decimal(10, 2)
   netToVendor            Decimal       @db.Decimal(10, 2)
-  stripePaymentIntentId  String?
+  stripePaymentIntentId  String?       @unique
   stripeChargeId         String?
   stripeTransferId       String?
   stripeApplicationFeeId String?
@@ -355,6 +358,10 @@ model Order {
   addressId              String?       @db.Char(36)
   address                Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
   addressSnapshot        Json?
+
+  /// Canonical delivery pin (copied at checkout). Maps / realtime read these — not Address joins.
+  deliveryLatitude       Decimal?      @db.Decimal(10, 8)
+  deliveryLongitude      Decimal?      @db.Decimal(11, 8)
 
   // Cancellation & Refund tracking
   cancelReason String?   @db.Text
@@ -373,7 +380,6 @@ model Order {
   @@index([userId])
   @@index([storeId])
   @@index([paymentStatus])
-  @@index([stripePaymentIntentId])
   @@index([stripeTransferId])
   @@index([status, canceledAt])
   @@index([assignedToUserId])

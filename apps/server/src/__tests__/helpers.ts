@@ -3,6 +3,7 @@ import swagger from '@fastify/swagger'
 import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
 import { prisma, generateJWT, Decimal } from '@packages/db'
+import type { Prisma } from '@packages/db/generated/client'
 import type { Role } from '@packages/db/generated/client'
 
 // ========================================
@@ -170,7 +171,7 @@ export const createTestCart = async (userId: string, storeId: string) => {
  * Create test order
  */
 export const createTestOrder = async (userId: string, storeId: string, overrides?: {
-  status?: 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELED'
+  status?: 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELED'
   paymentStatus?: 'UNPAID' | 'PAID' | 'REFUNDED'
   total?: string
 }) => {
@@ -195,6 +196,8 @@ export const createTestOrder = async (userId: string, storeId: string, overrides
       serviceFeePercent: new Decimal('5.00'),
       serviceFeeAmount: total.mul(0.05),
       netToVendor: total.mul(0.95),
+      deliveryLatitude: new Decimal('34.05220000'),
+      deliveryLongitude: new Decimal('-118.24370000'),
     },
   })
 }
@@ -205,10 +208,11 @@ export const createTestOrder = async (userId: string, storeId: string, overrides
 export const createTestAddress = async (userId: string, overrides?: {
   isDefault?: boolean
   line1?: string
+  geo?: Record<string, unknown>
 }) => {
   const { randomUUID } = await import('crypto')
   const uniqueId = randomUUID()
-  
+
   return prisma.address.create({
     data: {
       userId,
@@ -219,6 +223,7 @@ export const createTestAddress = async (userId: string, overrides?: {
       country: 'US',
       isDefault: overrides?.isDefault ?? false,
       isActive: true,
+      geo: (overrides?.geo ?? { latitude: 34.0522, longitude: -118.2437 }) as Prisma.InputJsonValue,
     },
   })
 }

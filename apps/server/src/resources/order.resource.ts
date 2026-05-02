@@ -9,10 +9,11 @@ import {
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
 import {
   prisma,
-  publishOrderCreated,
   publishOrderStatusChanged,
+  assertValidTransition,
 } from '@packages/db'
 import { assertOrderAccess } from './order-access.js'
+import { parseCoordPair, parseGeoJson } from '../utils/order-coords.js'
 
 const orderDomain = new OrderDomain()
 
@@ -118,6 +119,21 @@ export const orderResource = defineResource({
       }
 
       if (body.status !== undefined && body.status !== existing.status) {
+        // Enforce state machine — throws InvalidOrderTransitionError on invalid
+        assertValidTransition(existing.status, body.status)
+
+        console.log(
+          JSON.stringify({
+            event: 'order.transition',
+            orderId: id,
+            from: existing.status,
+            to: body.status,
+            changedBy: context?.userId ?? 'unknown',
+            note: body.note ?? null,
+            timestamp: new Date().toISOString(),
+          }),
+        )
+
         pendingOrderStatusChange.set(id, {
           oldStatus: existing.status,
           note: body.note,
@@ -143,6 +159,8 @@ export const orderResource = defineResource({
         deliveryType: 'DELIVERY' | 'PICKUP'
         addressId?: string
         tip?: string
+        deliveryLatitude?: number | string
+        deliveryLongitude?: number | string
       }
 
       const validation = await orderDomain.validateOrderPlacement(input.cartId, context!.userId!)
@@ -153,26 +171,57 @@ export const orderResource = defineResource({
       const tipAmount = parseFloat(input.tip || '0.00')
       const totals = await orderDomain.calculateOrderTotals(input.cartId, input.deliveryType, tipAmount)
 
-      let addressSnapshot = null
+      let resolved =
+        parseCoordPair(input.deliveryLatitude, input.deliveryLongitude) ?? undefined
+
+      let address = null
       if (input.addressId) {
-        const address = await prisma.address.findUnique({ where: { id: input.addressId } })
-        if (address) {
-          addressSnapshot = {
-            line1: address.line1,
-            line2: address.line2,
-            city: address.city,
-            state: address.state,
-            postalCode: address.postalCode,
-            country: address.country,
-          }
+        address = await prisma.address.findUnique({ where: { id: input.addressId } })
+        if (!address || address.userId !== context!.userId) {
+          throw new Error('Forbidden')
+        }
+        if (!resolved) {
+          resolved = parseGeoJson(address.geo) ?? undefined
         }
       }
+
+      if (input.deliveryType === 'DELIVERY' && !resolved) {
+        throw new Error('Delivery requires coordinates')
+      }
+
+      let addressSnapshot: Record<string, unknown> | null = null
+      if (address) {
+        addressSnapshot = {
+          line1: address.line1,
+          line2: address.line2,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: address.country,
+          ...(resolved
+            ? { geo: { latitude: resolved.lat, longitude: resolved.lng } }
+            : {}),
+        }
+      } else if (input.deliveryType === 'DELIVERY' && resolved) {
+        addressSnapshot = {
+          line1: 'Delivery location',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: '',
+          geo: { latitude: resolved.lat, longitude: resolved.lng },
+        }
+      }
+
+      const persistPair =
+        input.deliveryType === 'DELIVERY' && resolved !== undefined ? resolved : null
 
       return {
         userId: context!.userId,
         storeId: totals.storeId,
         cartId: input.cartId,
         deliveryType: input.deliveryType,
+        status: 'PENDING_PAYMENT',
         paymentStatus: 'UNPAID',
         subtotal: totals.subtotal,
         fees: totals.fees,
@@ -184,6 +233,8 @@ export const orderResource = defineResource({
         netToVendor: totals.netToVendor,
         addressId: input.addressId,
         addressSnapshot,
+        deliveryLatitude: persistPair ? persistPair.lat.toFixed(8) : null,
+        deliveryLongitude: persistPair ? persistPair.lng.toFixed(8) : null,
       }
     },
     afterCreate: async (result) => {
@@ -193,12 +244,8 @@ export const orderResource = defineResource({
       })
 
       await eventBus.emit(DomainEvents.ORDER_PLACED, result)
-
-      try {
-        await publishOrderCreated((result as { id: string }).id)
-      } catch (error) {
-        console.error('[Order] publishOrderCreated failed:', error)
-      }
+      // publishOrderCreated fires from the Stripe webhook after payment_intent.succeeded
+      // so vendors are only notified once payment is confirmed
     },
     afterUpdate: async (result) => {
       const order = result as { id: string; status: string }
