@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import type { AuthenticatedUser } from '../middleware/auth.js'
 import {
   UploadMediaInputSchema,
   type UploadMediaInput,
@@ -21,8 +22,7 @@ import { requireRole } from '../middleware/rbac.js'
 // ========================================
 
 interface AuthenticatedRequest extends FastifyRequest {
-  userId?: string
-  userRole?: string
+  user?: AuthenticatedUser
 }
 
 export const mediaRoutes = async (app: FastifyInstance) => {
@@ -80,14 +80,14 @@ export const mediaRoutes = async (app: FastifyInstance) => {
         file: uploadFile,
         storeId: input.storeId,
         itemId: input.itemId,
-        userId: req.userId!,
+        userId: req.user!.id,
         altText: input.altText,
         sortIndex: input.sortIndex,
       })
 
       req.log.info({
         event: 'media_uploaded',
-        userId: req.userId,
+        userId: req.user!.id,
         mediaId: result.id,
         size: result.size,
         kind: result.kind,
@@ -134,10 +134,16 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   }, async (req: AuthenticatedRequest, reply) => {
     const { storeId, itemId } = req.query as { storeId?: string; itemId?: string }
 
+    if (!storeId && !itemId) {
+      return reply.code(400).send({
+        error: 'Provide storeId or itemId to list media',
+      })
+    }
+
     const media = await listMedia({
       storeId,
       itemId,
-      userId: req.userId!,
+      userId: req.user!.id,
     })
 
     return reply.code(200).send({
@@ -163,12 +169,12 @@ export const mediaRoutes = async (app: FastifyInstance) => {
 
       await deleteMedia({
         mediaId: id,
-        userId: req.userId!,
+        userId: req.user!.id,
       })
 
       req.log.info({
         event: 'media_deleted',
-        userId: req.userId,
+        userId: req.user!.id,
         mediaId: id,
       }, 'Media deleted')
 
@@ -201,7 +207,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
 
       await updateMediaSort({
         mediaId: id,
-        userId: req.userId!,
+        userId: req.user!.id,
         sortIndex: input.sortIndex,
       })
 
