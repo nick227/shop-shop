@@ -13,6 +13,7 @@ import {
 } from '@packages/db'
 import { authenticate, type AuthenticatedUser } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
+import { rateLimits } from '../constants/rateLimits.js'
 import 'dotenv/config'
 
 // ========================================
@@ -31,6 +32,9 @@ export const paymentRoutes = async (app: FastifyInstance) => {
   // Create payment intent for an order
   // ========================================
   app.post('/payments/create-intent', {
+    config: {
+      rateLimit: rateLimits.paymentCreateIntent,
+    },
     preHandler: [authenticate],
     schema: {
       tags: ['Payments'],
@@ -73,6 +77,9 @@ export const paymentRoutes = async (app: FastifyInstance) => {
   // Initiate Stripe Connect for vendor
   // ========================================
   app.post('/payments/connect', {
+    config: {
+      rateLimit: rateLimits.paymentConnect,
+    },
     preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can set up payments for their store
     schema: {
       tags: ['Payments'],
@@ -116,6 +123,9 @@ export const paymentRoutes = async (app: FastifyInstance) => {
   // Check Stripe Connect status
   // ========================================
   app.get('/payments/connect/:storeId/status', {
+    config: {
+      rateLimit: rateLimits.paymentConnectStatus,
+    },
     preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can check payment status for their store
     schema: {
       tags: ['Payments'],
@@ -144,6 +154,9 @@ export const paymentRoutes = async (app: FastifyInstance) => {
   // Issue refund for an order
   // ========================================
   app.post('/payments/refund', {
+    config: {
+      rateLimit: rateLimits.paymentRefund,
+    },
     preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can refund orders from their store
     schema: {
       tags: ['Payments'],

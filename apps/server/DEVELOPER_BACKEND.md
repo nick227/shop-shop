@@ -17,7 +17,7 @@ This document describes the Fastify server under `apps/server`: registered HTTP 
 
 - **CORS** — origins from `CORS_ORIGINS` (comma-separated); credentials enabled.
 - **Multipart** — uploads up to 50MB (aligned with media routes).
-- **`@fastify/rate-limit`** — global config exists (`max: 100` / 15 min); **auth routes override** to 5 / 15 min on signup/login.
+- **`@fastify/rate-limit`** — registered with **`global: false`** (only routes with `config.rateLimit` are limited). Shared presets in **`src/constants/rateLimits.ts`**: auth login/signup **5 / 15 min**, payments/tips/order-cancel tuned per endpoint (IP-based).
 - **Swagger** — OpenAPI 3.0.3.
 - **Static files** — when `STORAGE_TYPE` is unset or `local`, files under `UPLOAD_DIR` (default `./uploads`) are served at **`/uploads/`**.
 

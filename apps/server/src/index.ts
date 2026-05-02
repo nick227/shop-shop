@@ -8,7 +8,6 @@ import { paymentRoutes } from './routes/payment.route.js'
 import { stripeWebhookRoutes } from './routes/stripe-webhook.route.js'
 import { mediaRoutes } from './routes/media.route.js'
 import { realtimeRoutes } from './routes/realtime.route.js'
-import { orderRoutes } from './routes/order.route.js'
 import { riverRoutes } from './routes/river.route.js'
 import { geocodingRoutes } from './routes/geocoding.route.js'
 import { tipRoutes } from './routes/tip.route.js'
@@ -69,11 +68,11 @@ if (process.env.STORAGE_TYPE === 'local' || !process.env.STORAGE_TYPE) {
   app.log.info({ uploadDir }, 'Serving local uploads')
 }
 
-// Rate limiting - stricter for auth endpoints
+// Rate limiting: global false = only routes with `config.rateLimit` are limited (see constants/rateLimits.ts)
 await app.register(rateLimit, {
-  global: false, // Apply per-route
-  max: 100, // Default: 100 requests per window
-  timeWindow: '15 minutes'
+  global: false,
+  max: 100,
+  timeWindow: '15 minutes',
 })
 
 await app.register(swagger, {
@@ -93,7 +92,6 @@ await app.register(stripeWebhookRoutes) // Stripe webhooks (raw JSON body for si
 await app.register(paymentRoutes)  // Payment & Stripe Connect
 await app.register(mediaRoutes)    // Media uploads (custom multipart handling)
 await app.register(realtimeRoutes) // Real-time WebSocket
-// await app.register(orderRoutes)    // Orders - NOW AUTO-REGISTERED via resources
 await app.register(riverRoutes)    // River (posts) - Custom routes
 await app.register(geocodingRoutes) // Geocoding services (ZIP, city/state, address)
 await app.register(tipRoutes)      // Tip processing

@@ -8,6 +8,7 @@ import {
   CANCELLATION_REASONS,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { rateLimits } from '../constants/rateLimits.js'
 
 const CancelOrderSchema = z.object({
   orderId: z.string().uuid(),
@@ -24,6 +25,9 @@ const CancellationStatsSchema = z.object({
 export const orderCancellationRoutes = async (app: FastifyInstance) => {
   // POST /orders/cancel - Cancel an order
   app.post('/orders/cancel', {
+    config: {
+      rateLimit: rateLimits.orderCancel,
+    },
     preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],
   }, async (req, reply) => {
     try {

@@ -12,16 +12,14 @@ import {
   generateJWT,
   toPublicUser,
 } from '@packages/db'
+import { rateLimits } from '../constants/rateLimits.js'
 
 export const authRoutes = async (app: FastifyInstance) => {
-  // POST /auth/signup - Rate limited to 5 attempts per 15 minutes
+  // POST /auth/signup — brute-force / signup spam protection
   app.post('/auth/signup', {
     config: {
-      rateLimit: {
-        max: 5,
-        timeWindow: '15 minutes'
-      }
-    }
+      rateLimit: rateLimits.authCredentials,
+    },
   }, async (req, reply) => {
     try {
       const input = SignupInputSchema.parse(req.body) as SignupInput
@@ -64,14 +62,11 @@ export const authRoutes = async (app: FastifyInstance) => {
     }
   })
 
-  // POST /auth/login - Rate limited to 5 attempts per 15 minutes
+  // POST /auth/login — brute-force protection
   app.post('/auth/login', {
     config: {
-      rateLimit: {
-        max: 5,
-        timeWindow: '15 minutes'
-      }
-    }
+      rateLimit: rateLimits.authCredentials,
+    },
   }, async (req, reply) => {
     try {
       const input = LoginInputSchema.parse(req.body) as LoginInput

@@ -11,10 +11,15 @@ import {
   getTip,
   refundTip,
 } from '@packages/db'
+import { rateLimits } from '../constants/rateLimits.js'
 
 export const tipRoutes = async (app: FastifyInstance) => {
   // POST /tips - Create tip for completed order
-  app.post('/tips', async (req, reply) => {
+  app.post('/tips', {
+    config: {
+      rateLimit: rateLimits.tipMutation,
+    },
+  }, async (req, reply) => {
     try {
       const input = CreateTipInputSchema.parse(req.body) as CreateTipInput
       const userId = req.user?.id
@@ -50,7 +55,11 @@ export const tipRoutes = async (app: FastifyInstance) => {
   })
 
   // POST /tips/:tipId/process - Process tip payment
-  app.post('/tips/:tipId/process', async (req, reply) => {
+  app.post('/tips/:tipId/process', {
+    config: {
+      rateLimit: rateLimits.tipMutation,
+    },
+  }, async (req, reply) => {
     try {
       const { tipId } = req.params as { tipId: string }
       const input = ProcessTipInputSchema.parse(req.body) as ProcessTipInput
@@ -116,7 +125,11 @@ export const tipRoutes = async (app: FastifyInstance) => {
   })
 
   // POST /tips/:tipId/refund - Refund tip
-  app.post('/tips/:tipId/refund', async (req, reply) => {
+  app.post('/tips/:tipId/refund', {
+    config: {
+      rateLimit: rateLimits.tipRefund,
+    },
+  }, async (req, reply) => {
     try {
       const { tipId } = req.params as { tipId: string }
       const userId = req.user?.id
