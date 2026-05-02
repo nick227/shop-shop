@@ -45,7 +45,7 @@ Resources are declared in `src/resources/index.ts` and registered by `src/routes
 | **promotion** | `/promotions` | create, read, update, delete, list | Public list/read; mutations scoped by ownership rules in resource. |
 | **store** | `/stores` | full CRUD | Public list/read; updates scoped to owner. |
 | **item** | `/items` | full CRUD | Public list/read. |
-| **order** | `/orders` | full CRUD | Domain hooks (`OrderDomain`) for placement and lifecycle; ownership via `userId`. |
+| **order** | `/orders` | full CRUD | Domain hooks (`OrderDomain`) for placement and lifecycle; access via `authorizeAccess` + `order-cancellation.route.ts` for cancel/refund flows. |
 | **cart** | `/carts` | create, read, list, delete | No PATCH/update route (design comment in resource). |
 | **address** | **`/addresses`** | full CRUD | Path normalized in `defineResource` (`address` → `/addresses`). |
 | **bundle** | `/bundles` | full CRUD | Public list/read; create/update/delete for vendors with ownership via store. |
@@ -178,47 +178,30 @@ Business logic for orders, stores, promotions, carts, payments, uploads, etc. li
 
 ---
 
-## Dead / dormant code to be aware of
-
-| Item | Detail |
-| --- | --- |
-| **`orderRoutes`** | `src/routes/order.route.ts` is **imported** in `src/index.ts` but **not registered** (registration is commented out). That file defined alternate **`/vendor/orders`**, **`/vendor/orders/pending-count`**, **`PATCH /orders/:id/status`**, **`POST /orders/:id/cancel`**, and overlapping **`/orders`** handlers. Those endpoints are **not active** unless this module is registered again or equivalent behavior exists elsewhere. |
-
----
-
 ## Proposals — next steps and fixes
 
 ### High priority
 
-1. **Resolve `order.route.ts` vs resource CRUD**  
-   Either register the vendor-specific and status/cancel routes under non-conflicting paths, merge their behavior into `order.resource` / `@packages/db`, or delete the unused module and fix clients that still expect `/vendor/orders` or `PATCH /orders/:id/status`.
-
-2. **River authorization**  
+1. **River authorization**  
    `river.route.ts` contains TODOs to verify store ownership on posts and comment ownership on delete; closing those gaps reduces privilege escalation risk.
 
 ### Medium priority
 
-3. **Realtime scaling**  
+2. **Realtime scaling**  
    Replace or wrap `InMemoryBroker` with Redis (or similar) so horizontal scaling and reconnect semantics are safe.
 
-4. **OpenAPI completeness**  
+3. **OpenAPI completeness**  
    Align Swagger tags/schemas for custom routes with auto-generated resource routes so `/docs` reflects the full surface.
 
-5. **Stripe webhook raw body**  
+4. **Stripe webhook raw body**  
    Confirm Fastify is configured so `/webhooks/stripe` consistently receives a verifiable raw payload (`rawBody` / `@fastify/raw-body` if needed).
-
-6. **Remove stale import**  
-   Drop unused `orderRoutes` import from `src/index.ts` if the file stays unregistered, to avoid confusion.
 
 ### Lower priority / hygiene
 
-7. **Typo**  
-   `loader.ts` comment: “resourcess” → “resources”.
-
-8. **Environment documentation**  
+5. **Environment documentation**  
    Keep a single source of truth for optional vs required keys (Stripe, `APP_URL`, `STORAGE_TYPE`, `UPLOAD_DIR`, `GEOCODING_API_KEY`) aligned with `env.ts` and deployment templates.
 
-9. **Rate limiting**  
+6. **Rate limiting**  
     Review whether payment and export endpoints need stricter per-route limits than the plugin defaults.
 
 ---

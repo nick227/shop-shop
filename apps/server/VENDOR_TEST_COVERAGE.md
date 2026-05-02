@@ -155,7 +155,7 @@ npm test -- --run
 2. **Route Guards** (`apps/server/src/routes/`)
    - `media.route.ts`: Updated to allow all authenticated users
    - `river.route.ts`: Updated to allow all authenticated users
-   - `order.route.ts`: Updated vendor endpoints
+   - `order.resource.ts`: Vendor access via `authorizeAccess` (replaces legacy unregistered `order.route.ts`, removed)
    - `payment.route.ts`: Updated Stripe Connect endpoints
 
 ### Frontend Changes

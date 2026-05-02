@@ -7,7 +7,7 @@ import { requireRole } from '../middleware/rbac.js'
 
 // ========================================
 // Route Auto-Loader
-// Automatically registers CRUD routes for resourcess
+// Automatically registers CRUD routes for resources
 // ========================================
 
 /**
