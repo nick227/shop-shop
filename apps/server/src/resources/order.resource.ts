@@ -7,6 +7,7 @@ import {
   OrderQuerySchema,
 } from '@packages/schemas/dtos'
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
+import { Prisma } from '@packages/db/generated/client'
 import {
   prisma,
   publishOrderStatusChanged,
@@ -224,7 +225,7 @@ export const orderResource = defineResource({
       const persistPair =
         input.deliveryType === 'DELIVERY' && resolved !== undefined ? resolved : null
 
-      let deliveryDistanceMiles: string | null = null
+      let deliveryDistanceMiles: InstanceType<typeof Prisma.Decimal> | null = null
       if (persistPair) {
         const store = await prisma.store.findUnique({
           where: { id: totals.storeId },
@@ -238,7 +239,16 @@ export const orderResource = defineResource({
             },
             { latitude: persistPair.lat, longitude: persistPair.lng },
           )
-          deliveryDistanceMiles = miles.toFixed(2)
+          deliveryDistanceMiles = new Prisma.Decimal(miles.toFixed(2))
+        } else {
+          console.warn(
+            JSON.stringify({
+              event: 'order.delivery_distance.skipped',
+              reason: 'missing_store_coordinates',
+              storeId: totals.storeId,
+              timestamp: new Date().toISOString(),
+            }),
+          )
         }
       }
 

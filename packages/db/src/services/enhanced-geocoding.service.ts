@@ -3,7 +3,7 @@
  * Integrates caching with the configured geocoder adapter (Mapbox-backed in production).
  */
 
-import { PrismaClient } from '../generated/client'
+import type { ExtendedPrismaClient } from '../client.js'
 import { GeocodingCacheService, GeocodingQuery, GeocodingResult } from './geocoding-cache.service'
 import { createGeocodingAdapter, GeocodingResult as ApiResult } from '../adapters/geocoding.adapter'
 
@@ -19,7 +19,7 @@ export class EnhancedGeocodingService {
   private apiAdapter: any
 
   constructor(
-    private prisma: PrismaClient,
+    private prisma: ExtendedPrismaClient,
     private config: GeocodingConfig
   ) {
     this.cacheService = new GeocodingCacheService(prisma)
@@ -242,7 +242,7 @@ export class EnhancedGeocodingService {
  * Create enhanced geocoding service with caching
  */
 export function createEnhancedGeocodingService(
-  prisma: PrismaClient,
+  prisma: ExtendedPrismaClient,
   config: GeocodingConfig
 ): EnhancedGeocodingService {
   return new EnhancedGeocodingService(prisma, config)

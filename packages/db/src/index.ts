@@ -24,7 +24,8 @@ export { getStorageAdapter } from './adapters/storage.adapter.js'
 export type { UploadFile } from './adapters/storage.adapter.js'
 
 // Re-export prisma singleton for direct use
-export { prisma } from './client.js'
+export { prisma, createPrismaClient } from './client.js'
+export type { ExtendedPrismaClient } from './client.js'
 
 export { haversineMiles } from './geo/haversine.js'
 export type { GeoPoint } from './geo/haversine.js'

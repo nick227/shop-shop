@@ -3,7 +3,7 @@
  * Caches geocoder responses (Mapbox / manual / fallback). Legacy DB rows may still record source `positionstack`.
  */
 
-import { PrismaClient } from '../generated/client'
+import type { ExtendedPrismaClient } from '../client.js'
 
 export interface GeocodingCacheEntry {
   id: string
@@ -41,7 +41,7 @@ export interface GeocodingResult {
 }
 
 export class GeocodingCacheService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: ExtendedPrismaClient) {}
 
   /**
    * Get cached geocoding result
