@@ -143,9 +143,16 @@ export const orderResource = defineResource({
         pendingOrderStatusChange.delete(id)
       }
 
-      const prismaData: { status?: string; assignedToUserId?: string | null } = {}
+      const prismaData: {
+        status?: string
+        assignedToUserId?: string | null
+        paymentStatus?: string
+      } = {}
       if (body.status !== undefined) {
         prismaData.status = body.status
+        if (body.status === 'PLACED') {
+          prismaData.paymentStatus = 'PAID'
+        }
       }
       if (body.assignedToUserId !== undefined) {
         prismaData.assignedToUserId = body.assignedToUserId

@@ -30,7 +30,12 @@ async function checkQuota() {
   
   console.log('\n  By Source:')
   bySource.forEach(({ source, _count }) => {
-    const icon = source === 'positionstack' ? '💰' : source === 'manual_seed' ? '🌱' : '📍'
+    const icon =
+      source === 'mapbox' || source === 'positionstack'
+        ? '💰'
+        : source === 'manual_seed'
+          ? '🌱'
+          : '📍'
     console.log(`    ${icon} ${source}: ${_count}`)
   })
   
@@ -39,8 +44,10 @@ async function checkQuota() {
     console.log(`    ${queryType}: ${_count}`)
   })
   
-  // Estimate API calls made (positionstack source entries)
-  const apiCalls = bySource.find(s => s.source === 'positionstack')?._count || 0
+  // Estimate API-backed cache rows (Mapbox today; legacy rows used positionstack)
+  const apiCalls =
+    (bySource.find(s => s.source === 'mapbox')?._count || 0) +
+    (bySource.find(s => s.source === 'positionstack')?._count || 0)
   const manualSeeds = bySource.find(s => s.source === 'manual_seed')?._count || 0
   
   console.log('\n💰 API Quota Analysis:')
@@ -65,7 +72,7 @@ async function checkQuota() {
   // Recent API calls (to see what's being geocoded)
   console.log('\n📝 Recent API Geocoding (Last 10):')
   const recentAPICalls = await prisma.geocodingCache.findMany({
-    where: { source: 'positionstack' },
+    where: { source: { in: ['mapbox', 'positionstack'] } },
     orderBy: { createdAt: 'desc' },
     take: 10,
     select: {

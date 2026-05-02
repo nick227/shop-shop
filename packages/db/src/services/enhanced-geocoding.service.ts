@@ -1,7 +1,6 @@
 /**
  * Enhanced Geocoding Service
- * Integrates caching layer with Positionstack API
- * Prevents redundant API calls and improves performance
+ * Integrates caching with the configured geocoder adapter (Mapbox-backed in production).
  */
 
 import { PrismaClient } from '../generated/client'
@@ -75,7 +74,7 @@ export class EnhancedGeocodingService {
         country: apiResult.country,
         formattedAddress: apiResult.formattedAddress,
         confidence: apiResult.confidence,
-        source: 'positionstack'
+        source: 'mapbox'
       }
 
       // Cache the result
@@ -141,7 +140,7 @@ export class EnhancedGeocodingService {
         country: apiResult.country,
         formattedAddress: apiResult.formattedAddress,
         confidence: apiResult.confidence,
-        source: 'positionstack'
+        source: 'mapbox'
       }
 
       // Cache the result
@@ -198,7 +197,7 @@ export class EnhancedGeocodingService {
         country: apiResult.country,
         formattedAddress: apiResult.formattedAddress,
         confidence: apiResult.confidence,
-        source: 'positionstack'
+        source: 'mapbox'
       }
 
       // Cache the result

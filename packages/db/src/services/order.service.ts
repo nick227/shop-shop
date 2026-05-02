@@ -11,6 +11,7 @@ import {
   publishOrderCreated,
   publishOrderStatusChanged,
 } from './order-realtime.publisher.js'
+import { assertValidTransition } from '../order-state-machine.js'
 
 export interface BroadcastFunction {
   (topic: string, event: { type: string; timestamp: string; payload: Record<string, unknown> }): void
@@ -46,18 +47,16 @@ export class OrderService {
   }
 
   /**
-   * Update order status with real-time broadcasting
+   * Transition order to a new status.
+   * Validates the transition, writes the audit event, logs, and broadcasts.
+   * This is the single entry point for all programmatic status changes.
    */
-  async updateOrderStatus(input: UpdateOrderStatusInput): Promise<Order> {
+  async transitionOrderStatus(input: UpdateOrderStatusInput): Promise<Order> {
     const { orderId, newStatus, note, changedBy } = input
 
-    // Get current order
     const currentOrder = await prisma.order.findUnique({
       where: { id: orderId },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        store: { select: { id: true, name: true, ownerUserId: true } },
-      },
+      select: { id: true, status: true },
     })
 
     if (!currentOrder) {
@@ -66,38 +65,54 @@ export class OrderService {
 
     const oldStatus = currentOrder.status
 
-    // Update order status
+    // Validate transition against state machine
+    assertValidTransition(oldStatus, newStatus)
+
+    // Structured transition log (one JSON line per transition)
+    console.log(
+      JSON.stringify({
+        event: 'order.transition',
+        orderId,
+        from: oldStatus,
+        to: newStatus,
+        changedBy: changedBy ?? 'system',
+        note: note ?? null,
+        timestamp: new Date().toISOString(),
+      }),
+    )
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: { status: newStatus },
-      include: {
-        user: true,
-        store: true,
-        items: { include: { item: true } },
-        address: true,
+      data: {
+        status: newStatus,
+        ...(newStatus === 'PLACED' ? { paymentStatus: 'PAID' } : {}),
       },
     })
 
-    // Create audit trail event
-    await this.createOrderEvent({
-      orderId,
-      status: newStatus,
-      note,
-    })
+    // Audit trail
+    await this.createOrderEvent({ orderId, status: newStatus, note })
 
-    // Calculate affiliate commission when order is completed
-    if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED') {
+    // Commission calculation fires on delivery (DELIVERED) or legacy COMPLETED
+    if (
+      (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') &&
+      oldStatus !== 'DELIVERED' &&
+      oldStatus !== 'COMPLETED'
+    ) {
       await calculateCommissionForOrder(orderId).catch((err) => {
         console.error('Failed to calculate commission for order:', orderId, err)
       })
     }
 
-    await publishOrderStatusChanged(orderId, oldStatus, newStatus, {
-      note,
-      changedBy,
-    })
+    await publishOrderStatusChanged(orderId, oldStatus, newStatus, { note, changedBy })
 
     return updatedOrder
+  }
+
+  /**
+   * @deprecated Use transitionOrderStatus — kept for internal backward-compat callers.
+   */
+  async updateOrderStatus(input: UpdateOrderStatusInput): Promise<Order> {
+    return this.transitionOrderStatus(input)
   }
 
   /**

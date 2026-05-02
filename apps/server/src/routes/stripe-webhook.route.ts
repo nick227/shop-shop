@@ -63,6 +63,7 @@ export async function stripeWebhookRoutes(app: FastifyInstance) {
         )
 
         const { prisma } = await import('@packages/db')
+        // Idempotency: unique eventId + processed flag (see PaymentWebhook model / migration).
         const existing = await prisma.paymentWebhook.findUnique({
           where: { eventId: event.id },
         })

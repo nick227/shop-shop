@@ -190,11 +190,20 @@ test.describe('Real-time Order WebSocket Flow', () => {
     const order = await orderRes.json()
     testOrderId = order.id
 
-    // Verify order created
-    expect(order.status).toBe('PLACED')
+    // Verify order created (awaiting payment / Stripe)
+    expect(order.status).toBe('PENDING_PAYMENT')
+
+    const confirmPlaced = await request.patch(`${API_URL}/orders/${testOrderId}`, {
+      headers: { Authorization: `Bearer ${vendorToken}` },
+      data: {
+        status: 'PLACED',
+        note: 'Confirm placement (test)',
+      },
+    })
+    expect(confirmPlaced.ok()).toBeTruthy()
 
     // Vendor updates status to ACCEPTED
-    const updateRes = await request.patch(`${API_URL}/orders/${testOrderId}/status`, {
+    const updateRes = await request.patch(`${API_URL}/orders/${testOrderId}`, {
       headers: { Authorization: `Bearer ${vendorToken}` },
       data: {
         status: 'ACCEPTED',
@@ -238,13 +247,54 @@ test.describe('Real-time Order WebSocket Flow', () => {
   })
 
   test('Multiple status transitions broadcast correctly', async ({ request }) => {
-    const statusFlow = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED']
+    const statusFlow = [
+      'PLACED',
+      'ACCEPTED',
+      'PREPARING',
+      'READY',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+    ] as const
 
-    // Start from ACCEPTED (order already exists from previous test)
+    const cartRes = await request.post(`${API_URL}/carts`, {
+      headers: { Authorization: `Bearer ${customerToken}` },
+      data: {
+        storeId: vendorStoreId,
+      },
+    })
+    const cart = await cartRes.json()
+
+    await request.post(`${API_URL}/cart-items`, {
+      headers: { Authorization: `Bearer ${customerToken}` },
+      data: {
+        cartId: cart.id,
+        itemId: 'test-item-id',
+        quantity: 1,
+        unitPrice: '10.99',
+      },
+    })
+
+    const orderRes = await request.post(`${API_URL}/orders`, {
+      headers: { Authorization: `Bearer ${customerToken}` },
+      data: {
+        cartId: cart.id,
+        deliveryType: 'PICKUP',
+        tip: '2.00',
+      },
+    })
+    const created = await orderRes.json()
+    const flowOrderId = created.id as string
+
+    const toPlaced = await request.patch(`${API_URL}/orders/${flowOrderId}`, {
+      headers: { Authorization: `Bearer ${vendorToken}` },
+      data: { status: 'PLACED', note: 'Confirm placement (test)' },
+    })
+    expect(toPlaced.ok()).toBeTruthy()
+
     for (let i = 1; i < statusFlow.length; i++) {
       const newStatus = statusFlow[i]
 
-      const updateRes = await request.patch(`${API_URL}/orders/${testOrderId}/status`, {
+      const updateRes = await request.patch(`${API_URL}/orders/${flowOrderId}`, {
         headers: { Authorization: `Bearer ${vendorToken}` },
         data: {
           status: newStatus,
@@ -256,16 +306,14 @@ test.describe('Real-time Order WebSocket Flow', () => {
       const updated = await updateRes.json()
       expect(updated.status).toBe(newStatus)
 
-      // Small delay between transitions
       await new Promise((resolve) => setTimeout(resolve, 500))
     }
 
-    // Verify final status
-    const finalOrder = await request.get(`${API_URL}/orders/${testOrderId}`, {
+    const finalOrder = await request.get(`${API_URL}/orders/${flowOrderId}`, {
       headers: { Authorization: `Bearer ${customerToken}` },
     })
     const orderData = await finalOrder.json()
-    expect(orderData.status).toBe('COMPLETED')
+    expect(orderData.status).toBe('DELIVERED')
   })
 
   test('Customer can cancel order and vendor receives notification', async ({ request }) => {

@@ -367,7 +367,7 @@ describe('Cart & Checkout E2E Flow', () => {
       expect(order.storeId).toBe(storeId)
       expect(order.cartId).toBe(cartId)
       expect(order.deliveryType).toBe('PICKUP')
-      expect(order.status).toBe('PLACED')
+      expect(order.status).toBe('PENDING_PAYMENT')
       expect(order.paymentStatus).toBe('UNPAID')
       expect(parseFloat(order.tip)).toBe(2.50)
       expect(parseFloat(order.subtotal)).toBeGreaterThan(0)
@@ -526,7 +526,7 @@ describe('Cart & Checkout E2E Flow', () => {
 
       expect(order.id).toBe(orderId)
       expect(order.cartId).toBe(cartId)
-      expect(order.status).toBe('PLACED')
+      expect(order.status).toBe('PENDING_PAYMENT')
     })
 
     it('should list user orders', async () => {
@@ -604,7 +604,7 @@ describe('Cart & Checkout E2E Flow', () => {
       const order = JSON.parse(checkout.body)
 
       // Verify order
-      expect(order.status).toBe('PLACED')
+      expect(order.status).toBe('PENDING_PAYMENT')
       expect(order.cartId).toBe(cart1.id)
       expect(parseFloat(order.tip)).toBe(4.00)
 

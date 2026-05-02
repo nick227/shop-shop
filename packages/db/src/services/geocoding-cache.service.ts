@@ -1,7 +1,6 @@
 /**
  * Geocoding Cache Service
- * Provides caching layer between user queries and Positionstack API
- * Prevents redundant API calls and improves performance
+ * Caches geocoder responses (Mapbox / manual / fallback). Legacy DB rows may still record source `positionstack`.
  */
 
 import { PrismaClient } from '../generated/client'
@@ -18,7 +17,7 @@ export interface GeocodingCacheEntry {
   country?: string
   formattedAddress?: string
   confidence: 'high' | 'medium' | 'low'
-  source: 'positionstack' | 'manual' | 'fallback'
+  source: 'mapbox' | 'positionstack' | 'manual' | 'fallback'
   createdAt: Date
   updatedAt: Date
   expiresAt?: Date
@@ -38,7 +37,7 @@ export interface GeocodingResult {
   country?: string
   formattedAddress?: string
   confidence: 'high' | 'medium' | 'low'
-  source: 'positionstack' | 'manual' | 'fallback'
+  source: 'mapbox' | 'positionstack' | 'manual' | 'fallback'
 }
 
 export class GeocodingCacheService {
@@ -79,7 +78,7 @@ export class GeocodingCacheService {
       country: cacheEntry.country || undefined,
       formattedAddress: cacheEntry.formattedAddress || undefined,
       confidence: cacheEntry.confidence as 'high' | 'medium' | 'low',
-      source: cacheEntry.source as 'positionstack' | 'manual' | 'fallback'
+      source: cacheEntry.source as 'mapbox' | 'positionstack' | 'manual' | 'fallback'
     }
   }
 

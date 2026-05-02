@@ -230,7 +230,7 @@ model GeocodingCache {
 
   // Metadata
   confidence String @db.VarChar(10) // 'high', 'medium', 'low'
-  source     String @db.VarChar(20) // 'positionstack', 'manual', 'fallback'
+  source     String @db.VarChar(20) // 'mapbox', 'manual', 'fallback' (legacy rows may say 'positionstack')
 
   // Cache management
   createdAt DateTime  @default(now())
@@ -339,7 +339,8 @@ model Order {
   cart                   Cart?         @relation(fields: [cartId], references: [id], onDelete: SetNull)
   assignedToUserId       String?       @db.Char(36)
   assignedTo             User?         @relation("OrderAssignedRider", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  status                 OrderStatus   @default(PLACED)
+  /// Initial checkout state; transitions to PLACED after Stripe payment_intent.succeeded. Invariant: status === PLACED ⇒ paymentStatus === PAID (enforced in OrderService + PATCH).
+  status                 OrderStatus   @default(PENDING_PAYMENT)
   deliveryType           DeliveryType
   paymentStatus          PaymentStatus @default(UNPAID)
   subtotal               Decimal       @db.Decimal(10, 2)
@@ -362,6 +363,8 @@ model Order {
   /// Canonical delivery pin (copied at checkout). Maps / realtime read these — not Address joins.
   deliveryLatitude       Decimal?      @db.Decimal(10, 8)
   deliveryLongitude      Decimal?      @db.Decimal(11, 8)
+  deliveryDistanceMiles  Decimal?      @db.Decimal(6, 2)
+  estimatedDeliveryAt    DateTime?
 
   // Cancellation & Refund tracking
   cancelReason String?   @db.Text
@@ -383,6 +386,7 @@ model Order {
   @@index([stripeTransferId])
   @@index([status, canceledAt])
   @@index([assignedToUserId])
+  @@index([deliveryLatitude, deliveryLongitude])
 }
 
 model OrderItem {
@@ -445,6 +449,7 @@ model Address {
   postalCode   String
   country      String
   instructions String?
+  /// GeoJSON-like pin: canonical `{ "lat": number, "lng": number }` (see parseGeoJson — latitude/longitude also accepted).
   geo          Json?
   isDefault    Boolean   @default(false)
   isActive     Boolean   @default(true)
@@ -465,6 +470,7 @@ model SystemSetting {
   @@unique([key])
 }
 
+/// Stripe idempotency: handler loads by eventId, skips if processed=true, else upserts payload, runs handlers, then sets processed=true (see apps/server stripe webhook route).
 model PaymentWebhook {
   id        String   @id @default(uuid()) @db.Char(36)
   provider  String   @default("stripe")

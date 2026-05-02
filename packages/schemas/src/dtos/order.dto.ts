@@ -104,6 +104,8 @@ export const OrderResponseSchema = z.object({
   addressSnapshot: z.record(z.unknown()).nullable(),
   deliveryLatitude: z.union([z.string(), z.number()]).nullable().optional(),
   deliveryLongitude: z.union([z.string(), z.number()]).nullable().optional(),
+  deliveryDistanceMiles: z.union([z.string(), z.number()]).nullable().optional(),
+  estimatedDeliveryAt: z.string().datetime().nullable().optional(),
   cancelReason: z.string().nullable(),
   canceledBy: z.string().nullable(),
   canceledAt: z.string().datetime().nullable(),
