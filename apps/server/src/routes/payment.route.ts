@@ -25,8 +25,7 @@ import 'dotenv/config'
 // ========================================
 
 interface AuthenticatedRequest extends FastifyRequest {
-  userId?: string
-  userRole?: string
+  user?: { id: string; role: string }
 }
 
 export const paymentRoutes = async (app: FastifyInstance) => {
@@ -48,13 +47,13 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       
       const result = await processOrderPayment({
         orderId: input.orderId,
-        userId: req.userId!,
+        userId: req.user!.id,
         paymentMethodId: input.paymentMethodId,
       })
 
       req.log.info({
         event: 'payment_intent_created',
-        userId: req.userId,
+        userId: req.user!.id,
         orderId: input.orderId,
         amount: result.amount,
       }, 'Payment intent created')
@@ -92,7 +91,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       
       const result = await initiateStripeConnect({
         storeId: input.storeId,
-        userId: req.userId!,
+        userId: req.user!.id,
         businessType: input.businessType,
         returnUrl: `${baseUrl}/vendor/connect/success`,
         refreshUrl: `${baseUrl}/vendor/connect/refresh`,
@@ -100,7 +99,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
 
       req.log.info({
         event: 'stripe_connect_initiated',
-        userId: req.userId,
+        userId: req.user!.id,
         storeId: input.storeId,
         accountId: result.accountId,
       }, 'Stripe Connect initiated')
@@ -131,7 +130,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     try {
       const { storeId } = req.params as { storeId: string }
       
-      const status = await checkStripeConnectStatus(storeId, req.userId!)
+      const status = await checkStripeConnectStatus(storeId, req.user!.id)
 
       return reply.code(200).send(status)
     } catch (error) {
@@ -162,13 +161,13 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       
       const result = await refundOrder({
         orderId,
-        userId: req.userId!,
+        userId: req.user!.id,
         amount: amount ? new Decimal(amount) : undefined,
       })
 
       req.log.info({
         event: 'refund_issued',
-        userId: req.userId,
+        userId: req.user!.id,
         orderId,
         refundId: result.refundId,
         amount: result.amount,
