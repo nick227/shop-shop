@@ -10,22 +10,18 @@ import {
   initiateStripeConnect,
   checkStripeConnectStatus,
   refundOrder,
-  handlePaymentIntentSucceeded,
-  handlePaymentIntentFailed,
-  handleAccountUpdated,
 } from '@packages/db'
-import { verifyWebhookSignature } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
+import { authenticate, type AuthenticatedUser } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 import 'dotenv/config'
 
 // ========================================
 // Payment Routes
-// Handles Stripe payments, Connect, and webhooks
+// Handles Stripe payments and Connect (webhooks: stripe-webhook.route.ts)
 // ========================================
 
 interface AuthenticatedRequest extends FastifyRequest {
-  user?: { id: string; role: string }
+  user: AuthenticatedUser
 }
 
 export const paymentRoutes = async (app: FastifyInstance) => {
@@ -184,103 +180,6 @@ export const paymentRoutes = async (app: FastifyInstance) => {
         }
       }
       throw error
-    }
-  })
-
-  // ========================================
-  // POST /webhooks/stripe
-  // Stripe webhook handler (NO AUTH - verified by signature)
-  // ========================================
-  app.post('/webhooks/stripe', {
-    config: {
-      rawBody: true, // We need raw body for signature verification
-    },
-    schema: {
-      tags: ['Webhooks'],
-      summary: 'Stripe webhook',
-      description: 'Handles Stripe webhook events (payment_intent, account updates)',
-    },
-  }, async (req, reply) => {
-    try {
-      const signature = req.headers['stripe-signature'] as string
-      
-      if (!signature) {
-        return reply.code(400).send({ error: 'Missing stripe-signature header' })
-      }
-
-      // Get raw body (Fastify should provide this with rawBody: true)
-      const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody || Buffer.from(JSON.stringify(req.body))
-      
-      // Verify webhook signature
-      const event = verifyWebhookSignature(rawBody, signature)
-
-      req.log.info({
-        event: 'stripe_webhook_received',
-        type: event.type,
-        eventId: event.id,
-      }, 'Stripe webhook received')
-
-      // Check if we've already processed this event (idempotency)
-      const { prisma } = await import('@packages/db')
-      const existing = await prisma.paymentWebhook.findUnique({
-        where: { eventId: event.id },
-      })
-
-      if (existing?.processed) {
-        req.log.info({ eventId: event.id }, 'Webhook already processed, skipping')
-        return reply.code(200).send({ received: true, processed: false })
-      }
-
-      // Store webhook event
-      await prisma.paymentWebhook.upsert({
-        where: { eventId: event.id },
-        create: {
-          eventId: event.id,
-          provider: 'stripe',
-          type: event.type,
-          payload: JSON.parse(JSON.stringify(event.data.object)),
-          processed: false,
-        },
-        update: {},
-      })
-
-      // Process event based on type
-      switch (event.type) {
-        case 'payment_intent.succeeded':
-          await handlePaymentIntentSucceeded(event.data.object.id)
-          break
-          
-        case 'payment_intent.payment_failed':
-          await handlePaymentIntentFailed(event.data.object.id)
-          break
-          
-        case 'account.updated':
-          await handleAccountUpdated(event.data.object.id)
-          break
-          
-        default:
-          req.log.info({ type: event.type }, 'Unhandled webhook event type')
-      }
-
-      // Mark as processed
-      await prisma.paymentWebhook.update({
-        where: { eventId: event.id },
-        data: { processed: true },
-      })
-
-      return reply.code(200).send({ received: true, processed: true })
-    } catch (error) {
-      if (error instanceof Error) {
-        req.log.error({ error: error.message }, 'Webhook processing failed')
-        
-        // Return 200 to prevent Stripe from retrying on signature errors
-        if (error.message.includes('signature')) {
-          return reply.code(400).send({ error: 'Invalid signature' })
-        }
-      }
-      
-      // Return 500 for other errors so Stripe will retry
-      return reply.code(500).send({ error: 'Webhook processing failed' })
     }
   })
 }

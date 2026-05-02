@@ -5,6 +5,7 @@ import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import { authRoutes } from './routes/auth.route.js'
 import { paymentRoutes } from './routes/payment.route.js'
+import { stripeWebhookRoutes } from './routes/stripe-webhook.route.js'
 import { mediaRoutes } from './routes/media.route.js'
 import { realtimeRoutes } from './routes/realtime.route.js'
 import { orderRoutes } from './routes/order.route.js'
@@ -88,6 +89,7 @@ app.get('/healthz', async () => ({ ok: true }))
 
 // Register routes
 await app.register(authRoutes)     // Custom auth logic
+await app.register(stripeWebhookRoutes) // Stripe webhooks (raw JSON body for signatures)
 await app.register(paymentRoutes)  // Payment & Stripe Connect
 await app.register(mediaRoutes)    // Media uploads (custom multipart handling)
 await app.register(realtimeRoutes) // Real-time WebSocket
