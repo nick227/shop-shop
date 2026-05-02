@@ -6,13 +6,13 @@
  * To regenerate: pnpm gen:hooks
  */
 import { createResourceHooks } from './createResourceHooks'
-import * as apiWrapper from '../api/apiWrapper'
+import * as apiWrapper from '@api/apiWrapper'
 import type { 
   User, StoreResponse as Store, GeocodingCache, ItemResponse as Item, MediaAsset, Cart, CartItem, OrderResponse as Order, OrderItem, OrderEvent, Tip, AddressResponse as Address, SystemSetting, PaymentWebhook, PaymentMethod, Promotion, PromotionRedemption, Post, PostLike, Comment, Affiliate, Commission, AffiliatePayout, DeliveryZone, VendorVerification, TeamMember, Invitation, FavoriteStore, FavoriteItem, Bundle, BundleItem, BundlePricing,
-} from '../api/backend-types'
+} from '@api/types'
 import type { 
   CreateUserInput, CreateStoreInput, CreateGeocodingCacheInput, CreateItemInput, CreateMediaAssetInput, CreateCartInput, CreateCartItemInput, CreateOrderInput, CreateOrderItemInput, CreateOrderEventInput, CreateTipInput, CreateAddressInput, CreateSystemSettingInput, CreatePaymentWebhookInput, CreatePaymentMethodInput, CreatePromotionInput, CreatePromotionRedemptionInput, CreatePostInput, CreatePostLikeInput, CreateCommentInput, CreateAffiliateInput, CreateCommissionInput, CreateAffiliatePayoutInput, CreateDeliveryZoneInput, CreateVendorVerificationInput, CreateTeamMemberInput, CreateInvitationInput, CreateFavoriteStoreInput, CreateFavoriteItemInput, CreateBundleInput, CreateBundleItemInput, CreateBundlePricingInput,
-} from '../api/apiWrapper'
+} from '@api/types'
 
 // ============================================
 // Users Hooks
@@ -511,17 +511,17 @@ export const useUpdateTip = tipsHooks.useUpdate
 export const useDeleteTip = tipsHooks.useDelete
 
 // ============================================
-// Addresss Hooks
+// Addresses hooks
 // ============================================
-const addresssHooks = createResourceHooks<Address, CreateAddressInput>('addresss', apiWrapper.addresss)
+const addressesHooks = createResourceHooks<Address, CreateAddressInput>('addresses', apiWrapper.addresses)
 
 /**
- * Fetch list of addresss
+ * Fetch list of addresses
  * @param Query parameters for filtering and pagination
- * @returns React Query result with addresss data
- * @example const { data: addresss } = useAddresss(params)
+ * @returns React Query result with addresses data
+ * @example const { data: addresses } = useAddresses(params)
  */
-export const useAddresss = addresssHooks.useList
+export const useAddresses = addressesHooks.useList
 
 /**
  * Fetch single address by ID
@@ -529,7 +529,7 @@ export const useAddresss = addresssHooks.useList
  * @returns React Query result with address data
  * @example const { data: address } = useAddress(id)
  */
-export const useAddress = addresssHooks.useOne
+export const useAddress = addressesHooks.useOne
 
 /**
  * Create new address
@@ -537,7 +537,7 @@ export const useAddress = addresssHooks.useOne
  * @returns React Query result with address data
  * @example const { mutate: create } = useCreateAddress()
  */
-export const useCreateAddress = addresssHooks.useCreate
+export const useCreateAddress = addressesHooks.useCreate
 
 /**
  * Update address
@@ -545,7 +545,7 @@ export const useCreateAddress = addresssHooks.useCreate
  * @returns React Query result with address data
  * @example const { mutate: update } = useUpdateAddress()
  */
-export const useUpdateAddress = addresssHooks.useUpdate
+export const useUpdateAddress = addressesHooks.useUpdate
 
 /**
  * Delete address
@@ -553,7 +553,7 @@ export const useUpdateAddress = addresssHooks.useUpdate
  * @returns React Query result with address data
  * @example const { mutate: deleteItem } = useDeleteAddress()
  */
-export const useDeleteAddress = addresssHooks.useDelete
+export const useDeleteAddress = addressesHooks.useDelete
 
 // ============================================
 // Systemsettings Hooks

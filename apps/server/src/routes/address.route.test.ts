@@ -39,11 +39,11 @@ describe('Address Routes E2E', () => {
     })
   })
 
-  describe('POST /addresss', () => {
+  describe('POST /addresses', () => {
     it('should create address with all fields', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/addresss',
+        url: '/addresses',
         headers: authHeaders(user.token),
         payload: {
           label: 'Home',
@@ -74,7 +74,7 @@ describe('Address Routes E2E', () => {
     it('should create address with minimal fields', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/addresss',
+        url: '/addresses',
         headers: authHeaders(user.token),
         payload: {
           line1: '456 Oak Ave',
@@ -92,7 +92,7 @@ describe('Address Routes E2E', () => {
     it('should require authentication', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/addresss',
+        url: '/addresses',
         payload: {
           line1: '123 Test St',
           city: 'City',
@@ -105,14 +105,14 @@ describe('Address Routes E2E', () => {
     })
   })
 
-  describe('GET /addresss', () => {
+  describe('GET /addresses', () => {
     it('should list addresses', async () => {
       await createTestAddress(user.id)
       await createTestAddress(user.id)
 
       const response = await app.inject({
         method: 'GET',
-        url: '/addresss',
+        url: '/addresses',
         headers: authHeaders(user.token),
       })
 
@@ -123,13 +123,13 @@ describe('Address Routes E2E', () => {
     })
   })
 
-  describe('GET /addresss/:id', () => {
+  describe('GET /addresses/:id', () => {
     it('should get address by id', async () => {
       const addr = await createTestAddress(user.id)
 
       const response = await app.inject({
         method: 'GET',
-        url: `/addresss/${addr.id}`,
+        url: `/addresses/${addr.id}`,
         headers: authHeaders(user.token),
       })
 
@@ -139,13 +139,13 @@ describe('Address Routes E2E', () => {
     })
   })
 
-  describe('PATCH /addresss/:id', () => {
+  describe('PATCH /addresses/:id', () => {
     it('should update address', async () => {
       const addr = await createTestAddress(user.id)
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/addresss/${addr.id}`,
+        url: `/addresses/${addr.id}`,
         headers: authHeaders(user.token),
         payload: {
           instructions: 'Updated instructions',
@@ -158,13 +158,13 @@ describe('Address Routes E2E', () => {
     })
   })
 
-  describe('DELETE /addresss/:id', () => {
+  describe('DELETE /addresses/:id', () => {
     it('should soft delete address', async () => {
       const addr = await createTestAddress(user.id)
 
       const response = await app.inject({
         method: 'DELETE',
-        url: `/addresss/${addr.id}`,
+        url: `/addresses/${addr.id}`,
         headers: authHeaders(user.token),
       })
 

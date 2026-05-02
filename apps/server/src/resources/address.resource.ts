@@ -13,6 +13,7 @@ import { prisma } from '@packages/db'
  */
 export const addressResource = defineResource({
   name: 'address',
+  path: '/addresses',
   model: 'address',
   schemas: {
     create: CreateAddressInputSchema,

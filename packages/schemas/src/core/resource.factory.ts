@@ -5,12 +5,20 @@ import type { ResourceDefinition, ResourceOperations, CrudOperation, Role } from
 // Declarative resource definition builder
 // ========================================
 
+function defaultResourcePath(name: string): string {
+  if (name === 'address') {
+    return '/addresses'
+  }
+  return `/${name}s`
+}
+
 export function defineResource(
   config: Omit<ResourceDefinition, 'path'> & { path?: string }
 ): ResourceDefinition {
+  const path = config.path ?? defaultResourcePath(config.name)
   return {
-    path: config.path || `/${config.name}s`,
     ...config,
+    path,
   }
 }
 

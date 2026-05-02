@@ -14,14 +14,15 @@ export function registerResourceInOpenAPI(
   errorSchema: z.ZodSchema
 ) {
   const ops = getResourceOperations(resource)
-  
+  const plural = pluralDisplay(resource)
+
   // CREATE - POST /resource
   if (ops.hasCreate) {
     registry.registerPath({
       operationId: `create${capitalize(resource.name)}`,
       method: 'post',
       path: resource.path,
-      tags: [capitalize(resource.name) + 's'],
+      tags: [plural.tag],
       summary: `Create ${resource.name}`,
       request: {
         body: {
@@ -54,14 +55,14 @@ export function registerResourceInOpenAPI(
       request?: { query?: z.ZodSchema }
       responses: Record<number, { description: string; content: Record<string, { schema: z.ZodSchema }> }>
     } = {
-      operationId: `list${capitalize(resource.name)}s`,
+      operationId: `list${plural.tag}`,
       method: 'get',
       path: resource.path,
-      tags: [capitalize(resource.name) + 's'],
-      summary: `List ${resource.name}s`,
+      tags: [plural.tag],
+      summary: `List ${plural.phrase}`,
       responses: {
         200: {
-          description: `List of ${resource.name}s`,
+          description: `List of ${plural.phrase}`,
           content: { 'application/json': { schema: resource.schemas.list } }
         }
       },
@@ -83,7 +84,7 @@ export function registerResourceInOpenAPI(
       operationId: `get${capitalize(resource.name)}ById`,
       method: 'get',
       path: `${resource.path}/{id}`,
-      tags: [capitalize(resource.name) + 's'],
+      tags: [plural.tag],
       summary: `Get ${resource.name} by ID`,
       request: {
         params: z.object({ id: z.string().uuid() })
@@ -107,7 +108,7 @@ export function registerResourceInOpenAPI(
       operationId: `update${capitalize(resource.name)}`,
       method: 'patch',
       path: `${resource.path}/{id}`,
-      tags: [capitalize(resource.name) + 's'],
+      tags: [plural.tag],
       summary: `Update ${resource.name}`,
       request: {
         params: z.object({ id: z.string().uuid() }),
@@ -136,7 +137,7 @@ export function registerResourceInOpenAPI(
       operationId: `delete${capitalize(resource.name)}`,
       method: 'delete',
       path: `${resource.path}/{id}`,
-      tags: [capitalize(resource.name) + 's'],
+      tags: [plural.tag],
       summary: `Delete ${resource.name}`,
       request: {
         params: z.object({ id: z.string().uuid() })
@@ -178,5 +179,19 @@ export function registerAllResourcesInOpenAPI(
 
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+/** Tag label + lower-case plural phrase for summaries (uses explicit path when set, e.g. /addresses). */
+function pluralDisplay(resource: ResourceDefinition): { tag: string; phrase: string } {
+  if (resource.path) {
+    const phrase = resource.path.replace(/^\//, '')
+    const tag = phrase.charAt(0).toUpperCase() + phrase.slice(1)
+    return { tag, phrase }
+  }
+  const phrase = `${resource.name}s`
+  return {
+    tag: phrase.charAt(0).toUpperCase() + phrase.slice(1),
+    phrase,
+  }
 }
 

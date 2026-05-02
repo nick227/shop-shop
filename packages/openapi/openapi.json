@@ -3116,15 +3116,68 @@
           "sortIndex": {
             "type": "integer"
           },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "itemId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "sortIndex": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "itemId",
+                "quantity"
+              ]
+            }
+          },
           "pricing": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "pricingType": {
+                "type": "string",
+                "enum": [
+                  "FIXED_PRICE",
+                  "DISCOUNT_PERCENT",
+                  "DISCOUNT_AMOUNT",
+                  "BEST_DEAL"
+                ]
+              },
+              "fixedPrice": {
+                "type": "number"
+              },
+              "discountPercent": {
+                "type": "number"
+              },
+              "discountAmount": {
+                "type": "number"
+              },
+              "minSavings": {
+                "type": "number"
+              },
+              "showSavings": {
+                "type": "boolean"
+              },
+              "savingsLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pricingType"
+            ]
           }
         },
         "required": [
           "storeId",
           "name",
-          "description",
-          "imageUrl"
+          "items",
+          "pricing"
         ]
       },
       "UpdateBundleInput": {
@@ -3148,19 +3201,76 @@
           "sortIndex": {
             "type": "integer"
           },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "itemId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "sortIndex": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "itemId",
+                "quantity"
+              ]
+            }
+          },
           "pricing": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "pricingType": {
+                "type": "string",
+                "enum": [
+                  "FIXED_PRICE",
+                  "DISCOUNT_PERCENT",
+                  "DISCOUNT_AMOUNT",
+                  "BEST_DEAL"
+                ]
+              },
+              "fixedPrice": {
+                "type": "number"
+              },
+              "discountPercent": {
+                "type": "number"
+              },
+              "discountAmount": {
+                "type": "number"
+              },
+              "minSavings": {
+                "type": "number"
+              },
+              "showSavings": {
+                "type": "boolean"
+              },
+              "savingsLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pricingType"
+            ]
           }
-        },
-        "required": [
-          "name",
-          "description",
-          "imageUrl"
-        ]
+        }
       },
       "BundleResponse": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
           "storeId": {
             "type": "string"
           },
@@ -3177,35 +3287,121 @@
             "type": "string"
           },
           "isActive": {
-            "type": "boolean",
-            "nullable": true
+            "type": "boolean"
           },
           "sortIndex": {
-            "type": "integer",
-            "nullable": true
+            "type": "integer"
           },
           "items": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "bundleId": {
+                  "type": "string"
+                },
+                "itemId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "sortIndex": {
+                  "type": "integer"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "item": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "price": {
+                      "type": "number"
+                    },
+                    "imageUrl": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "price"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "bundleId",
+                "itemId",
+                "quantity"
+              ]
+            }
           },
           "pricing": {
-            "type": "string",
-            "nullable": true
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "bundleId": {
+                "type": "string"
+              },
+              "pricingType": {
+                "type": "string",
+                "enum": [
+                  "FIXED_PRICE",
+                  "DISCOUNT_PERCENT",
+                  "DISCOUNT_AMOUNT",
+                  "BEST_DEAL"
+                ]
+              },
+              "fixedPrice": {
+                "type": "number"
+              },
+              "discountPercent": {
+                "type": "number"
+              },
+              "discountAmount": {
+                "type": "number"
+              },
+              "minSavings": {
+                "type": "number"
+              },
+              "showSavings": {
+                "type": "boolean"
+              },
+              "savingsLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "bundleId",
+              "pricingType"
+            ]
           },
           "orderItems": {
             "type": "string"
           }
         },
         "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
           "storeId",
-          "store",
-          "name",
-          "description",
-          "imageUrl",
-          "isActive",
-          "sortIndex",
-          "items",
-          "pricing",
-          "orderItems"
+          "name"
         ]
       },
       "BundleListResponse": {
@@ -3216,6 +3412,15 @@
             "items": {
               "type": "object",
               "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
                 "storeId": {
                   "type": "string"
                 },
@@ -3232,35 +3437,121 @@
                   "type": "string"
                 },
                 "isActive": {
-                  "type": "boolean",
-                  "nullable": true
+                  "type": "boolean"
                 },
                 "sortIndex": {
-                  "type": "integer",
-                  "nullable": true
+                  "type": "integer"
                 },
                 "items": {
-                  "type": "string"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "bundleId": {
+                        "type": "string"
+                      },
+                      "itemId": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "number"
+                      },
+                      "sortIndex": {
+                        "type": "integer"
+                      },
+                      "price": {
+                        "type": "number"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "item": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "imageUrl": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "price"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "bundleId",
+                      "itemId",
+                      "quantity"
+                    ]
+                  }
                 },
                 "pricing": {
-                  "type": "string",
-                  "nullable": true
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "bundleId": {
+                      "type": "string"
+                    },
+                    "pricingType": {
+                      "type": "string",
+                      "enum": [
+                        "FIXED_PRICE",
+                        "DISCOUNT_PERCENT",
+                        "DISCOUNT_AMOUNT",
+                        "BEST_DEAL"
+                      ]
+                    },
+                    "fixedPrice": {
+                      "type": "number"
+                    },
+                    "discountPercent": {
+                      "type": "number"
+                    },
+                    "discountAmount": {
+                      "type": "number"
+                    },
+                    "minSavings": {
+                      "type": "number"
+                    },
+                    "showSavings": {
+                      "type": "boolean"
+                    },
+                    "savingsLabel": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "bundleId",
+                    "pricingType"
+                  ]
                 },
                 "orderItems": {
                   "type": "string"
                 }
               },
               "required": [
+                "id",
+                "createdAt",
+                "updatedAt",
                 "storeId",
-                "store",
-                "name",
-                "description",
-                "imageUrl",
-                "isActive",
-                "sortIndex",
-                "items",
-                "pricing",
-                "orderItems"
+                "name"
               ]
             }
           },
@@ -8749,11 +9040,11 @@
         }
       }
     },
-    "/addresss": {
+    "/addresses": {
       "post": {
         "operationId": "createAddress",
         "tags": [
-          "Addresss"
+          "Addresses"
         ],
         "summary": "Create address",
         "requestBody": {
@@ -8941,14 +9232,14 @@
         }
       },
       "get": {
-        "operationId": "listAddresss",
+        "operationId": "listAddresses",
         "tags": [
-          "Addresss"
+          "Addresses"
         ],
-        "summary": "List addresss",
+        "summary": "List addresses",
         "responses": {
           "200": {
-            "description": "List of addresss",
+            "description": "List of addresses",
             "content": {
               "application/json": {
                 "schema": {
@@ -9073,11 +9364,11 @@
         }
       }
     },
-    "/addresss/{id}": {
+    "/addresses/{id}": {
       "get": {
         "operationId": "getAddressById",
         "tags": [
-          "Addresss"
+          "Addresses"
         ],
         "summary": "Get address by ID",
         "parameters": [
@@ -9207,7 +9498,7 @@
       "patch": {
         "operationId": "updateAddress",
         "tags": [
-          "Addresss"
+          "Addresses"
         ],
         "summary": "Update address",
         "parameters": [
@@ -9400,7 +9691,7 @@
       "delete": {
         "operationId": "deleteAddress",
         "tags": [
-          "Addresss"
+          "Addresses"
         ],
         "summary": "Delete address",
         "parameters": [
@@ -9462,15 +9753,68 @@
                   "sortIndex": {
                     "type": "integer"
                   },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "sortIndex": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "itemId",
+                        "quantity"
+                      ]
+                    }
+                  },
                   "pricing": {
-                    "type": "string"
+                    "type": "object",
+                    "properties": {
+                      "pricingType": {
+                        "type": "string",
+                        "enum": [
+                          "FIXED_PRICE",
+                          "DISCOUNT_PERCENT",
+                          "DISCOUNT_AMOUNT",
+                          "BEST_DEAL"
+                        ]
+                      },
+                      "fixedPrice": {
+                        "type": "number"
+                      },
+                      "discountPercent": {
+                        "type": "number"
+                      },
+                      "discountAmount": {
+                        "type": "number"
+                      },
+                      "minSavings": {
+                        "type": "number"
+                      },
+                      "showSavings": {
+                        "type": "boolean"
+                      },
+                      "savingsLabel": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "pricingType"
+                    ]
                   }
                 },
                 "required": [
                   "storeId",
                   "name",
-                  "description",
-                  "imageUrl"
+                  "items",
+                  "pricing"
                 ]
               }
             }
@@ -9484,6 +9828,15 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "storeId": {
                       "type": "string"
                     },
@@ -9500,35 +9853,121 @@
                       "type": "string"
                     },
                     "isActive": {
-                      "type": "boolean",
-                      "nullable": true
+                      "type": "boolean"
                     },
                     "sortIndex": {
-                      "type": "integer",
-                      "nullable": true
+                      "type": "integer"
                     },
                     "items": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "bundleId": {
+                            "type": "string"
+                          },
+                          "itemId": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "sortIndex": {
+                            "type": "integer"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "item": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "price": {
+                                "type": "number"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "price"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bundleId",
+                          "itemId",
+                          "quantity"
+                        ]
+                      }
                     },
                     "pricing": {
-                      "type": "string",
-                      "nullable": true
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "bundleId": {
+                          "type": "string"
+                        },
+                        "pricingType": {
+                          "type": "string",
+                          "enum": [
+                            "FIXED_PRICE",
+                            "DISCOUNT_PERCENT",
+                            "DISCOUNT_AMOUNT",
+                            "BEST_DEAL"
+                          ]
+                        },
+                        "fixedPrice": {
+                          "type": "number"
+                        },
+                        "discountPercent": {
+                          "type": "number"
+                        },
+                        "discountAmount": {
+                          "type": "number"
+                        },
+                        "minSavings": {
+                          "type": "number"
+                        },
+                        "showSavings": {
+                          "type": "boolean"
+                        },
+                        "savingsLabel": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "bundleId",
+                        "pricingType"
+                      ]
                     },
                     "orderItems": {
                       "type": "string"
                     }
                   },
                   "required": [
+                    "id",
+                    "createdAt",
+                    "updatedAt",
                     "storeId",
-                    "store",
-                    "name",
-                    "description",
-                    "imageUrl",
-                    "isActive",
-                    "sortIndex",
-                    "items",
-                    "pricing",
-                    "orderItems"
+                    "name"
                   ]
                 }
               }
@@ -9585,6 +10024,15 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
                           "storeId": {
                             "type": "string"
                           },
@@ -9601,35 +10049,121 @@
                             "type": "string"
                           },
                           "isActive": {
-                            "type": "boolean",
-                            "nullable": true
+                            "type": "boolean"
                           },
                           "sortIndex": {
-                            "type": "integer",
-                            "nullable": true
+                            "type": "integer"
                           },
                           "items": {
-                            "type": "string"
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "bundleId": {
+                                  "type": "string"
+                                },
+                                "itemId": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "number"
+                                },
+                                "sortIndex": {
+                                  "type": "integer"
+                                },
+                                "price": {
+                                  "type": "number"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "item": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "price": {
+                                      "type": "number"
+                                    },
+                                    "imageUrl": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "title",
+                                    "price"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "bundleId",
+                                "itemId",
+                                "quantity"
+                              ]
+                            }
                           },
                           "pricing": {
-                            "type": "string",
-                            "nullable": true
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "bundleId": {
+                                "type": "string"
+                              },
+                              "pricingType": {
+                                "type": "string",
+                                "enum": [
+                                  "FIXED_PRICE",
+                                  "DISCOUNT_PERCENT",
+                                  "DISCOUNT_AMOUNT",
+                                  "BEST_DEAL"
+                                ]
+                              },
+                              "fixedPrice": {
+                                "type": "number"
+                              },
+                              "discountPercent": {
+                                "type": "number"
+                              },
+                              "discountAmount": {
+                                "type": "number"
+                              },
+                              "minSavings": {
+                                "type": "number"
+                              },
+                              "showSavings": {
+                                "type": "boolean"
+                              },
+                              "savingsLabel": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "bundleId",
+                              "pricingType"
+                            ]
                           },
                           "orderItems": {
                             "type": "string"
                           }
                         },
                         "required": [
+                          "id",
+                          "createdAt",
+                          "updatedAt",
                           "storeId",
-                          "store",
-                          "name",
-                          "description",
-                          "imageUrl",
-                          "isActive",
-                          "sortIndex",
-                          "items",
-                          "pricing",
-                          "orderItems"
+                          "name"
                         ]
                       }
                     },
@@ -9682,6 +10216,15 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "storeId": {
                       "type": "string"
                     },
@@ -9698,35 +10241,121 @@
                       "type": "string"
                     },
                     "isActive": {
-                      "type": "boolean",
-                      "nullable": true
+                      "type": "boolean"
                     },
                     "sortIndex": {
-                      "type": "integer",
-                      "nullable": true
+                      "type": "integer"
                     },
                     "items": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "bundleId": {
+                            "type": "string"
+                          },
+                          "itemId": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "sortIndex": {
+                            "type": "integer"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "item": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "price": {
+                                "type": "number"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "price"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bundleId",
+                          "itemId",
+                          "quantity"
+                        ]
+                      }
                     },
                     "pricing": {
-                      "type": "string",
-                      "nullable": true
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "bundleId": {
+                          "type": "string"
+                        },
+                        "pricingType": {
+                          "type": "string",
+                          "enum": [
+                            "FIXED_PRICE",
+                            "DISCOUNT_PERCENT",
+                            "DISCOUNT_AMOUNT",
+                            "BEST_DEAL"
+                          ]
+                        },
+                        "fixedPrice": {
+                          "type": "number"
+                        },
+                        "discountPercent": {
+                          "type": "number"
+                        },
+                        "discountAmount": {
+                          "type": "number"
+                        },
+                        "minSavings": {
+                          "type": "number"
+                        },
+                        "showSavings": {
+                          "type": "boolean"
+                        },
+                        "savingsLabel": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "bundleId",
+                        "pricingType"
+                      ]
                     },
                     "orderItems": {
                       "type": "string"
                     }
                   },
                   "required": [
+                    "id",
+                    "createdAt",
+                    "updatedAt",
                     "storeId",
-                    "store",
-                    "name",
-                    "description",
-                    "imageUrl",
-                    "isActive",
-                    "sortIndex",
-                    "items",
-                    "pricing",
-                    "orderItems"
+                    "name"
                   ]
                 }
               }
@@ -9785,15 +10414,63 @@
                   "sortIndex": {
                     "type": "integer"
                   },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "sortIndex": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "itemId",
+                        "quantity"
+                      ]
+                    }
+                  },
                   "pricing": {
-                    "type": "string"
+                    "type": "object",
+                    "properties": {
+                      "pricingType": {
+                        "type": "string",
+                        "enum": [
+                          "FIXED_PRICE",
+                          "DISCOUNT_PERCENT",
+                          "DISCOUNT_AMOUNT",
+                          "BEST_DEAL"
+                        ]
+                      },
+                      "fixedPrice": {
+                        "type": "number"
+                      },
+                      "discountPercent": {
+                        "type": "number"
+                      },
+                      "discountAmount": {
+                        "type": "number"
+                      },
+                      "minSavings": {
+                        "type": "number"
+                      },
+                      "showSavings": {
+                        "type": "boolean"
+                      },
+                      "savingsLabel": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "pricingType"
+                    ]
                   }
-                },
-                "required": [
-                  "name",
-                  "description",
-                  "imageUrl"
-                ]
+                }
               }
             }
           }
@@ -9806,6 +10483,15 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "storeId": {
                       "type": "string"
                     },
@@ -9822,35 +10508,121 @@
                       "type": "string"
                     },
                     "isActive": {
-                      "type": "boolean",
-                      "nullable": true
+                      "type": "boolean"
                     },
                     "sortIndex": {
-                      "type": "integer",
-                      "nullable": true
+                      "type": "integer"
                     },
                     "items": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "bundleId": {
+                            "type": "string"
+                          },
+                          "itemId": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "sortIndex": {
+                            "type": "integer"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "item": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "price": {
+                                "type": "number"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "price"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bundleId",
+                          "itemId",
+                          "quantity"
+                        ]
+                      }
                     },
                     "pricing": {
-                      "type": "string",
-                      "nullable": true
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "bundleId": {
+                          "type": "string"
+                        },
+                        "pricingType": {
+                          "type": "string",
+                          "enum": [
+                            "FIXED_PRICE",
+                            "DISCOUNT_PERCENT",
+                            "DISCOUNT_AMOUNT",
+                            "BEST_DEAL"
+                          ]
+                        },
+                        "fixedPrice": {
+                          "type": "number"
+                        },
+                        "discountPercent": {
+                          "type": "number"
+                        },
+                        "discountAmount": {
+                          "type": "number"
+                        },
+                        "minSavings": {
+                          "type": "number"
+                        },
+                        "showSavings": {
+                          "type": "boolean"
+                        },
+                        "savingsLabel": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "bundleId",
+                        "pricingType"
+                      ]
                     },
                     "orderItems": {
                       "type": "string"
                     }
                   },
                   "required": [
+                    "id",
+                    "createdAt",
+                    "updatedAt",
                     "storeId",
-                    "store",
-                    "name",
-                    "description",
-                    "imageUrl",
-                    "isActive",
-                    "sortIndex",
-                    "items",
-                    "pricing",
-                    "orderItems"
+                    "name"
                   ]
                 }
               }

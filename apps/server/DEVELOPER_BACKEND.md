@@ -47,7 +47,7 @@ Resources are declared in `src/resources/index.ts` and registered by `src/routes
 | **item** | `/items` | full CRUD | Public list/read. |
 | **order** | `/orders` | full CRUD | Domain hooks (`OrderDomain`) for placement and lifecycle; ownership via `userId`. |
 | **cart** | `/carts` | create, read, list, delete | No PATCH/update route (design comment in resource). |
-| **address** | **`/addresss`** | full CRUD | Path comes from naive pluralization (`address` → `addresss`); tests use this URL. |
+| **address** | **`/addresses`** | full CRUD | Path normalized in `defineResource` (`address` → `/addresses`). |
 | **bundle** | `/bundles` | full CRUD | Public list/read; create/update/delete for vendors with ownership via store. |
 
 **Not auto-registered (commented in `src/resources/index.ts`):** `riverResource`, `mediaResource` — replaced by dedicated route files below.
@@ -193,35 +193,32 @@ Business logic for orders, stores, promotions, carts, payments, uploads, etc. li
 1. **Resolve `order.route.ts` vs resource CRUD**  
    Either register the vendor-specific and status/cancel routes under non-conflicting paths, merge their behavior into `order.resource` / `@packages/db`, or delete the unused module and fix clients that still expect `/vendor/orders` or `PATCH /orders/:id/status`.
 
-2. **Address API path `/addresss`**  
-   Set `path: '/addresses'` in `address.resource.ts` (and migrate clients/tests), or fix `defineResource` pluralization for edge cases.
-
-3. **River authorization**  
+2. **River authorization**  
    `river.route.ts` contains TODOs to verify store ownership on posts and comment ownership on delete; closing those gaps reduces privilege escalation risk.
 
 ### Medium priority
 
-4. **Realtime scaling**  
+3. **Realtime scaling**  
    Replace or wrap `InMemoryBroker` with Redis (or similar) so horizontal scaling and reconnect semantics are safe.
 
-5. **OpenAPI completeness**  
+4. **OpenAPI completeness**  
    Align Swagger tags/schemas for custom routes with auto-generated resource routes so `/docs` reflects the full surface.
 
-6. **Stripe webhook raw body**  
+5. **Stripe webhook raw body**  
    Confirm Fastify is configured so `/webhooks/stripe` consistently receives a verifiable raw payload (`rawBody` / `@fastify/raw-body` if needed).
 
-7. **Remove stale import**  
+6. **Remove stale import**  
    Drop unused `orderRoutes` import from `src/index.ts` if the file stays unregistered, to avoid confusion.
 
 ### Lower priority / hygiene
 
-8. **Typo**  
+7. **Typo**  
    `loader.ts` comment: “resourcess” → “resources”.
 
-9. **Environment documentation**  
+8. **Environment documentation**  
    Keep a single source of truth for optional vs required keys (Stripe, `APP_URL`, `STORAGE_TYPE`, `UPLOAD_DIR`, `GEOCODING_API_KEY`) aligned with `env.ts` and deployment templates.
 
-10. **Rate limiting**  
+9. **Rate limiting**  
     Review whether payment and export endpoints need stricter per-route limits than the plugin defaults.
 
 ---
