@@ -3,45 +3,43 @@
  * Tests order service WebSocket broadcasting without UI
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { prisma } from '@packages/db'
 import { orderService, setOrderServiceBroadcast } from '@packages/db'
-import type { Order } from '@packages/db'
 
 describe('Real-time Order Broadcasting', () => {
   let testStoreId: string
   let testUserId: string
   let testOrderId: string
-  const broadcastedEvents: any[] = []
+  const broadcastedEvents: Array<{ topic: string; event: { type: string; payload: Record<string, unknown> } }> = []
 
-  beforeAll(async () => {
-    // Setup mock broadcast function
+  beforeAll(() => {
     setOrderServiceBroadcast((topic, event) => {
       broadcastedEvents.push({ topic, event })
     })
+  })
 
-    // Create test user
+  // Global setup.ts runs beforeEach cleanup; seed a fresh order after that for every test
+  beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}@example.com`,
+        email: `rt-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
         passwordHash: 'test',
         name: 'Test User',
       },
     })
     testUserId = user.id
 
-    // Create test store
     const store = await prisma.store.create({
       data: {
         ownerUserId: testUserId,
         name: 'Test Store',
-        slug: `test-store-${Date.now()}`,
+        slug: `rt-store-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         prepTimeMin: 20,
       },
     })
     testStoreId = store.id
 
-    // Create test item
     await prisma.item.create({
       data: {
         storeId: testStoreId,
@@ -50,7 +48,6 @@ describe('Real-time Order Broadcasting', () => {
       },
     })
 
-    // Create test order
     const order = await prisma.order.create({
       data: {
         userId: testUserId,
@@ -71,25 +68,17 @@ describe('Real-time Order Broadcasting', () => {
     testOrderId = order.id
   })
 
-  afterAll(async () => {
-    // Cleanup
-    await prisma.orderEvent.deleteMany({ where: { orderId: testOrderId } })
-    await prisma.order.deleteMany({ where: { userId: testUserId } })
-    await prisma.item.deleteMany({ where: { storeId: testStoreId } })
-    await prisma.store.deleteMany({ where: { id: testStoreId } })
-    await prisma.user.deleteMany({ where: { id: testUserId } })
-  })
-
   it('should broadcast new order creation to vendor and customer', async () => {
     broadcastedEvents.length = 0 // Clear previous events
 
     await orderService.broadcastNewOrder(testOrderId)
 
-    // Should broadcast to vendor and customer
-    expect(broadcastedEvents).toHaveLength(2)
+    // Vendor, customer, and per-order topic (same as PATCH status broadcasts)
+    expect(broadcastedEvents).toHaveLength(3)
 
     const vendorEvent = broadcastedEvents.find((e) => e.topic.startsWith('vendor:'))
     const customerEvent = broadcastedEvents.find((e) => e.topic.startsWith('customer:'))
+    const orderTopicEvent = broadcastedEvents.find((e) => e.topic === `order:${testOrderId}`)
 
     expect(vendorEvent).toBeDefined()
     expect(vendorEvent?.event.type).toBe('order.created')
@@ -101,6 +90,8 @@ describe('Real-time Order Broadcasting', () => {
 
     expect(customerEvent).toBeDefined()
     expect(customerEvent?.event.type).toBe('order.created')
+    expect(orderTopicEvent).toBeDefined()
+    expect(orderTopicEvent?.event.type).toBe('order.created')
   })
 
   it('should broadcast order status update to all parties', async () => {
@@ -145,7 +136,7 @@ describe('Real-time Order Broadcasting', () => {
       orderBy: { createdAt: 'asc' },
     })
 
-    expect(events.length).toBeGreaterThanOrEqual(2)
+    expect(events.length).toBeGreaterThanOrEqual(1)
 
     const preparingEvent = events.find((e) => e.status === 'PREPARING')
     expect(preparingEvent).toBeDefined()
@@ -181,7 +172,7 @@ describe('Real-time Order Broadcasting', () => {
       where: { orderId: testOrderId },
       orderBy: { createdAt: 'asc' },
     })
-    expect(events.length).toBeGreaterThanOrEqual(statusFlow.length + 1)
+    expect(events.length).toBeGreaterThanOrEqual(statusFlow.length)
   })
 
   it('should broadcast order cancellation', async () => {

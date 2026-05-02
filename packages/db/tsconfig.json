@@ -13,6 +13,7 @@
     "dist",
     "src/controllers/base.controller.ts",
     "src/scripts/geocode-stores.ts",
+    "src/scripts/verify-seed.ts",
     "src/generated/zod/index.ts"
   ]
 }

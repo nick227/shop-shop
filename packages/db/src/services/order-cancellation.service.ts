@@ -1,5 +1,6 @@
 import { prisma } from '../client'
 import { refundOrder } from './payment.service'
+import { publishOrderStatusChanged } from './order-realtime.publisher.js'
 import { Decimal } from 'decimal.js'
 
 export interface CancelOrderInput {
@@ -82,6 +83,8 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
   }
 
   // Update order status
+  const previousStatus = order.status
+
   const updatedOrder = await prisma.order.update({
     where: { id: input.orderId },
     data: {
@@ -105,7 +108,10 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
     },
   })
 
-  // TODO: Send notification to customer and vendor
+  await publishOrderStatusChanged(updatedOrder.id, previousStatus, updatedOrder.status, {
+    note: `Canceled: ${input.reason}`,
+    changedBy: input.userId,
+  })
 
   return {
     orderId: updatedOrder.id,

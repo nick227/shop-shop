@@ -7,7 +7,11 @@ import {
   OrderQuerySchema,
 } from '@packages/schemas/dtos'
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
-import { prisma } from '@packages/db'
+import {
+  prisma,
+  publishOrderCreated,
+  publishOrderStatusChanged,
+} from '@packages/db'
 
 // ========================================
 // Order Resource Definition
@@ -15,6 +19,12 @@ import { prisma } from '@packages/db'
 // ========================================
 
 const orderDomain = new OrderDomain()
+
+/** Correlates PATCH body with prior row so we emit oldStatus exactly once per status change */
+const pendingOrderStatusChange = new Map<
+  string,
+  { oldStatus: string; note?: string; changedBy?: string }
+>()
 
 export const orderResource = defineResource({
   name: 'order',
@@ -40,6 +50,23 @@ export const orderResource = defineResource({
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
+    beforeUpdate: async (id, input, context) => {
+      const existing = await prisma.order.findUnique({ where: { id } })
+      if (!existing) {
+        throw new Error('Order not found')
+      }
+      const body = input as { status?: string; note?: string }
+      if (body.status !== undefined && body.status !== existing.status) {
+        pendingOrderStatusChange.set(id, {
+          oldStatus: existing.status,
+          note: body.note,
+          changedBy: context?.userId,
+        })
+      } else {
+        pendingOrderStatusChange.delete(id)
+      }
+      return input
+    },
     beforeCreate: async (data, context) => {
       const input = data as { cartId: string; deliveryType: 'DELIVERY' | 'PICKUP'; addressId?: string; tip?: string }
       
@@ -97,71 +124,26 @@ export const orderResource = defineResource({
       // Emit domain event
       await eventBus.emit(DomainEvents.ORDER_PLACED, result)
       
-      // Publish real-time event to vendor
       try {
-        const { realtimeBroker } = await import('../services/realtime.broker.js')
-        const order = result as { id: string; userId: string; storeId: string; total: number; deliveryType: string; status: string; cartId?: string }
-        
-        // Fetch user info for customer name
-        const user = await prisma.user.findUnique({ where: { id: order.userId } })
-        
-        // Fetch order items count
-        const items = await prisma.orderItem.findMany({ where: { orderId: order.id } })
-        
-        realtimeBroker.publish(`vendor:${order.storeId}`, {
-          type: 'order.created',
-          timestamp: new Date().toISOString(),
-          payload: {
-            orderId: order.id,
-            storeId: order.storeId,
-            customerId: order.userId,
-            customerName: user?.name || 'Customer',
-            total: parseFloat(order.total.toString()),
-            deliveryType: order.deliveryType,
-            status: order.status,
-            itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-          }
-        })
-        
-        // Publish to customer
-        realtimeBroker.publish(`customer:${order.userId}`, {
-          type: 'order.created',
-          timestamp: new Date().toISOString(),
-          payload: {
-            orderId: order.id,
-            status: order.status,
-          }
-        })
+        await publishOrderCreated((result as { id: string }).id)
       } catch (error) {
-        console.error('[Order] Failed to publish realtime event:', error)
-        // Don't fail order creation if realtime fails
+        console.error('[Order] publishOrderCreated failed:', error)
       }
     },
     afterUpdate: async (result) => {
-      // Publish real-time status change event
+      const order = result as { id: string; status: string }
+      const pending = pendingOrderStatusChange.get(order.id)
+      pendingOrderStatusChange.delete(order.id)
+      if (!pending) {
+        return
+      }
       try {
-        const { realtimeBroker } = await import('../services/realtime.broker.js')
-        const order = result as { id: string; userId: string; storeId: string; status: string }
-        
-        realtimeBroker.publish(`vendor:${order.storeId}`, {
-          type: 'order.status.changed',
-          timestamp: new Date().toISOString(),
-          payload: {
-            orderId: order.id,
-            newStatus: order.status,
-          }
-        })
-        
-        realtimeBroker.publish(`customer:${order.userId}`, {
-          type: 'order.status.changed',
-          timestamp: new Date().toISOString(),
-          payload: {
-            orderId: order.id,
-            newStatus: order.status,
-          }
+        await publishOrderStatusChanged(order.id, pending.oldStatus, order.status, {
+          note: pending.note,
+          changedBy: pending.changedBy,
         })
       } catch (error) {
-        console.error('[Order] Failed to publish realtime event:', error)
+        console.error('[Order] publishOrderStatusChanged failed:', error)
       }
     },
   },

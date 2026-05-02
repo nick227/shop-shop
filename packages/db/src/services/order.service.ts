@@ -6,6 +6,11 @@
 import { prisma } from '../client.js'
 import type { Order, OrderStatus, OrderEvent } from '../generated/client/index.js'
 import { calculateCommissionForOrder } from './affiliate.service.js'
+import {
+  configureOrderRealtimePublisher,
+  publishOrderCreated,
+  publishOrderStatusChanged,
+} from './order-realtime.publisher.js'
 
 export interface BroadcastFunction {
   (topic: string, event: { type: string; timestamp: string; payload: Record<string, unknown> }): void
@@ -25,12 +30,6 @@ export interface UpdateOrderStatusInput {
 }
 
 export class OrderService {
-  private broadcast?: BroadcastFunction
-
-  constructor(broadcast?: BroadcastFunction) {
-    this.broadcast = broadcast
-  }
-
   /**
    * Create order event (audit trail) and broadcast
    */
@@ -93,43 +92,10 @@ export class OrderService {
       })
     }
 
-    // Broadcast to all interested parties
-    if (this.broadcast) {
-      const timestamp = new Date().toISOString()
-      
-      // Calculate estimated ready time (20 min default)
-      const estimatedReady = new Date(Date.now() + 20 * 60 * 1000).toISOString()
-
-      const basePayload = {
-        orderId,
-        oldStatus,
-        newStatus,
-        changedBy,
-        note,
-        estimatedReady: newStatus === 'ACCEPTED' ? estimatedReady : undefined,
-      }
-
-      // Broadcast to customer
-      this.broadcast(`customer:${currentOrder.userId}`, {
-        type: 'order.status.changed',
-        timestamp,
-        payload: basePayload,
-      })
-
-      // Broadcast to vendor
-      this.broadcast(`vendor:${currentOrder.storeId}`, {
-        type: 'order.status.changed',
-        timestamp,
-        payload: basePayload,
-      })
-
-      // Broadcast to specific order watchers
-      this.broadcast(`order:${orderId}`, {
-        type: 'order.status.changed',
-        timestamp,
-        payload: basePayload,
-      })
-    }
+    await publishOrderStatusChanged(orderId, oldStatus, newStatus, {
+      note,
+      changedBy,
+    })
 
     return updatedOrder
   }
@@ -158,38 +124,7 @@ export class OrderService {
       note: 'Order placed',
     })
 
-    if (this.broadcast) {
-      const timestamp = new Date().toISOString()
-
-      // Notify vendor
-      this.broadcast(`vendor:${order.storeId}`, {
-        type: 'order.created',
-        timestamp,
-        payload: {
-          orderId: order.id,
-          storeId: order.storeId,
-          customerId: order.userId,
-          customerName: order.user.name || 'Customer',
-          total: parseFloat(order.total.toString()),
-          deliveryType: order.deliveryType,
-          status: order.status,
-          itemCount: order.items.length,
-        },
-      })
-
-      // Notify customer (confirmation)
-      this.broadcast(`customer:${order.userId}`, {
-        type: 'order.created',
-        timestamp,
-        payload: {
-          orderId: order.id,
-          storeId: order.storeId,
-          storeName: order.store.name,
-          status: order.status,
-          total: parseFloat(order.total.toString()),
-        },
-      })
-    }
+    await publishOrderCreated(orderId)
   }
 
   /**
@@ -275,9 +210,8 @@ export class OrderService {
 // Export singleton instance
 export const orderService = new OrderService()
 
-// Allow setting broadcast function
+/** Wire broker once (e.g. WebSocket fan-out). Same hook used by HTTP order resources. */
 export function setOrderServiceBroadcast(broadcast: BroadcastFunction) {
-  const service = orderService as unknown as { broadcast?: BroadcastFunction }
-  service.broadcast = broadcast
+  configureOrderRealtimePublisher(broadcast)
 }
 
