@@ -4,6 +4,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { Prisma } from '@packages/db/generated/client'
 import {
   verifyWebhookSignature,
   handlePaymentIntentSucceeded,
@@ -12,6 +13,14 @@ import {
 } from '@packages/db'
 
 type RequestWithRaw = FastifyRequest & { rawBody?: Buffer }
+
+function isPrismaUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 export async function stripeWebhookRoutes(app: FastifyInstance) {
   app.removeAllContentTypeParsers()
@@ -63,7 +72,8 @@ export async function stripeWebhookRoutes(app: FastifyInstance) {
         )
 
         const { prisma } = await import('@packages/db')
-        // Idempotency: unique eventId + processed flag (see PaymentWebhook model / migration).
+        const payloadObject = JSON.parse(JSON.stringify(event.data.object)) as object
+
         const existing = await prisma.paymentWebhook.findUnique({
           where: { eventId: event.id },
         })
@@ -73,17 +83,33 @@ export async function stripeWebhookRoutes(app: FastifyInstance) {
           return reply.code(200).send({ received: true, processed: false })
         }
 
-        await prisma.paymentWebhook.upsert({
-          where: { eventId: event.id },
-          create: {
-            eventId: event.id,
-            provider: 'stripe',
-            type: event.type,
-            payload: JSON.parse(JSON.stringify(event.data.object)),
-            processed: false,
-          },
-          update: {},
-        })
+        try {
+          await prisma.paymentWebhook.create({
+            data: {
+              eventId: event.id,
+              provider: 'stripe',
+              type: event.type,
+              payload: payloadObject,
+              processed: false,
+            },
+          })
+        } catch (error) {
+          if (!isPrismaUniqueViolation(error)) {
+            throw error
+          }
+          for (let i = 0; i < 50; i++) {
+            await sleep(100)
+            const row = await prisma.paymentWebhook.findUnique({
+              where: { eventId: event.id },
+            })
+            if (row?.processed) {
+              req.log.info({ eventId: event.id }, 'Webhook completed by concurrent handler')
+              return reply.code(200).send({ received: true, processed: false })
+            }
+          }
+          req.log.error({ eventId: event.id }, 'PaymentWebhook still unprocessed after duplicate delivery')
+          return reply.code(500).send({ error: 'Webhook incomplete; will retry' })
+        }
 
         switch (event.type) {
           case 'payment_intent.succeeded':

@@ -4,6 +4,7 @@
  */
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
+import type { PrismaClient } from '@packages/db/generated/client'
 import { createEnhancedGeocodingService } from '@packages/db'
 import { env } from '../env.js'
 import { prisma } from '@packages/db'
@@ -72,7 +73,7 @@ export async function geocodingRoutes(app: FastifyInstance) {
   app.log.info(`✅ Geocoding API key configured (${env.GEOCODING_API_KEY.substring(0, 8)}...)`)
 
   // Create enhanced geocoding service with caching
-  const geocoder = createEnhancedGeocodingService(prisma, {
+  const geocoder = createEnhancedGeocodingService(prisma as unknown as PrismaClient, {
     apiKey: env.GEOCODING_API_KEY,
     enableCache: true,
     cacheTTLHours: 24 * 30 // 30 days

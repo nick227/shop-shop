@@ -11,6 +11,7 @@ import {
   prisma,
   publishOrderStatusChanged,
   assertValidTransition,
+  haversineMiles,
 } from '@packages/db'
 import { assertOrderAccess } from './order-access.js'
 import { parseCoordPair, parseGeoJson } from '../utils/order-coords.js'
@@ -223,6 +224,24 @@ export const orderResource = defineResource({
       const persistPair =
         input.deliveryType === 'DELIVERY' && resolved !== undefined ? resolved : null
 
+      let deliveryDistanceMiles: string | null = null
+      if (persistPair) {
+        const store = await prisma.store.findUnique({
+          where: { id: totals.storeId },
+          select: { latitude: true, longitude: true },
+        })
+        if (store?.latitude != null && store?.longitude != null) {
+          const miles = haversineMiles(
+            {
+              latitude: Number(store.latitude),
+              longitude: Number(store.longitude),
+            },
+            { latitude: persistPair.lat, longitude: persistPair.lng },
+          )
+          deliveryDistanceMiles = miles.toFixed(2)
+        }
+      }
+
       return {
         userId: context!.userId,
         storeId: totals.storeId,
@@ -242,6 +261,7 @@ export const orderResource = defineResource({
         addressSnapshot,
         deliveryLatitude: persistPair ? persistPair.lat.toFixed(8) : null,
         deliveryLongitude: persistPair ? persistPair.lng.toFixed(8) : null,
+        deliveryDistanceMiles,
       }
     },
     afterCreate: async (result) => {
