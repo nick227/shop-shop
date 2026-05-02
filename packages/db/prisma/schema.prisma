@@ -132,6 +132,8 @@ model User {
   updatedAt           DateTime            @updatedAt
   FavoriteStore       FavoriteStore[]
   FavoriteItem        FavoriteItem[]
+  assignedOrders       Order[]               @relation("OrderAssignedRider")
+  promotionRedemptions PromotionRedemption[]
 }
 
 model Store {
@@ -194,7 +196,8 @@ model Store {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   Promotion       Promotion[]
-  FavoriteStore   FavoriteStore[]
+  FavoriteStore      FavoriteStore[]
+  affiliateCommissions Commission[] @relation("CommissionStore")
 
   @@index([ownerUserId])
   @@index([latitude, longitude]) // For distance queries
@@ -331,6 +334,8 @@ model Order {
   user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   store                  Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
   cart                   Cart?         @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  assignedToUserId       String?       @db.Char(36)
+  assignedTo             User?         @relation("OrderAssignedRider", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   status                 OrderStatus   @default(PLACED)
   deliveryType           DeliveryType
   paymentStatus          PaymentStatus @default(UNPAID)
@@ -371,6 +376,7 @@ model Order {
   @@index([stripePaymentIntentId])
   @@index([stripeTransferId])
   @@index([status, canceledAt])
+  @@index([assignedToUserId])
 }
 
 model OrderItem {
@@ -521,6 +527,7 @@ model PromotionRedemption {
   promotionId String    @db.Char(36)
   promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
   userId      String    @db.Char(36)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderId     String?   @db.Char(36)
 
   discountAmount Decimal  @db.Decimal(10, 2)
@@ -615,6 +622,7 @@ model Commission {
   orderId     String    @db.Char(36)
   order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   storeId     String    @db.Char(36)
+  store       Store     @relation("CommissionStore", fields: [storeId], references: [id], onDelete: Cascade)
 
   // Commission Details
   amount         Decimal @db.Decimal(10, 2)
@@ -634,6 +642,7 @@ model Commission {
 
   @@index([affiliateId, status])
   @@index([orderId])
+  @@index([storeId])
   @@index([payoutId])
   @@index([createdAt])
 }

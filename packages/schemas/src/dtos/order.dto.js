@@ -9,6 +9,7 @@ const orderFields = defineFields([
     { name: 'userId', type: 'String', isOptional: false, hasDefault: false },
     { name: 'storeId', type: 'String', isOptional: false, hasDefault: false },
     { name: 'cartId', type: 'String', isOptional: true, hasDefault: false },
+    { name: 'assignedToUserId', type: 'String', isOptional: true, hasDefault: false },
     { name: 'status', type: 'String', isOptional: false, hasDefault: true },
     { name: 'deliveryType', type: 'String', isOptional: false, hasDefault: false },
     { name: 'paymentStatus', type: 'String', isOptional: false, hasDefault: true },
@@ -39,10 +40,15 @@ export const CreateOrderInputSchema = z.object({
     addressId: z.string().uuid().optional(),
     tip: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0.00'),
 });
-// Order status updates (vendors update status)
-export const UpdateOrderStatusSchema = z.object({
-    status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELED']),
+// Order status updates (vendors update status & optional rider assignment; null assignedToUserId = store self-delivery)
+export const UpdateOrderStatusSchema = z
+    .object({
+    status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELED']).optional(),
     note: z.string().max(500).optional(),
+    assignedToUserId: z.union([z.string().uuid(), z.null()]).optional(),
+})
+    .refine((data) => data.status !== undefined || data.assignedToUserId !== undefined, {
+    message: 'Provide status and/or assignedToUserId',
 });
 export const OrderResponseSchema = generateResponseSchema({
     fields: orderFields,
@@ -55,5 +61,6 @@ export const OrderQuerySchema = generateQuerySchema({
         storeId: z.string().uuid().optional(),
         status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELED']).optional(),
         paymentStatus: z.enum(['UNPAID', 'PAID', 'REFUNDED']).optional(),
+        assignedToUserId: z.string().uuid().optional(),
     },
 });

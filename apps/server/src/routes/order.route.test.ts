@@ -147,6 +147,24 @@ describe('Order Routes E2E', () => {
 
       expect(response.statusCode).toBe(200)
     })
+
+    it('should assign rider when vendor owns store', async () => {
+      const rider = await createAuthenticatedUser('RIDER')
+      const order = await createTestOrder(user.id, storeId)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/orders/${order.id}`,
+        headers: authHeaders(vendor.token),
+        payload: {
+          assignedToUserId: rider.id,
+        },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body) as { assignedToUserId?: string }
+      expect(body.assignedToUserId).toBe(rider.id)
+    })
   })
 
   describe('DELETE /orders/:id', () => {

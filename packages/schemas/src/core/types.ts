@@ -40,6 +40,12 @@ export interface CustomHooks {
   afterDelete?: (id: string, context?: HookContext) => Promise<void>
   beforeList?: (filters: unknown, context?: HookContext) => Promise<unknown>
   afterList?: (result: unknown, context?: HookContext) => Promise<unknown>
+  /** When set, runs instead of default ownership checks for read/update/delete */
+  authorizeAccess?: (
+    existing: unknown,
+    context: HookContext | undefined,
+    operation: 'read' | 'update' | 'delete'
+  ) => Promise<void>
 }
 
 export interface HookContext {

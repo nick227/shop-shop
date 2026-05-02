@@ -32,6 +32,53 @@ export class BaseCrudController {
       userRole: req.user?.role,
     }
   }
+
+  /**
+   * Optional authorizeAccess hook replaces default ownership checks when present.
+   */
+  protected async enforceAccess(
+    req: AuthenticatedRequest,
+    reply: FastifyReply,
+    existing: unknown,
+    operation: 'read' | 'update' | 'delete'
+  ): Promise<boolean> {
+    const user = req.user
+    const authorize = this.resource.customHooks?.authorizeAccess
+
+    if (authorize) {
+      try {
+        await authorize(existing, this.getHookContext(req), operation)
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Forbidden') {
+          reply.code(403).send({ error: 'Forbidden' })
+          return false
+        }
+        throw err
+      }
+      return true
+    }
+
+    if (this.resource.ownership?.enabled && user && user.role !== 'ADMIN') {
+      const resourceId = (existing as { id: string }).id
+      const canAccess = await this.service.canUserAccess(
+        user.id,
+        resourceId,
+        this.resource.ownership.relationPath
+      )
+
+      if (!canAccess) {
+        const msg =
+          operation === 'read'
+            ? 'You do not have permission to view this resource'
+            : operation === 'update'
+              ? 'You do not have permission to update this resource'
+              : 'You do not have permission to delete this resource'
+        reply.code(403).send({ error: msg })
+        return false
+      }
+    }
+    return true
+  }
   
   async create(req: AuthenticatedRequest, reply: FastifyReply) {
     try {
@@ -82,7 +129,6 @@ export class BaseCrudController {
   async findById(req: AuthenticatedRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-      const user = req.user
       let result = await this.service.findById(id)
       
       if (!result) {
@@ -90,20 +136,10 @@ export class BaseCrudController {
           error: `${this.resource.name} not found` 
         })
       }
-      
-      // Ownership check (only if user is authenticated and ownership is enabled)
-      if (this.resource.ownership?.enabled && user && user.role !== 'ADMIN') {
-        const canAccess = await this.service.canUserAccess(
-          user.id,
-          id,
-          this.resource.ownership.relationPath
-        )
-        
-        if (!canAccess) {
-          return reply.code(403).send({ 
-            error: 'You do not have permission to view this resource' 
-          })
-        }
+
+      const allowed = await this.enforceAccess(req, reply, result, 'read')
+      if (!allowed) {
+        return
       }
       
       // After read hook
@@ -178,20 +214,10 @@ export class BaseCrudController {
           error: `${this.resource.name} not found` 
         })
       }
-      
-      // Ownership check
-      if (this.resource.ownership?.enabled && user && user.role !== 'ADMIN') {
-        const canAccess = await this.service.canUserAccess(
-          user.id,
-          id,
-          this.resource.ownership.relationPath
-        )
-        
-        if (!canAccess) {
-          return reply.code(403).send({ 
-            error: 'You do not have permission to update this resource' 
-          })
-        }
+
+      const allowedUpdate = await this.enforceAccess(req, reply, existing, 'update')
+      if (!allowedUpdate) {
+        return
       }
       
       // Validate input
@@ -234,20 +260,10 @@ export class BaseCrudController {
           error: `${this.resource.name} not found` 
         })
       }
-      
-      // Ownership check
-      if (this.resource.ownership?.enabled && user && user.role !== 'ADMIN') {
-        const canAccess = await this.service.canUserAccess(
-          user.id,
-          id,
-          this.resource.ownership.relationPath
-        )
-        
-        if (!canAccess) {
-          return reply.code(403).send({ 
-            error: 'You do not have permission to delete this resource' 
-          })
-        }
+
+      const allowedDelete = await this.enforceAccess(req, reply, existing, 'delete')
+      if (!allowedDelete) {
+        return
       }
       
       // Before hook
@@ -276,6 +292,13 @@ export class BaseCrudController {
   }
   
   protected handleError(error: unknown, reply: FastifyReply, operation?: string) {
+    if (error instanceof Error && error.message === 'Forbidden') {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    if (error instanceof Error && error.message === 'Assignee must be a rider') {
+      return reply.code(400).send({ error: error.message })
+    }
+
     // Zod validation error
     if (error && typeof error === 'object' && 'issues' in error) {
       return reply.code(400).send({

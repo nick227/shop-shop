@@ -12,11 +12,7 @@ import {
   publishOrderCreated,
   publishOrderStatusChanged,
 } from '@packages/db'
-
-// ========================================
-// Order Resource Definition
-// Uses centralized domain services
-// ========================================
+import { assertOrderAccess } from './order-access.js'
 
 const orderDomain = new OrderDomain()
 
@@ -25,6 +21,12 @@ const pendingOrderStatusChange = new Map<
   string,
   { oldStatus: string; note?: string; changedBy?: string }
 >()
+
+type PatchBody = Readonly<{
+  status?: string
+  note?: string
+  assignedToUserId?: string | null
+}>
 
 export const orderResource = defineResource({
   name: 'order',
@@ -39,23 +41,82 @@ export const orderResource = defineResource({
   },
   access: {
     create: ['USER', 'VENDOR', 'ADMIN'],
-    read: ['USER', 'VENDOR', 'ADMIN'],
-    update: ['VENDOR', 'ADMIN'],  // Only store owner can update status
+    read: ['USER', 'VENDOR', 'ADMIN', 'RIDER'],
+    update: ['VENDOR', 'ADMIN'],
     delete: ['ADMIN'],
-    list: ['USER', 'VENDOR', 'ADMIN'],
+    list: ['USER', 'VENDOR', 'ADMIN', 'RIDER'],
   },
   ownership: {
-    enabled: true,
-    relationPath: 'userId',  // Users can see their own orders
+    enabled: false,
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
+    authorizeAccess: async (existing, context, operation) => {
+      await assertOrderAccess(
+        existing as {
+          id: string
+          userId: string
+          storeId: string
+          assignedToUserId: string | null
+        },
+        context,
+        operation
+      )
+    },
+    beforeList: async (filters, context) => {
+      const f = { ...(filters as Record<string, unknown>) }
+      const role = context?.userRole
+      const uid = context?.userId
+      if (!uid || !role) {
+        throw new Error('Forbidden')
+      }
+
+      if (role === 'ADMIN') {
+        return f
+      }
+
+      if (role === 'USER') {
+        return { ...f, userId: uid }
+      }
+
+      if (role === 'RIDER') {
+        return { ...f, assignedToUserId: uid }
+      }
+
+      if (role === 'VENDOR') {
+        const storeId = f.storeId as string | undefined
+        if (!storeId) {
+          throw new Error('Forbidden')
+        }
+        const store = await prisma.store.findUnique({
+          where: { id: storeId },
+          select: { ownerUserId: true },
+        })
+        if (!store || store.ownerUserId !== uid) {
+          throw new Error('Forbidden')
+        }
+        return { ...f, storeId }
+      }
+
+      throw new Error('Forbidden')
+    },
     beforeUpdate: async (id, input, context) => {
       const existing = await prisma.order.findUnique({ where: { id } })
       if (!existing) {
         throw new Error('Order not found')
       }
-      const body = input as { status?: string; note?: string }
+
+      const body = input as PatchBody
+
+      if (body.assignedToUserId !== undefined && body.assignedToUserId !== null) {
+        const assignee = await prisma.user.findUnique({
+          where: { id: body.assignedToUserId },
+        })
+        if (!assignee || assignee.role !== 'RIDER') {
+          throw new Error('Assignee must be a rider')
+        }
+      }
+
       if (body.status !== undefined && body.status !== existing.status) {
         pendingOrderStatusChange.set(id, {
           oldStatus: existing.status,
@@ -65,22 +126,33 @@ export const orderResource = defineResource({
       } else {
         pendingOrderStatusChange.delete(id)
       }
-      return input
+
+      const prismaData: { status?: string; assignedToUserId?: string | null } = {}
+      if (body.status !== undefined) {
+        prismaData.status = body.status
+      }
+      if (body.assignedToUserId !== undefined) {
+        prismaData.assignedToUserId = body.assignedToUserId
+      }
+
+      return prismaData
     },
     beforeCreate: async (data, context) => {
-      const input = data as { cartId: string; deliveryType: 'DELIVERY' | 'PICKUP'; addressId?: string; tip?: string }
-      
-      // Validate order placement
+      const input = data as {
+        cartId: string
+        deliveryType: 'DELIVERY' | 'PICKUP'
+        addressId?: string
+        tip?: string
+      }
+
       const validation = await orderDomain.validateOrderPlacement(input.cartId, context!.userId!)
       if (!validation.valid) {
         throw new Error(validation.reason!)
       }
-      
-      // Calculate totals with tip
+
       const tipAmount = parseFloat(input.tip || '0.00')
       const totals = await orderDomain.calculateOrderTotals(input.cartId, input.deliveryType, tipAmount)
-      
-      // Get address snapshot if delivery
+
       let addressSnapshot = null
       if (input.addressId) {
         const address = await prisma.address.findUnique({ where: { id: input.addressId } })
@@ -95,7 +167,7 @@ export const orderResource = defineResource({
           }
         }
       }
-      
+
       return {
         userId: context!.userId,
         storeId: totals.storeId,
@@ -115,15 +187,13 @@ export const orderResource = defineResource({
       }
     },
     afterCreate: async (result) => {
-      // Mark cart as SUBMITTED
       await prisma.cart.update({
         where: { id: (result as { cartId?: string }).cartId! },
-        data: { status: 'SUBMITTED' }
+        data: { status: 'SUBMITTED' },
       })
-      
-      // Emit domain event
+
       await eventBus.emit(DomainEvents.ORDER_PLACED, result)
-      
+
       try {
         await publishOrderCreated((result as { id: string }).id)
       } catch (error) {
@@ -148,4 +218,3 @@ export const orderResource = defineResource({
     },
   },
 })
-
