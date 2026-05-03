@@ -7,15 +7,20 @@ import {
   OrderQuerySchema,
 } from '@packages/schemas/dtos'
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
-import { Prisma } from '@packages/db/generated/client'
 import {
   prisma,
   publishOrderStatusChanged,
   assertValidTransition,
-  haversineMiles,
 } from '@packages/db'
 import { assertOrderAccess } from './order-access.js'
-import { parseCoordPair, parseGeoJson } from '../utils/order-coords.js'
+import {
+  asOrderBeforeCreateInput,
+  buildOrderAddressSnapshot,
+  computeOrderCreateDeliveryDistance,
+  loadVerifiedAddressForOrder,
+  persistDeliveryPair,
+  resolveOrderDeliveryCoords,
+} from './order-create.helpers.js'
 
 const orderDomain = new OrderDomain()
 
@@ -163,86 +168,33 @@ export const orderResource = defineResource({
       return prismaData
     },
     beforeCreate: async (data, context) => {
-      const input = data as {
-        cartId: string
-        deliveryType: 'DELIVERY' | 'PICKUP'
-        addressId?: string
-        tip?: string
-        deliveryLatitude?: number | string
-        deliveryLongitude?: number | string
-      }
-
-      const tipAmount = parseFloat(input.tip || '0.00')
+      const input = asOrderBeforeCreateInput(data)
+      const userId = context!.userId!
+      const tipAmount = Number.parseFloat(input.tip || '0.00')
       const totals = await orderDomain.calculateOrderTotals(
         input.cartId,
-        context!.userId!,
+        userId,
         input.deliveryType,
         tipAmount,
       )
 
-      let resolved =
-        parseCoordPair(input.deliveryLatitude, input.deliveryLongitude) ?? undefined
-
-      let address = null
-      if (input.addressId) {
-        address = await prisma.address.findUnique({ where: { id: input.addressId } })
-        if (!address || address.userId !== context!.userId) {
-          throw new Error('Forbidden')
-        }
-        if (!resolved) {
-          resolved = parseGeoJson(address.geo) ?? undefined
-        }
-      }
+      const address = await loadVerifiedAddressForOrder(prisma, input.addressId, userId)
+      const resolved = resolveOrderDeliveryCoords(input, address)
 
       if (input.deliveryType === 'DELIVERY' && !resolved) {
         throw new Error('Delivery requires coordinates')
       }
 
-      const pinGeo =
-        resolved !== undefined
-          ? { latitude: resolved.lat, longitude: resolved.lng }
-          : undefined
+      const addressSnapshot = buildOrderAddressSnapshot(
+        address,
+        input.deliveryType,
+        resolved,
+      )
+      const persistPair = persistDeliveryPair(input.deliveryType, resolved)
 
-      let addressSnapshot: Record<string, unknown> | null = null
-      if (address) {
-        addressSnapshot = {
-          line1: address.line1,
-          line2: address.line2,
-          city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
-          country: address.country,
-          ...(pinGeo ? { geo: pinGeo } : {}),
-        }
-      } else if (input.deliveryType === 'DELIVERY' && pinGeo) {
-        addressSnapshot = {
-          line1: 'Delivery location',
-          city: '',
-          state: '',
-          postalCode: '',
-          country: '',
-          geo: pinGeo,
-        }
-      }
-
-      const persistPair =
-        input.deliveryType === 'DELIVERY' && resolved !== undefined ? resolved : null
-
-      let deliveryDistanceMiles: InstanceType<typeof Prisma.Decimal> | null = null
-      if (
-        persistPair &&
-        totals.storeLatitude != null &&
-        totals.storeLongitude != null
-      ) {
-        const miles = haversineMiles(
-          {
-            latitude: totals.storeLatitude,
-            longitude: totals.storeLongitude,
-          },
-          { latitude: persistPair.lat, longitude: persistPair.lng },
-        )
-        deliveryDistanceMiles = new Prisma.Decimal(miles.toFixed(2))
-      } else if (persistPair) {
+      const { deliveryDistanceMiles, warnMissingStoreCoords } =
+        computeOrderCreateDeliveryDistance(totals, persistPair)
+      if (warnMissingStoreCoords) {
         console.warn(
           JSON.stringify({
             event: 'order.delivery_distance.skipped',
@@ -254,7 +206,7 @@ export const orderResource = defineResource({
       }
 
       return {
-        userId: context!.userId,
+        userId,
         storeId: totals.storeId,
         cartId: input.cartId,
         deliveryType: input.deliveryType,
