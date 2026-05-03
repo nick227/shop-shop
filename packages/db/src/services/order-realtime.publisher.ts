@@ -42,14 +42,18 @@ export async function publishOrderCreated(orderId: string): Promise<void> {
   }
 
   const timestamp = new Date().toISOString()
-  const itemCount = order.items.reduce((sum, row) => sum + row.quantity, 0)
+  let itemCount = 0
+  for (const row of order.items) {
+    itemCount += row.quantity
+  }
+  const totalAmount = Number.parseFloat(order.total.toString())
 
   const vendorPayload = {
     orderId: order.id,
     storeId: order.storeId,
     customerId: order.userId,
     customerName: order.user.name || 'Customer',
-    total: parseFloat(order.total.toString()),
+    total: totalAmount,
     deliveryType: order.deliveryType,
     status: order.status,
     itemCount,
@@ -69,7 +73,7 @@ export async function publishOrderCreated(orderId: string): Promise<void> {
       storeId: order.storeId,
       storeName: order.store.name,
       status: order.status,
-      total: parseFloat(order.total.toString()),
+      total: totalAmount,
     },
   })
 
