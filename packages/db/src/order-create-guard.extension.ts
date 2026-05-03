@@ -21,8 +21,8 @@ export const orderDeliveryCoordsGuard = Prisma.defineExtension({
         return query(args)
       },
       createMany({ args, query }) {
-        const rows = Array.isArray(args.data) ? args.data : [args.data]
-        for (const row of rows) {
+        const batch = Array.isArray(args.data) ? args.data : [args.data]
+        for (const row of batch) {
           assertDeliveryHasCoordinates(row as Record<string, unknown>)
         }
         return query(args)

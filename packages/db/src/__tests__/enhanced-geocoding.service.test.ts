@@ -40,9 +40,11 @@ vi.mock('../adapters/geocoding.adapter', () => ({
   createGeocodingAdapter: vi.fn(() => mockGeocodingAdapter)
 }))
 
-// Mock the cache service creation
+// Mock the cache service creation (`new GeocodingCacheService()` must return the mock instance)
 vi.mock('../services/geocoding-cache.service', () => ({
-  GeocodingCacheService: vi.fn(() => mockCacheService)
+  GeocodingCacheService: vi.fn(function GeocodingCacheServiceMock() {
+    return mockCacheService
+  }),
 }))
 
 describe('EnhancedGeocodingService', () => {
@@ -73,7 +75,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'New York, NY 10018',
         confidence: 'high' as const,
-        source: 'positionstack' as const
+        source: 'mapbox' as const
       }
 
       mockCacheService.getCachedResult.mockResolvedValue(cachedResult)
@@ -115,7 +117,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'New York, NY 10018',
         confidence: 'high',
-        source: 'positionstack'
+        source: 'mapbox'
       })
 
       expect(mockGeocodingAdapter.geocodeZipCode).toHaveBeenCalledWith('10018')
@@ -124,7 +126,7 @@ describe('EnhancedGeocodingService', () => {
         expect.objectContaining({
           latitude: 40.7505,
           longitude: -73.9934,
-          source: 'positionstack'
+          source: 'mapbox'
         }),
         24 * 30
       )
@@ -180,7 +182,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'New York, NY 10018',
         confidence: 'high',
-        source: 'positionstack'
+        source: 'mapbox'
       })
 
       expect(mockCacheService.getCachedResult).not.toHaveBeenCalled()
@@ -198,7 +200,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'Seattle, WA',
         confidence: 'high' as const,
-        source: 'positionstack' as const
+        source: 'mapbox' as const
       }
 
       mockCacheService.getCachedResult.mockResolvedValue(cachedResult)
@@ -237,7 +239,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'Seattle, WA',
         confidence: 'high',
-        source: 'positionstack'
+        source: 'mapbox'
       })
 
       expect(mockGeocodingAdapter.geocodeCityState).toHaveBeenCalledWith('Seattle', 'WA')
@@ -256,7 +258,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: '123 Broadway, New York, NY 10018',
         confidence: 'high' as const,
-        source: 'positionstack' as const
+        source: 'mapbox' as const
       }
 
       mockCacheService.getCachedResult.mockResolvedValue(cachedResult)
@@ -297,7 +299,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: '123 Broadway, New York, NY 10018',
         confidence: 'high',
-        source: 'positionstack'
+        source: 'mapbox'
       })
 
       expect(mockGeocodingAdapter.geocodeAddress).toHaveBeenCalledWith('123 Broadway, New York, NY 10018')

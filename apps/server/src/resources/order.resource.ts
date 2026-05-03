@@ -198,6 +198,11 @@ export const orderResource = defineResource({
         throw new Error('Delivery requires coordinates')
       }
 
+      const pinGeo =
+        resolved !== undefined
+          ? { latitude: resolved.lat, longitude: resolved.lng }
+          : undefined
+
       let addressSnapshot: Record<string, unknown> | null = null
       if (address) {
         addressSnapshot = {
@@ -207,18 +212,16 @@ export const orderResource = defineResource({
           state: address.state,
           postalCode: address.postalCode,
           country: address.country,
-          ...(resolved
-            ? { geo: { latitude: resolved.lat, longitude: resolved.lng } }
-            : {}),
+          ...(pinGeo ? { geo: pinGeo } : {}),
         }
-      } else if (input.deliveryType === 'DELIVERY' && resolved) {
+      } else if (input.deliveryType === 'DELIVERY' && pinGeo) {
         addressSnapshot = {
           line1: 'Delivery location',
           city: '',
           state: '',
           postalCode: '',
           country: '',
-          geo: { latitude: resolved.lat, longitude: resolved.lng },
+          geo: pinGeo,
         }
       }
 
@@ -226,30 +229,28 @@ export const orderResource = defineResource({
         input.deliveryType === 'DELIVERY' && resolved !== undefined ? resolved : null
 
       let deliveryDistanceMiles: InstanceType<typeof Prisma.Decimal> | null = null
-      if (persistPair) {
-        const store = await prisma.store.findUnique({
-          where: { id: totals.storeId },
-          select: { latitude: true, longitude: true },
-        })
-        if (store?.latitude != null && store?.longitude != null) {
-          const miles = haversineMiles(
-            {
-              latitude: Number(store.latitude),
-              longitude: Number(store.longitude),
-            },
-            { latitude: persistPair.lat, longitude: persistPair.lng },
-          )
-          deliveryDistanceMiles = new Prisma.Decimal(miles.toFixed(2))
-        } else {
-          console.warn(
-            JSON.stringify({
-              event: 'order.delivery_distance.skipped',
-              reason: 'missing_store_coordinates',
-              storeId: totals.storeId,
-              timestamp: new Date().toISOString(),
-            }),
-          )
-        }
+      if (
+        persistPair &&
+        totals.storeLatitude != null &&
+        totals.storeLongitude != null
+      ) {
+        const miles = haversineMiles(
+          {
+            latitude: totals.storeLatitude,
+            longitude: totals.storeLongitude,
+          },
+          { latitude: persistPair.lat, longitude: persistPair.lng },
+        )
+        deliveryDistanceMiles = new Prisma.Decimal(miles.toFixed(2))
+      } else if (persistPair) {
+        console.warn(
+          JSON.stringify({
+            event: 'order.delivery_distance.skipped',
+            reason: 'missing_store_coordinates',
+            storeId: totals.storeId,
+            timestamp: new Date().toISOString(),
+          }),
+        )
       }
 
       return {

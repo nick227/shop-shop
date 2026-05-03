@@ -72,7 +72,7 @@ export async function stripeWebhookRoutes(app: FastifyInstance) {
         )
 
         const { prisma } = await import('@packages/db')
-        const payloadObject = JSON.parse(JSON.stringify(event.data.object)) as object
+        const payloadJson = event.data.object as Prisma.InputJsonValue
 
         const existing = await prisma.paymentWebhook.findUnique({
           where: { eventId: event.id },
@@ -89,7 +89,7 @@ export async function stripeWebhookRoutes(app: FastifyInstance) {
               eventId: event.id,
               provider: 'stripe',
               type: event.type,
-              payload: payloadObject,
+              payload: payloadJson,
               processed: false,
             },
           })

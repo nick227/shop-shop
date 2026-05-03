@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { prisma } from '@packages/db'
+import { prisma, canTransitionTo as checkTransition } from '@packages/db'
 
 // ========================================
 // Order Domain Service
@@ -27,15 +27,20 @@ export class OrderDomain {
     serviceFeeAmount: Decimal
     netToVendor: Decimal
     storeId: string
+    /** Store pin for distance (same cart query — avoids a second Store read at checkout). */
+    storeLatitude: number | null
+    storeLongitude: number | null
   }> {
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
       include: {
         store: {
-          select: { 
+          select: {
             id: true,
             commissionRate: true,
-            deliveryCharge: true
+            deliveryCharge: true,
+            latitude: true,
+            longitude: true,
           }
         },
         items: {
@@ -52,11 +57,11 @@ export class OrderDomain {
       throw new Error('Cart is empty')
     }
     
-    // Calculate subtotal from cart items
-    const subtotalNum = cart.items.reduce((sum: number, cartItem: any) => {
-      const itemPrice = parseFloat(cartItem.unitPrice.toString())
-      return sum + (itemPrice * cartItem.quantity)
-    }, 0)
+    let subtotalNum = 0
+    for (const cartItem of cart.items) {
+      const itemPrice = Number.parseFloat(cartItem.unitPrice.toString())
+      subtotalNum += itemPrice * cartItem.quantity
+    }
     
     // Calculate fees (delivery fee)
     let feesNum = 0
@@ -103,6 +108,10 @@ export class OrderDomain {
       serviceFeeAmount: new Decimal(serviceFeeAmountNum.toFixed(2)),
       netToVendor: new Decimal(netToVendorNum.toFixed(2)),
       storeId: cart.store.id,
+      storeLatitude:
+        cart.store.latitude != null ? Number(cart.store.latitude) : null,
+      storeLongitude:
+        cart.store.longitude != null ? Number(cart.store.longitude) : null,
     }
   }
   
@@ -138,11 +147,14 @@ export class OrderDomain {
     }
     
     // Check all items are available
-    const unavailableItems = cart.items.filter((ci: any) => !ci.item.isActive || ci.item.isSoldOut)
+    const unavailableItems = cart.items.filter(
+      (ci) => !ci.item.isActive || ci.item.isSoldOut,
+    )
     if (unavailableItems.length > 0) {
+      const names = unavailableItems.map((i) => i.titleSnapshot).join(', ')
       return {
         valid: false,
-        reason: `Items unavailable: ${unavailableItems.map((i: any) => i.titleSnapshot).join(', ')}`
+        reason: `Items unavailable: ${names}`,
       }
     }
     
@@ -155,31 +167,13 @@ export class OrderDomain {
   }
   
   /**
-   * Validate status transition
+   * Validate status transition — delegates to the canonical state machine in @packages/db.
    */
   canTransitionTo(
     currentStatus: string,
-    newStatus: string
+    newStatus: string,
   ): { valid: boolean; reason?: string } {
-    const validTransitions: Record<string, string[]> = {
-      'PLACED': ['ACCEPTED', 'CANCELED'],
-      'ACCEPTED': ['PREPARING', 'CANCELED'],
-      'PREPARING': ['READY', 'CANCELED'],
-      'READY': ['COMPLETED', 'CANCELED'],
-      'COMPLETED': [],
-      'CANCELED': [],
-    }
-    
-    const allowed = validTransitions[currentStatus] || []
-    
-    if (!allowed.includes(newStatus)) {
-      return {
-        valid: false,
-        reason: `Cannot transition from ${currentStatus} to ${newStatus}`
-      }
-    }
-    
-    return { valid: true }
+    return checkTransition(currentStatus, newStatus)
   }
   
   /**
