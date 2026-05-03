@@ -71,19 +71,20 @@ export class LocationDomain {
     centerLng: number,
     radiusMiles: number
   ): Array<T & { distance: number }> {
-    return items
-      .filter(item => this.isValidCoordinates(item.latitude, item.longitude))
-      .map(item => ({
-        ...item,
-        distance: this.calculateDistance(
-          centerLat,
-          centerLng,
-          Number(item.latitude),
-          Number(item.longitude)
-        ),
-      }))
-      .filter(item => item.distance <= radiusMiles)
-      .sort((a, b) => a.distance - b.distance)
+    const out: Array<T & { distance: number }> = []
+    for (const item of items) {
+      if (!this.isValidCoordinates(item.latitude, item.longitude)) continue
+      const distance = this.calculateDistance(
+        centerLat,
+        centerLng,
+        Number(item.latitude),
+        Number(item.longitude),
+      )
+      if (distance > radiusMiles) continue
+      out.push({ ...item, distance } as T & { distance: number })
+    }
+    out.sort((a, b) => a.distance - b.distance)
+    return out
   }
 
   /**
