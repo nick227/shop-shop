@@ -45,10 +45,10 @@ async function checkQuota() {
   })
   
   // Estimate API-backed cache rows (Mapbox today; legacy rows used positionstack)
+  const sourceCounts = new Map(bySource.map((row) => [row.source, row._count]))
   const apiCalls =
-    (bySource.find(s => s.source === 'mapbox')?._count || 0) +
-    (bySource.find(s => s.source === 'positionstack')?._count || 0)
-  const manualSeeds = bySource.find(s => s.source === 'manual_seed')?._count || 0
+    (sourceCounts.get('mapbox') ?? 0) + (sourceCounts.get('positionstack') ?? 0)
+  const manualSeeds = sourceCounts.get('manual_seed') ?? 0
   
   console.log('\n💰 API Quota Analysis:')
   console.log(`  API Calls Made (this month): ~${apiCalls}`)

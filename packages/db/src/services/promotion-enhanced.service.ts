@@ -91,15 +91,17 @@ export async function validatePromotionCode(
   // Check user eligibility (whitelist)
   const eligibleUserIds = promotion.eligibleUserIds as string[] | null
   if (eligibleUserIds && Array.isArray(eligibleUserIds) && eligibleUserIds.length > 0) {
-    if (!eligibleUserIds.includes(input.userId)) {
+    const eligible = new Set(eligibleUserIds)
+    if (!eligible.has(input.userId)) {
       return { valid: false, error: 'You are not eligible for this promotion' }
     }
   }
 
   // Check user exclusion (blacklist)
   const excludedUserIds = promotion.excludedUserIds as string[] | null
-  if (excludedUserIds && Array.isArray(excludedUserIds)) {
-    if (excludedUserIds.includes(input.userId)) {
+  if (excludedUserIds && Array.isArray(excludedUserIds) && excludedUserIds.length > 0) {
+    const excluded = new Set(excludedUserIds)
+    if (excluded.has(input.userId)) {
       return { valid: false, error: 'You are not eligible for this promotion' }
     }
   }

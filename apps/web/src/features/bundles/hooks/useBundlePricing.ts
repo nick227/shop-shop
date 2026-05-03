@@ -3,7 +3,7 @@
  * Handles bundle pricing calculations and validation
  */
 import { useMemo, useCallback } from 'react'
-import type { Bundle, ItemResponse } from '@api/backend-types'
+import type { Bundle, ItemResponse } from '@api/types'
 
 export interface BundlePricingResult {
   individualTotal: number
@@ -19,12 +19,21 @@ export interface BundlePricingOptions {
   items: ItemResponse[]
 }
 
+function itemByIdMap(items: ItemResponse[]): Map<string, ItemResponse> {
+  const map = new Map<string, ItemResponse>()
+  for (const item of items) {
+    map.set(item.id, item)
+  }
+  return map
+}
+
 export function useBundlePricing({ bundle, items }: BundlePricingOptions) {
   const pricing = useMemo(() => {
     const errors: string[] = []
-    
+    const safeItems = items ?? []
+
     // Early return if no items provided - avoid expensive calculations
-    if (items?.length === 0) {
+    if (safeItems.length === 0) {
       return {
         individualTotal: 0,
         bundlePrice: bundle.pricing?.fixedPrice || 0,
@@ -34,10 +43,12 @@ export function useBundlePricing({ bundle, items }: BundlePricingOptions) {
         errors: []
       }
     }
+
+    const byId = itemByIdMap(safeItems)
     
-    // Calculate individual item total
+    // Calculate individual item total (O(bundle lines) lookups via Map)
     const individualTotal = bundle.items?.reduce((sum, bundleItem) => {
-      const item = items.find(i => i.id === bundleItem.itemId)
+      const item = byId.get(bundleItem.itemId)
       if (!item) {
         errors.push(`Item ${bundleItem.itemId} not found`)
         return sum
@@ -136,8 +147,9 @@ export const calculateBundlePricing = (
   bundle: Bundle, 
   items: ItemResponse[]
 ): BundlePricingResult => {
+  const byId = itemByIdMap(items ?? [])
   const individualTotal = bundle.items?.reduce((sum, bundleItem) => {
-    const item = items.find(i => i.id === bundleItem.itemId)
+    const item = byId.get(bundleItem.itemId)
     return sum + (Number(item?.price || 0) * bundleItem.quantity)
   }, 0) || 0
 

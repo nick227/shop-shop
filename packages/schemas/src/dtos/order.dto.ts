@@ -127,14 +127,21 @@ export const OrderListResponseSchema = z.object({
 export const OrderQuerySchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
-}).transform(data => ({
-  page: data.page,
-  limit: data.limit,
-  filters: Object.keys(data)
-    .filter(k => k !== 'page' && k !== 'limit' && (data as any)[k] !== undefined)
-    .reduce((acc, k) => ({ ...acc, [k]: (data as any)[k] }), {}),
-  orderBy: { createdAt: 'desc' },
-}))
+}).transform((data) => {
+  const row = data as Record<string, unknown>
+  const filters: Record<string, unknown> = {}
+  for (const k of Object.keys(row)) {
+    if (k === 'page' || k === 'limit') continue
+    const v = row[k]
+    if (v !== undefined) filters[k] = v
+  }
+  return {
+    page: data.page,
+    limit: data.limit,
+    filters,
+    orderBy: { createdAt: 'desc' as const },
+  }
+})
 
 
 // Additional schemas
