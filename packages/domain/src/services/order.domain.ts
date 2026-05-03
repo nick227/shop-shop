@@ -1,103 +1,107 @@
+import type { Prisma } from '@prisma/client'
 import { Decimal } from 'decimal.js'
 import { prisma, canTransitionTo as checkTransition } from '@packages/db'
 
 // ========================================
 // Order Domain Service
-// Business operations for order processing
 // ========================================
 
+const CHECKOUT_CART_INCLUDE = {
+  items: { include: { item: true } },
+  store: {
+    select: {
+      id: true,
+      isPublished: true,
+      commissionRate: true,
+      deliveryCharge: true,
+      latitude: true,
+      longitude: true,
+    },
+  },
+} as const
+
+type CheckoutCart = Prisma.CartGetPayload<{ include: typeof CHECKOUT_CART_INCLUDE }>
+
+export type CheckoutTotals = {
+  subtotal: Decimal
+  fees: Decimal
+  tax: Decimal
+  tip: Decimal
+  total: Decimal
+  serviceFeePercent: Decimal
+  serviceFeeAmount: Decimal
+  netToVendor: Decimal
+  storeId: string
+  storeLatitude: number | null
+  storeLongitude: number | null
+}
+
+function placementFailureReason(cart: CheckoutCart | null, userId: string): string | null {
+  if (!cart) {
+    return 'Cart not found'
+  }
+  if (cart.userId !== userId) {
+    return 'Not your cart'
+  }
+  if (cart.status !== 'ACTIVE') {
+    return 'Cart is not active'
+  }
+  if (cart.items.length === 0) {
+    return 'Cart is empty'
+  }
+
+  const unavailable: string[] = []
+  for (const ci of cart.items) {
+    if (!ci.item.isActive || ci.item.isSoldOut) {
+      unavailable.push(ci.titleSnapshot)
+    }
+  }
+  if (unavailable.length > 0) {
+    return `Items unavailable: ${unavailable.join(', ')}`
+  }
+
+  if (!cart.store.isPublished) {
+    return 'Store is not currently accepting orders'
+  }
+
+  return null
+}
+
 export class OrderDomain {
-  private readonly TAX_RATE = 0.10  // 10% sales tax (should be config/per-state)
-  private readonly DEFAULT_DELIVERY_FEE = 5.00  // Fallback if store doesn't set deliveryCharge
-  
-  /**
-   * Calculate order totals from cart items
-   */
-  async calculateOrderTotals(
-    cartId: string,
+  private readonly TAX_RATE = 0.10
+  private readonly DEFAULT_DELIVERY_FEE = 5.0
+
+  private computeTotalsFromCart(
+    cart: CheckoutCart,
     deliveryType: 'DELIVERY' | 'PICKUP',
-    tipAmount: number = 0
-  ): Promise<{
-    subtotal: Decimal
-    fees: Decimal
-    tax: Decimal
-    tip: Decimal
-    total: Decimal
-    serviceFeePercent: Decimal
-    serviceFeeAmount: Decimal
-    netToVendor: Decimal
-    storeId: string
-    /** Store pin for distance (same cart query — avoids a second Store read at checkout). */
-    storeLatitude: number | null
-    storeLongitude: number | null
-  }> {
-    const cart = await prisma.cart.findUnique({
-      where: { id: cartId },
-      include: {
-        store: {
-          select: {
-            id: true,
-            commissionRate: true,
-            deliveryCharge: true,
-            latitude: true,
-            longitude: true,
-          }
-        },
-        items: {
-          include: { item: true }
-        }
-      }
-    })
-    
-    if (!cart) {
-      throw new Error('Cart not found')
-    }
-    
-    if (cart.items.length === 0) {
-      throw new Error('Cart is empty')
-    }
-    
+    tipAmount: number,
+  ): CheckoutTotals {
     let subtotalNum = 0
     for (const cartItem of cart.items) {
       const itemPrice = Number.parseFloat(cartItem.unitPrice.toString())
       subtotalNum += itemPrice * cartItem.quantity
     }
-    
-    // Calculate fees (delivery fee)
+
     let feesNum = 0
     if (deliveryType === 'DELIVERY') {
-      // Use store's delivery charge if set, otherwise use default
-      if (cart.store.deliveryCharge) {
-        feesNum = parseFloat(cart.store.deliveryCharge.toString())
-      } else {
-        feesNum = this.DEFAULT_DELIVERY_FEE
-      }
+      feesNum = cart.store.deliveryCharge
+        ? Number.parseFloat(cart.store.deliveryCharge.toString())
+        : this.DEFAULT_DELIVERY_FEE
     }
-    
-    // Calculate tax
+
     const taxNum = subtotalNum * this.TAX_RATE
-    
-    // Tip from user input
     const tipNum = tipAmount
-    
-    // Calculate total before service fee
     const totalBeforeFee = subtotalNum + feesNum + taxNum + tipNum
-    
-    // Get dynamic platform service fee (per-store or default)
-    const defaultFeePercent = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || '10.0')
+
+    const defaultFeePercent = Number.parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || '10.0')
     const serviceFeePercent = cart.store.commissionRate
-      ? parseFloat(cart.store.commissionRate.toString())
+      ? Number.parseFloat(cart.store.commissionRate.toString())
       : defaultFeePercent
-    
-    // Calculate platform service fee (percentage of total before fee)
+
     const serviceFeeAmountNum = totalBeforeFee * (serviceFeePercent / 100)
-    
-    // Calculate final total
     const totalNum = totalBeforeFee + serviceFeeAmountNum
-    
-    // Calculate net to vendor (total - service fee)
     const netToVendorNum = totalNum - serviceFeeAmountNum
-    
+
     return {
       subtotal: new Decimal(subtotalNum.toFixed(2)),
       fees: new Decimal(feesNum.toFixed(2)),
@@ -114,71 +118,52 @@ export class OrderDomain {
         cart.store.longitude != null ? Number(cart.store.longitude) : null,
     }
   }
-  
+
   /**
-   * Validate order can be placed
+   * One DB read: validate cart ownership/state/items/store, then compute totals.
+   * Prefer this over calling validateOrderPlacement + calculateOrderTotals separately.
+   */
+  async calculateOrderTotals(
+    cartId: string,
+    userId: string,
+    deliveryType: 'DELIVERY' | 'PICKUP',
+    tipAmount: number = 0,
+  ): Promise<CheckoutTotals> {
+    const cart = await prisma.cart.findUnique({
+      where: { id: cartId },
+      include: CHECKOUT_CART_INCLUDE,
+    })
+
+    const reason = placementFailureReason(cart, userId)
+    if (reason) {
+      throw new Error(reason)
+    }
+
+    return this.computeTotalsFromCart(cart, deliveryType, tipAmount)
+  }
+
+  /**
+   * Soft validation (same rules as totals) without computing money — uses one cart read.
    */
   async validateOrderPlacement(
     cartId: string,
-    userId: string
+    userId: string,
   ): Promise<{ valid: boolean; reason?: string }> {
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
-      include: {
-        items: { include: { item: true } },
-        store: true,
-      }
+      include: CHECKOUT_CART_INCLUDE,
     })
-    
-    if (!cart) {
-      return { valid: false, reason: 'Cart not found' }
-    }
-    
-    if (cart.userId !== userId) {
-      return { valid: false, reason: 'Not your cart' }
-    }
-    
-    if (cart.status !== 'ACTIVE') {
-      return { valid: false, reason: 'Cart is not active' }
-    }
-    
-    if (cart.items.length === 0) {
-      return { valid: false, reason: 'Cart is empty' }
-    }
-    
-    // Check all items are available
-    const unavailableItems = cart.items.filter(
-      (ci) => !ci.item.isActive || ci.item.isSoldOut,
-    )
-    if (unavailableItems.length > 0) {
-      const names = unavailableItems.map((i) => i.titleSnapshot).join(', ')
-      return {
-        valid: false,
-        reason: `Items unavailable: ${names}`,
-      }
-    }
-    
-    // Check store is accepting orders
-    if (!cart.store.isPublished) {
-      return { valid: false, reason: 'Store is not currently accepting orders' }
-    }
-    
-    return { valid: true }
+    const reason = placementFailureReason(cart, userId)
+    return reason ? { valid: false, reason } : { valid: true }
   }
-  
-  /**
-   * Validate status transition — delegates to the canonical state machine in @packages/db.
-   */
+
   canTransitionTo(
     currentStatus: string,
     newStatus: string,
   ): { valid: boolean; reason?: string } {
     return checkTransition(currentStatus, newStatus)
   }
-  
-  /**
-   * Prepare order data for creation
-   */
+
   async prepareForCreation(input: unknown, userId: string): Promise<Record<string, unknown>> {
     const data = input as {
       cartId: string
@@ -186,16 +171,9 @@ export class OrderDomain {
       deliveryAddressId?: string
       [key: string]: unknown
     }
-    
-    // Validate order placement
-    const validation = await this.validateOrderPlacement(data.cartId, userId)
-    if (!validation.valid) {
-      throw new Error(validation.reason)
-    }
-    
-    // Calculate totals
-    const totals = await this.calculateOrderTotals(data.cartId, data.deliveryType)
-    
+
+    const totals = await this.calculateOrderTotals(data.cartId, userId, data.deliveryType, 0)
+
     return {
       ...data,
       userId,
@@ -211,4 +189,3 @@ export class OrderDomain {
     }
   }
 }
-

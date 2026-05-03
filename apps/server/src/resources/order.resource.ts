@@ -172,13 +172,13 @@ export const orderResource = defineResource({
         deliveryLongitude?: number | string
       }
 
-      const validation = await orderDomain.validateOrderPlacement(input.cartId, context!.userId!)
-      if (!validation.valid) {
-        throw new Error(validation.reason!)
-      }
-
       const tipAmount = parseFloat(input.tip || '0.00')
-      const totals = await orderDomain.calculateOrderTotals(input.cartId, input.deliveryType, tipAmount)
+      const totals = await orderDomain.calculateOrderTotals(
+        input.cartId,
+        context!.userId!,
+        input.deliveryType,
+        tipAmount,
+      )
 
       let resolved =
         parseCoordPair(input.deliveryLatitude, input.deliveryLongitude) ?? undefined
