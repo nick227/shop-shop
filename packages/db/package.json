@@ -44,9 +44,11 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.2.0",
     "@google/generative-ai": "^0.21.0",
     "@packages/schemas": "workspace:*",
     "@prisma/client": "^5.22.0",
+    "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "decimal.js": "^10.4.3",
     "jsonwebtoken": "^9.0.2",
@@ -62,7 +64,6 @@
     "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "csv-parse": "^5.5.6",
     "dotenv": "^17.2.3",
