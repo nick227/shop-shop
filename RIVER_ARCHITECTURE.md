@@ -204,4 +204,5 @@ Engagement mutations are **out of scope** for this contract until phase 2; exist
 | Document | Role |
 |----------|------|
 | **RIVER_ARCHITECTURE.md** (this file) | MVP system design, pipeline stance, API contract |
+| **RIVER_DEVELOPER_GUIDE.md** | Repo paths, APIs, types, pipeline implementation notes |
 | **RIVER_SOCIAL_ROADMAP.md** | Broader social/commerce features and later phases |
