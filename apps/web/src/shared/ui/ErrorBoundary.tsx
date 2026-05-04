@@ -1,17 +1,18 @@
 /**
  * ErrorBoundary - Catches React errors and prevents app crashes
  */
-import type { ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
+import { reportUiError } from '@shared/lib/clientErrorReporting'
 
 interface Props {
-  children: ReactNode
-  fallback?: ReactNode
+  readonly children: ReactNode
+  readonly fallback?: ReactNode
 }
 
 interface State {
-  hasError: boolean
-  error: Error | undefined
+  readonly hasError: boolean
+  readonly error: Error | undefined
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -25,19 +26,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log to error reporting service (Sentry, etc.)
-    if (import.meta.env.PROD) {
-      console.error('React Error:', error, errorInfo)
-      // TODO: Send to error reporting service
-      // Sentry.captureException(error, { extra: errorInfo })
-    } else {
-      console.error('React Error:', error, errorInfo)
-    }
+    reportUiError(error, errorInfo, 'ErrorBoundary')
   }
 
   handleReset = () => {
     this.setState({ hasError: false, error: undefined })
-    window.location.href = '/'
+    globalThis.location.href = '/'
   }
 
   override render() {
@@ -67,6 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
             We're sorry for the inconvenience. Please try refreshing the page.
           </p>
           <button
+            type="button"
             onClick={this.handleReset}
             style={{
               padding: '0.75rem 1.5rem',
@@ -87,5 +82,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
-
-
