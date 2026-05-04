@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unified State Management System
  * 

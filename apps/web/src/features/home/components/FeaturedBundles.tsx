@@ -3,7 +3,7 @@
  */
 import React from 'react'
 import { BundleCarousel } from '@features/bundles/components/customer'
-import { useBundles } from '@api/hooks/generated'
+import { useBundles } from '@shared/hooks/generated'
 
 interface FeaturedBundlesProps {
   className?: string

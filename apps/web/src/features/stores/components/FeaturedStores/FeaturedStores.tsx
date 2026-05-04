@@ -1,7 +1,7 @@
 /**
  * FeaturedStores - Display featured stores in a prominent section;
  */
-import { useFeaturedStores } from '@shared/hooks/store'
+import { useFeaturedStores } from '@shared/hooks/hooks/store'
 import { StoreCarousel } from '../StoreCarousel'
 
 export function FeaturedStores() {

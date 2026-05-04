@@ -3,31 +3,41 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/packages/schemas/src/index.js",
+  "types": "./dist/packages/schemas/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/packages/schemas/src/index.js",
+      "types": "./dist/packages/schemas/src/index.d.ts",
+      "require": "./dist/packages/schemas/src/index.js"
     },
     "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
+      "import": "./dist/packages/schemas/src/core/index.js",
+      "types": "./dist/packages/schemas/src/core/index.d.ts",
+      "require": "./dist/packages/schemas/src/core/index.js"
     },
     "./dtos": {
-      "types": "./dist/dtos/index.d.ts",
-      "import": "./dist/dtos/index.js"
+      "import": "./dist/packages/schemas/src/dtos/index.js",
+      "types": "./dist/packages/schemas/src/dtos/index.d.ts",
+      "require": "./dist/packages/schemas/src/dtos/index.js"
     }
   },
   "scripts": {
     "gen:dtos": "tsx scripts/generate-dtos-from-prisma.ts",
+    "gen:dtos:all": "tsx scripts/generate-all-dtos.ts",
     "gen:openapi": "tsx src/openapi.ts",
-    "gen:all": "pnpm gen:dtos && pnpm gen:openapi",
+    "gen:all": "pnpm gen:dtos:all && pnpm gen:openapi",
+    "consolidate:types": "tsx scripts/consolidate-types.ts",
+    "consolidate:parallel": "tsx scripts/consolidate-types-parallel.ts",
+    "gen:parallel": "tsx scripts/parallel-generator.ts",
+    "validate:comprehensive": "tsx scripts/comprehensive-validation.ts",
+    "validate:quick": "tsx scripts/quick-validation.ts",
+    "validate:simple": "tsx scripts/simple-validation.ts",
     "smoke-test": "tsx scripts/smoke-test.ts",
     "api-smoke-test": "tsx scripts/api-smoke-test.ts",
     "simple-smoke-test": "tsx scripts/simple-smoke-test.ts",
     "working-smoke-test": "tsx scripts/working-smoke-test.ts",
-    "build": "echo 'Schemas package does not need build - use gen:all instead'",
+    "build": "tsc && npm run gen:all",
     "typecheck": "echo 'Schemas imports server code - typecheck at app level'",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

@@ -2,6 +2,7 @@ import { prisma } from '../client.js'
 import { Decimal } from 'decimal.js'
 import {
   createPaymentIntent as stripeCreatePaymentIntent,
+  retrievePaymentIntent as stripeRetrievePaymentIntent,
   createConnectAccount as stripeCreateConnectAccount,
   createAccountLink as stripeCreateAccountLink,
   retrieveAccount as stripeRetrieveAccount,
@@ -10,6 +11,8 @@ import {
   type CreateConnectAccountParams,
   type CreateAccountLinkParams,
 } from '../adapters/payments.adapter.js'
+import { orderService } from './order.service.js'
+import { publishOrderCreated } from './order-realtime.publisher.js'
 
 // ========================================
 // Payment Service
@@ -51,6 +54,29 @@ export const processOrderPayment = async (
 
   if (order.paymentStatus === 'PAID') {
     throw new Error('Order already paid')
+  }
+
+  // Idempotency: return existing PaymentIntent if one was already created
+  if (order.stripePaymentIntentId) {
+    const existing = await stripeRetrievePaymentIntent(order.stripePaymentIntentId)
+    if (existing.status !== 'canceled') {
+      console.log(
+        JSON.stringify({
+          event: 'payment.intent.reused',
+          orderId: order.id,
+          paymentIntentId: existing.id,
+          status: existing.status,
+          timestamp: new Date().toISOString(),
+        }),
+      )
+      return {
+        paymentIntentId: existing.id,
+        clientSecret: existing.client_secret!,
+        amount: existing.amount,
+        status: existing.status,
+      }
+    }
+    // Existing PI was canceled — fall through to create a fresh one
   }
 
   // Prepare payment intent parameters
@@ -259,37 +285,85 @@ export const refundOrder = async (input: RefundOrderInput) => {
 // ========================================
 
 export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
-  const order = await prisma.order.findFirst({
+  const order = await prisma.order.findUnique({
     where: { stripePaymentIntentId: paymentIntentId },
+    select: { id: true, status: true, paymentStatus: true },
   })
 
   if (!order) {
-    console.warn(`Order not found for payment intent: ${paymentIntentId}`)
+    console.warn(
+      JSON.stringify({
+        event: 'payment.intent.succeeded.no_order',
+        paymentIntentId,
+        timestamp: new Date().toISOString(),
+      }),
+    )
     return
   }
 
+  console.log(
+    JSON.stringify({
+      event: 'payment.intent.succeeded',
+      orderId: order.id,
+      paymentIntentId,
+      previousPaymentStatus: order.paymentStatus,
+      timestamp: new Date().toISOString(),
+    }),
+  )
+
   await prisma.order.update({
     where: { id: order.id },
-    data: {
-      paymentStatus: 'PAID',
-    },
+    data: { paymentStatus: 'PAID' },
   })
+
+  // Transition PENDING_PAYMENT → PLACED now that payment is confirmed
+  if (order.status === 'PENDING_PAYMENT') {
+    await orderService.transitionOrderStatus({
+      orderId: order.id,
+      newStatus: 'PLACED',
+      note: 'Payment confirmed',
+      changedBy: 'stripe',
+    })
+    // Broadcast the new order to vendor/customer (order is now live)
+    await publishOrderCreated(order.id).catch((err) => {
+      console.error('[Payment] publishOrderCreated failed:', err)
+    })
+  }
 }
 
 export const handlePaymentIntentFailed = async (paymentIntentId: string) => {
-  const order = await prisma.order.findFirst({
+  const order = await prisma.order.findUnique({
     where: { stripePaymentIntentId: paymentIntentId },
+    select: { id: true, status: true },
   })
 
   if (!order) {
-    console.warn(`Order not found for payment intent: ${paymentIntentId}`)
+    console.warn(
+      JSON.stringify({
+        event: 'payment.intent.failed.no_order',
+        paymentIntentId,
+        timestamp: new Date().toISOString(),
+      }),
+    )
     return
   }
 
-  await prisma.order.update({
-    where: { id: order.id },
+  console.log(
+    JSON.stringify({
+      event: 'payment.intent.failed',
+      orderId: order.id,
+      paymentIntentId,
+      orderStatus: order.status,
+      timestamp: new Date().toISOString(),
+    }),
+  )
+
+  // Record the payment failure in the audit trail without changing order status
+  await prisma.orderEvent.create({
     data: {
-      paymentStatus: 'UNPAID',
+      orderId: order.id,
+      status: order.status as any,
+      note: `Payment failed (PI: ${paymentIntentId})`,
     },
   })
 }

@@ -30,7 +30,7 @@ export const tipRoutes = async (app: FastifyInstance) => {
 
       const tip = await createTip({
         orderId: input.orderId,
-        amount: input.amount,
+        amount: Number(input.amount),
         userId,
       })
 

@@ -2,8 +2,8 @@
  * ConfirmDialog - Proper friction for critical actions
  * Replaces window.confirm() with emotional, controlled experience
  */
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@shared/ui/primitives/Dialog'
-import { Button } from '@shared/ui/primitives/Button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../Dialog'
+import { Button } from '../Button'
 import { useState, useCallback } from 'react'
 
 export interface ConfirmDialogProps {
@@ -35,6 +35,12 @@ export function ConfirmDialog({
   onConfirm,
   isLoading = false
 }: ConfirmDialogProps) {
+  const confirmVariantMap = {
+    danger: 'danger',
+    default: 'primary'
+  } as const
+  const confirmVariant = confirmVariantMap[variant]
+
   const handleConfirm = async () => {
     await onConfirm()
     onOpenChange(false)
@@ -61,7 +67,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button
-            variant={variant === 'danger' ? 'danger' : 'primary'}
+            variant={confirmVariant}
             onClick={handleConfirm}
             isLoading={isLoading}
           >

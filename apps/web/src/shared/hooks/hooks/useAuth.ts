@@ -2,10 +2,10 @@
  * useAuth Hook - Authentication logic with standardized patterns
  */
 import { useMutation } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
-import { useAuthStore } from '../stores/authStore'
+import { apiClient } from '@api/client'
+import { useAuthStore } from '@stores/authStore'
 import { createMutationErrorHandler, createMutationOnError, mutationRetryConfig, type CategorizedError } from './utils/errorHandling'
-import type { SignupInput, LoginInput, UserResponse } from '../api/types'
+import type { SignupInput, LoginInput, UserResponse } from '@api/types'
 
 export function useAuth() {
   const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore()

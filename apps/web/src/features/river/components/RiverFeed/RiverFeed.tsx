@@ -1,8 +1,7 @@
 import { useState, useMemo, memo } from 'react'
 import type { RiverPost, RiverFilters as RiverFiltersType } from '@api/types'
 import { PostCard } from '../PostCard'
-import { Spinner } from '@shared/ui/primitives/Spinner'
-import { Button } from '@shared/ui/primitives/Button'
+import { Spinner, Button } from '@shared/ui/primitives'
 import { RiverFilters } from '../RiverFilters'
 
 interface RiverFeedProps {

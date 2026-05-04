@@ -3,13 +3,12 @@
  */
 import type { TouchEvent } from 'react';
 import { useState, useRef, useCallback, useMemo } from 'react'
-import { Image } from '@shared/ui/primitives'
-import { SWIPE_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL } from '@shared/ui/primitives/Carousel/constants'
-import type { ItemResponse } from '@api/backend-types'
+import { Image, SWIPE_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL } from '@shared/ui/primitives'
+import type { ItemResponse } from '@api/types'
 import { formatCurrency } from '@shared/lib/utils/format'
 import { parsePrice } from '@shared/lib/utils/format'
 import { getImageUrl } from '@shared/lib/utils/image'
-// import { styles } from '../../../../utils/tailwind-classes' // File not found
+//  // File not found
 
 export interface ItemCarouselCompactProps {
   items: ItemResponse[]

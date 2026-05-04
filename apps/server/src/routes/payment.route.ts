@@ -11,7 +11,7 @@ import {
   checkStripeConnectStatus,
   refundOrder,
 } from '@packages/db'
-import { authenticate, type AuthenticatedUser } from '../middleware/auth.js'
+import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 import { rateLimits } from '../constants/rateLimits.js'
 import 'dotenv/config'
@@ -20,10 +20,6 @@ import 'dotenv/config'
 // Payment Routes
 // Handles Stripe payments and Connect (webhooks: stripe-webhook.route.ts)
 // ========================================
-
-interface AuthenticatedRequest extends FastifyRequest {
-  user: AuthenticatedUser
-}
 
 export const paymentRoutes = async (app: FastifyInstance) => {
   
@@ -41,10 +37,10 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       summary: 'Create payment intent for order',
       description: 'Creates a Stripe payment intent to process order payment',
     },
-  }, async (req: AuthenticatedRequest, reply) => {
+  }, async (req, reply) => {
     try {
       const input = CreatePaymentIntentInputSchema.parse(req.body) as CreatePaymentIntentInput
-      
+
       const result = await processOrderPayment({
         orderId: input.orderId,
         userId: req.user!.id,
@@ -86,7 +82,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       summary: 'Initiate Stripe Connect onboarding',
       description: 'Creates Stripe Connect account and returns onboarding URL',
     },
-  }, async (req: AuthenticatedRequest, reply) => {
+  }, async (req, reply) => {
     try {
       const input = CreateConnectAccountInputSchema.parse(req.body) as CreateConnectAccountInput
       
@@ -132,7 +128,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       summary: 'Check Stripe Connect status',
       description: 'Returns current status of Stripe Connect account',
     },
-  }, async (req: AuthenticatedRequest, reply) => {
+  }, async (req, reply) => {
     try {
       const { storeId } = req.params as { storeId: string }
       
@@ -163,7 +159,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       summary: 'Refund an order',
       description: 'Issues a full or partial refund for a paid order',
     },
-  }, async (req: AuthenticatedRequest, reply) => {
+  }, async (req, reply) => {
     try {
       const { orderId, amount } = req.body as { orderId: string; amount?: number }
       const Decimal = (await import('@packages/db')).Decimal

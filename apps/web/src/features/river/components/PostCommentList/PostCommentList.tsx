@@ -15,7 +15,8 @@ export const PostCommentList = ({
   onLoadMore,
   hasMore = false,
   isLoading = false}: PostCommentListProps) => {
-  const formatTimestamp = (dateString: string) => {
+  const formatTimestamp = (dateString?: string) => {
+    if (!dateString) return ''
     const date = new Date(dateString)
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)

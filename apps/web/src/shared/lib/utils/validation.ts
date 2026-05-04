@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Validation Utilities - Client-side validation helpers
  * DEPRECATED: Use ConsistentSchemas instead

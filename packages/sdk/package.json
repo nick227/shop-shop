@@ -13,18 +13,43 @@
     "./realtime": {
       "types": "./dist/realtime/index.d.ts",
       "import": "./dist/realtime/index.js"
+    },
+    "./generated/frontend/api/apiWrapper": {
+      "types": "./generated/frontend/api/apiWrapper.ts",
+      "import": "./generated/frontend/api/apiWrapper.ts"
+    },
+    "./generated/frontend/api/type-mappers": {
+      "types": "./generated/frontend/api/type-mappers.ts",
+      "import": "./generated/frontend/api/type-mappers.ts"
+    },
+    "./generated/frontend/types/backend-types": {
+      "types": "./generated/frontend/types/backend-types.ts",
+      "import": "./generated/frontend/types/backend-types.ts"
+    },
+    "./generated/frontend/types/centralized": {
+      "types": "./generated/frontend/types/centralized.ts",
+      "import": "./generated/frontend/types/centralized.ts"
+    },
+    "./generated/frontend/hooks/generated": {
+      "types": "./generated/frontend/hooks/generated.ts",
+      "import": "./generated/frontend/hooks/generated.ts"
     }
   },
   "scripts": {
-    "gen": "openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./src --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
+    "gen": "openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./generated/sdk --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
     "gen:wrapper": "tsx scripts/generate-api-wrapper.ts",
-    "gen:types": "tsx scripts/generate-type-mappers.ts",
+    "gen:types": "tsx scripts/typegen/cli.ts",
     "gen:frontend-types": "tsx scripts/generate-frontend-types.ts",
     "gen:hooks": "tsx scripts/generate-hooks.ts",
     "gen:barrels": "tsx scripts/generate-barrel-exports.ts",
     "gen:all": "npm run gen:wrapper && npm run gen:types && npm run gen:frontend-types && npm run gen:hooks && npm run gen:barrels",
+    "gen:unified": "tsx scripts/unified-api-generator.ts",
+    "gen:optimized": "tsx scripts/optimized-type-mappers.ts",
+    "gen:pipeline": "tsx scripts/api-generation-pipeline.ts",
     "gen:all-client": "tsx scripts/gen-and-validate.ts",
     "gen:all-client:update": "tsx scripts/gen-and-validate.ts --update-snapshots",
+    "migrate": "tsx scripts/migrate-to-new-structure.ts",
+    "update-imports": "tsx scripts/update-import-paths.ts",
     "validate": "tsx scripts/validate-all.ts",
     "validate:browser": "tsx scripts/validate-browser-compatibility.ts",
     "snapshot": "tsx scripts/snapshot-test.ts",

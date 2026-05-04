@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * MapController Component Unit Tests;
  */

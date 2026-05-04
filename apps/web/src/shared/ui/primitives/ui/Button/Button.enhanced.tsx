@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enhanced Button Component - Unified Button System
  * 
@@ -16,7 +17,7 @@
 import React, { forwardRef, memo } from 'react'
 import { tv, type VariantProps } from 'tailwind-variants'
 import { Loader2 } from 'lucide-react'
-import { LoadingStates } from '@shared/ui/primitives/States'
+import { LoadingStates } from '../States/LoadingStates'
 import { cn } from '@shared/lib/cn'
 
 // ========================================

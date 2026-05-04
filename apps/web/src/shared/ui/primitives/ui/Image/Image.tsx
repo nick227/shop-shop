@@ -3,12 +3,12 @@
  * Global image component with skeleton loading, fallback handling, and lazy loading
  * Performance: Native lazy loading, memoized colors, optimized rendering
  */
+import type { ImgHTMLAttributes } from 'react'
 import { useMemo, memo } from 'react'
 import { useImageLoader } from '@shared/hooks/useImageLoader'
 import { generateColorFromSeed } from '@shared/lib/colorGenerator'
-import { styles } from '@shared/lib/tailwind-classes'
 
-export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string
   alt: string
   fallbackSeed?: string | undefined
@@ -38,8 +38,8 @@ function ImageComponent({
   )
 
   const imageClassNames = useMemo(() => [
-    styles.image,
-    loading && styles['image--hidden'],
+    'object-cover w-full h-full',
+    loading && 'opacity-0',
     className,
   ]
     .filter(Boolean)
@@ -51,7 +51,7 @@ function ImageComponent({
         className={'relative overflow-hidden ' + containerClassName + ''}
         style={{ ...containerStyle, backgroundColor: fallbackColor }}
       >
-        <div className={styles.fallback} role="img" aria-label={alt}>
+        <div className="flex items-center justify-center text-muted-foreground" role="img" aria-label={alt}>
           {alt}
         </div>
       </div>

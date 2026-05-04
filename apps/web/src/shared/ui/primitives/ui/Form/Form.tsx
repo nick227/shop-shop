@@ -8,7 +8,6 @@ import type { ZodSchema } from 'zod'
 import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { Alert } from '../Alert'
 import { FormProvider } from './FormContext'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export interface FormProps<T extends Record<string, unknown>> {
   /** Zod schema for validation */
@@ -151,11 +150,11 @@ export function Form<T extends Record<string, unknown>>({
     <FormProvider value={contextValue}>
       <form
         onSubmit={handleSubmit}
-        className={`${styles.form} ${className || ''}`}
+        className={` ${className || ''}`}
         noValidate
       >
         {error && (
-          <Alert variant="error" className={styles.formError}>
+          <Alert variant="error" className="">
             {error}
           </Alert>
         )}

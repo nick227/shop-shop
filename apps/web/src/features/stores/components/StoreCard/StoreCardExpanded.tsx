@@ -4,11 +4,10 @@
  * Migrated to Tailwind (removed CSS module)
  */
 import { memo, useCallback } from 'react'
-import { Card, Image, Button, Badge } from '@shared/ui/primitives'
-import { ICON, ASPECT_RATIO, LABEL } from '@shared/ui/primitives/Carousel/constants'
+import { Card, Image, Button, Badge, ICON, ASPECT_RATIO, LABEL } from '@shared/ui/primitives'
 import { formatDistance } from '@shared/lib/format'
-import { getImageUrl } from '@shared/lib/image'
-import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
+import { getImageUrl } from '@shared/lib/utils/image'
+import type { StoreWithDistance, StoreClickHandler } from '@api/types'
 import { cn } from '@shared/lib/cn'
 
 export interface StoreCardExpandedProps {

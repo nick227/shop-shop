@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react'
-import { Button } from '@shared/ui/primitives'
+import { Button } from '../Button'
 import { cn } from '@shared/lib/cn'
 
 /**

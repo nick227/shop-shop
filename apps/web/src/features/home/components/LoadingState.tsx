@@ -2,8 +2,8 @@
  * LoadingState - Component for displaying search loading state
  */
 import React from 'react'
-import { SkeletonGrid } from '@shared/ui/primitives/Skeleton'
-import type { LocationData } from '@/types/location.types'
+import { SkeletonGrid } from '@shared/ui/primitives'
+import type { LocationData } from '@shared/types/types/location.types'
 
 interface LoadingStateProps {
   isLoading: boolean

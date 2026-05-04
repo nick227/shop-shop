@@ -4,7 +4,7 @@
 import { StoreGrid } from '@features/stores/components/StoreGrid/StoreGrid'
 import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
 import type { LocationData } from '@shared/types'
-import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
+import type { StoreResponse, StoreWithDistance } from '@api/types'
 
 interface SearchResultsProps {
   error: Error | undefined

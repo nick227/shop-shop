@@ -4,7 +4,7 @@
  */
 import { useMemo } from 'react'
 import type { StoreWithDistance } from '@api/types'
-import { getStoreCountText } from '@shared/lib/storeHelpers'
+import { getStoreCountText } from '@shared/lib/utils/storeHelpers'
 
 export interface PromotionalCopy {
   hero: {

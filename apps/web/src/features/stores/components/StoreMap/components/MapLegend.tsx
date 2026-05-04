@@ -2,7 +2,6 @@
  * MapLegend - Component for rendering map legend;
  * Single Responsibility: Map legend display;
  */
-import { styles } from '@shared/lib/tailwind-classes'
 
 export interface MapLegendProps {
   userLocation?: { latitude: number; longitude: number }
@@ -12,20 +11,20 @@ export interface MapLegendProps {
 
 export function MapLegend({ userLocation, storeCount, radiusMiles }: MapLegendProps) {
   return (
-    <div className={styles.legend}>
+    <div className="">
       {userLocation && (
-        <div className={styles.legendItem}>
-          <span className={styles.legendIcon}>📍</span>
+        <div className="">
+          <span className="">📍</span>
           <span>Your Location</span>
         </div>
       )}
-      <div className={styles.legendItem}>
-        <span className={styles.legendIcon}>🍽️</span>
+      <div className="">
+        <span className="">🍽️</span>
         <span>Restaurants ({storeCount})</span>
       </div>
       {userLocation && radiusMiles && (
-        <div className={styles.legendItem}>
-          <span className={styles.legendCircle}></span>
+        <div className="">
+          <span className=""></span>
           <span>{radiusMiles} mi radius</span>
         </div>
       )}

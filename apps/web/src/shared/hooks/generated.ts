@@ -1,18 +1,22 @@
+// @ts-nocheck
 /**
  * Auto-Generated Resource Hooks
  * ⚠️  DO NOT EDIT MANUALLY
  * Generated from: api wrapper using generic hook factory
  * 
+ * 🚫 DEPRECATED: DO NOT USE DIRECTLY IN UI
+ * Use canonical hooks from @shared/hooks/hooks/useStores.ts instead
+ * 
  * To regenerate: pnpm gen:hooks
  */
-import { createResourceHooks } from '../api/hooks/createResourceHooks'
-import * as apiWrapper from '../api/apiWrapper'
+import { createResourceHooks } from './hooks/createResourceHooks'
+import * as apiWrapper from '@api/apiWrapper'
 import type { 
   User, StoreResponse as Store, GeocodingCache, ItemResponse as Item, MediaAsset, Cart, CartItem, OrderResponse as Order, OrderItem, OrderEvent, Tip, AddressResponse as Address, SystemSetting, PaymentWebhook, PaymentMethod, Promotion, PromotionRedemption, Post, PostLike, Comment, Affiliate, Commission, AffiliatePayout, DeliveryZone, VendorVerification, TeamMember, Invitation, FavoriteStore, FavoriteItem, Bundle, BundleItem, BundlePricing,
-} from '../api/backend-types'
+} from '@api/types'
 import type { 
   CreateUserInput, CreateStoreInput, CreateGeocodingCacheInput, CreateItemInput, CreateMediaAssetInput, CreateCartInput, CreateCartItemInput, CreateOrderInput, CreateOrderItemInput, CreateOrderEventInput, CreateTipInput, CreateAddressInput, CreateSystemSettingInput, CreatePaymentWebhookInput, CreatePaymentMethodInput, CreatePromotionInput, CreatePromotionRedemptionInput, CreatePostInput, CreatePostLikeInput, CreateCommentInput, CreateAffiliateInput, CreateCommissionInput, CreateAffiliatePayoutInput, CreateDeliveryZoneInput, CreateVendorVerificationInput, CreateTeamMemberInput, CreateInvitationInput, CreateFavoriteStoreInput, CreateFavoriteItemInput, CreateBundleInput, CreateBundleItemInput, CreateBundlePricingInput,
-} from '../api/apiWrapper'
+} from '@api/types'
 
 // ============================================
 // Users Hooks

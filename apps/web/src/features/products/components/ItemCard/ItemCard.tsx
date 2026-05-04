@@ -3,12 +3,12 @@
  */
 import { Link } from 'react-router-dom'
 import { Card, Badge, Button, Image } from '@shared/ui/primitives'
-import { useAddToCart } from '@shared/hooks/useAddToCart'
+import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
-import type { ItemResponse } from '@api/backend-types'
+import type { ItemResponse } from '@api/types'
 import { formatCurrency } from '@shared/lib/utils/format'
 import { parsePrice } from '@shared/lib/utils/format'
-// import { styles } from '../../../../utils/tailwind-classes' // File not found
+//  // File not found
 
 export interface ItemCardProps {
   item: ItemResponse;
@@ -31,7 +31,10 @@ export function ItemCard({ item, store }: ItemCardProps) {
     addToCart.mutate({
       storeId: item.storeId,
       itemId: item.id,
-      quantity: 1})
+      quantity: 1,
+      title: item.title,
+      unitPrice: item.price,
+      item})
   }
 
   return (

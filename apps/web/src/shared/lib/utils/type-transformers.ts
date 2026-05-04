@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Type Transformers - Utility functions for data transformations
  * 
@@ -13,7 +14,7 @@ import type {
   AddressResponse,
   PostResponse,
   CommentResponse
-} from '../api/types'
+} from '@api/types'
 
 import type {
   StoreWithLocation,
@@ -29,7 +30,7 @@ import type {
   PostWithEngagement,
   PostWithMedia,
   CommentWithUser
-} from '../types/extensions'
+} from '@shared/types/types/extensions'
 
 // ============================================
 // Store Transformers

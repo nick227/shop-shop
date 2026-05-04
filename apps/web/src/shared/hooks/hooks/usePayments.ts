@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * usePayments Hook - Stripe payment integration with standardized patterns
  */

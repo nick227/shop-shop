@@ -10,11 +10,11 @@
  */
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@shared/hooks/useAuth'
+import { useAuth } from '@shared/hooks/hooks/useAuth'
 import { Button } from '@shared/ui/primitives'
 import { OrderCountWidget } from '@features/orders/components/OrderCountWidget'
-import { useVendorStores, useVendorRealtimeOrders } from '@shared/hooks/vendor'
-import type { Store } from '@api/backend-types'
+import { useVendorStores, useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor'
+import type { StoreResponse } from '@api/backend-types'
 import styles from './VendorLayout.module.css'
 
 export function VendorLayout() {
@@ -24,7 +24,7 @@ export function VendorLayout() {
   const { data: stores } = useVendorStores()
 
   // Enable real-time for first store (if any stores exist)
-  const firstStore = (stores?.[0] as unknown as Store) ?? undefined
+  const firstStore = (stores?.[0] as unknown as StoreResponse) ?? undefined
   const hasStores = stores && stores.length > 0
   
   useVendorRealtimeOrders({

@@ -15,10 +15,25 @@ const envSchema = z.object({
   
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   
-  // Stripe (optional)
-  STRIPE_SECRET_KEY: z.string().optional(),
+  // Redis for session storage
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  
+  // Stripe (required in production)
+  STRIPE_SECRET_KEY: z.string().optional().refine(
+    (val) => {
+      const nodeEnv = process.env.NODE_ENV
+      if (nodeEnv === 'production' && !val) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'STRIPE_SECRET_KEY is required in production',
+    }
+  ),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   
   // Geocoding (optional - for location-based features)

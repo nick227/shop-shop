@@ -1,7 +1,7 @@
 /**
  * AvailableLocations - Display available cities and zip codes for users;
  */
-import { useAvailableLocations } from '@shared/hooks/store'
+import { useAvailableLocations } from '@shared/hooks/hooks/store'
 
 interface AvailableLocationsProps {
   readonly onLocationClick?: (city: string, state: string) => void;

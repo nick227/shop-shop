@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
-import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearch'
+import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearchWithTransformers'
 import { useGeocoding } from '@shared/hooks/hooks/useGeocoding'
 import { useLocationDisplay } from '@shared/hooks/hooks/useLocationDisplay'
 import { useSearchOrchestration } from '@shared/hooks/hooks/useSearchOrchestration'
@@ -152,7 +152,7 @@ export default function HomePage() {
     if (!store?.id) return
     
     // Navigate immediately - preserve minimal search context in navigation state
-    navigate('/stores/' + store.id + '', { 
+    navigate('/stores/' + store.id, { 
       state: { 
         fromLocation: location,
         searchResultCount: stores?.length ?? 0,

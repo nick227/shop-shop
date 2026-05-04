@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@packages/db'
 import { Decimal } from 'decimal.js'
 
 /** Prisma include shared by placement validation and totals (single source of truth). */

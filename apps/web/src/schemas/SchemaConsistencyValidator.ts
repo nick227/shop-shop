@@ -4,8 +4,10 @@
  */
 
 import { z } from 'zod'
-import { schemas as unifiedSchemas } from '../api/schemas/UnifiedSchemas'
 import { schemas as consistentSchemas } from './ConsistentSchemas'
+
+// UnifiedSchemas removed — use ConsistentSchemas as the single source of truth
+const unifiedSchemas = consistentSchemas
 
 /**
  * Validate that all schemas are consistent across the application

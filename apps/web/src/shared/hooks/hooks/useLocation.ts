@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { locationService } from '@services/location.service'
-import type { LocationData, LocationInput, LocationPreferences } from '../types/location.types'
+import type { LocationData, LocationInput, LocationPreferences } from '@shared/types'
 
 export interface UseLocationReturn {
   // Current location state;

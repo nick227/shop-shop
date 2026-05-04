@@ -3,10 +3,9 @@
  * Single Responsibility: Optimized data processing with minimal loops and memory allocation
  */
 import { useMemo } from 'react'
-import type { StoreWithDistance } from '@api/backend-types'
-import type { LocationData } from '@/types/location.types'
-import type { LocationCoordinates } from '@/types/component-props'
-import { hasValidCoordinates } from '@shared/lib/storeAccessors'
+import type { StoreWithDistance } from '@api/types'
+import type { LocationData, LocationCoordinates } from '@shared/types'
+import { hasValidCoordinates } from '@shared/lib/utils/storeAccessors'
 
 export interface OptimizedMapData {
   validStores: StoreWithDistance[]

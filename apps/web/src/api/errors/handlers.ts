@@ -1,71 +1,22 @@
-/**
- * Error Handlers - HTTP status code handlers
- */
 import { AppError, type ValidationIssue } from './types'
 
-type ErrorHandler = (body: Record<string, unknown> | undefined) => AppError
+type ErrorHandler = (details?: Record<string, unknown>) => AppError
 
-/**
- * Handle 400 Bad Request
- */
-export function handleValidationError(body: Record<string, unknown> | undefined): AppError {
-  const issues = body?.issues as ValidationIssue[] | undefined
-  
-  if (issues && issues.length > 0) {
-    const messages = issues.map((i) => i.path.join('.') + ': ' + i.message)
-    return new AppError(
-      'Validation failed: ' + messages.join(', '),
-      'VALIDATION_ERROR',
-      400,
-      { issues }
-    )
-  }
-  
-  return new AppError(
-    (body?.error as string) || 'Invalid request',
-    'BAD_REQUEST',
-    400,
-    body || undefined
-  )
+const getIssues = (details?: Record<string, unknown>): ValidationIssue[] | undefined => {
+  const issues = details?.issues
+  return Array.isArray(issues) ? (issues as ValidationIssue[]) : undefined
 }
 
-/**
- * Handle 401 Unauthorized with context-aware messaging
- */
-export function handleUnauthorizedError(body: Record<string, unknown> | undefined): AppError {
-  // Check if error is from server response
-  const serverMessage = body?.error as string
-  
-  // Use server message if provided, otherwise use context-appropriate default
-  const message = serverMessage || 'Invalid email or password'
-  
-  return new AppError(message, 'UNAUTHORIZED', 401, body || undefined)
-}
-
-/**
- * HTTP status code to error handler mapping
- */
 export const httpErrorHandlers: Record<number, ErrorHandler> = {
-  400: handleValidationError,
-  401: handleUnauthorizedError,
-  403: () => new AppError('You do not have permission to perform this action', 'FORBIDDEN', 403),
-  404: () => new AppError('Resource not found', 'NOT_FOUND', 404),
-  409: (body) => new AppError(
-    (body?.error as string) || 'This item already exists',
-    'CONFLICT',
-    409,
-    body || undefined
-  ),
-  422: (body) => new AppError(
-    (body?.error as string) || 'Unable to process request',
-    'UNPROCESSABLE',
-    422,
-    body || undefined
-  ),
-  429: () => new AppError('Too many requests. Please try again in a moment.', 'RATE_LIMIT', 429),
-  500: () => new AppError('Server error. Please try again later.', 'SERVER_ERROR', 500),
-  502: () => new AppError('Server error. Please try again later.', 'SERVER_ERROR', 502),
-  503: () => new AppError('Server error. Please try again later.', 'SERVER_ERROR', 503),
-  504: () => new AppError('Server error. Please try again later.', 'SERVER_ERROR', 504),
+  400: (details) => new AppError('Bad request', 'BAD_REQUEST', 400, details, getIssues(details)),
+  401: (details) => new AppError('Unauthorized', 'UNAUTHORIZED', 401, details),
+  403: (details) => new AppError('Forbidden', 'FORBIDDEN', 403, details),
+  404: (details) => new AppError('Not found', 'NOT_FOUND', 404, details),
+  409: (details) => new AppError('Conflict', 'CONFLICT', 409, details),
+  422: (details) => new AppError('Validation error', 'VALIDATION_ERROR', 422, details, getIssues(details)),
+  429: (details) => new AppError('Rate limited', 'RATE_LIMIT', 429, details),
+  500: (details) => new AppError('Server error', 'SERVER_ERROR', 500, details),
+  502: (details) => new AppError('Bad gateway', 'SERVER_ERROR', 502, details),
+  503: (details) => new AppError('Service unavailable', 'SERVER_ERROR', 503, details),
+  504: (details) => new AppError('Gateway timeout', 'SERVER_ERROR', 504, details),
 }
-

@@ -6,8 +6,8 @@ import { useMemo, useCallback } from 'react'
 import { useStores } from '@shared/hooks/generated'
 import { useLocationParams } from './useLocationParams'
 import { useAnalytics } from './useAnalytics'
-import type { LocationData } from '@/types/location.types'
-import type { StoreResponse } from '../api/backend-types'
+import type { LocationData } from '@shared/types'
+import type { StoreResponse } from '@api/types'
 
 interface UseStoreSearchResult {
   stores: StoreResponse[] | undefined;

@@ -2,13 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "declaration": true,
-    "paths": {
-      "@packages/realtime": ["../realtime/src/index.ts"]
-    }
+    "declaration": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/index.ts",
+    "src/realtime/**/*.ts"
   ],
   "references": [
     { "path": "../realtime" }

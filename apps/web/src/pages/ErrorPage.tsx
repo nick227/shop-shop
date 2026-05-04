@@ -2,6 +2,7 @@
  * ErrorPage - Router Error Boundary Page
  */
 import { Link, useRouteError, isRouteErrorResponse } from 'react-router-dom'
+import { Button } from '@shared/ui/primitives'
 
 export default function ErrorPage() {
   const error = useRouteError()
@@ -20,37 +21,30 @@ export default function ErrorPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
-          <h1 className="text-9xl font-bold text-red-500">{statusCode}</h1>
-          <h2 className="mt-4 text-3xl font-semibold text-gray-900">
+          <h1 className="text-8xl font-bold text-destructive">{statusCode}</h1>
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight">
             {title}
           </h2>
-          <p className="mt-4 text-gray-600">
+          <p className="mt-3 text-muted-foreground text-sm">
             {message}
           </p>
         </div>
 
         <div className="flex flex-col gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 transition-colors"
-          >
-            Go to Home
+          <Link to="/">
+            <Button variant="primary" fullWidth>Go to Home</Button>
           </Link>
-          
-          <button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-          >
+          <Button variant="outline" fullWidth onClick={() => window.location.reload()}>
             Reload Page
-          </button>
+          </Button>
         </div>
 
         {import.meta.env.DEV && error && typeof error === 'object' && 'stack' in error ? (
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-md text-left">
-            <p className="text-xs font-mono text-red-900 break-all">
+          <div className="mt-8 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-left">
+            <p className="text-xs font-mono text-destructive break-all">
               {(error as { stack: string }).stack}
             </p>
           </div>
@@ -59,4 +53,3 @@ export default function ErrorPage() {
     </div>
   )
 }
-

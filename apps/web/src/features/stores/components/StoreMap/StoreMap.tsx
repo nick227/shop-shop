@@ -6,13 +6,12 @@ import type { ErrorInfo, ReactNode} from 'react';
 import { useEffect, useRef, memo, Suspense, Component, useCallback } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/types'
 import type { LocationCoordinates } from '@shared/types'
-import { formatDistance } from '@shared/lib/utils/format'
+import { formatDistance } from '@shared/lib/format'
 import { hasValidCoordinates } from '@shared/lib/utils/storeAccessors'
-import { styles } from '@shared/lib/tailwind-classes'
 import { ObjectPool } from '@shared/lib/utils/memory/ObjectPool'
-import { useMapData } from '@shared/hooks/useMapData'
+import { useMapData } from '@shared/hooks/hooks/useMapData'
 
 // Object pools for marker and icon reuse (performance optimization)
 const markerPool = new ObjectPool(
@@ -65,7 +64,7 @@ class MapErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className={styles.map} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div>Map temporarily unavailable</div>
         </div>
       )
@@ -248,13 +247,13 @@ function PureLeafletMap({
     marker.setLatLng([lat, lng])
     marker.setIcon(icon)
     
-    // Optimized popup content
+    // Display-only popup content (no routing logic inside map HTML)
     const popupContent = '<div style="min-width: 200px;"><h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">' + store.name + '</h3>' +
       (store.description ? '<p style="margin: 0 0 8px 0; color: #666;">' + store.description + '</p>' : '') +
       (store.distance !== undefined ? '<div style="margin: 0 0 8px 0; color: #10b981;">📍 ' + formatDistance(store.distance) + ' away</div>' : '') +
       (store.addressCity || store.addressState ? '<div style="margin: 0 0 8px 0; color: #666;">' + (store.addressStreet ? '<div>' + store.addressStreet + '</div>' : '') + '<div>' + store.addressCity + ', ' + store.addressState + ' ' + store.addressZip + '</div></div>' : '') +
-      '<button onclick="window.storeClick && window.storeClick(\'' + store.id + '\')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%;">View Menu →</button></div>'
-    
+      '</div>'
+
     marker.bindPopup(popupContent)
     marker.on('click', () => onStoreClick?.(store))
     
@@ -320,7 +319,7 @@ function PureLeafletMap({
   return (
     <div 
       ref={mapContainerRef}
-      className={styles.map}
+      className=""
       style={{ height: '100%', width: '100%' }}
     />
   )
@@ -361,8 +360,8 @@ function StoreMapComponent({
   
 
   return (
-    <div className={styles.container} style={{ height }}>
-      <Suspense fallback={<div className={styles.map} style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
+    <div className="min-h-screen bg-gray-50 px-4 md:px-6 py-8" style={{ height }}>
+      <Suspense fallback={<div className="" style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading map...</div>}>
         <MapErrorBoundary>
           <PureLeafletMap
             center={mapData.mapCenter}
@@ -377,20 +376,20 @@ function StoreMapComponent({
       </Suspense>
 
       {/* Map legend */}
-      <div className={styles.legend}>
+      <div className="">
         {userLocation && (
-          <div className={styles.legendItem}>
-            <span className={styles.legendIcon}>📍</span>
+          <div className="">
+            <span className="">📍</span>
             <span>Your Location</span>
           </div>
         )}
-        <div className={styles.legendItem}>
-          <span className={styles.legendIcon}>🍽️</span>
+        <div className="">
+          <span className="">🍽️</span>
           <span>Restaurants ({mapData.validStoresCount})</span>
         </div>
         {userLocation && radiusMiles && (
-          <div className={styles.legendItem}>
-            <span className={styles.legendCircle}></span>
+          <div className="">
+            <span className=""></span>
             <span>{radiusMiles} mi radius</span>
           </div>
         )}

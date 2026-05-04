@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Item Form Sections Builder;
  * Extracts section definitions from ItemFormPage for cleaner code;

@@ -2,7 +2,7 @@
  * ErrorState - Component for displaying search error state
  */
 import React from 'react'
-import type { LocationData } from '@/types/location.types'
+import type { LocationData } from '@shared/types/types/location.types'
 
 interface ErrorStateProps {
   error: Error | undefined

@@ -3,7 +3,7 @@
  * Convert search results to component-specific types
  */
 import type { StoreSearchResult, ProductSearchResult } from '../types/search.types'
-import type { StoreWithDistance, ItemResponse } from '@api/backend-types'
+import type { StoreWithDistance, ItemResponse } from '@api/types'
 
 /**
  * Transform search result to StoreWithDistance

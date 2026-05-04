@@ -2,7 +2,6 @@
  * useMediaDelete - Delete a media file;
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 
 interface DeleteMediaInput {
@@ -16,23 +15,27 @@ export function useMediaDelete() {
 
   return useMutation({
     mutationFn: async ({ mediaId }: DeleteMediaInput) => {
-      // Note: Media delete API is not available in the SDK
-      // This is a mock implementation that doesn't actually delete anything
-      console.warn('Media delete API not available, media not actually deleted:', mediaId)
-      return Promise.resolve()
+      const token = localStorage.getItem('token')
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3005'
+
+      const response = await fetch(apiUrl + '/media/' + mediaId, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token + '' } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || 'Delete failed')
+      }
     },
     onSuccess: (_, variables) => {
-      // Invalidate media lists;
-      if (variables.storeId) {
-        queryClient.invalidateQueries({ queryKey: ['media', 'store', variables.storeId] })
-      }
-      if (variables.itemId) {
-        queryClient.invalidateQueries({ queryKey: ['media', 'item', variables.itemId] })
-      }
+      queryClient.invalidateQueries({ queryKey: ['media', 'list'] })
       toast.success('Media deleted successfully')
     },
-    onError: () => {
-      toast.error('Failed to delete media')
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to delete media')
     }})
 }
-

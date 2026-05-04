@@ -2,7 +2,6 @@
  * ZipCodeInput - ZIP code search form;
  */
 import { useState } from 'react'
-import { styles } from '@shared/lib/tailwind-classes'
 
 interface ZipCodeInputProps {
   readonly onZipSubmit: (zipCode: string) => void;
@@ -22,10 +21,10 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false }: ZipCodeInputPro
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.zipForm}>
+    <form onSubmit={handleSubmit} className="">
       <input
         type="text"
-        className={styles.zipInput}
+        className="flex gap-2"
         placeholder="Enter ZIP code"
         value={zipCode}
         onChange={(e) => setZipCode(e.target.value)}
@@ -36,7 +35,7 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false }: ZipCodeInputPro
       />
       <button
         type="submit" 
-        className={styles.searchButton}
+        className=""
         disabled={zipCode.length !== 5 || !/^\d{5}$/.test(zipCode) || isLoading}
       >
         {isLoading ? 'Searching...' : 'Search'}

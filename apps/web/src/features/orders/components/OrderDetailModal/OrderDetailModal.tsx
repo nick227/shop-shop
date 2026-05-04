@@ -7,29 +7,34 @@ import { useOrder } from '@shared/hooks/generated'
 import { formatCurrency, formatDateLong } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import type { OrderStatus } from '@api/types'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export interface OrderDetailModalProps {
   orderId: string
   onClose: () => void
 }
 
-const statusVariants: Record<OrderStatus, 'default' | 'success' | 'warning' | 'destructive' | 'secondary' | 'outline'> = {
-  PENDING: 'secondary',
-  CONFIRMED: 'default',
+const statusVariants: Partial<Record<OrderStatus, 'default' | 'success' | 'warning' | 'destructive' | 'secondary' | 'outline'>> = {
+  PENDING_PAYMENT: 'secondary',
+  PLACED: 'default',
+  ACCEPTED: 'default',
   PREPARING: 'warning',
   READY: 'warning',
+  OUT_FOR_DELIVERY: 'warning',
+  DELIVERED: 'success',
   COMPLETED: 'success',
-  CANCELLED: 'destructive',
+  CANCELED: 'destructive',
 }
 
-const statusLabels: Record<OrderStatus, string> = {
-  PENDING: 'Order Placed',
-  CONFIRMED: 'Accepted by Restaurant',
+const statusLabels: Partial<Record<OrderStatus, string>> = {
+  PENDING_PAYMENT: 'Pending Payment',
+  PLACED: 'Order Placed',
+  ACCEPTED: 'Accepted',
   PREPARING: 'Being Prepared',
   READY: 'Ready for Pickup',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
+  DELIVERED: 'Delivered',
   COMPLETED: 'Completed',
-  CANCELLED: 'Canceled',
+  CANCELED: 'Canceled',
 }
 
 export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
@@ -76,26 +81,26 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
         <DialogHeader>
           <DialogTitle>Order #{order.id.slice(0, 8).toUpperCase()}</DialogTitle>
         </DialogHeader>
-      <div className={styles.content}>
-        <div className={styles.statusSection}>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="">
           <Badge variant={statusVariants[order.status as OrderStatus]}>
             {statusLabels[order.status as OrderStatus] || order.status}
           </Badge>
-          <p className={styles.orderDate}>{formatDateLong(order.createdAt)}</p>
+          <p className="">{formatDateLong(order.createdAt)}</p>
         </div>
 
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Order Details</h3>
-          <div className={styles.detailsGrid}>
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Delivery Method</span>
-              <span className={styles.detailValue}>
+        <div className="max-w-7xl mx-auto mb-10">
+          <h3 className="text-xl font-bold flex items-center gap-2">Order Details</h3>
+          <div className="">
+            <div className="">
+              <span className="">Delivery Method</span>
+              <span className="">
                 {order.deliveryType === 'PICKUP' ? '🏪 Pickup' : '🚗 Delivery'}
               </span>
             </div>
             
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Payment Status</span>
+            <div className="">
+              <span className="">Payment Status</span>
               <Badge 
                 variant={order.paymentStatus === 'PAID' ? 'success' : 'warning'}
                 className="text-xs"
@@ -105,9 +110,9 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
             </div>
 
             {order.addressSnapshot && (
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Delivery Address</span>
-                <span className={styles.detailValue}>
+              <div className="">
+                <span className="">Delivery Address</span>
+                <span className="">
                   {order.addressSnapshot.line1}<br />
                   {order.addressSnapshot.city}, {order.addressSnapshot.state} {order.addressSnapshot.postalCode}
                 </span>
@@ -116,37 +121,37 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
           </div>
         </div>
 
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Order Summary</h3>
-          <div className={styles.summaryRows}>
-            <div className={styles.summaryRow}>
+        <div className="max-w-7xl mx-auto mb-10">
+          <h3 className="text-xl font-bold flex items-center gap-2">Order Summary</h3>
+          <div className="">
+            <div className="">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className={styles.summaryRow}>
+            <div className="">
               <span>Delivery & Service Fees</span>
               <span>{formatCurrency(fees)}</span>
             </div>
-            <div className={styles.summaryRow}>
+            <div className="">
               <span>Tax</span>
               <span>{formatCurrency(tax)}</span>
             </div>
             {tip > 0 && (
-              <div className={styles.summaryRow}>
+              <div className="">
                 <span>Tip</span>
                 <span>{formatCurrency(tip)}</span>
               </div>
             )}
-            <div className={styles.divider} />
-            <div className={`${styles.summaryRow} ${styles.totalRow}`}>
-              <span className={styles.totalLabel}>Total</span>
-              <span className={styles.totalValue}>{formatCurrency(total)}</span>
+            <div className="" />
+            <div className={` `}>
+              <span className="">Total</span>
+              <span className="">{formatCurrency(total)}</span>
             </div>
           </div>
         </div>
 
-        <div className={styles.actions}>
-          <Button variant="ghost" onClick={onClose} className={styles.closeButton}>
+        <div className="">
+          <Button variant="ghost" onClick={onClose} className="">
             Close
           </Button>
         </div>

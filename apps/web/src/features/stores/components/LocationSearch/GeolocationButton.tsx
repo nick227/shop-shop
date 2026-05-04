@@ -2,7 +2,6 @@
  * GeolocationButton - Browser geolocation trigger;
  */
 import { memo } from 'react'
-import { styles } from '@shared/lib/tailwind-classes'
 
 interface GeolocationButtonProps {
   onGetLocation: () => void;
@@ -13,19 +12,19 @@ export const GeolocationButton = memo(function GeolocationButton({ onGetLocation
   return (
     <button
       type="button"
-      className={styles.geoButton}
+      className=""
       onClick={onGetLocation}
       disabled={isLoading}
       aria-label="Use my current location"
     >
       {isLoading ? (
         <>
-          <span className={styles.spinner}>⌛</span>
+          <span className="">⌛</span>
           Getting location...
         </>
       ) : (
         <>
-          <span className={styles.icon}>📍</span>
+          <span className="">📍</span>
           Use My Location
         </>
       )}

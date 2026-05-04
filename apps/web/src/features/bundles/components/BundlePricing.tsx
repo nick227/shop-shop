@@ -141,8 +141,8 @@ export function BundlePricing ({
     <div className={`flex flex-col gap-3 ${className}`}>
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600 font-medium">Bundle Price:</span>
-          <span className="text-2xl font-bold text-neutral-900">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Bundle Price</span>
+          <span className="text-2xl font-bold text-foreground">
             ${bundlePrice.toFixed(2)}
           </span>
         </div>
@@ -157,22 +157,22 @@ export function BundlePricing ({
       </div>
 
       {showDetails && (
-        <div className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-md">
+        <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border border-border/50">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-neutral-600 font-medium">
-              Individual Total:
+            <span className="text-muted-foreground font-medium">
+              Individual Total
             </span>
-            <span className="text-neutral-900 line-through">
+            <span className="text-foreground line-through opacity-50">
               ${individualPrice.toFixed(2)}
             </span>
           </div>
           
           {hasSavings && (
             <div className="flex justify-between items-center text-sm">
-              <span className="text-neutral-600 font-medium">
-                You Save:
+              <span className="text-muted-foreground font-medium">
+                You Save
               </span>
-              <span className="text-green-600 font-semibold">
+              <span className="text-success font-semibold">
                 ${savings.toFixed(2)} ({savingsPercent.toFixed(1)}%)
               </span>
             </div>
@@ -182,7 +182,7 @@ export function BundlePricing ({
 
       {bundle.pricing?.pricingType && (
         <div className="flex justify-start">
-          <Badge variant="outline">
+          <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-bold h-5">
             {getPricingTypeLabel(bundle.pricing.pricingType)}
           </Badge>
         </div>

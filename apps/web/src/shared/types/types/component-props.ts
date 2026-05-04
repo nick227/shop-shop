@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode, CSSProperties, HTMLAttributes } from 'react'
-import type { AddressResponse as Address } from '../api/backend-types'
+import type { AddressResponse as Address } from '@api/types'
 
 // ============================================
 // Base Component Props

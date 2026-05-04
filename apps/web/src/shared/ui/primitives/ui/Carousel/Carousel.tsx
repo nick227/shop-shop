@@ -5,7 +5,6 @@
 import type { ReactNode, UIEvent } from 'react';
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { SCROLL_AMOUNT_MULTIPLIER, SCROLL_THRESHOLD_PX, NAV_SYMBOL, ARIA_LABEL, SCROLL_DIRECTION } from './constants'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export type CarouselVariant = 'compact' | 'horizontal' | 'vertical'
 export type { ScrollDirection } from './constants'
@@ -31,7 +30,7 @@ export function Carousel({
   showControls = true,
   className = ''
 }: Readonly<CarouselProps>) {
-  const scrollRef = useRef<HTMLDivElement>()
+  const scrollRef = useRef<HTMLDivElement | null>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
 
@@ -87,9 +86,9 @@ export function Carousel({
   }, [variant])
 
   const VARIANT_CLASSES = {
-    compact: styles.compact,
-    vertical: styles.vertical,
-    horizontal: styles.horizontal
+    compact: 'w-full',
+    vertical: 'w-full',
+    horizontal: 'w-full'
   } as const
   
   const variantClass = VARIANT_CLASSES[variant]
@@ -99,11 +98,11 @@ export function Carousel({
   const scrollRight = useCallback(() => scroll(SCROLL_DIRECTION.RIGHT), [scroll])
 
   return (
-    <div className={`${styles.carousel} ${variantClass} ${className}`}>
+    <div className={` ${variantClass} ${className}`}>
       {(title ?? subtitle) && (
-        <div className={styles.header}>
-          {title && <h2 className={styles.title}>{title}</h2>}
-          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+        <div className="max-w-7xl mx-auto mb-6 flex justify-between items-start gap-4">
+          {title && <h2 className="text-3xl font-bold text-gray-900 mb-2">{title}</h2>}
+          {subtitle && <p className="text-gray-600">{subtitle}</p>}
         </div>
       )}
 
@@ -111,7 +110,7 @@ export function Carousel({
         {showControls && canScrollLeft && !isVertical && (
           <button
             type="button"
-            className={`${styles.control} ${styles.controlLeft}`}
+            className={` `}
             onClick={scrollLeft}
             aria-label={ARIA_LABEL.SCROLL_LEFT}
           >
@@ -120,11 +119,14 @@ export function Carousel({
         )}
 
         <div
-          ref={scrollRef as React.RefObject<HTMLDivElement>}
-          className={styles.scrollContainer}
+          ref={scrollRef}
+          className={
+            'overflow-auto ' +
+            (isVertical ? 'max-h-[520px]' : 'whitespace-nowrap')
+          }
           onScroll={handleScroll}
         >
-          <div className={styles.content}>
+          <div className={isVertical ? 'space-y-3' : 'inline-flex gap-3 px-1'}>
             {children}
           </div>
         </div>
@@ -132,7 +134,7 @@ export function Carousel({
         {showControls && canScrollRight && !isVertical && (
           <button
             type="button"
-            className={`${styles.control} ${styles.controlRight}`}
+            className={` `}
             onClick={scrollRight}
             aria-label={ARIA_LABEL.SCROLL_RIGHT}
           >
@@ -142,11 +144,11 @@ export function Carousel({
       </div>
 
       {showControls && isVertical && (
-        <div className={styles.verticalControls}>
+        <div className="">
           {canScrollLeft && (
             <button
               type="button"
-              className={styles.verticalControl}
+              className=""
               onClick={scrollLeft}
               aria-label={ARIA_LABEL.SCROLL_UP}
             >
@@ -156,7 +158,7 @@ export function Carousel({
           {canScrollRight && (
             <button
               type="button"
-              className={styles.verticalControl}
+              className=""
               onClick={scrollRight}
               aria-label={ARIA_LABEL.SCROLL_DOWN}
             >

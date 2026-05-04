@@ -6,7 +6,6 @@ import type { ReactNode} from 'react';
 import { useCallback } from 'react'
 import { Input, type InputProps } from '../Input'
 import { useFormContext } from '../Form/FormContextUtils'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export interface FormFieldProps extends Omit<InputProps, 'label'> {
   /** Field name/identifier */
@@ -108,21 +107,21 @@ export function FormField({
   // Custom children render (with error display)
   if (children) {
     return (
-      <div className={styles.field}>
-        <div className={styles.customInput}>
-          <label htmlFor={name} className={styles.label}>
+      <div className="">
+        <div className="">
+          <label htmlFor={name} className="">
             {label}
-            {inputProps.required && <span className={styles.required}>*</span>}
+            {inputProps.required && <span className="">*</span>}
           </label>
           {children}
         </div>
         
         {helperText && !error && (
-          <p className={styles.helperText}>{helperText}</p>
+          <p className="">{helperText}</p>
         )}
         
         {error && (
-          <p className={styles.errorText} role="alert">
+          <p className="" role="alert">
             {error}
           </p>
         )}
@@ -132,7 +131,7 @@ export function FormField({
 
   // Default Input render (Input handles its own error/helper display)
   return (
-    <div className={styles.field}>
+    <div className="">
       <Input
         id={name}
         name={name}

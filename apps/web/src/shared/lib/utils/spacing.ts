@@ -140,47 +140,6 @@ export const responsiveSpacing = {
   }
 } as const
 
-// ========================================
-// Spacing Utilities
-// ========================================
-
-export const spacingUtils = {
-  // Padding utilities
-  padding: {
-    xs: `p-${spacing['2']}`,
-    sm: `p-${spacing['3']}`,
-    md: `p-${spacing['4']}`,
-    lg: `p-${spacing['6']}`,
-    xl: `p-${spacing['8']}`,
-  },
-  
-  // Margin utilities
-  margin: {
-    xs: `m-${spacing['2']}`,
-    sm: `m-${spacing['3']}`,
-    md: `m-${spacing['4']}`,
-    lg: `m-${spacing['6']}`,
-    xl: `m-${spacing['8']}`,
-  },
-  
-  // Gap utilities
-  gap: {
-    xs: `gap-${spacing['2']}`,
-    sm: `gap-${spacing['3']}`,
-    md: `gap-${spacing['4']}`,
-    lg: `gap-${spacing['6']}`,
-    xl: `gap-${spacing['8']}`,
-  },
-  
-  // Space between utilities
-  space: {
-    xs: `space-y-${spacing['2']}`,
-    sm: `space-y-${spacing['3']}`,
-    md: `space-y-${spacing['4']}`,
-    lg: `space-y-${spacing['6']}`,
-    xl: `space-y-${spacing['8']}`,
-  }
-} as const
 
 // ========================================
 // Type Definitions
@@ -194,37 +153,9 @@ export type ResponsiveSpacingKey = keyof typeof responsiveSpacing
 // Helper Functions
 // ========================================
 
-/**
- * Get spacing value by key
- */
-export function getSpacing(key: SpacingKey): string {
-  return spacing[key]
-}
-
-/**
- * Get semantic spacing value
- */
-export function getSemanticSpacing(category: keyof typeof semanticSpacing, property: string): string {
-  return (semanticSpacing[category] as any)[property] || spacing['4']
-}
-
-/**
- * Get responsive spacing value
- */
-export function getResponsiveSpacing(breakpoint: keyof typeof responsiveSpacing, property: string): string {
-  return (responsiveSpacing[breakpoint] as any)[property] || spacing['4']
-}
-
-/**
- * Create custom spacing value
- */
-export function createSpacing(value: number, unit: 'px' | 'rem' | 'em' = 'rem'): string {
-  return unit === 'px' ? `${value}px` : `${value / 16}${unit}`
-}
 
 // ========================================
 // Exports
 // ========================================
 
 export default spacing
-export { spacing as default }

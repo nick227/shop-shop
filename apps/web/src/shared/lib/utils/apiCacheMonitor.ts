@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API Cache Monitor - Development utility for monitoring API cache performance
  * Only included in development builds

@@ -1,44 +1,25 @@
-/**
- * LoginPage - Single-focus login (no tabs)
- * Philosophy: One action, bold CTA, minimal distraction;
- * Migrated to Tailwind (removed non-existent CSS reference)
- */
-import { Link, useNavigate } from 'react-router-dom'
-import { LoginForm } from '../features/auth'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/ui/primitives'
-import { MobileShell } from '@layouts/MobileShell'
+import { DualAuthWidget } from '@features/auth/DualAuthWidget/DualAuthWidget'
+import { useLocation, useNavigate, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@stores/authStore'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const handleSuccess = () => {
-    navigate('/', { replace: true })
+  if (isAuthenticated) {
+    const from = (location.state as any)?.from as string | undefined
+    return <Navigate to={from || '/'} replace />
   }
 
   return (
-    <MobileShell title="Sign In" showHeader={false} showBottomNav={false}>
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="text-5xl mb-4">👋</div>
-            <CardTitle className="text-3xl">Welcome Back</CardTitle>
-            <CardDescription>Sign in to continue</CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <LoginForm onSuccess={handleSuccess} />
-            
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">New here? </span>
-              <Link to="/signup" className="text-primary hover:underline font-medium">
-                Create account;
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </MobileShell>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <DualAuthWidget
+        onSuccess={() => {
+          const from = (location.state as any)?.from as string | undefined
+          navigate(from || '/', { replace: true })
+        }}
+      />
+    </div>
   )
 }
-
-

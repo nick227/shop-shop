@@ -19,6 +19,8 @@
   ],
   "health": {
     "ignore": [
+      "dist",
+      "__generated__",
       "**/dist/**",
       "**/node_modules/**",
       "**/__generated__/**",
@@ -27,6 +29,8 @@
   },
   "duplicates": {
     "ignore": [
+      "dist",
+      "__generated__",
       "**/dist/**",
       "**/node_modules/**",
       "**/__generated__/**",

@@ -2,7 +2,7 @@
  * useStoreParams - Hook for reading store-related URL parameters (slugs)
  */
 import { useParams } from 'react-router-dom'
-import { parseStoreSlug, parseItemSlug } from '@shared/lib/slugify'
+import { parseStoreSlug, parseItemSlug } from '@shared/lib/utils/slugify'
 
 export interface StoreParams {
   storeSlug: string;

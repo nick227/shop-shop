@@ -5,8 +5,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { stores, orders } from '@api/apiWrapper'
 import { useAuth } from '../useAuth'
-import { sortOrdersByDateDesc, isOrderPending } from '@shared/lib/orderHelpers'
-import type { OrderResponse } from '@api/backend-types'
+import { sortOrdersByDateDesc, isOrderPending } from '@shared/lib/utils/orderHelpers'
+import { mapOrder } from '@api/type-mappers'
+import type { OrderResponse } from '@api/types'
 
 export interface UseVendorOrdersOptions {
   status?: string;
@@ -19,33 +20,36 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
   return useQuery<OrderResponse[]>({
     queryKey: ['vendor-orders', (user as unknown as { id: string }).id, options.status],
     queryFn: async () => {
-      // Fetch orders for all vendor's stores
-      // First get vendor's stores, then fetch orders for each
+      // Fetch vendor stores once, then fetch orders once. Dedupe by id.
       const vendorStores = await stores.list()
       
       if (vendorStores.length === 0) {
         return []
       }
 
-      // Fetch orders for all stores
-      const ordersPromises = vendorStores.map(async () => {
-        const allOrders = await orders.list()
-        // Filter by status if provided
-        if (options.status) {
-          return allOrders.filter((order: OrderResponse) => order.status === options.status)
-        }
-        return allOrders
+      const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      const rawOrders = await orders.list()
+      const allOrders = rawOrders.map(mapOrder) as OrderResponse[]
+
+      // Filter to vendor stores + optional status.
+      const filtered = allOrders.filter((order) => {
+        if (!storeIds.has((order as any).storeId)) return false
+        if (options.status && order.status !== options.status) return false
+        return true
       })
 
-      const ordersResponses = await Promise.all(ordersPromises)
-      
-      // Combine all orders
-      const allOrders = ordersResponses.flat()
+      // Dedupe by order id (defensive against backend/joins).
+      const byId = new Map<string, OrderResponse>()
+      for (const order of filtered) {
+        if (!order?.id) continue
+        byId.set(order.id, order)
+      }
+      const uniqueOrders = Array.from(byId.values())
       
       // Sort by newest first (using consolidated helper)
-      allOrders.sort(sortOrdersByDateDesc)
+      uniqueOrders.sort(sortOrdersByDateDesc)
 
-      return allOrders
+      return uniqueOrders
     },
     enabled: !!user,
     refetchInterval: options.refetchInterval ?? 30_000, // Default: refresh every 30 sec
@@ -64,17 +68,20 @@ export function usePendingOrderCount() {
       const vendorStores = await stores.list()
       
       if (vendorStores.length === 0) return 0
-      
-      // Fetch orders for all stores
-      const ordersPromises = vendorStores.map(async () => {
-        return await orders.list()
-      })
 
-      const ordersResponses = await Promise.all(ordersPromises)
-      const allOrders = ordersResponses.flat()
+      const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      const allOrders = (await orders.list()) as unknown as OrderResponse[]
+      const filtered = allOrders.filter((order) => storeIds.has((order as any).storeId))
       
       // Count pending orders (using consolidated helper)
-      return allOrders.filter((order: OrderResponse) => isOrderPending(order.status)).length
+      const byId = new Set<string>()
+      let count = 0
+      for (const order of filtered) {
+        if (!order?.id || byId.has(order.id)) continue
+        byId.add(order.id)
+        if (isOrderPending(order.status)) count += 1
+      }
+      return count
     },
     enabled: !!user,
     refetchInterval: 15_000, // Refresh every 15 sec for widget

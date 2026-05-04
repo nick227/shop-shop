@@ -1,7 +1,10 @@
 /**
  * ResultsContainer - Component for rendering search results based on status;
  */
-import { LoadingState, ErrorState, NoResults, SearchResults } from './index'
+import { LoadingState } from './LoadingState'
+import { ErrorState } from './ErrorState'
+import { NoResults } from './NoResults'
+import { SearchResults } from './SearchResults'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 

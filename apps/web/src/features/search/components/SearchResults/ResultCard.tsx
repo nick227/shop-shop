@@ -6,8 +6,8 @@ import { memo } from 'react'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult, StoreSearchResult, ProductSearchResult } from '@shared/types'
-import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
-import { transformStoreResult, transformProductResult } from '@shared/lib/utils/searchTransformers'
+import type { StoreClickHandler, ProductClickHandler } from '@api/types'
+import { transformStoreResult, transformProductResult } from '@features/search/utils/searchTransformers'
 
 export type CardVariant = 'compact' | 'standard' | 'expanded'
 

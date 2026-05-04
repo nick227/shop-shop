@@ -1,7 +1,6 @@
 /**
  * CurrentLocationBadge - Display current selected location;
  */
-import { styles } from '@shared/lib/tailwind-classes'
 
 interface CurrentLocationBadgeProps {
   readonly locationName: string;
@@ -17,21 +16,21 @@ export function CurrentLocationBadge({
   onSetDefault
 }: CurrentLocationBadgeProps) {
   return (
-    <div className={styles.currentLocation}>
-      <div className={styles.locationInfo}>
-        <span className={styles.locationIcon}>📍</span>
-        <div className={styles.locationText}>
-          <div className={styles.locationName}>{locationName}</div>
-          <div className={styles.locationDetails}>
+    <div className="">
+      <div className="">
+        <span className="">📍</span>
+        <div className="">
+          <div className="">{locationName}</div>
+          <div className="">
             Within {radiusMiles} miles
           </div>
         </div>
       </div>
-      <div className={styles.locationActions}>
+      <div className="">
         {onSetDefault && (
           <button
             type="button"
-            className={styles.defaultButton}
+            className=""
             onClick={onSetDefault}
             aria-label="Set as default location"
             title="Set as default location"
@@ -41,7 +40,7 @@ export function CurrentLocationBadge({
         )}
         <button
           type="button"
-          className={styles.clearButton}
+          className=""
           onClick={onClear}
           aria-label="Clear location"
         >

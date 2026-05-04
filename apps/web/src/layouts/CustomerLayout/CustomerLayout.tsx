@@ -3,97 +3,45 @@
  * Provides consistent navigation and structure
  */
 
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useCustomerStats } from '@shared/hooks/customer/useCustomerStats'
-import { useAuth } from '@shared/hooks/useAuth'
-import { Button } from '@shared/ui/primitives'
-import styles from './CustomerLayout.module.css'
+import { Outlet } from 'react-router-dom'
+import { useCustomerStats } from '@shared/hooks/hooks/customer/useCustomerStats'
+import { BottomNav } from '@shared/ui/layout/BottomNav'
+import { PageTransition } from '@shared/ui/layout/PageTransition'
+import { AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 
 export function CustomerLayout() {
-  const navigate = useNavigate()
-  const { user } = useAuth()
   const { data: stats } = useCustomerStats()
-
-  const handleBackToHome = () => {
-    navigate('/')
-  }
+  const location = useLocation()
 
   return (
-    <div className={styles.layout}>
-      {/* Top Bar */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerLeft}>
-            <Button variant="ghost" onClick={handleBackToHome} className={styles.backButton}>
-              ← Back to Home
-            </Button>
-            <div className={styles.headerTitle}>
-              <h1 className={styles.title}>My Account</h1>
-              <p className={styles.subtitle}>Welcome back, {user?.name || 'Customer'}!</p>
-            </div>
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      {/* Top Bar — glassmorphic, consistent with BottomNav */}
+      <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-nav border-b border-border/40 px-4 h-12 flex items-center justify-between pt-[env(safe-area-inset-top)]">
+        <h1 className="text-base font-semibold tracking-tight">
+          Delivery App
+        </h1>
+        {stats && stats.pendingOrders > 0 && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+            </span>
+            {stats.pendingOrders}
           </div>
-          {stats && stats.pendingOrders > 0 && (
-            <NavLink to="/account/orders?filter=pending" className={styles.pendingBadge || ''}>
-              <span className={styles.pendingIcon}>🔴</span>
-              <span className={styles.pendingText}>{stats.pendingOrders} Pending</span>
-            </NavLink>
-          )}
-        </div>
+        )}
       </header>
 
-      <div className={styles.container}>
-        {/* Side Navigation */}
-        <nav className={styles.nav}>
-          <NavLink 
-            to="/account/dashboard" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-          >
-            <span className={styles.navIcon}>📊</span>
-            <span className={styles.navLabel}>Dashboard</span>
-          </NavLink>
+      {/* Main Content */}
+      <main className="w-full relative overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
+      </main>
 
-          <NavLink 
-            to="/account/orders" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-          >
-            <span className={styles.navIcon}>📋</span>
-            <span className={styles.navLabel}>Orders</span>
-            {stats && stats.pendingOrders > 0 && (
-              <span className={styles.navBadge}>{stats.pendingOrders}</span>
-            )}
-          </NavLink>
-
-          <NavLink 
-            to="/account/deliveries" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-          >
-            <span className={styles.navIcon}>🚗</span>
-            <span className={styles.navLabel}>Deliveries</span>
-          </NavLink>
-
-          <NavLink 
-            to="/account/profile" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-          >
-            <span className={styles.navIcon}>👤</span>
-            <span className={styles.navLabel}>Profile</span>
-          </NavLink>
-
-          <NavLink 
-            to="/account/addresses" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-          >
-            <span className={styles.navIcon}>📍</span>
-            <span className={styles.navLabel}>Addresses</span>
-          </NavLink>
-        </nav>
-
-        {/* Main Content */}
-        <main className={styles.main}>
-          <Outlet />
-        </main>
-      </div>
+      <BottomNav />
     </div>
   )
 }
-

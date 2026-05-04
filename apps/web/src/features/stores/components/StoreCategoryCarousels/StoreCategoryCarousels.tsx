@@ -2,10 +2,10 @@
  * StoreCategoryCarousels - Display stores grouped by category themes;
  * Categories inferred from store names/descriptions;
  */
-import { useStores } from '@shared/hooks/generated'
+import { useStores } from '@shared/hooks/hooks/useStores'
 import { StoreCarousel } from '../StoreCarousel'
 import { useMemo } from 'react'
-import type { StoreResponse, Store, StoreWithDistance } from '@api/backend-types'
+import type { StoreResponse, StoreWithDistance } from '@api/types'
 
 interface CategoryConfig {
   title: string;
@@ -22,7 +22,7 @@ const CATEGORIES: CategoryConfig[] = [
   { title: 'Desserts & Sweets', emoji: '🍰', keywords: ['dessert', 'ice cream', 'cake', 'sweet', 'candy', 'chocolate'] },
 ]
 
-function categorizeStore(store: Store): string[] {
+function categorizeStore(store: StoreResponse): string[] {
   const text = `${store.name} ${store.description || ''}`.toLowerCase()
   const categories: string[] = []
   
@@ -36,9 +36,7 @@ function categorizeStore(store: Store): string[] {
 }
 
 export function StoreCategoryCarousels() {
-  const { data: stores, isLoading } = useStores({ isPublished: 'true' }, {
-    staleTime: 5 * 60 * 1000, // 5 minutes - prevents duplicate fetches in dev mode;
-  })
+  const { stores, isLoading } = useStores(undefined)
 
   const categorizedStores = useMemo(() => {
     if (!stores) return {}

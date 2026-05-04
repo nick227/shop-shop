@@ -2,42 +2,47 @@
  * Vendor Bundles Page
  * Main page for bundle management in vendor control panel
  */
-import React, { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { PageHeader } from '@layouts/PageHeader'
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { Button } from '@shared/ui/primitives'
 import { BundleList } from '@features/bundles/components/BundleList'
 import { BundleFormModal } from '@features/bundles/components/BundleFormModal'
-import type { Bundle } from '@api/backend-types'
+import { ArrowLeft, Plus } from 'lucide-react'
+import type { Bundle } from '@api/types'
+import { useHaptics } from '@shared/hooks/useHaptics'
 
-export function VendorBundlesPage() {
+export default function VendorBundlesPage() {
   const { storeId } = useParams<{ storeId: string }>()
+  const navigate = useNavigate()
+  const haptics = useHaptics()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingBundle, setEditingBundle] = useState<Bundle | undefined>()
 
   if (!storeId) {
     return (
-      <div className="vendor-bundles-page vendor-bundles-page--error">
-        <div className="vendor-bundles-page__error">
-          <h2>Store Not Found</h2>
-          <p>Please select a valid store to manage bundles.</p>
+      <PageContainer className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-destructive mb-2">Store Not Found</h2>
+          <p className="text-muted-foreground mb-4">Please select a valid store to manage bundles.</p>
+          <Button onClick={() => navigate('/vendor/dashboard')}>
+            Back to Dashboard
+          </Button>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   const handleCreateBundle = () => {
+    haptics.light()
     setEditingBundle(undefined)
     setIsCreateModalOpen(true)
   }
 
   const handleEditBundle = (bundle: Bundle) => {
+    haptics.light()
     setEditingBundle(bundle)
     setIsCreateModalOpen(true)
-  }
-
-  const handleDeleteBundle = (bundle: Bundle) => {
-    // Bundle deletion is handled in BundleList component
-    console.log('Bundle deleted:', bundle.name)
   }
 
   const handleCloseModal = () => {
@@ -46,22 +51,40 @@ export function VendorBundlesPage() {
   }
 
   return (
-    <div className="vendor-bundles-page">
+    <PageContainer>
       <PageHeader
         title="Bundle Management"
-        subtitle="Create and manage product bundles for your store"
+        description="Create and manage product bundles for your store"
+        backButton={
+          <Button 
+            variant="ghost" 
+            size="small" 
+            onClick={() => navigate(`/vendor/dashboard`)} 
+            className="-ml-2 mb-2 text-muted-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Dashboard
+          </Button>
+        }
         breadcrumbs={[
           { label: 'Dashboard', href: '/vendor' },
-          { label: 'Store Management', href: `/vendor/stores/${storeId}` },
           { label: 'Bundles' }
         ]}
+        actions={
+          <Button 
+            variant="primary" 
+            onClick={handleCreateBundle}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Bundle
+          </Button>
+        }
       />
 
-      <div className="vendor-bundles-page__content">
+      <div className="mt-4">
         <BundleList
           storeId={storeId}
           onEditBundle={handleEditBundle}
-          onDeleteBundle={handleDeleteBundle}
           onCreateBundle={handleCreateBundle}
         />
       </div>
@@ -73,46 +96,7 @@ export function VendorBundlesPage() {
           onClose={handleCloseModal}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
 
-// Vendor Bundles Page Styles
-export const vendorBundlesPageStyles = `
-.vendor-bundles-page {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 1.5rem;
-}
-
-.vendor-bundles-page__content {
-  flex: 1;
-}
-
-.vendor-bundles-page--error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.vendor-bundles-page__error {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.vendor-bundles-page__error h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.vendor-bundles-page__error p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-`

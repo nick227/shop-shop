@@ -29,14 +29,8 @@ export const MediaListResponseSchema = z.object({
   total: z.number(),
 })
 
-// Update Media Sort
-export const UpdateMediaSortInputSchema = z.object({
-  sortIndex: z.number().int().min(0).describe('New display order'),
-})
-
 // Type exports
 export type UploadMediaInput = z.infer<typeof UploadMediaInputSchema>
 export type MediaResponse = z.infer<typeof MediaResponseSchema>
 export type MediaListResponse = z.infer<typeof MediaListResponseSchema>
-export type UpdateMediaSortInput = z.infer<typeof UpdateMediaSortInputSchema>
 

@@ -2,14 +2,13 @@
  * Bundle Savings Badge Component
  * Displays bundle savings with visual emphasis
  */
-import React from 'react'
 import { Badge } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 interface BundleSavingsBadgeProps {
   readonly savings: number
   readonly savingsPercent: number
   readonly label?: string
-  readonly size?: 'sm' | 'md' | 'lg'
   readonly variant?: 'default' | 'success' | 'warning'
   readonly className?: string
 }
@@ -25,15 +24,15 @@ export function BundleSavingsBadge({
   const percentText = `${savingsPercent.toFixed(1)}%`
 
   return (
-    <div className={`bundle-savings-badge ${className}`}>
+    <div className={cn("inline-flex", className)}>
       <Badge 
         variant={variant} 
-        className="bundle-savings-badge__badge"
+        className="flex items-center gap-1 px-2.5 py-1 font-bold animate-pulse-subtle bg-success/15 text-success border-success/30"
       >
-        <span className="bundle-savings-badge__text">
+        <span>
           {displayLabel}
         </span>
-        <span className="bundle-savings-badge__percent">
+        <span className="text-[0.85em] opacity-80 font-medium">
           ({percentText})
         </span>
       </Badge>
@@ -41,35 +40,3 @@ export function BundleSavingsBadge({
   )
 }
 
-// Bundle Savings Badge Styles
-export const bundleSavingsBadgeStyles = `
-.bundle-savings-badge {
-  display: inline-flex;
-}
-
-.bundle-savings-badge__badge {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-weight: 600;
-  animation: pulse 2s infinite;
-}
-
-.bundle-savings-badge__text {
-  font-weight: 700;
-}
-
-.bundle-savings-badge__percent {
-  font-size: 0.875em;
-  opacity: 0.9;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-`

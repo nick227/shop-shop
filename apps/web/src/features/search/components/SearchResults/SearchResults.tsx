@@ -4,13 +4,12 @@
  */
 import { memo, useMemo } from 'react'
 import { Carousel } from '@shared/ui/primitives'
-import { groupAndTransformResults } from '@shared/lib/utils/searchOptimizations'
+import { groupAndTransformResults } from '@features/search/utils/searchOptimizations'
 import { ResultCard, type CardVariant } from './ResultCard'
 import { StoreCardStandard, StoreCardCompact, StoreCardExpanded } from '@features/stores/components/StoreCard'
 import { ProductCard } from '@features/products/components/ProductCard'
 import type { SearchResult } from '@shared/types'
-import type { StoreClickHandler, ProductClickHandler } from '@api/backend-types'
-import { styles } from '@shared/lib/tailwind-classes'
+import type { StoreClickHandler, ProductClickHandler } from '@api/types'
 
 export type ResultsLayout = 'grid' | 'carousel' | 'mixed'
 
@@ -42,7 +41,7 @@ function SearchResultsComponent({
   // Early return for empty results (after hooks to follow Rules of Hooks)
   if (results.length === 0) {
     return (
-      <div className={styles.empty}>
+      <div className="max-w-7xl mx-auto text-center py-12 bg-white rounded-lg border border-gray-200 flex flex-col items-center justify-center gap-4">
         <p>No results found. Try adjusting your search or filters.</p>
       </div>
     )
@@ -51,13 +50,13 @@ function SearchResultsComponent({
   // Grid Layout
   if (layout === 'grid') {
     return (
-      <div className={`${styles.gridLayout} ${className || ''}`}>
+      <div className={` ${className || ''}`}>
         {groupByType ? (
           <>
             {transformedStores.length > 0 && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Restaurants</h2>
-                <div className={styles.grid}>
+              <section className="max-w-7xl mx-auto mb-10">
+                <h2 className="text-xl font-bold flex items-center gap-2">Restaurants</h2>
+                <div className="">
                   {transformedStores.map(store => (
                     <StoreCardStandard
                       key={store.id}
@@ -70,9 +69,9 @@ function SearchResultsComponent({
             )}
             
             {transformedProducts.length > 0 && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Products</h2>
-                <div className={styles.grid}>
+              <section className="max-w-7xl mx-auto mb-10">
+                <h2 className="text-xl font-bold flex items-center gap-2">Products</h2>
+                <div className="">
                   {transformedProducts.map(product => (
                     <ProductCard
                       key={product.id}
@@ -86,7 +85,7 @@ function SearchResultsComponent({
             )}
           </>
         ) : (
-          <div className={styles.grid}>
+          <div className="">
             {results.map(result => (
               <ResultCard
                 key={result.id}
@@ -105,7 +104,7 @@ function SearchResultsComponent({
   // Carousel Layout
   if (layout === 'carousel') {
     return (
-      <div className={`${styles.carouselLayout} ${className || ''}`}>
+      <div className={` ${className || ''}`}>
         {groupByType ? (
           <>
             {transformedStores.length > 0 && (
@@ -161,11 +160,11 @@ function SearchResultsComponent({
 
   // Mixed Layout
   return (
-    <div className={`${styles.mixedLayout} ${className || ''}`}>
+    <div className={` ${className || ''}`}>
       {transformedStores.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Restaurants</h2>
-          <div className={styles.grid}>
+        <section className="max-w-7xl mx-auto mb-10">
+          <h2 className="text-xl font-bold flex items-center gap-2">Restaurants</h2>
+          <div className="">
             {transformedStores.map(store => (
               <StoreCardStandard
                 key={store.id}
@@ -178,7 +177,7 @@ function SearchResultsComponent({
       )}
       
       {transformedProducts.length > 0 && (
-        <section className={styles.section}>
+        <section className="max-w-7xl mx-auto mb-10">
           <Carousel
             variant="horizontal"
             title="Products"
@@ -186,7 +185,7 @@ function SearchResultsComponent({
             showControls
           >
             {transformedProducts.map(product => (
-              <div key={product.id} className={styles.productCard}>
+              <div key={product.id} className="group rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                 <ProductCard
                   product={product}
                   onClick={onProductClick}

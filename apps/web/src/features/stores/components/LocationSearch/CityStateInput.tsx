@@ -25,11 +25,11 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.cityForm}>
-      <div className={styles.cityInputs}>
+    <form onSubmit={handleSubmit} className="">
+      <div className="">
         <input
           type="text"
-          className={styles.cityInput}
+          className=""
           value={cityInput}
           onChange={(e) => setCityInput(e.target.value)}
           placeholder="City name (e.g., Austin)"
@@ -37,7 +37,7 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
         />
         <input
           type="text"
-          className={styles.stateInput}
+          className=""
           value={stateInput}
           onChange={(e) => setStateInput(e.target.value.toUpperCase())}
           placeholder="ST"
@@ -47,7 +47,7 @@ export function CityStateInput({ onCitySubmit, isLoading }: CityStateInputProps)
       </div>
       <button
         type="submit" 
-        className={styles.searchButton}
+        className=""
         disabled={!cityInput.trim() || isLoading}
       >
         {isLoading ? 'Searching...' : 'Search by City'}

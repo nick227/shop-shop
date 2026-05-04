@@ -99,6 +99,29 @@ export function createResourceHooks<T, TCreate = Partial<T>, TUpdate = Partial<T
     },
 
     /**
+     * useGet - Backward-compatible alias for generated hooks that still export useGet.
+     */
+    useGet: (
+      id: string,
+      queryOptions?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn' | 'enabled'>
+    ) => {
+      return useQuery<T, Error>({
+        queryKey: [resourceName, id],
+        queryFn: async () => {
+          if (!api.getById) {
+            throw new Error('' + resourceName + '.getById not implemented in API wrapper')
+          }
+          try {
+            return await api.getById(id)
+          } catch (error: any) {
+            throw await handleApiError(error)
+          }
+        },
+        enabled: Boolean(id),
+        ...queryOptions})
+    },
+
+    /**
      * useCreate - Create new resource;
      * @example const { mutate: createStore } = useCreateStore()
      * createStore(newStore, { onSuccess: () => navigate('/stores') })

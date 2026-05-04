@@ -4,59 +4,6 @@
  */
 import type { StoreWithDistance } from '@api/types'
 
-/**
- * Get store city name;
- */
-export function getStoreCity(store: StoreWithDistance): string | undefined {    
-  return store.addressCity ?? undefined;
-}
-
-/**
- * Get store state;
- */
-export function getStoreState(store: StoreWithDistance): string | undefined {   
-  return store.addressState ?? undefined;
-}
-
-/**
- * Get store street;
- */
-export function getStoreStreet(store: StoreWithDistance): string | undefined {  
-  return store.addressStreet ?? undefined;
-}
-
-/**
- * Get store zip;
- */
-export function getStoreZip(store: StoreWithDistance): string | undefined {     
-  return store.addressZip ?? undefined;
-}
-
-/**
- * Get formatted city, state;
- */
-export function getStoreCityState(store: StoreWithDistance): string | undefined {    
-  const city = store.addressCity;
-  const state = store.addressState;
-  if (!city) return undefined;
-  return state
-    ? `${city}, ${state}`
-    : city;
-}
-
-/**
- * Get store coordinates (validated)
- */
-export function getStoreCoordinates(store: StoreWithDistance): {
-  lat: number;
-  lon: number;
-} | undefined {
-  const lat = Number(store.latitude)
-  const lon = Number(store.longitude)
-  
-  if (Number.isNaN(lat) || Number.isNaN(lon)) return undefined;
-  return { lat, lon }
-}
 
 /**
  * Check if store has valid coordinates - OPTIMIZED for performance;

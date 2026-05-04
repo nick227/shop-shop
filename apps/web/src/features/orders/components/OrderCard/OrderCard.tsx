@@ -3,7 +3,7 @@ import { Card, CardHeader, CardContent, CardFooter, Badge } from '@shared/ui/pri
 import { Button } from '@shared/ui/primitives'
 import { Radio, Package, Truck, CheckCircle, XCircle } from 'lucide-react'
 import type { OrderResponse } from '@api/types'
-import type { OrderStatus } from '@api/safe-types'
+import type { OrderStatus } from '@api/backend-types'
 import { formatCurrency, formatRelativeTime, formatDate } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 
@@ -16,17 +16,20 @@ export interface OrderCardProps {
   readonly onClick?: (orderId: string) => void
 }
 
-const statusConfig: Record<OrderStatus, { 
+const statusConfig: Partial<Record<OrderStatus, {
   variant: 'default' | 'success' | 'warning' | 'destructive' | 'secondary',
   icon: typeof Package,
   label: string
-}> = {
-  PENDING: { variant: 'secondary', icon: Package, label: 'Order Placed' },
-  CONFIRMED: { variant: 'default', icon: CheckCircle, label: 'Accepted' },
+}>> = {
+  PENDING_PAYMENT: { variant: 'secondary', icon: Package, label: 'Pending Payment' },
+  PLACED: { variant: 'default', icon: Package, label: 'Order Placed' },
+  ACCEPTED: { variant: 'default', icon: CheckCircle, label: 'Accepted' },
   PREPARING: { variant: 'warning', icon: Package, label: 'Preparing' },
   READY: { variant: 'warning', icon: Truck, label: 'Ready for Pickup' },
+  OUT_FOR_DELIVERY: { variant: 'warning', icon: Truck, label: 'Out for Delivery' },
+  DELIVERED: { variant: 'success', icon: CheckCircle, label: 'Delivered' },
   COMPLETED: { variant: 'success', icon: CheckCircle, label: 'Completed' },
-  CANCELLED: { variant: 'destructive', icon: XCircle, label: 'Canceled' },
+  CANCELED: { variant: 'destructive', icon: XCircle, label: 'Canceled' },
 }
 
 const deliveryIcons = {

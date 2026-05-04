@@ -3,7 +3,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import type { StoreResponse, Store } from '@api/backend-types'
+import type { StoreResponse } from '@api/types'
 
 interface LocationInfo {
   cities: { city: string; state: string; count: number }[]
@@ -15,7 +15,7 @@ export function useAvailableLocations() {
     queryKey: ['available-locations'],
     queryFn: async () => {
       const response = await apiClient.stores().listStores({})
-      const stores = (response?.data || response || []) as unknown as Store[]
+      const stores = (response?.data || response || []) as unknown as StoreResponse[]
       
       // Extract unique cities
       const cityMap = new Map<string, { city: string; state: string; count: number }>()

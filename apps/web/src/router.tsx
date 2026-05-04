@@ -10,33 +10,33 @@ import { ProtectedRoute, lazyRoute } from './router/utils'
 // Lazy load pages for code splitting;
 import { lazy } from 'react'
 
-const LoginPage = lazy(() => import('./pages/LoginPage'))
-const SignupPage = lazy(() => import('./pages/SignupPage'))
+const LoginPage = lazy(() => import('./pages/public/Login.page'))
+const SignupPage = lazy(() => import('./pages/public/Signup.page'))
 // Temporarily disable lazy loading for HomePage to fix render2 error;
-import HomePage from './pages/HomePage'
-const StoreDetailPage = lazy(() => import('./pages/StoreDetailPage'))
-const ItemDetailPage = lazy(() => import('./pages/ItemDetailPage'))
-const CartPage = lazy(() => import('./pages/CartPage'))
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
-const OrderHistoryPage = lazy(() => import('./pages/OrderHistoryPage'))
-const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage'))
+import HomePage from './pages/public/Home.page'
+const StoreDetailPage = lazy(() => import('./pages/shared/StoreDetail.page'))
+const ItemDetailPage = lazy(() => import('./pages/shared/ItemDetail.page'))
+const CartPage = lazy(() => import('./pages/shared/Cart.page'))
+const CheckoutPage = lazy(() => import('./pages/shared/Checkout.page'))
+const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
+const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 
 // Vendor pages;
-const VendorDashboardPage = lazy(() => import('./pages/VendorDashboardPage'))
-const StoreFormPage = lazy(() => import('./pages/StoreFormPage'))
-const StoreItemsPage = lazy(() => import('./pages/StoreItemsPage'))
-const ItemFormPage = lazy(() => import('./pages/ItemFormPage'))
-const VendorOrdersPage = lazy(() => import('./pages/VendorOrdersPage'))
-const VendorStoreRiverPage = lazy(() => import('./pages/VendorStoreRiverPage'))
+const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
+const StoreFormPage = lazy(() => import('./pages/vendor/StoreForm.page'))
+const StoreItemsPage = lazy(() => import('./pages/vendor/StoreItems.page'))
+const ItemFormPage = lazy(() => import('./pages/vendor/ItemForm.page'))
+const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
+const VendorStoreRiverPage = lazy(() => import('./pages/vendor/Bundles.page'))
 
 // Customer account pages;
-const CustomerDashboardPage = lazy(() => import('./pages/CustomerDashboardPage'))
-const CustomerProfilePage = lazy(() => import('./pages/CustomerProfilePage'))
-const CustomerDeliveriesPage = lazy(() => import('./pages/CustomerDeliveriesPage'))
-const CustomerAddressesPage = lazy(() => import('./pages/CustomerAddressesPage'))
+const CustomerDashboardPage = lazy(() => import('./pages/customer/Dashboard.page'))
+const CustomerProfilePage = lazy(() => import('./pages/customer/Profile.page'))
+const CustomerDeliveriesPage = lazy(() => import('./pages/customer/Deliveries.page'))
+const CustomerAddressesPage = lazy(() => import('./pages/customer/Addresses.page'))
 
 // River (social feed)
-const StoreRiverPage = lazy(() => import('./pages/StoreRiverPage'))
+const StoreRiverPage = lazy(() => import('./pages/shared/StoreDetail.page'))
 
 // Error pages;
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -60,6 +60,13 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         element: (
           <ProtectedRoute>
             <HomePage />
+          </ProtectedRoute>
+        )},
+      {
+        path: '/store/:id',
+        element: (
+          <ProtectedRoute>
+            {lazyRoute(StoreDetailPage)}
           </ProtectedRoute>
         )},
       {
@@ -95,6 +102,13 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         element: (
           <ProtectedRoute>
             {lazyRoute(CheckoutPage)}
+          </ProtectedRoute>
+        )},
+      {
+        path: '/order/:id',
+        element: (
+          <ProtectedRoute>
+            {lazyRoute(OrderTrackingPage)}
           </ProtectedRoute>
         )},
       {

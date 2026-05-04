@@ -2,11 +2,15 @@
  * Bundle List Component
  * Displays a list of bundles with filtering and actions
  */
-import React, { useState } from 'react'
-import { Button, Input, Badge } from '@shared/ui/primitives'
+import { useState } from 'react'
+import { Button, Input, Badge, Spinner } from '@shared/ui/primitives'
+import { SectionHeader } from '@shared/ui/layout/PageLayout'
+import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { BundleCard } from './BundleCard'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { Bundle } from '@api/backend-types'
+import { Package, Search, Filter } from 'lucide-react'
+import type { Bundle } from '@api/types'
+import { useHaptics } from '@shared/hooks/useHaptics'
 
 interface BundleListProps {
   readonly storeId: string
@@ -24,7 +28,8 @@ export function BundleList({
   className = ''
 }: BundleListProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')                                                                        
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const haptics = useHaptics()
 
   const {
     isLoading,
@@ -41,130 +46,112 @@ export function BundleList({
 
   const handleDeleteBundle = (bundle: Bundle) => {
     if (window.confirm(`Are you sure you want to delete "${bundle.name}"?`)) {
+      haptics.heavy()
       void (async () => {
         try {
           await deleteBundle(bundle.id)
           onDeleteBundle?.(bundle)
         } catch (error) {
           console.error('Failed to delete bundle:', error)
-          alert('Failed to delete bundle. Please try again.')
         }
       })()
     }
   }
 
   const handleToggleStatus = (bundle: Bundle) => {
+    haptics.light()
     void (async () => {
       try {
         await toggleBundleStatus(bundle.id, !bundle.isActive)
       } catch (error) {
         console.error('Failed to toggle bundle status:', error)
-        alert('Failed to update bundle status. Please try again.')
       }
     })()
   }
 
   if (isLoading) {
     return (
-      <div className="bundle-list bundle-list--loading">
-        <div className="bundle-list__loading">
-          <div className="bundle-list__loading-spinner"></div>
-          <p>Loading bundles...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
+        <Spinner size="medium" />
+        <p className="text-sm text-muted-foreground">Loading bundles...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bundle-list bundle-list--error">
-        <div className="bundle-list__error">
-          <p>Failed to load bundles. Please try again.</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </div>
+      <div className="p-8 text-center bg-destructive/5 rounded-xl border border-destructive/20">
+        <p className="text-destructive font-medium mb-3">Failed to load bundles</p>
+        <Button variant="outline" size="small" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className={`bundle-list ${className}`}>
+    <div className={`flex flex-col gap-6 ${className}`}>
       {/* Header */}
-      <div className="bundle-list__header">
-        <div className="bundle-list__title">
-          <h2>Bundles ({filteredBundles.length})</h2>
-                  <div className="bundle-list__stats">
-          <Badge variant="success">
-            {activeCount} Active
-          </Badge>
-          <Badge variant="secondary">
-            {inactiveCount} Inactive
-          </Badge>
-        </div>
-      </div>
+      <div className="flex flex-col gap-4">
+        <SectionHeader 
+          title={`All Bundles (${filteredBundles.length})`}
+          action={
+            <div className="flex gap-2">
+              <Badge variant="success" className="bg-success/10 text-success border-success/20">
+                {activeCount} Active
+              </Badge>
+              <Badge variant="secondary">
+                {inactiveCount} Inactive
+              </Badge>
+            </div>
+          }
+        />
 
-      <Button onClick={() => onCreateBundle?.()}>
-          Create Bundle
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="bundle-list__filters">
-        <div className="bundle-list__search">
-          <Input
-            type="text"
-            placeholder="Search bundles..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="bundle-list__status-filter">
-          <Button
-            variant={statusFilter === 'all' ? 'primary' : 'outline'}
-            size="small"
-            onClick={() => setStatusFilter('all')}
-          >
-            All
-          </Button>
-          <Button
-            variant={statusFilter === 'active' ? 'primary' : 'outline'}
-            size="small"
-            onClick={() => setStatusFilter('active')}
-          >
-            Active
-          </Button>
-          <Button
-            variant={statusFilter === 'inactive' ? 'primary' : 'outline'}
-            size="small"
-            onClick={() => setStatusFilter('inactive')}
-          >
-            Inactive
-          </Button>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search bundles..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <div className="flex bg-muted/50 p-1 rounded-lg gap-1 self-start sm:self-auto">
+            {(['all', 'active', 'inactive'] as const).map((status) => (
+              <Button
+                key={status}
+                variant={statusFilter === status ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => { haptics.light(); setStatusFilter(status); }}
+                className="capitalize text-xs h-8"
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Bundle Grid */}
       {filteredBundles.length === 0 ? (
-        <div className="bundle-list__empty">
-          <div className="bundle-list__empty-content">
-            <h3>No bundles found</h3>
-            <p>
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filters.'
-                : 'Create your first bundle to get started.'
-              }
-            </p>
-            {!searchTerm && statusFilter === 'all' && (
-              <Button onClick={() => onCreateBundle?.()}>
-                Create First Bundle
+        <EmptyState
+          icon={Package}
+          title={searchTerm || statusFilter !== 'all' ? "No bundles match your search" : "No bundles found"}
+          description={searchTerm || statusFilter !== 'all' ? "Try adjusting your filters or search query." : "Create your first bundle to start selling more!"}
+          action={
+            !searchTerm && statusFilter === 'all' && (
+              <Button variant="primary" onClick={() => onCreateBundle?.()}>
+                Create Your First Bundle
               </Button>
-            )}
-          </div>
-        </div>
+            )
+          }
+        />
       ) : (
-        <div className="bundle-list__grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBundles.map((bundle) => (
             <BundleCard
               key={bundle.id}

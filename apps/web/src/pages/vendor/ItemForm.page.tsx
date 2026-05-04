@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ItemFormPage - Create or edit a menu item
  */

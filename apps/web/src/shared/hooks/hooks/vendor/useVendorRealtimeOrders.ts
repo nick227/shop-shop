@@ -11,6 +11,7 @@ import type { OrderCreatedEvent, OrderStatusChangedEvent } from '@packages/realt
 
 export interface UseVendorRealtimeOrdersOptions {
   storeId?: string
+  storeIds?: string[]
   onNewOrder?: (event: OrderCreatedEvent) => void
   onOrderUpdate?: (event: OrderStatusChangedEvent) => void
   enableSound?: boolean
@@ -21,6 +22,7 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
   const queryClient = useQueryClient()
   const {
     storeId,
+    storeIds,
     onNewOrder,
     onOrderUpdate,
     enableSound = true,
@@ -83,7 +85,8 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
   }, [enableDesktopNotification])
 
   useEffect(() => {
-    if (!storeId) return
+    const ids = storeIds ?? (storeId ? [storeId] : [])
+    if (ids.length === 0) return
 
     const realtimeClient = getRealtimeClient()
 
@@ -92,9 +95,9 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
       console.error('[Realtime] Connection failed:', error)
     })
 
-    // Subscribe to vendor events for this store
-    const unsubscribe = realtimeClient.subscribeVendor(storeId, (event) => {
-      console.log('[Realtime] Vendor event received:', event.type, event.payload)
+    const unsubs = ids.map((id) =>
+      realtimeClient.subscribeVendor(id, (event) => {
+        console.log('[Realtime] Vendor event received:', event.type, event.payload)
 
       if (event.type === 'order.created') {
         const payload = event.payload as { orderId: string; storeId: string; customerId: string; customerName: string; total: number; deliveryType: string; status: string; itemCount: number }
@@ -116,6 +119,23 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
         queryClient.invalidateQueries({ queryKey: ['vendor-orders'] })
         queryClient.invalidateQueries({ queryKey: ['vendor-pending-orders-count'] })
 
+        // Optimistically add to any cached vendor orders lists (dedupe by id).
+        queryClient.setQueriesData({ queryKey: ['vendor-orders'] }, (current: any) => {
+          if (!Array.isArray(current)) return current
+          const exists = current.some((o: any) => o?.id === payload.orderId)
+          if (exists) return current
+          const optimistic = {
+            id: payload.orderId,
+            storeId: payload.storeId,
+            status: payload.status,
+            deliveryType: payload.deliveryType,
+            total: payload.total,
+            createdAt: new Date().toISOString(),
+            user: { id: payload.customerId, name: payload.customerName },
+          }
+          return [optimistic, ...current]
+        })
+
         // Call custom handler
         if (onNewOrder) {
           onNewOrder(event as OrderCreatedEvent)
@@ -123,8 +143,20 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
       }
 
       if (event.type === 'order.status.changed') {
+        const payload = event.payload as { orderId: string; newStatus: string }
+
+        // Optimistically update cached order status.
+        queryClient.setQueryData(['order', payload.orderId], (current: any) => {
+          if (!current) return current
+          return { ...current, status: payload.newStatus }
+        })
+        queryClient.setQueriesData({ queryKey: ['vendor-orders'] }, (current: any) => {
+          if (!Array.isArray(current)) return current
+          return current.map((o: any) => (o?.id === payload.orderId ? { ...o, status: payload.newStatus } : o))
+        })
+
         // Invalidate specific order and lists
-        queryClient.invalidateQueries({ queryKey: ['order', event.payload.orderId] })
+        queryClient.invalidateQueries({ queryKey: ['order', payload.orderId] })
         queryClient.invalidateQueries({ queryKey: ['vendor-orders'] })
         queryClient.invalidateQueries({ queryKey: ['vendor-pending-orders-count'] })
 
@@ -133,15 +165,15 @@ export function useVendorRealtimeOrders(options: UseVendorRealtimeOrdersOptions 
           onOrderUpdate(event as OrderStatusChangedEvent)
         }
       }
-    })
+      })
+    )
 
     return () => {
-      unsubscribe()
+      for (const unsub of unsubs) unsub()
     }
-  }, [storeId, queryClient, onNewOrder, onOrderUpdate, playSound, showDesktopNotification])
+  }, [storeId, storeIds, queryClient, onNewOrder, onOrderUpdate, playSound, showDesktopNotification])
 
   return {
     isConnected: () => getRealtimeClient().isConnected(),
   }
 }
-

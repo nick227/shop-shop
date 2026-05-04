@@ -12,9 +12,9 @@ import {
 } from 'react'
 import { Button } from '@shared/ui/primitives'
 import { Badge } from '@shared/ui/primitives'
-import { useBundles } from '@api/hooks/generated'
+import { useBundles } from '@shared/hooks/generated'
 import { useBundleManagement } from '../hooks/useBundleManagement'
-import type { ItemResponse } from '@api/backend-types'
+import type { ItemResponse } from '@api/types'
 import type { BundleFormData } from '../types/bundle.types'
 
 // Types

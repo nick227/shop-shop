@@ -3,7 +3,7 @@ import { tv, type VariantProps } from 'tailwind-variants'
 import { Loader2 } from 'lucide-react'
 
 const buttonVariants = tv({
-  base: 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  base: 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   variants: {
     variant: {
       primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
@@ -13,10 +13,10 @@ const buttonVariants = tv({
       danger: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
       link: 'text-primary underline-offset-4 hover:underline'},
     size: {
-      small: 'h-9 px-3 text-sm',
-      medium: 'h-10 px-4 py-2 text-base',
-      large: 'h-11 px-8 text-lg',
-      icon: 'h-10 w-10'},
+      small: 'min-h-[36px] px-3 text-sm',
+      medium: 'min-h-[44px] px-4 py-2 text-base',
+      large: 'min-h-[48px] px-8 text-lg',
+      icon: 'min-h-[44px] min-w-[44px] flex items-center justify-center'},
     fullWidth: {
       true: 'w-full'
     }

@@ -2110,112 +2110,48 @@
       "CreateOrderInput": {
         "type": "object",
         "properties": {
-          "userId": {
-            "type": "string"
-          },
-          "storeId": {
-            "type": "string"
-          },
           "cartId": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "deliveryType": {
+            "type": "string",
+            "enum": [
+              "DELIVERY",
+              "PICKUP"
+            ]
+          },
+          "addressId": {
             "type": "string"
-          },
-          "paymentStatus": {
-            "type": "string"
-          },
-          "subtotal": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
-          },
-          "fees": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
-          },
-          "tax": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
           },
           "tip": {
             "type": "string",
             "pattern": "^\\d+(\\.\\d{1,2})?$"
           },
-          "total": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          "deliveryLatitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
-          "serviceFeePercent": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
-          },
-          "serviceFeeAmount": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
-          },
-          "netToVendor": {
-            "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
-          },
-          "stripePaymentIntentId": {
-            "type": "string"
-          },
-          "stripeChargeId": {
-            "type": "string"
-          },
-          "stripeTransferId": {
-            "type": "string"
-          },
-          "stripeApplicationFeeId": {
-            "type": "string"
-          },
-          "stripeRefundId": {
-            "type": "string"
-          },
-          "addressId": {
-            "type": "string"
-          },
-          "addressSnapshot": {
-            "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            }
-          },
-          "cancelReason": {
-            "type": "string"
-          },
-          "canceledBy": {
-            "type": "string"
-          },
-          "canceledAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "refundReason": {
-            "type": "string"
-          },
-          "refundedAt": {
-            "type": "string",
-            "format": "date-time"
+          "deliveryLongitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
-          "userId",
-          "storeId",
-          "status",
-          "deliveryType",
-          "paymentStatus",
-          "subtotal",
-          "fees",
-          "tax",
-          "tip",
-          "total",
-          "serviceFeePercent",
-          "serviceFeeAmount",
-          "netToVendor"
+          "cartId",
+          "deliveryType"
         ]
       },
       "UpdateOrderInput": {
@@ -2224,18 +2160,23 @@
           "status": {
             "type": "string",
             "enum": [
-              "PENDING",
-              "CONFIRMED",
+              "PLACED",
+              "ACCEPTED",
               "PREPARING",
               "READY",
+              "OUT_FOR_DELIVERY",
               "DELIVERED",
-              "CANCELLED"
+              "CANCELED"
             ]
+          },
+          "assignedToUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string"
           }
-        },
-        "required": [
-          "status"
-        ]
+        }
       },
       "OrderResponse": {
         "type": "object",
@@ -2335,6 +2276,50 @@
             "additionalProperties": {
               "nullable": true
             }
+          },
+          "deliveryLatitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "deliveryLongitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "deliveryDistanceMiles": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "estimatedDeliveryAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
           },
           "cancelReason": {
             "type": "string",
@@ -2511,6 +2496,50 @@
                   "additionalProperties": {
                     "nullable": true
                   }
+                },
+                "deliveryLatitude": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "nullable": true
+                    }
+                  ]
+                },
+                "deliveryLongitude": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "nullable": true
+                    }
+                  ]
+                },
+                "deliveryDistanceMiles": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "nullable": true
+                    }
+                  ]
+                },
+                "estimatedDeliveryAt": {
+                  "type": "string",
+                  "nullable": true,
+                  "format": "date-time"
                 },
                 "cancelReason": {
                   "type": "string",
@@ -7735,112 +7764,48 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "userId": {
-                    "type": "string"
-                  },
-                  "storeId": {
-                    "type": "string"
-                  },
                   "cartId": {
-                    "type": "string"
-                  },
-                  "status": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   },
                   "deliveryType": {
+                    "type": "string",
+                    "enum": [
+                      "DELIVERY",
+                      "PICKUP"
+                    ]
+                  },
+                  "addressId": {
                     "type": "string"
-                  },
-                  "paymentStatus": {
-                    "type": "string"
-                  },
-                  "subtotal": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "fees": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "tax": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
                   },
                   "tip": {
                     "type": "string",
                     "pattern": "^\\d+(\\.\\d{1,2})?$"
                   },
-                  "total": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  "deliveryLatitude": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   },
-                  "serviceFeePercent": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "serviceFeeAmount": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "netToVendor": {
-                    "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "stripePaymentIntentId": {
-                    "type": "string"
-                  },
-                  "stripeChargeId": {
-                    "type": "string"
-                  },
-                  "stripeTransferId": {
-                    "type": "string"
-                  },
-                  "stripeApplicationFeeId": {
-                    "type": "string"
-                  },
-                  "stripeRefundId": {
-                    "type": "string"
-                  },
-                  "addressId": {
-                    "type": "string"
-                  },
-                  "addressSnapshot": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
-                  },
-                  "cancelReason": {
-                    "type": "string"
-                  },
-                  "canceledBy": {
-                    "type": "string"
-                  },
-                  "canceledAt": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "refundReason": {
-                    "type": "string"
-                  },
-                  "refundedAt": {
-                    "type": "string",
-                    "format": "date-time"
+                  "deliveryLongitude": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 },
                 "required": [
-                  "userId",
-                  "storeId",
-                  "status",
-                  "deliveryType",
-                  "paymentStatus",
-                  "subtotal",
-                  "fees",
-                  "tax",
-                  "tip",
-                  "total",
-                  "serviceFeePercent",
-                  "serviceFeeAmount",
-                  "netToVendor"
+                  "cartId",
+                  "deliveryType"
                 ]
               }
             }
@@ -7949,6 +7914,50 @@
                       "additionalProperties": {
                         "nullable": true
                       }
+                    },
+                    "deliveryLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryDistanceMiles": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "estimatedDeliveryAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
                     },
                     "cancelReason": {
                       "type": "string",
@@ -8172,6 +8181,50 @@
                               "nullable": true
                             }
                           },
+                          "deliveryLatitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "nullable": true
+                              }
+                            ]
+                          },
+                          "deliveryLongitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "nullable": true
+                              }
+                            ]
+                          },
+                          "deliveryDistanceMiles": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "nullable": true
+                              }
+                            ]
+                          },
+                          "estimatedDeliveryAt": {
+                            "type": "string",
+                            "nullable": true,
+                            "format": "date-time"
+                          },
                           "cancelReason": {
                             "type": "string",
                             "nullable": true
@@ -8390,6 +8443,50 @@
                         "nullable": true
                       }
                     },
+                    "deliveryLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryDistanceMiles": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "estimatedDeliveryAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    },
                     "cancelReason": {
                       "type": "string",
                       "nullable": true
@@ -8503,18 +8600,23 @@
                   "status": {
                     "type": "string",
                     "enum": [
-                      "PENDING",
-                      "CONFIRMED",
+                      "PLACED",
+                      "ACCEPTED",
                       "PREPARING",
                       "READY",
+                      "OUT_FOR_DELIVERY",
                       "DELIVERED",
-                      "CANCELLED"
+                      "CANCELED"
                     ]
+                  },
+                  "assignedToUserId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "note": {
+                    "type": "string"
                   }
-                },
-                "required": [
-                  "status"
-                ]
+                }
               }
             }
           }
@@ -8622,6 +8724,50 @@
                       "additionalProperties": {
                         "nullable": true
                       }
+                    },
+                    "deliveryLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "deliveryDistanceMiles": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "nullable": true
+                        }
+                      ]
+                    },
+                    "estimatedDeliveryAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
                     },
                     "cancelReason": {
                       "type": "string",

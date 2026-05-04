@@ -64,6 +64,77 @@ export interface CitiesContextResult {
   short: string   // Up to 2 cities: "Austin and Dallas"
 }
 
+// ========================================
+// City Formatting Utilities
+// ========================================
+
+/**
+ * Format a list of cities into a readable string with proper conjunctions
+ */
+function formatCitiesList(cities: string[], totalCities: number): string {
+  if (totalCities === 0) return ''
+  if (totalCities === 1) return cities[0] || ''
+  
+  let result = cities.join(', ')
+  
+  // Replace last comma with "and" for 2-3 items
+  if (totalCities <= 3) {
+    const lastComma = result.lastIndexOf(', ')
+    if (lastComma !== -1) {
+      result = `${result.slice(0, Math.max(0, lastComma))} and${result.slice(Math.max(0, lastComma + 2))}`
+    }
+  }
+  
+  return result
+}
+
+/**
+ * Add "more areas" suffix for truncated lists
+ */
+function addMoreAreasSuffix(baseResult: string, shownCount: number, totalCount: number): string {
+  if (shownCount >= totalCount) return baseResult
+  
+  const remaining = totalCount - shownCount
+  const suffix = ` and ${remaining} more ${remaining === 1 ? 'area' : 'areas'}`
+  return baseResult + suffix
+}
+
+/**
+ * Build city strings for both full and short formats
+ */
+function buildCityStrings(cities: string[], totalCities: number): { full: string; short: string } {
+  // Short version (max 2 cities)
+  const shortCities = cities.slice(0, 2)
+  let shortResult = formatCitiesList(shortCities, Math.min(2, totalCities))
+  shortResult = addMoreAreasSuffix(shortResult, shortCities.length, totalCities)
+  
+  // Full version (max 3 cities)
+  const fullCities = cities.slice(0, 3)
+  let fullResult = formatCitiesList(fullCities, Math.min(3, totalCities))
+  fullResult = addMoreAreasSuffix(fullResult, fullCities.length, totalCities)
+  
+  return { full: fullResult, short: shortResult }
+}
+
+/**
+ * Extract unique cities from stores
+ */
+function extractUniqueCities(stores: StoreWithDistance[]): string[] {
+  const cityStateMap = new Map<string, string>()
+  
+  for (const store of stores) {
+    const city = store.addressCity
+    const state = store.addressState
+
+    if (city && !cityStateMap.has(city)) {
+      cityStateMap.set(city, state ?? '')
+      if (cityStateMap.size >= 6) break // Early exit (enough for both formats)
+    }
+  }
+  
+  return Array.from(cityStateMap.keys())
+}
+
 /**
  * Extract unique city names in BOTH formats with single pass
  * Critical optimization: Eliminates redundant iteration
@@ -73,73 +144,17 @@ export function getStoreCitiesContextDual(stores: StoreWithDistance[]): CitiesCo
   const empty = { full: '', short: '' }
   if (!stores?.length) return empty
   
-  // Collect up to 6 unique cities (enough for both versions) - single pass
-  const cityStateMap = new Map<string, string>()
+  const cities = extractUniqueCities(stores)
+  const totalCities = cities.length
   
-  for (const store of stores) {
-    const city = store.addressCity
-        const state = store.addressState
-
-    if (city && !cityStateMap.has(city)) {
-      cityStateMap.set(city, state ?? '')
-      if (cityStateMap.size >= 6) break  // Early exit (enough for both formats)
-    }
-  }
-  
-  const totalCities = cityStateMap.size
   if (totalCities === 0) return empty
   
   // Single city - both formats identical
   if (totalCities === 1) {
-    const firstEntry = cityStateMap.entries().next().value
-    if (!firstEntry) return empty
-    const [city, state] = firstEntry
-    const formatted = state ? '${city}, ' + state + '' : city
+    const city = cities[0]
+    const formatted = city || ''
     return { full: formatted, short: formatted }
   }
   
-  // Build both strings in parallel (single iteration)
-  let fullResult = ''
-  let shortResult = ''
-  let count = 0
-  
-  for (const [city] of cityStateMap) {
-    // Short version (max 2 cities)
-    if (count < 2) {
-      if (count > 0) shortResult += ', '
-      shortResult += city
-    }
-    
-    // Full version (max 3 cities)
-    if (count < 3) {
-      if (count > 0) fullResult += ', '
-      fullResult += city
-    }
-    
-    count++
-    if (count >= 3 && totalCities <= 3) break  // Can exit early if we have all we need
-  }
-  
-  // Handle short version (2 cities)
-  if (totalCities === 2) {
-    const lastComma = shortResult.lastIndexOf(', ')
-    if (lastComma !== -1) {
-      shortResult = `${shortResult.slice(0, Math.max(0, lastComma))} and${shortResult.slice(Math.max(0, lastComma + 1))}`
-    }
-  } else if (totalCities > 2) {
-        shortResult += ` and ${totalCities - 2} more ${totalCities - 2 === 1 ? 'area' : 'areas'}`                                                              
-  }
-
-  // Handle full version (3 cities)
-  if (totalCities === 3) {
-    const lastComma = fullResult.lastIndexOf(', ')
-    if (lastComma !== -1) {
-      fullResult = `${fullResult.slice(0, Math.max(0, lastComma))} and${fullResult.slice(Math.max(0, lastComma + 1))}`                                          
-    }
-  } else if (totalCities > 3) {
-    fullResult += ` and ${totalCities - 3} more ${totalCities - 3 === 1 ? 'area' : 'areas'}`                                                               
-  }
-  
-  return { full: fullResult, short: shortResult }
+  return buildCityStrings(cities, totalCities)
 }
-

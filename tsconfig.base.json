@@ -14,11 +14,17 @@
     "paths": {
       "@packages/db": ["./packages/db/src"],
       "@packages/db/*": ["./packages/db/src/*"],
+      "@packages/domain": ["./packages/domain/src"],
+      "@packages/domain/*": ["./packages/domain/src/*"],
       "@packages/schemas": ["./packages/schemas/src"],
       "@packages/schemas/*": ["./packages/schemas/src/*"],
       "@packages/schemas-river-dto": ["./packages/schemas/src/dtos/river.dto.ts"],
       "@packages/sdk": ["./packages/sdk/src"],
-      "@packages/sdk/*": ["./packages/sdk/src/*"]
+      "@packages/sdk/*": ["./packages/sdk/src/*"],
+      "@packages/shared": ["./packages/shared/src"],
+      "@packages/shared/*": ["./packages/shared/src/*"],
+      "@packages/realtime": ["./packages/realtime/src"],
+      "@packages/realtime/*": ["./packages/realtime/src/*"]
     }
   }
 }

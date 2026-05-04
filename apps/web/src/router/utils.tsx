@@ -3,7 +3,7 @@
  */
 /* eslint-disable react-refresh/only-export-components */
 import { Suspense, type LazyExoticComponent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
 
 /**
@@ -11,9 +11,18 @@ import { useAuthStore } from '@stores/authStore'
  */
 export function ProtectedRoute({ children }: { readonly children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const location = useLocation()
 
-  // Always render children to maintain hook consistency
-  // Authentication check happens inside the component
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    )
+  }
+
   return <>{children}</>
 }
 

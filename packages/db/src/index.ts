@@ -4,8 +4,9 @@
 // export * from './generated/client/index.js'
 // export { PrismaClient } from './generated/client/index.js'
 
-// Re-export commonly used Prisma types
-export type { User, Role, Store, Item, Order, OrderItem, Cart, CartItem, Address, Promotion } from './generated/client/index.js'
+// Re-export commonly used Prisma types and the Prisma namespace (for utility types like GetPayload)
+export type { User, Role, Store, Item, Order, OrderItem, Cart, CartItem, Address, Promotion, OrderStatus as PrismaOrderStatus } from './generated/client/index.js'
+export type { Prisma } from './generated/client/index.js'
 
 // Re-export generated Zod schemas (commented out - causes duplicate export errors)
 // To use Zod schemas: import from '@packages/db/generated/zod' directly

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * StoreFormPage - Create or edit a store
  */

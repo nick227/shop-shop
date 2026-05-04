@@ -7,8 +7,8 @@ import { Button } from '@shared/ui/primitives'
 import { Input } from '@shared/ui/primitives'
 import { Card } from '@shared/ui/primitives'
 import { Badge } from '@shared/ui/primitives'
-import { useItems } from '@api/hooks/generated'
-import type { ItemResponse } from '@api/backend-types'
+import { useItems } from '@shared/hooks/generated'
+import type { ItemResponse } from '@api/types'
 
 // Utility to handle cents vs dollars ambiguity
 const toDollars = (v: string | number | undefined): number => {

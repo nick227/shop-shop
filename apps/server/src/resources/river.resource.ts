@@ -42,8 +42,9 @@ export const riverResource = defineResource({
     },
     beforeList: async (params) => {
       // Filter out non-database fields from where clause
-      const { where, ...otherParams } = params
-      const filteredWhere = { ...where }
+      const p = params as Record<string, unknown>
+      const { where, ...otherParams } = p
+      const filteredWhere = { ...(where as Record<string, unknown>) }
       
       // Remove query parameters that are not database fields
       delete filteredWhere.sortBy

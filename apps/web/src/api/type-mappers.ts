@@ -10,25 +10,20 @@
  * To regenerate: pnpm gen:types
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable unicorn/no-null */
+// ESLint disables are scoped to specific functions below
 
 import type {
   ListStores200ResponseDataInner,
   ListItems200ResponseDataInner,
   ListOrders200ResponseDataInner,
-  ListAddresss200ResponseDataInner,
+  ListAddresss200ResponseDataInner, // Note: Triple 's' is correct per SDK generation
   ListBundles200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListPromotions200ResponseDataInner,
   ListUsers200ResponseDataInner,
-  AuthResponse as SDKAuthResponse,
-  PaymentIntentResponse as SDKPaymentIntentResponse,
-  SDKTipResponse as SDKTipResponse,
-  UserPublicResponse as SDKUserPublicResponse
-} from './types'
+  // Note: AuthResponse, PaymentIntentResponse, TipResponse, UserPublicResponse 
+  // are SDK-only types that need to be imported directly from SDK when needed
+} from '../../../../packages/sdk/generated/sdk/models'
 
 import type {
   StoreResponse,
@@ -44,7 +39,7 @@ import type {
 
 import type {
   PromotionResponse
-} from './types'
+} from './types/centralized'
 
 // Note: AuthResponse, PaymentIntentResponse, TipResponse, UserPublicResponse 
 // are not available in ./types, using SDK types directly
@@ -63,6 +58,13 @@ interface SDKWithId {
   updatedAt?: string
 }
 
+/**
+ * Type guard to check if SDK data has an id field
+ */
+function hasSdkId(data: unknown): data is { id?: string } {
+  return typeof data === 'object' && data !== null && 'id' in data
+}
+
 // Removed unused interface types to fix linting errors
 
 // ============================================
@@ -77,7 +79,7 @@ function hasIdField(data: unknown): data is SDKWithId {
 }
 
 function hasTimestampFields(data: unknown): data is SDKWithId {
-  return hasIdField(data) && 'createdAt' in data && 'updatedAt' in data
+  return typeof data === 'object' && data !== null && 'createdAt' in data && 'updatedAt' in data
 }
 
 // ============================================
@@ -85,11 +87,22 @@ function hasTimestampFields(data: unknown): data is SDKWithId {
 // ============================================
 
 /**
- * Safely extract id field with fallback
+ * Safely extract id field with stable fallback
  */
 function extractId(data: unknown, fallback = ''): string {
   if (hasIdField(data) && typeof data.id === 'string') {
     return data.id
+  }
+  // Use stable fallback based on data content, not timestamp
+  if (typeof data === 'object' && data !== null) {
+    const dataStr = JSON.stringify(data)
+    let hash = 0
+    for (let i = 0; i < dataStr.length; i++) {
+      const char = dataStr.codePointAt(i) ?? 0
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return `generated-${Math.abs(hash)}`
   }
   return fallback
 }
@@ -121,8 +134,10 @@ function extractNumber(data: unknown, field: string, fallback = 0): number {
     const value = (data as Record<string, unknown>)[field]
     if (typeof value === 'number') return value
     if (typeof value === 'string') {
-      const parsed = Number.parseFloat(value)
-      if (!Number.isNaN(parsed)) return parsed
+      const trimmed = value.trim()
+      if (trimmed === '') return fallback
+      const parsed = Number.parseFloat(trimmed)
+      if (!Number.isNaN(parsed) && Number.isFinite(parsed)) return parsed
     }
   }
   return fallback
@@ -135,7 +150,11 @@ function extractBoolean(data: unknown, field: string, fallback = false): boolean
   if (typeof data === 'object' && data !== null && field in data) {
     const value = (data as Record<string, unknown>)[field]
     if (typeof value === 'boolean') return value
-    if (typeof value === 'string') return value === 'true'
+    if (typeof value === 'string') {
+      const lower = value.toLowerCase()
+      return lower === 'true' || lower === '1' || lower === 'yes'
+    }
+    if (typeof value === 'number') return value !== 0
   }
   return fallback
 }
@@ -152,11 +171,18 @@ function extractString(data: unknown, field: string, fallback = ''): string {
 }
 
 /**
- * Safely parse JSON field
+ * Safely parse JSON field - handles both strings and objects
  */
 function parseJsonField<T>(data: unknown, field: string, fallback: T): T {
   if (typeof data === 'object' && data !== null && field in data) {
     const value = (data as Record<string, unknown>)[field]
+    
+    // If it's already an object/array, return it directly
+    if (typeof value === 'object' && value !== null) {
+      return value as T
+    }
+    
+    // If it's a string, try to parse it
     if (typeof value === 'string') {
       try {
         return JSON.parse(value) as T
@@ -177,7 +203,7 @@ function parseJsonField<T>(data: unknown, field: string, fallback: T): T {
  */
 export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `store-${Date.now()}`)
+  const id = extractId(sdk, `store-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   // Parse fees JSON
   const fees = parseJsonField(sdk, 'feesJson', {})
@@ -191,7 +217,6 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
     updatedAt: timestamps.updatedAt,
     deliveryFee,
     minOrder,
-    distance: undefined, // Add missing distance property
     // Map address fields
     city: sdk.addressCity ?? undefined,
     state: sdk.addressState ?? undefined,
@@ -204,7 +229,7 @@ export function mapStore(sdk: ListStores200ResponseDataInner): StoreResponse {
  */
 export function mapItem(sdk: ListItems200ResponseDataInner): ItemResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `item-${Date.now()}`)
+  const id = extractId(sdk, `item-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
@@ -219,18 +244,19 @@ export function mapItem(sdk: ListItems200ResponseDataInner): ItemResponse {
  */
 export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `order-${Date.now()}`)
+  const id = extractId(sdk, `order-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    stripePaymentIntentId: null,
-    stripeChargeId: null,
-    status: 'PENDING',
-    deliveryType: 'DELIVERY',
-    paymentStatus: 'PENDING',
+    // Only set defaults if fields are missing, don't override server truth
+    stripePaymentIntentId: extractString(sdk, 'stripePaymentIntentId') || undefined,
+    stripeChargeId: extractString(sdk, 'stripeChargeId') || undefined,
+    status: extractString(sdk, 'status') || 'PENDING',
+    deliveryType: extractString(sdk, 'deliveryType') || 'DELIVERY',
+    paymentStatus: extractString(sdk, 'paymentStatus') || 'PENDING',
     // Convert null to undefined for type compatibility
     addressSnapshot: sdk.addressSnapshot ?? undefined,
   } as OrderResponse
@@ -241,7 +267,7 @@ export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
  */
 export function mapAddress(sdk: ListAddresss200ResponseDataInner): AddressResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `address-${Date.now()}`)
+  const id = extractId(sdk, `address-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
@@ -256,7 +282,7 @@ export function mapAddress(sdk: ListAddresss200ResponseDataInner): AddressRespon
  */
 export function mapBundle(sdk: ListBundles200ResponseDataInner): Bundle {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `bundle-${Date.now()}`)
+  const id = extractId(sdk, `bundle-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   // Parse JSON strings from SDK
   const items = parseJsonField(sdk, 'items', [])
@@ -292,10 +318,10 @@ export function mapBundle(sdk: ListBundles200ResponseDataInner): Bundle {
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    storeId: (sdk as any).storeId ?? '',
-    name: (sdk as any).name ?? '',
-    description: (sdk as any).description ?? '',
-    imageUrl: (sdk as any).imageUrl ?? '',
+    storeId: extractString(sdk, 'storeId', ''),
+    name: extractString(sdk, 'name', ''),
+    description: extractString(sdk, 'description', ''),
+    imageUrl: extractString(sdk, 'imageUrl', ''),
     isActive: extractBoolean(sdk, 'isActive', false),
     sortIndex: extractNumber(sdk, 'sortIndex', 0),
     items: bundleItems,
@@ -314,7 +340,7 @@ export function mapBundle(sdk: ListBundles200ResponseDataInner): Bundle {
  */
 export function mapCart(sdk: ListCarts200ResponseDataInner): CartResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `cart-${Date.now()}`)
+  const id = extractId(sdk, `cart-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
@@ -329,7 +355,7 @@ export function mapCart(sdk: ListCarts200ResponseDataInner): CartResponse {
  */
 export function mapPromotion(sdk: ListPromotions200ResponseDataInner): PromotionResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `promotion-${Date.now()}`)
+  const id = extractId(sdk, `promotion-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
@@ -344,42 +370,46 @@ export function mapPromotion(sdk: ListPromotions200ResponseDataInner): Promotion
  */
 export function mapUser(sdk: ListUsers200ResponseDataInner): UserResponse {
   const timestamps = extractTimestamps(sdk)
-  const id = extractId(sdk, `user-${Date.now()}`)
+  const id = extractId(sdk, `user-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   
   return {
     ...sdk,
     id,
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
-    firstName: (sdk as any).firstName ?? undefined,
-    lastName: (sdk as any).lastName ?? undefined,
+    firstName: extractString(sdk, 'firstName') || undefined,
+    lastName: extractString(sdk, 'lastName') || undefined,
   } as UserResponse
 }
 
 /**
  * Map SDK auth data to frontend AuthResponse
+ * Note: AuthResponse is SDK-only type
  */
-export function mapAuth(sdk: SDKAuthResponse): SDKAuthResponse {
+export function mapAuth(sdk: unknown): unknown {
   return sdk
 }
 
 /**
  * Map SDK payment intent data to frontend PaymentIntentResponse
+ * Note: PaymentIntentResponse is SDK-only type
  */
-export function mapPaymentIntent(sdk: SDKPaymentIntentResponse): SDKPaymentIntentResponse {
+export function mapPaymentIntent(sdk: unknown): unknown {
   return sdk
 }
 
 /**
  * Map SDK tip data to frontend TipResponse
+ * Note: TipResponse is SDK-only type
  */
-export function mapTip(sdk: SDKTipResponse): SDKTipResponse {
+export function mapTip(sdk: unknown): unknown {
   return sdk
 }
 
 /**
  * Map SDK user public data to frontend UserPublicResponse
+ * Note: UserPublicResponse is SDK-only type
  */
-export function mapUserPublic(sdk: SDKUserPublicResponse): SDKUserPublicResponse {
+export function mapUserPublic(sdk: unknown): unknown {
   return sdk
 }

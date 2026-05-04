@@ -7,34 +7,87 @@ import { z } from 'zod'
 export const CreateBundleInputSchema = z.object({
   storeId: z.string(),
   name: z.string(),
-  description: z.string(),
-  imageUrl: z.string(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   sortIndex: z.number().int().optional(),
-  pricing: z.string().optional()
+  items: z.array(z.object({
+    itemId: z.string(),
+    quantity: z.number(),
+    sortIndex: z.number().int().optional()
+  })),
+  pricing: z.object({
+    pricingType: z.enum(['FIXED_PRICE', 'DISCOUNT_PERCENT', 'DISCOUNT_AMOUNT', 'BEST_DEAL']),
+    fixedPrice: z.number().optional(),
+    discountPercent: z.number().optional(),
+    discountAmount: z.number().optional(),
+    minSavings: z.number().optional(),
+    showSavings: z.boolean().optional(),
+    savingsLabel: z.string().optional()
+  })
 })
 
 export const UpdateBundleInputSchema = z.object({
   storeId: z.string().optional(),
-  name: z.string(),
-  description: z.string(),
-  imageUrl: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   sortIndex: z.number().int().optional(),
-  pricing: z.string().optional()
+  items: z.array(z.object({
+    itemId: z.string(),
+    quantity: z.number(),
+    sortIndex: z.number().int().optional()
+  })).optional(),
+  pricing: z.object({
+    pricingType: z.enum(['FIXED_PRICE', 'DISCOUNT_PERCENT', 'DISCOUNT_AMOUNT', 'BEST_DEAL']),
+    fixedPrice: z.number().optional(),
+    discountPercent: z.number().optional(),
+    discountAmount: z.number().optional(),
+    minSavings: z.number().optional(),
+    showSavings: z.boolean().optional(),
+    savingsLabel: z.string().optional()
+  }).optional()
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
 
 export const BundleResponseSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   storeId: z.string(),
-  store: z.string(),
+  store: z.string().optional(),
   name: z.string(),
-  description: z.string(),
-  imageUrl: z.string(),
-  isActive: z.boolean().nullable(),
-  sortIndex: z.number().int().nullable(),
-  items: z.string(),
-  pricing: z.string().nullable(),
-  orderItems: z.string()
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  isActive: z.boolean().optional(),
+  sortIndex: z.number().int().optional(),
+  items: z.array(z.object({
+    id: z.string(),
+    bundleId: z.string(),
+    itemId: z.string(),
+    quantity: z.number(),
+    sortIndex: z.number().int().optional(),
+    price: z.number().optional(),
+    title: z.string().optional(),
+    item: z.object({
+      id: z.string(),
+      title: z.string(),
+      price: z.number(),
+      imageUrl: z.string().optional()
+    }).optional()
+  })).optional(),
+  pricing: z.object({
+    id: z.string(),
+    bundleId: z.string(),
+    pricingType: z.enum(['FIXED_PRICE', 'DISCOUNT_PERCENT', 'DISCOUNT_AMOUNT', 'BEST_DEAL']),
+    fixedPrice: z.number().optional(),
+    discountPercent: z.number().optional(),
+    discountAmount: z.number().optional(),
+    minSavings: z.number().optional(),
+    showSavings: z.boolean().optional(),
+    savingsLabel: z.string().optional()
+  }).optional(),
+  orderItems: z.string().optional()
 })
 
 export const BundleListResponseSchema = z.object({
@@ -64,4 +117,7 @@ export type UpdateBundleInput = z.infer<typeof UpdateBundleInputSchema>
 export type BundleResponse = z.infer<typeof BundleResponseSchema>
 export type BundleListResponse = z.infer<typeof BundleListResponseSchema>
 export type BundleQuery = z.infer<typeof BundleQuerySchema>
+
+// Bundle pricing type enum
+export type BundlePricingType = 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
 

@@ -2,9 +2,9 @@
  * NoResults - Component for displaying no results state
  */
 import React from 'react'
-import { NoResults as NoResultsUI } from '@shared/ui/primitives/NoResults'
-import type { LocationData } from '@/types/location.types'
-import type { StoreWithDistance } from '@api/backend-types'
+import { NoResults as NoResultsUI } from '@shared/ui/primitives'
+import type { LocationData } from '@shared/types/types/location.types'
+import type { StoreWithDistance } from '@api/types'
 
 // Radius policy constants - single source of truth
 const RADIUS_POLICY = {

@@ -4,8 +4,8 @@
  * Always shows search controls to allow new location searches
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useLocation } from '@shared/hooks/useLocation'
-import type { LocationData } from '@/types/location.types'
+import { useLocation } from '@shared/hooks/hooks/useLocation'
+import type { LocationData } from '@shared/types/types/location.types'
 import { CurrentLocationBadge } from './CurrentLocationBadge'
 import { GeolocationButton } from './GeolocationButton'
 import { ZipCodeInput } from './ZipCodeInput'
@@ -152,7 +152,7 @@ export function LocationSearch({
 
   return (
     <div 
-      className={styles.container}
+      className="min-h-screen bg-gray-50 px-4 md:px-6 py-8"
       aria-busy={loadingStates.any}
       aria-live="polite"
     >
@@ -167,14 +167,14 @@ export function LocationSearch({
       )}
 
       {/* OPTIMIZED: Consolidated search controls with coordinated loading states */}
-      <div className={styles.searchControls}>
+      <div className="">
         {isGeolocationSupported && (
           <>
             <GeolocationButton
               onGetLocation={() => { void handleUseMyLocation() }}
               isLoading={loadingStates.geolocation}
             />
-            <div className={styles.divider}>
+            <div className="">
               <span>or</span>
             </div>
           </>
@@ -185,7 +185,7 @@ export function LocationSearch({
           isLoading={loadingStates.zip}
         />
 
-        <div className={styles.divider}>
+        <div className="">
           <span>or</span>
         </div>
 
@@ -212,11 +212,11 @@ export function LocationSearch({
 
       {/* Error Message with Recovery Action */}
       {error && (
-        <div className={styles.error} role="alert" aria-live="polite">
-          <span className={styles.errorIcon} aria-hidden="true">⚠️</span>
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-destructive" role="alert" aria-live="polite">
+          <span className="" aria-hidden="true">⚠️</span>
           <span>{error}</span>
           <button 
-            className={styles.retryButton}
+            className=""
             onClick={() => window.location.reload()}
             aria-label="Try again"
           >

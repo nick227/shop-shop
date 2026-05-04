@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { SkeletonList } from '@shared/ui/primitives/Skeleton'
-import { Button } from '@shared/ui/primitives'
+import { SkeletonList } from '../Skeleton'
+import { Button } from '../Button'
 import { AlertCircle, Inbox } from 'lucide-react'
 
 /**

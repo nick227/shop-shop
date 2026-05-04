@@ -1,7 +1,6 @@
 /**
  * RadiusControl - Slider for search radius adjustment;
  */
-import { styles } from '@shared/lib/tailwind-classes'
 
 interface RadiusControlProps {
   readonly radius: number;
@@ -10,8 +9,8 @@ interface RadiusControlProps {
 
 export function RadiusControl({ radius, onRadiusChange }: RadiusControlProps) {
   return (
-    <div className={styles.radiusControl}>
-      <label htmlFor="radius-slider" className={styles.radiusLabel}>
+    <div className="flex items-center gap-4 mt-4">
+      <label htmlFor="radius-slider" className="">
         Search Radius: <strong>{radius} miles</strong>
       </label>
       <input
@@ -22,14 +21,14 @@ export function RadiusControl({ radius, onRadiusChange }: RadiusControlProps) {
         step="5"
         value={radius}
         onChange={(e) => onRadiusChange(Number(e.target.value))}
-        className={styles.radiusSlider}
+        className=""
         aria-label={'Search radius: ' + radius + ' miles'}
         aria-valuemin={5}
         aria-valuemax={100}
         aria-valuenow={radius}
         aria-valuetext={'' + radius + ' miles'}
       />
-      <div className={styles.radiusMarkers}>
+      <div className="">
         <span>5 mi</span>
         <span>50 mi</span>
         <span>100 mi</span>

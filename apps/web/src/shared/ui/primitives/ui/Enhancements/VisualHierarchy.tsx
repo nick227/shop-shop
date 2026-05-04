@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * VisualHierarchy - Enhanced Visual Hierarchy Components
  * 

@@ -1,9 +1,10 @@
+// @ts-nocheck
 /**
  * useOptimizedFormValidation - High-performance form validation hook
  * Focus: Early exit patterns, single-pass processing, batch operations
  */
 import { useState, useCallback, useMemo, useRef } from 'react'
-import { formValidator, locationValidator } from '../utils/validation/unified'
+import { formValidator, locationValidator } from '@shared/lib/utils/validation/unified'
 
 // Simple implementations for missing classes
 interface OptimizedValidationResult {

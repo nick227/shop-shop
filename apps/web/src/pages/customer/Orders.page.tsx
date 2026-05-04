@@ -3,15 +3,17 @@
  */
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrders } from '@shared/hooks/generated'
-import { useCustomerRealtimeOrder } from '@shared/hooks/useCustomerRealtimeOrder'
+import { useOrders } from '@shared/hooks/hooks/useStores'
+import { useCustomerRealtimeOrder } from '@shared/hooks/hooks/useCustomerRealtimeOrder'
 import { usePaginatedList } from '@shared/hooks/usePaginatedList'
-import { useAuth } from '@shared/hooks/useAuth'
+import { useAuth } from '@shared/hooks/hooks/useAuth'
 import { OrderCard } from '@features/orders/components/OrderCard'
 import { OrderDetailModal } from '@features/orders/components/OrderDetailModal'
 import { Button, Spinner, Pagination } from '@shared/ui/primitives'
-import { sortOrdersByDateDesc } from '@shared/lib/orderHelpers'
-import { styles } from '@shared/lib/tailwind-classes'
+import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
+import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { sortOrdersByDateDesc } from '@shared/lib/utils/orderHelpers'
+import { Package, ArrowLeft } from 'lucide-react'
 
 export default function OrderHistoryPage() {
   const { data: orders, isLoading, error } = useOrders()
@@ -19,109 +21,98 @@ export default function OrderHistoryPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | undefined>()
   const { user } = useAuth()
 
-  // Subscribe to real-time order updates for this customer
   useCustomerRealtimeOrder({
     userId: user?.id,
     enableToast: true,
   } as any)
 
-  // Unified pagination handler (sorts by newest first using consolidated helper)
   const paginatedList = usePaginatedList({
     items: (orders || []) as any,
     pageSize: 20,
     sortFn: sortOrdersByDateDesc as any,
   })
 
-  // Memoized handlers
   const handleBack = useCallback(() => navigate('/'), [navigate])
-  
   const handleOrderClick = useCallback((orderId: string) => {
     setSelectedOrderId(orderId)
   }, [])
-
   const handleCloseModal = useCallback(() => {
     setSelectedOrderId(undefined)
   }, [])
 
   if (isLoading) {
     return (
-      <div className={styles.loading}>
+      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
         <Spinner size="large" />
-        <p>Loading your orders...</p>
-      </div>
+        <p className="mt-4 text-muted-foreground text-sm">Loading your orders...</p>
+      </PageContainer>
     )
   }
 
   const isEmpty = !orders || orders.length === 0
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div>
-            <h1 className={styles.title}>Order History</h1>
-            {!isEmpty && (
-              <p className={styles.subtitle}>{orders.length} {orders.length === 1 ? 'order' : 'orders'}</p>
-            )}
-          </div>
-          <Button variant="ghost" onClick={handleBack}>
-            ← Back to Home
+    <PageContainer>
+      <PageHeader
+        title="Order History"
+        description={!isEmpty ? `${orders.length} ${orders.length === 1 ? 'order' : 'orders'}` : undefined}
+        backButton={
+          <Button variant="ghost" size="small" onClick={handleBack} className="-ml-2 mb-2 text-muted-foreground">
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Home
           </Button>
+        }
+      />
+
+      {error && (
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 text-destructive text-center">
+          <h2 className="text-lg font-semibold">Error Loading Orders</h2>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
         </div>
-      </header>
+      )}
 
-      <main className={styles.content}>
-        {error && (
-          <div className={styles.error}>
-            <h2>Error Loading Orders</h2>
-            <p>{error.message}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
-          </div>
-        )}
-
-        {isEmpty && !error && (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon}>📦</div>
-            <h2 className={styles.emptyTitle}>No orders yet</h2>
-            <p className={styles.emptyText}>
-              Your order history will appear here after you place your first order.
-            </p>
-            <Button variant="primary" size="large" onClick={handleBack}>
+      {isEmpty && !error && (
+        <EmptyState
+          icon={Package}
+          title="No orders yet"
+          description="Your order history will appear here after you place your first order."
+          action={
+            <Button variant="primary" onClick={handleBack}>
               Start Shopping
             </Button>
+          }
+        />
+      )}
+
+      {!isEmpty && !error && (
+        <>
+          <div className="flex flex-col gap-3">
+            {paginatedList.items.map((order) => (
+              <OrderCard key={order.id as string} order={order as any} onClick={handleOrderClick} />
+            ))}
           </div>
-        )}
 
-        {!isEmpty && !error && (
-          <>
-            <div className={styles.list}>
-              {paginatedList.items.map((order) => (
-                <OrderCard key={order.id as string} order={order as any} onClick={handleOrderClick} />
-              ))}
-            </div>
-
-            {paginatedList.pagination.totalPages > 1 && (
-              <Pagination
-                currentPage={paginatedList.pagination.currentPage}
-                totalItems={paginatedList.pagination.totalItems}
-                pageSize={paginatedList.pagination.pageSize}
-                onPageChange={paginatedList.pagination.goToPage}
-                showPageSize
-                pageSizeOptions={[10, 20, 50]}
-                onPageSizeChange={paginatedList.pagination.setPageSize}
-              />
-            )}
-          </>
-        )}
-      </main>
+          {paginatedList.pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={paginatedList.pagination.currentPage}
+              totalItems={paginatedList.pagination.totalItems}
+              pageSize={paginatedList.pagination.pageSize}
+              onPageChange={paginatedList.pagination.goToPage}
+              showPageSize
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={paginatedList.pagination.setPageSize}
+            />
+          )}
+        </>
+      )}
 
       {selectedOrderId && (
-        <OrderDetailModal 
-          orderId={selectedOrderId} 
+        <OrderDetailModal
+          orderId={selectedOrderId}
           onClose={handleCloseModal}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
-

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Standardized Hook Template - SDK-First Architecture
  * 

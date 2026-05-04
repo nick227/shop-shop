@@ -30,7 +30,17 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, './src/shared'),
+      '@features': path.resolve(__dirname, './src/features'),
+      '@layouts': path.resolve(__dirname, './src/layouts'),
+      '@pages': path.resolve(__dirname, './src/pages'),
+      '@api': path.resolve(__dirname, './src/api'),
+      '@stores': path.resolve(__dirname, './src/stores'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@packages/realtime': path.resolve(__dirname, '../../packages/realtime/src'),
+      '@packages/schemas': path.resolve(__dirname, '../../packages/schemas/src'),
+      '@packages/sdk': path.resolve(__dirname, '../../packages/sdk/dist'),
     },
   },
 })
-

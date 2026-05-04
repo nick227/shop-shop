@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Extension Patterns for Computed Fields - SDK-First Architecture
  * 

@@ -1,8 +1,8 @@
 import { GridView } from '@shared/lib/utils/page-builder'
 import { StoreCard } from '../StoreCard'
-import type { StoreWithDistance, StoreClickHandler } from '@api/backend-types'
+import type { StoreWithDistance, StoreClickHandler } from '@api/types'
 import type { ViewConfig } from '@shared/types'
-import { cn } from '@shared/lib/utils/cn'
+import { cn } from '@shared/lib/cn'
 
 /**
  * StoreGrid - Declarative grid view for stores;
@@ -17,9 +17,6 @@ export interface StoreGridProps {
 }
 
 export function StoreGrid({ stores, onStoreClick, highlightedStoreId, className }: StoreGridProps) {
-  console.log('🔍 [StoreGrid] Rendering with stores:', stores?.length || 0)
-  console.log('🔍 [StoreGrid] Stores data:', stores)
-  
   // Model-driven configuration;
   const VIEW_CONFIG: ViewConfig<StoreWithDistance> = {
     layout: 'grid',
@@ -44,4 +41,3 @@ export function StoreGrid({ stores, onStoreClick, highlightedStoreId, className 
     </div>
   )
 }
-

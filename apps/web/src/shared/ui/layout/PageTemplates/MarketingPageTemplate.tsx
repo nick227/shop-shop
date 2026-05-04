@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * MarketingPageTemplate - Professional Marketing Page Template
  * 

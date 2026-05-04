@@ -2,10 +2,12 @@
  * Bundle Card Component
  * Displays bundle information with pricing and actions
  */
-import React from 'react'
-import { Card, Button, Badge } from '@shared/ui/primitives'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
+import { Button, Badge } from '@shared/ui/primitives'
 import { BundlePricing } from './BundlePricing'
-import type { Bundle } from '@api/backend-types'
+import { Package, Edit, Power, Trash2 } from 'lucide-react'
+import type { Bundle } from '@api/types'
+import { useHaptics } from '@shared/hooks/useHaptics'
 
 interface BundleCardProps {
   bundle: Bundle
@@ -24,218 +26,102 @@ export function BundleCard({
   showActions = true,
   className = ''
 }: Readonly<BundleCardProps>) {
-  const handleEdit = () => onEdit?.(bundle)
-  const handleDelete = () => onDelete?.(bundle)
-  const handleToggleStatus = () => onToggleStatus?.(bundle)
+  const haptics = useHaptics()
+  
+  const handleEdit = () => { haptics.light(); onEdit?.(bundle); }
+  const handleDelete = () => { haptics.heavy(); onDelete?.(bundle); }
+  const handleToggleStatus = () => { haptics.light(); onToggleStatus?.(bundle); }
 
   return (
-    <Card className={`bundle-card ${className}`}>
-      <div className="bundle-card__header">
-        <div className="bundle-card__image">
-          {bundle.imageUrl ? (
-            <img 
-              src={bundle.imageUrl} 
-              alt={bundle.name}
-              className="bundle-card__image-img"
-            />
-          ) : (
-            <div className="bundle-card__image-placeholder">
-              <span>📦</span>
-            </div>
-          )}
-        </div>
-        
-        <div className="bundle-card__info">
-          <h3 className="bundle-card__name">{bundle.name}</h3>
-          {bundle.description && (
-            <p className="bundle-card__description">{bundle.description}</p>
-          )}
+    <Card className={`flex flex-col h-full hover:border-primary/50 transition-colors tap-scale active:scale-[0.98] ${className}`}>
+      <CardHeader className="pb-3">
+        <div className="flex gap-4 items-start">
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex shrink-0 items-center justify-center">
+            {bundle.imageUrl ? (
+              <img 
+                src={bundle.imageUrl} 
+                alt={bundle.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Package className="w-6 h-6 text-muted-foreground/50" />
+            )}
+          </div>
           
-          <div className="bundle-card__status">
-            <Badge 
-              variant={bundle.isActive ? 'success' : 'secondary'}
-            >
-              {bundle.isActive ? 'Active' : 'Inactive'}
-            </Badge>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start gap-2">
+              <CardTitle className="text-lg line-clamp-1">{bundle.name}</CardTitle>
+              <Badge 
+                variant={bundle.isActive ? 'success' : 'secondary'}
+                className="shrink-0"
+              >
+                {bundle.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+            {bundle.description && (
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{bundle.description}</p>
+            )}
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="bundle-card__content">
-        <BundlePricing bundle={bundle} />
+      <CardContent className="flex-1 flex flex-col gap-4 py-2">
+        <div className="bg-muted/30 p-3 rounded-lg">
+          <BundlePricing bundle={bundle} />
+        </div>
         
-        <div className="bundle-card__items">
-          <h4 className="bundle-card__items-title">Items ({bundle.totalItems || 0})</h4>
-          <div className="bundle-card__items-list">
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Items ({bundle.totalItems || 0})</h4>
+          <div className="space-y-1.5">
             {bundle.items?.slice(0, 3).map((bundleItem) => (
-              <div key={bundleItem.itemId || bundleItem.id} className="bundle-card__item">
-                <span className="bundle-card__item-name">
+              <div key={bundleItem.itemId || bundleItem.id} className="flex justify-between items-center text-sm">
+                <span className="text-foreground truncate flex-1 mr-2">
                   {bundleItem.title ?? bundleItem.itemId ?? 'Unknown Item'}
                 </span>
-                <span className="bundle-card__item-quantity">
+                <span className="text-muted-foreground font-medium shrink-0">
                   x{bundleItem.quantity}
                 </span>
               </div>
             ))}
             {bundle.items && bundle.items.length > 3 && (
-              <div className="bundle-card__item-more">
+              <div className="text-xs text-muted-foreground italic pt-1">
                 +{bundle.items.length - 3} more items
               </div>
             )}
           </div>
         </div>
-      </div>
+      </CardContent>
 
       {showActions && (
-        <div className="bundle-card__actions">
+        <CardFooter className="pt-4 border-t border-border mt-auto gap-2">
           <Button 
             variant="outline" 
-            size="small"
+            size="icon"
+            onClick={handleDelete}
+            className="shrink-0 text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleToggleStatus}
+            className="shrink-0"
+          >
+            <Power className="w-4 h-4" />
+          </Button>
+          
+          <Button 
+            variant="primary" 
+            className="flex-1"
             onClick={handleEdit}
           >
+            <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>
-          
-          <Button 
-            variant="outline" 
-            size="small"
-            onClick={handleToggleStatus}
-          >
-            {bundle.isActive ? 'Deactivate' : 'Activate'}
-          </Button>
-          
-          <Button 
-            variant="secondary" 
-            size="small"
-            onClick={handleDelete}
-          >
-            Delete
-          </Button>
-        </div>
+        </CardFooter>
       )}
     </Card>
   )
 }
-
-// Bundle Card Styles (to be added to CSS)
-export const bundleCardStyles = `
-.bundle-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  background: var(--card-background);
-}
-
-.bundle-card__header {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.bundle-card__image {
-  width: 4rem;
-  height: 4rem;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.bundle-card__image-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.bundle-card__image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--muted-background);
-  font-size: 1.5rem;
-}
-
-.bundle-card__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.bundle-card__name {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
-}
-
-.bundle-card__description {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0 0 0.5rem 0;
-  line-height: 1.4;
-}
-
-.bundle-card__status {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.bundle-card__content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.bundle-card__items-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
-}
-
-.bundle-card__items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.bundle-card__item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-  padding: 0.25rem 0;
-}
-
-.bundle-card__item-name {
-  color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bundle-card__item-quantity {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.bundle-card__item-more {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-style: italic;
-  padding: 0.25rem 0;
-}
-
-.bundle-card__actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-`

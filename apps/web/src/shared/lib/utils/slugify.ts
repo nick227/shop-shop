@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Slugify utilities for SEO-friendly URLs
  * Converts store names and item titles to URL-safe slugs

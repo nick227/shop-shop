@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { MediaItem } from '../api/types'
+import type { MediaItem } from '@api/types'
 
 /**
  * Reusable hook for detecting and parsing media URLs from text

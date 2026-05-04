@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MediaItem } from '@api/types'
-import { getYouTubeEmbedUrl } from '@shared/hooks/useMediaDetection'
+import { getYouTubeEmbedUrl } from '@shared/hooks/hooks/useMediaDetection'
 import { Image } from '@shared/ui/primitives'
 
 interface PostMediaProps {

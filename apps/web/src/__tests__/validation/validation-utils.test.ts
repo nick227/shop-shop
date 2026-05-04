@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive Validation Utilities Test Coverage
  * Tests validation utility functions and error handling

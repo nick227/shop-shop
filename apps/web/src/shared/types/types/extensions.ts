@@ -13,7 +13,7 @@ import type {
   AddressResponse,
   PostResponse,
   CommentResponse
-} from '../api/types'
+} from '@api/types'
 
 // ============================================
 // Store Extensions

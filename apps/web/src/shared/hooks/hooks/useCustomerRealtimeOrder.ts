@@ -5,6 +5,7 @@
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { getOrderStatusConfig } from '@features/orders/utils/orderUtils'
 import { getRealtimeClient } from '@services/realtimeClient'
 import { toast } from 'sonner'
 import type { OrderStatusChangedEvent } from '@packages/realtime'
@@ -54,13 +55,20 @@ export function useCustomerRealtimeOrder(options: UseCustomerRealtimeOrderOption
           const typedEvent = event as OrderStatusChangedEvent
           const payload = typedEvent.payload
 
+          // Optimistically update cached order status immediately.
+          queryClient.setQueryData(['order', orderId], (current: any) => {
+            if (!current) return current
+            return { ...current, status: payload.newStatus }
+          })
+
           // Show toast notification
           if (enableToast) {
             const message = STATUS_MESSAGES[payload.newStatus] || 'Order status: ' + payload.newStatus + ''
             
-            if (payload.newStatus === 'READY') {
+            const statusConfig = getOrderStatusConfig(payload.newStatus)
+            if (statusConfig.variant === 'success') {
               toast.success(message)
-            } else if (payload.newStatus === 'CANCELED') {
+            } else if (statusConfig.variant === 'destructive') {
               toast.error(message)
             } else {
               toast.info(message)
@@ -85,6 +93,12 @@ export function useCustomerRealtimeOrder(options: UseCustomerRealtimeOrderOption
         if (event.type === 'order.status.changed') {
           const typedEvent = event as OrderStatusChangedEvent
           const payload = typedEvent.payload
+
+          // Optimistically update the specific order in cache if present.
+          queryClient.setQueryData(['order', payload.orderId], (current: any) => {
+            if (!current) return current
+            return { ...current, status: payload.newStatus }
+          })
 
           // Show toast
           if (enableToast) {
@@ -115,4 +129,3 @@ export function useCustomerRealtimeOrder(options: UseCustomerRealtimeOrderOption
     isConnected: () => getRealtimeClient().isConnected(),
   }
 }
-

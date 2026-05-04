@@ -14,13 +14,16 @@ interface StatusConfig {
   variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning'
 }
 
-const ORDER_STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  PENDING: { icon: '🔔', label: 'New Order', variant: 'warning' },
-  CONFIRMED: { icon: '✅', label: 'Accepted', variant: 'secondary' },
+const ORDER_STATUS_CONFIG: Partial<Record<OrderStatus, StatusConfig>> = {
+  PENDING_PAYMENT: { icon: '💳', label: 'Pending Payment', variant: 'secondary' },
+  PLACED: { icon: '🔔', label: 'New Order', variant: 'warning' },
+  ACCEPTED: { icon: '✅', label: 'Accepted', variant: 'secondary' },
   PREPARING: { icon: '👨‍🍳', label: 'Preparing', variant: 'default' },
   READY: { icon: '🎉', label: 'Ready', variant: 'success' },
+  OUT_FOR_DELIVERY: { icon: '🚗', label: 'Out for Delivery', variant: 'default' },
   DELIVERED: { icon: '✅', label: 'Done', variant: 'default' },
-  CANCELLED: { icon: '❌', label: 'Canceled', variant: 'destructive' },
+  COMPLETED: { icon: '✅', label: 'Completed', variant: 'success' },
+  CANCELED: { icon: '❌', label: 'Canceled', variant: 'destructive' },
 }
 
 export interface OrderStatusBadgeProps {
@@ -74,10 +77,12 @@ export function isOrderActive(status: OrderStatus): boolean {
  * Get status progression for tracking
  */
 export const ORDER_STATUS_PROGRESSION: OrderStatus[] = [
-  'PENDING',
-  'CONFIRMED',
+  'PENDING_PAYMENT',
+  'PLACED',
+  'ACCEPTED',
   'PREPARING',
   'READY',
+  'OUT_FOR_DELIVERY',
   'DELIVERED',
 ]
 

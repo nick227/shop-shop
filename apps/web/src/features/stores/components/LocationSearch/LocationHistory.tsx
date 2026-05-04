@@ -1,8 +1,7 @@
 /**
  * LocationHistory - Display recent locations with quick access
  */
-import type { LocationData } from '@/types/location.types'
-import { styles } from '@shared/lib/tailwind-classes'
+import type { LocationData } from '@shared/types/types/location.types'
 
 interface LocationHistoryProps {
   readonly history: LocationData[]
@@ -69,17 +68,17 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
   }
 
   return (
-    <div className={styles.historyContainer}>
-      <div className={styles.historyHeader}>
-        <span className={styles.historyIcon}>🕒</span>
-        <span className={styles.historyTitle}>Recent Locations</span>
+    <div className="">
+      <div className="">
+        <span className="">🕒</span>
+        <span className="">Recent Locations</span>
       </div>
       
-      <div className={styles.historyList}>
+      <div className="space-y-1 mt-2 max-h-48 overflow-y-auto">
         {history.map((location, index) => (
           <div
             key={'${location.latitude}-${location.longitude}-' + index + ''}
-            className={styles.historyItem}
+            className="flex items-center gap-2 p-2 hover:bg-muted rounded-md text-sm cursor-pointer"
             onClick={() => onSelect(location)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -91,21 +90,21 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
             tabIndex={0}
             aria-label={`Select location: ${formatLocationName(location)}`}
           >
-            <div className={styles.historyItemContent}>
-              <span className={styles.historyItemIcon}>
+            <div className="">
+              <span className="">
                 {getLocationIcon(location?.source)}
               </span>
-              <div className={styles.historyItemText}>
-                <div className={styles.historyItemName}>
+              <div className="">
+                <div className="">
                   {formatLocationName(location)}
                 </div>
-                <div className={styles.historyItemMeta}>
+                <div className="">
                   {location.radiusMiles}mi radius • {formatTimeAgo(location?.timestamp)}
                 </div>
               </div>
             </div>
             <button
-              className={styles.historyItemButton}
+              className=""
               onClick={(e) => {
                 e.stopPropagation()
                 onSetDefault(location)

@@ -55,17 +55,10 @@ export function useMediaUpload() {
       return response.json()
     },
     onSuccess: (_, variables) => {
-      // Invalidate media lists;
-      if (variables.storeId) {
-        queryClient.invalidateQueries({ queryKey: ['media', 'store', variables.storeId] })
-      }
-      if (variables.itemId) {
-        queryClient.invalidateQueries({ queryKey: ['media', 'item', variables.itemId] })
-      }
+      queryClient.invalidateQueries({ queryKey: ['media', 'list'] })
       toast.success('Media uploaded successfully')
     },
     onError: (error) => {
       toast.error((error as any) instanceof Error && error !== undefined ? error.message : 'Upload failed')
     }})
 }
-

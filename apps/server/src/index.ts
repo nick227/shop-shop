@@ -4,6 +4,8 @@ import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import { authRoutes } from './routes/auth.route.js'
+import checkoutRoutes from './routes/checkout.js'
+import orderStatusRoutes from './routes/orderStatus.js'
 import { paymentRoutes } from './routes/payment.route.js'
 import { stripeWebhookRoutes } from './routes/stripe-webhook.route.js'
 import { mediaRoutes } from './routes/media.route.js'
@@ -28,6 +30,8 @@ import { join } from 'path'
 import { env, corsOrigins } from './env.js'
 import { setOrderServiceBroadcast, setTipServiceBroadcast } from '@packages/db'
 import { realtimeBroker } from './services/realtime.broker.js'
+import { globalErrorHandler, handleUncaughtException, handleUnhandledRejection } from './middleware/errorHandler.js'
+import { requestIdMiddleware } from './middleware/requestId.js'
 
 // Better logging in development
 const app = Fastify({
@@ -83,10 +87,16 @@ await app.register(swagger, {
 })
 await app.register(swaggerUI, { routePrefix: '/docs' })
 
+// Add request ID middleware
+app.addHook('preHandler', requestIdMiddleware)
+
 // Health check
 app.get('/healthz', async () => ({ ok: true }))
 
 // Register routes
+await app.register(authRoutes, { prefix: '/auth/v1' })     // New secure auth
+await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' }) // New checkout with idempotency
+await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' }) // Order status with validation
 await app.register(authRoutes)     // Custom auth logic
 await app.register(stripeWebhookRoutes) // Stripe webhooks (raw JSON body for signatures)
 await app.register(paymentRoutes)  // Payment & Stripe Connect
@@ -117,6 +127,13 @@ setOrderServiceBroadcast((topic, event) => {
 setTipServiceBroadcast((topic, event) => {
   realtimeBroker.publish(topic, event)
 })
+
+// Register global error handler
+app.setErrorHandler(globalErrorHandler)
+
+// Set up uncaught exception handlers
+process.on('uncaughtException', handleUncaughtException)
+process.on('unhandledRejection', handleUnhandledRejection)
 
 const port = env.PORT
 app.listen({ port, host: '0.0.0.0' }).then(() => {

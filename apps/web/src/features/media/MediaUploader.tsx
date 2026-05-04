@@ -3,7 +3,7 @@
  */
 import { useState, useRef } from 'react'
 import { Button } from '@shared/ui/primitives'
-import { useMediaUpload, useMediaList, useMediaDelete } from '@shared/hooks/vendor'
+import { useMediaUpload, useMediaList, useMediaDelete } from '@shared/hooks/hooks/vendor'
 import { toast } from 'sonner'
 import type { MediaApiResponse } from '@api/types'
 import { 

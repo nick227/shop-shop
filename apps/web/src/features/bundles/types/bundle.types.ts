@@ -6,7 +6,7 @@
  */
 
 import type { CreateBundleInput } from '@api/types'
-import type { Bundle } from '@api/backend-types'
+import type { Bundle } from '@api/types'
 
 // Frontend form data for bundle creation/editing
 // Derived from schema to ensure consistency

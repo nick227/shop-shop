@@ -44,6 +44,9 @@ export class OrderDomain {
     if (reason) {
       throw new Error(reason)
     }
+    if (!cart) {
+      throw new Error('Cart not found')
+    }
 
     return computeCheckoutTotals(cart, deliveryType, tipAmount, this.totalsConfig)
   }

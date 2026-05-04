@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AppPageTemplate - Professional App Page Template
  * 

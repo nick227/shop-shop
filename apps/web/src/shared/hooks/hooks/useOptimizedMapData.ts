@@ -3,18 +3,10 @@
  * Single Responsibility: Minimize loops, reduce memory allocations, optimize data flow
  */
 import { useMemo, useRef } from 'react'
-import type { StoreWithDistance } from '../api/types'
-import type { LocationData } from '../types/location.types'
-import type { LocationCoordinates } from '../types/component-props'
-import { hasValidCoordinates } from '../utils/storeAccessors'
-// Simple implementation for missing function
-const processStoresOptimized = (stores: StoreWithDistance[], userLocation: unknown) => ({
-  validStores: stores,
-  storeLocations: stores.map(store => ({ latitude: store.latitude, longitude: store.longitude })),
-  nearestStore: stores[0] || undefined,
-  minDistance: 0,
-  maxDistance: 100
-})
+import type { StoreWithDistance } from '@api/types'
+import type { LocationData, LocationCoordinates } from '@shared/types'
+import { hasValidCoordinates } from '@shared/lib/utils/storeAccessors'
+import { processStoresOptimized } from '@shared/lib/utils/performance/optimized-loops'
 
 export interface MapData {
   validStores: StoreWithDistance[]

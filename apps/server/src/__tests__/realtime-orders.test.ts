@@ -125,6 +125,8 @@ describe('Real-time Order Broadcasting', () => {
   })
 
   it('should create OrderEvent audit trail for status changes', async () => {
+    // PLACED → ACCEPTED → PREPARING (two valid steps)
+    await orderService.updateOrderStatus({ orderId: testOrderId, newStatus: 'ACCEPTED' })
     await orderService.updateOrderStatus({
       orderId: testOrderId,
       newStatus: 'PREPARING',
@@ -146,11 +148,13 @@ describe('Real-time Order Broadcasting', () => {
   it('should handle complete status flow with broadcasts', async () => {
     broadcastedEvents.length = 0
 
-    const statusFlow: Array<'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED'> = [
+    const statusFlow = [
+      'ACCEPTED',
       'PREPARING',
       'READY',
-      'COMPLETED',
-    ]
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+    ] as const
 
     for (const status of statusFlow) {
       await orderService.updateOrderStatus({
@@ -165,7 +169,7 @@ describe('Real-time Order Broadcasting', () => {
 
     // Verify final status
     const order = await prisma.order.findUnique({ where: { id: testOrderId } })
-    expect(order?.status).toBe('COMPLETED')
+    expect(order?.status).toBe('DELIVERED')
 
     // Verify audit trail
     const events = await prisma.orderEvent.findMany({
@@ -205,7 +209,7 @@ describe('Real-time Order Broadcasting', () => {
 
     await orderService.updateOrderStatus({
       orderId: testOrderId,
-      newStatus: 'PREPARING',
+      newStatus: 'ACCEPTED', // valid from PLACED
     })
 
     const topics = broadcastedEvents.map((e) => e.topic)

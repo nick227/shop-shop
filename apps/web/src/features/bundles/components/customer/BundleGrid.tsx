@@ -3,7 +3,7 @@
  */
 import React from 'react'
 import { BundleCard } from './BundleCard'
-import type { Bundle } from '@api/backend-types'
+import type { Bundle } from '@api/types'
 
 export interface BundleGridProps {
   readonly bundles: Bundle[]

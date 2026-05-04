@@ -5,7 +5,7 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react'
 import { Button, Input, Alert } from '@shared/ui/primitives'
-import { useAuth } from '@shared/hooks/useAuth'
+import { useAuth } from '@shared/hooks/hooks/useAuth'
 import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { signupFormSchema, type SignupFormData } from '@/schemas/ConsistentSchemas'
 

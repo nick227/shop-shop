@@ -3,11 +3,9 @@
  * Designed for search results and featured product sections
  */
 import { memo, useCallback, useMemo } from 'react'
-import { Card, Image } from '@shared/ui/primitives'
-import { ICON, ASPECT_RATIO, LABEL } from '@shared/ui/primitives/Carousel/constants'
-import { getImageUrl } from '@shared/lib/image'
-import type { ProductClickHandler, ItemResponse } from '@api/backend-types'
-import { styles } from '@shared/lib/tailwind-classes'
+import { Card, Image, ICON, ASPECT_RATIO, LABEL } from '@shared/ui/primitives'
+import { getImageUrl } from '@shared/lib/utils/image'
+import type { ProductClickHandler, ItemResponse } from '@api/types'
 
 export interface ProductCardProps {
   product: ItemResponse
@@ -40,38 +38,38 @@ function ProductCardComponent({
   return (
     <Card 
       onClick={handleClick} 
-      className={`${styles.card} ${isCompact ? styles.compact : ''}`}
+      className={`bg-card rounded-xl border shadow-sm p-4 ${isCompact ? 'max-w-[260px]' : ''}`}
     >
-      <div className={styles.imageWrapper}>
+      <div className="">
         <Image
           src={imageUrl}
           alt={product.title}
           fallbackSeed={product.id}
           aspectRatio={aspectRatio}
-          containerClassName={styles.image}
+          containerClassName="w-full rounded-md overflow-hidden"
         />
         {!product.isActive && (
-          <div className={styles.unavailableBadge}>
+          <div className="">
             {LABEL.SOLD_OUT}
           </div>
         )}
       </div>
       
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <h4 className={styles.name}>{product.title}</h4>
-          <span className={styles.price}>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="max-w-7xl mx-auto mb-6 flex justify-between items-start gap-4">
+          <h4 className="">{product.title}</h4>
+          <span className="font-bold text-primary">
             {formattedPrice}
           </span>
         </div>
         
         {!isCompact && product.description && (
-          <p className={styles.description}>{product.description}</p>
+          <p className="">{product.description}</p>
         )}
         
         {showStore && (
-          <div className={styles.storeName}>
-            <span className={styles.storeIcon}>{ICON.STORE}</span>
+          <div className="text-xl font-semibold mb-1">
+            <span className="">{ICON.STORE}</span>
             Store ID: {product.storeId}
           </div>
         )}

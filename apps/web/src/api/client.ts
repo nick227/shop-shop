@@ -55,7 +55,7 @@ class ApiClient {
     }
     
     // Fallback for test environment
-    return baseUrl || 'http://localhost:3005'
+    return baseUrl || 'http://localhost:3001'
   }
 
   /**

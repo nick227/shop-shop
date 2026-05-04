@@ -7,9 +7,10 @@ import { router } from './router'
 import { useEffect } from 'react'
 import { apiClient } from './api/client'
 import { useAuthStore } from './stores/authStore'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import { Toaster } from './components/ui/Toaster'
-import { setupViewTransitions } from './utils/view-transitions'
+import { ErrorBoundary } from '@shared/ui/ErrorBoundary'
+import { Toaster } from '@shared/ui/primitives'
+// Use a relative import here to avoid TS path-alias resolution issues in some editors/tooling.
+import { setupViewTransitions } from './shared/lib/utils/view-transitions'
 
 // Create QueryClient instance;
 const queryClient = new QueryClient({
@@ -59,4 +60,3 @@ export default function App() {
     </ErrorBoundary>
   )
 }
-

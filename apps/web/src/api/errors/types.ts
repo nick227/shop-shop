@@ -1,21 +1,26 @@
-/**
- * Error Types;
- */
-
-export interface ValidationIssue {
-  path: string[]
+export type ValidationIssue = {
+  path: string
   message: string
 }
 
 export class AppError extends Error {
+  code: string
+  status?: number
+  details?: Record<string, unknown>
+  issues?: ValidationIssue[]
+
   constructor(
     message: string,
-    public code: string,
-    public status?: number,
-    public details?: Record<string, unknown>
+    code: string,
+    status?: number,
+    details?: Record<string, unknown>,
+    issues?: ValidationIssue[]
   ) {
     super(message)
     this.name = 'AppError'
+    this.code = code
+    this.status = status
+    this.details = details
+    this.issues = issues
   }
 }
-

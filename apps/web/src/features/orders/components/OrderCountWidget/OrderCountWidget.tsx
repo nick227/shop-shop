@@ -3,9 +3,8 @@
  * CRITICAL: Always visible, shows pending orders, links to orders page;
  */
 import { useNavigate } from 'react-router-dom'
-import { usePendingOrderCount } from '@shared/hooks/vendor/useVendorOrders'
+import { usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
 import { Button, Badge } from '@shared/ui/primitives'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export function OrderCountWidget() {
   const navigate = useNavigate()
@@ -17,7 +16,7 @@ export function OrderCountWidget() {
 
   if (isLoading) {
     return (
-      <div className={styles.widget}>
+      <div className="">
         <Button variant="ghost" size="small" onClick={handleClick}>
           📋 Orders;
         </Button>
@@ -27,17 +26,17 @@ export function OrderCountWidget() {
 
   const hasPending = pendingCount && pendingCount > 0;
   return (
-    <div className={styles.widget}>
+    <div className="">
       <Button
         variant={hasPending ? 'primary' : 'ghost'}
         size="small"
         onClick={handleClick}
-        className={hasPending ? styles.widgetActive : ''}
+        className={hasPending ? 'gap-2' : 'gap-2'}
       >
-        <span className={styles.widgetIcon}>📋</span>
+        <span className="">📋</span>
         <span>Orders</span>
         {hasPending && (
-          <Badge variant="destructive" className={styles.widgetBadge}>
+          <Badge variant="destructive" className="">
             {pendingCount > 99 ? '99+' : pendingCount}
           </Badge>
         )}

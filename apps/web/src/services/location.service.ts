@@ -3,7 +3,7 @@
  * Consolidates all location functionality with localStorage persistence
  */
 
-import type { LocationData, LocationPreferences, LocationInput } from '../types/location.types'
+import type { LocationData, LocationPreferences, LocationInput } from '@shared/types/types/location.types'
 
 const STORAGE_KEYS = {
   PREFERENCES: 'location_preferences',

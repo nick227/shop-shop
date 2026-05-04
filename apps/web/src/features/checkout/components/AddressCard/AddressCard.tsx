@@ -2,8 +2,7 @@
  * AddressCard - Display address with edit/delete actions
  */
 import { Card, Button } from '@shared/ui/primitives'
-import type { Address } from '@api/backend-types'
-import { styles } from '@shared/lib/tailwind-classes'
+import type { AddressResponse as Address } from '@api/types'
 
 export interface AddressCardProps {
   address: Address
@@ -25,14 +24,14 @@ export function AddressCard({
   return (
     <Card
       onClick={handleSelect}
-      className={isSelected ? styles.selected : ''}
+      className={isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}
     >
-      <div className={styles.content}>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         {address.label && (
-          <h4 className={styles.label}>{address.label}</h4>
+          <h4 className="">{address.label}</h4>
         )}
 
-        <address className={styles.address}>
+        <address className="">
           {address.contactName && <div>{address.contactName}</div>}
           <div>{address.line1}</div>
           {address.line2 && <div>{address.line2}</div>}
@@ -43,11 +42,11 @@ export function AddressCard({
         </address>
 
         {address.instructions && (
-          <p className={styles.instructions}>Note: {address.instructions}</p>
+          <p className="">Note: {address.instructions}</p>
         )}
 
         {(onEdit || onDelete) && (
-          <div className={styles.actions}>
+          <div className="">
             {onEdit && (
               <Button
                 variant="ghost"

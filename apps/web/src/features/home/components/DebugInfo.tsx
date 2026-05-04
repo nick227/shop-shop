@@ -2,8 +2,8 @@
  * DebugInfo - Component for displaying debug information (dev only)
  */
 import React from 'react'
-import type { LocationData } from '@/types/location.types'
-import type { StoreWithDistance } from '@api/backend-types'
+import type { LocationData } from '@shared/types'
+import type { StoreWithDistance } from '@api/types'
 
 interface DebugInfoProps {
   location: LocationData | undefined

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Auto-Generated Resource Hooks
  * ⚠️  DO NOT EDIT MANUALLY

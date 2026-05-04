@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { cn } from './cn'
-import type { ViewConfig } from '@/types/page-config.types'
+import type { ViewConfig } from '@shared/types/types/page-config.types'
 
 /**
  * GridView - Generic grid layout component
@@ -86,56 +86,3 @@ export function GridView<TItem = unknown>({
   )
 }
 
-/**
- * ListView - Generic list layout component
- * Renders items in a vertical list
- */
-export interface ListViewProps<TItem = unknown> {
-  items: TItem[]
-  config: ViewConfig<TItem>
-  testId?: string
-  className?: string
-}
-
-export function ListView<TItem = unknown>({ 
-  items, 
-  config, 
-  testId,
-  className 
-}: ListViewProps<TItem>) {
-  return (
-    <GridView
-      items={items}
-      config={{ ...config, layout: 'list' }}
-      testId={testId}
-      className={className}
-    />
-  )
-}
-
-/**
- * CarouselView - Generic carousel layout component
- * Renders items in a horizontal scrollable carousel
- */
-export interface CarouselViewProps<TItem = unknown> {
-  items: TItem[]
-  config: ViewConfig<TItem>
-  testId?: string
-  className?: string
-}
-
-export function CarouselView<TItem = unknown>({ 
-  items, 
-  config, 
-  testId,
-  className 
-}: CarouselViewProps<TItem>) {
-  return (
-    <GridView
-      items={items}
-      config={{ ...config, layout: 'carousel' }}
-      testId={testId}
-      className={className}
-    />
-  )
-}

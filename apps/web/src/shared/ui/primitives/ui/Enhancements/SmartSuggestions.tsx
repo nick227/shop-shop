@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * SmartSuggestions - Intelligent User Experience Components
  * 

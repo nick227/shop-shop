@@ -3,7 +3,6 @@
  */
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Input, Card } from '@shared/ui/primitives'
-import { styles } from '@shared/lib/tailwind-classes'
 
 export interface TipPromptProps {
   isOpen: boolean;
@@ -61,17 +60,17 @@ export function TipPrompt({
         <DialogHeader>
           <DialogTitle>Tip Your Driver</DialogTitle>
         </DialogHeader>
-      <div className={styles.container}>
-        <div className={styles.header}>
+      <div className="min-h-screen bg-gray-50 px-4 md:px-6 py-8">
+        <div className="max-w-7xl mx-auto mb-6 flex justify-between items-start gap-4">
           <h2>Thank you for your order!</h2>
           <p>Your order from <strong>{storeName}</strong> has been delivered.</p>
           <p>Would you like to leave a tip for your driver?</p>
         </div>
 
-        <Card className={styles.tipCard}>
-          <div className={styles.presetAmounts}>
+        <Card className="">
+          <div className="">
             <h3>Quick tip amounts:</h3>
-            <div className={styles.presetGrid}>
+            <div className="">
               {presetAmounts.map((preset) => (
                 <Button
                   key={preset}
@@ -86,10 +85,10 @@ export function TipPrompt({
             </div>
           </div>
 
-          <div className={styles.customAmount}>
+          <div className="">
             <h3>Or enter a custom amount:</h3>
-            <div className={styles.inputGroup}>
-              <span className={styles.dollarSign}>$</span>
+            <div className="">
+              <span className="">$</span>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -99,16 +98,16 @@ export function TipPrompt({
                 max="1000"
                 step="0.01"
                 disabled={isProcessing}
-                className={styles.amountInput}
+                className=""
               />
             </div>
-            <p className={styles.helpText}>
+            <p className="">
               Tips are optional and go directly to your driver
             </p>
           </div>
         </Card>
 
-        <div className={styles.actions}>
+        <div className="">
           <Button
             variant="outline"
             onClick={handleSkip}

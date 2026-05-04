@@ -19,12 +19,11 @@ import type {
   ListPromotions200ResponseDataInner,
   ListStores200ResponseDataInner,
   ListUsers200ResponseDataInner
-} from '@packages/sdk'
+} from './types/centralized'
 
 // ========================================
 // Base Type Exports (From SDK)
 // ========================================
-
 
 export type AddressResponse = ListAddresss200ResponseDataInner & {
   id: string
@@ -54,6 +53,9 @@ export type OrderResponse = ListOrders200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
+  /** Canonical delivery pin (preferred over snapshot geo when present). */
+  deliveryLatitude?: string | number | null
+  deliveryLongitude?: string | number | null
 }
 
 export type PromotionResponse = ListPromotions200ResponseDataInner & {
@@ -73,7 +75,6 @@ export type UserResponse = ListUsers200ResponseDataInner & {
   createdAt: string
   updatedAt: string
 }
-
 
 // ========================================
 // Supporting Types
@@ -96,6 +97,8 @@ export interface AddressSnapshot {
   state: string
   postalCode: string
   country: string
+  /** Legacy / interim; prefer Order deliveryLatitude/deliveryLongitude when available. */
+  geo?: { latitude?: number; longitude?: number; lat?: number; lng?: number } | null
 }
 
 export interface MediaItem {
@@ -171,7 +174,6 @@ export interface CartItemData {
   notes?: string | null
 }
 
-
 export type CartWithTotals = CartResponse & {
   items: CartItemData[]
   itemCount: number
@@ -191,6 +193,8 @@ export interface CreateOrderInput {
   deliveryType: 'DELIVERY' | 'PICKUP'
   addressId?: string
   tip?: string
+  deliveryLatitude?: number | string
+  deliveryLongitude?: number | string
 }
 
 export interface CreateAddressInput {
@@ -231,21 +235,22 @@ export interface LoginInput {
 
 export type StoreClickHandler = (store: StoreWithDistance) => void
 export type ProductClickHandler = (item: ItemResponse) => void
-export type Address = AddressResponse
-export type Store = StoreResponse
 
 export interface StoreWithDistance extends StoreResponse {
   distance?: number
+  imageUrl?: string
 }
 
 export type OrderStatus =
+  | 'PENDING_PAYMENT'
   | 'PLACED'
   | 'ACCEPTED'
   | 'PREPARING'
   | 'READY'
   | 'OUT_FOR_DELIVERY'
-  | 'COMPLETED'
+  | 'DELIVERED'
   | 'CANCELED'
+  | 'COMPLETED' // legacy
 
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED'
 export type DeliveryType = 'PICKUP' | 'DELIVERY'
@@ -253,8 +258,6 @@ export type DeliveryType = 'PICKUP' | 'DELIVERY'
 // ========================================
 // User Types
 // ========================================
-
-export type User = UserResponse
 
 export interface MediaResponse {
   id: string
@@ -268,40 +271,296 @@ export interface MediaResponse {
 
 export type BundlePricingType = 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_AMOUNT' | 'BEST_DEAL'
 
+// ========================================
+// Safe Utility Types (Consolidated from safe-types.ts)
+// ========================================
 
+// ============================================
+// Status Enums (Safe - No Conflicts)
+// ============================================
+// OrderStatus and PaymentStatus are already defined above
+export type CartStatus = 'ACTIVE' | 'SUBMITTED' | 'EXPIRED'
+export type StoreStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED'
+export type ItemStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED'
 
-/**
- * Type guard to check if SDK data has frontend-expected fields
- */
-function hasIdField(data: unknown): data is { id: string } {
-  return typeof data === 'object' && data !== null && 'id' in data
+// ============================================
+// Sorting & Filtering Types (Safe)
+// ============================================
+export type StoreSortOption = 'distance' | 'name' | 'rating' | 'prepTime' | 'deliveryFee'
+export type OrderSortOption = 'date' | 'status' | 'total' | 'store'
+export type ItemSortOption = 'name' | 'price' | 'category' | 'popularity'
+export type UserSortOption = 'name' | 'email' | 'createdAt' | 'lastActive'
+
+// ============================================
+// Filter Types (Safe)
+// ============================================
+export interface StoreFilters {
+  search?: string
+  category?: string
+  rating?: number
+  maxDistance?: number
+  deliveryEnabled?: boolean
+  pickupEnabled?: boolean
+  priceRange?: {
+    min: number
+    max: number
+  }
+  prepTimeRange?: {
+    min: number
+    max: number
+  }
 }
 
-function hasTimestampFields(data: unknown): data is { id: string; createdAt: string; updatedAt: string } {
-  return hasIdField(data) && 'createdAt' in data && 'updatedAt' in data
+export interface OrderFilters {
+  status?: OrderStatus
+  dateRange?: {
+    start: string
+    end: string
+  }
+  storeId?: string
+  minAmount?: number
+  maxAmount?: number
 }
+
+export interface ItemFilters {
+  search?: string
+  category?: string
+  storeId?: string
+  priceRange?: {
+    min: number
+    max: number
+  }
+  inStock?: boolean
+  isActive?: boolean
+}
+
+// ============================================
+// Pagination Types (Safe)
+// ============================================
+export interface PaginationParams {
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
+
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: PaginationMeta
+}
+
+// ============================================
+// Event Handler Types (Safe)
+// ============================================
+export type GenericClickHandler<T> = (item: T) => void
+export type GenericChangeHandler<T> = (value: T) => void
+export type GenericSubmitHandler<T> = (data: T) => void | Promise<void>
+export type GenericErrorHandler = (error: Error) => void
+
+// ============================================
+// Form State Types (Safe)
+// ============================================
+export type FormState = 'idle' | 'loading' | 'success' | 'error'
+export type ValidationState = 'valid' | 'invalid' | 'pending'
+
+export interface FormFieldState {
+  value: any
+  error?: string
+  touched: boolean
+  dirty: boolean
+  validationState: ValidationState
+}
+
+// ============================================
+// API Response Types (Safe)
+// ============================================
+export interface ApiSuccessResponse<T = any> {
+  success: true
+  data: T
+  message?: string
+}
+
+export interface ApiErrorResponse {
+  success: false
+  error: {
+    code: string
+    message: string
+    details?: any
+  }
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse
+
+// ============================================
+// Loading States (Safe)
+// ============================================
+export interface LoadingState {
+  isLoading: boolean
+  error?: string
+  lastUpdated?: string
+}
+
+export interface AsyncState<T> extends LoadingState {
+  data?: T
+}
+
+// ============================================
+// Search Types (Safe)
+// ============================================
+export interface SearchParams {
+  query: string
+  filters?: Record<string, any>
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}
+
+export interface SearchResult<T> {
+  items: T[]
+  total: number
+  query: string
+  took: number
+  suggestions?: string[]
+}
+
+// ============================================
+// Modal/Dialog Types (Safe)
+// ============================================
+export interface ModalState {
+  isOpen: boolean
+  data?: any
+  type?: string
+}
+
+export interface ConfirmDialogState {
+  isOpen: boolean
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  onConfirm?: () => void
+  onCancel?: () => void
+}
+
+// ============================================
+// Theme/UI Types (Safe)
+// ============================================
+export type Theme = 'light' | 'dark' | 'system'
+export type ColorScheme = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'
+export type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type Variant = 'solid' | 'outline' | 'ghost' | 'link'
+
+// ============================================
+// Utility Types (Safe)
+// ============================================
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
+}
+
+// ============================================
+// Constants (Safe)
+// ============================================
+export const DEFAULT_PAGE_SIZE = 20
+export const MAX_PAGE_SIZE = 100
+export const DEFAULT_SORT_ORDER = 'desc' as const
+export const DEFAULT_SORT_BY = 'createdAt' as const
+
+export const ORDER_STATUSES: OrderStatus[] = [
+  'PENDING_PAYMENT',
+  'PLACED', 
+  'ACCEPTED',
+  'PREPARING',
+  'READY',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'CANCELED',
+  'COMPLETED'
+]
+
+export const PAYMENT_STATUSES: PaymentStatus[] = [
+  'UNPAID',
+  'PAID',
+  'REFUNDED'
+]
+
+export const CART_STATUSES: CartStatus[] = [
+  'ACTIVE',
+  'SUBMITTED',
+  'EXPIRED'
+]
+
+// ========================================
+// Utility Functions
+// ========================================
+
+
 
 /**
  * Safely extract id field with fallback
+ * Handles common id field variations: id, _id, uuid
  */
 function extractId(data: unknown, fallback = ''): string {
-  if (hasIdField(data) && typeof data.id === 'string') {
-    return data.id
+  if (typeof data === 'object' && data !== null) {
+    const obj = data as Record<string, unknown>
+    
+    // Try common id field names
+    const idFields = ['id', '_id', 'uuid', 'ID', 'Id']
+    for (const field of idFields) {
+      if (field in obj && typeof obj[field] === 'string') {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        return obj[field] as string
+      }
+    }
   }
   return fallback
 }
 
 /**
  * Safely extract timestamp fields with fallback
+ * Handles common timestamp field variations: createdAt/created_at, updatedAt/updated_at
  */
 function extractTimestamps(data: unknown): { createdAt: string; updatedAt: string } {
   const now = new Date().toISOString()
   
-  if (hasTimestampFields(data)) {
-    return {
-      createdAt: typeof data.createdAt === 'string' ? data.createdAt : now,
-      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : now
+  if (typeof data === 'object' && data !== null) {
+    const obj = data as Record<string, unknown>
+    
+    // Try common timestamp field names
+    const createdFields = ['createdAt', 'created_at', 'created', 'CreatedAt']
+    const updatedFields = ['updatedAt', 'updated_at', 'updated', 'UpdatedAt']
+    
+    let createdAt = now
+    let updatedAt = now
+    
+    for (const field of createdFields) {
+      if (field in obj && typeof obj[field] === 'string') {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        createdAt = obj[field] as string
+        break
+      }
     }
+    
+    for (const field of updatedFields) {
+      if (field in obj && typeof obj[field] === 'string') {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        updatedAt = obj[field] as string
+        break
+      }
+    }
+    
+    return { createdAt, updatedAt }
   }
   
   return {
@@ -310,55 +569,8 @@ function extractTimestamps(data: unknown): { createdAt: string; updatedAt: strin
   }
 }
 
-/**
- * Safely extract numeric field with fallback
- */
-function extractNumber(data: unknown, field: string, fallback = 0): number {
-  if (typeof data === 'object' && data !== null && field in data) {
-    const value = (data as Record<string, unknown>)[field]
-    if (typeof value === 'number') return value
-    if (typeof value === 'string') {
-      const parsed = Number.parseFloat(value)
-      if (!Number.isNaN(parsed)) return parsed
-    }
-  }
-  return fallback
-}
-
-/**
- * Safely extract boolean field with fallback
- */
-function extractBoolean(data: unknown, field: string, fallback = false): boolean {
-  if (typeof data === 'object' && data !== null && field in data) {
-    const value = (data as Record<string, unknown>)[field]
-    if (typeof value === 'boolean') return value
-    if (typeof value === 'string') return value === 'true'
-  }
-  return fallback
-}
-
-/**
- * Safely parse JSON field
- */
-function parseJsonField<T>(data: unknown, field: string, fallback: T): T {
-  if (typeof data === 'object' && data !== null && field in data) {
-    const value = (data as Record<string, unknown>)[field]
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value) as T
-      } catch {
-        // Return fallback if JSON parsing fails
-      }
-    }
-  }
-  return fallback
-}
-
-
 // ========================================
-
 // Type Mappers (SDK → App Types)
-
 // ========================================
 
 export function mapAddresses(sdk: ListAddresss200ResponseDataInner): AddressResponse {

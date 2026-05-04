@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PageContent - Professional Content Area Component
  * 

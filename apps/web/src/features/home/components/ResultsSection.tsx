@@ -2,7 +2,8 @@
  * ResultsSection - Component for the search results section wrapper;
  */
 import React, { forwardRef } from 'react'
-import { GeocodingError, DebugInfo } from './index'
+import { GeocodingError } from './GeocodingError'
+import { DebugInfo } from './DebugInfo'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 

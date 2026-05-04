@@ -3,7 +3,7 @@
  * Extracts search orchestration logic from HomePage for better separation of concerns
  */
 import { useCallback, useMemo } from 'react'
-import type { LocationData } from '@/types/location.types'
+import type { LocationData } from '@shared/types/types/location.types'
 import type { StoreWithDistance } from '@api/types'
 
 type SearchStatus = 'idle' | 'loading' | 'error' | 'no-results' | 'results'

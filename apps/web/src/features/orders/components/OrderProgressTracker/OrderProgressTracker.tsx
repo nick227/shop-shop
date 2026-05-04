@@ -2,9 +2,8 @@
  * OrderProgressTracker - Visual progress indicator for order status
  * Extracted from OrderTrackingPage for SRP compliance
  */
-import { Badge } from '@shared/ui/primitives'
-
-const ORDER_STATUS_STEPS = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'] as const
+// Keep timeline labels customer-friendly. Backend may emit COMPLETED; treat it as DELIVERED.
+const ORDER_STATUS_STEPS = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'DELIVERED'] as const
 
 export interface OrderProgressTrackerProps {
   currentStatus: string
@@ -13,7 +12,8 @@ export interface OrderProgressTrackerProps {
 }
 
 export function OrderProgressTracker({ currentStatus, isCanceled = false }: OrderProgressTrackerProps) {
-  const currentStepIndex = ORDER_STATUS_STEPS.indexOf(currentStatus as any)
+  const normalizedStatus = currentStatus === 'COMPLETED' ? 'DELIVERED' : currentStatus
+  const currentStepIndex = ORDER_STATUS_STEPS.indexOf(normalizedStatus as any)
   
   if (isCanceled) {
     return (
@@ -59,7 +59,7 @@ export function OrderProgressTracker({ currentStatus, isCanceled = false }: Orde
               {step === 'ACCEPTED' && '✅ Accepted'}
               {step === 'PREPARING' && '👨‍🍳 Preparing'}
               {step === 'READY' && '🎉 Ready'}
-              {step === 'COMPLETED' && '✅ Completed'}
+              {step === 'DELIVERED' && '✅ Delivered'}
             </div>
             
             {/* Progress Line */}
@@ -77,4 +77,3 @@ export function OrderProgressTracker({ currentStatus, isCanceled = false }: Orde
     </div>
   )
 }
-

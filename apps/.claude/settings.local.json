@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(pnpm --filter web tsc --noEmit)",
+      "Bash(pnpm --filter server tsc --noEmit)",
+      "Bash(npx tsc *)",
+      "Bash(pnpm --filter @apps/server exec tsc --noEmit)",
+      "Bash(pnpm --filter @apps/web exec tsc --noEmit)",
+      "Bash(wait)"
+    ]
+  }
+}

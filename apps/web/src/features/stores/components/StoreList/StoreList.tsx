@@ -5,18 +5,18 @@
  * This component is kept for backward compatibility but delegates to StoreGrid;
  * Migrated to Tailwind (removed CSS module)
  */
-import { useStores } from '@api/hooks/generated'
+import { useStoreSearchWithTransformers } from '@shared/hooks/hooks/useStoreSearchWithTransformers'
 import { StoreGrid } from '../StoreGrid'
 import { Spinner } from '@shared/ui/primitives'
-import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
+import type { StoreResponse, StoreWithDistance } from '@api/types'
 import { useNavigate } from 'react-router-dom'
 
 export function StoreList() {
-  const { data: stores, isLoading, error } = useStores()
+  const { stores, isLoading, error } = useStoreSearchWithTransformers(undefined) // No location constraint
   const navigate = useNavigate()
 
   const handleStoreClick = (store: StoreResponse | StoreWithDistance) => {
-    navigate(`/stores/${store.id}`)
+    navigate(`/store/${store.id}`)
   }
 
   if (isLoading) {
@@ -36,11 +36,15 @@ export function StoreList() {
     )
   }
 
-  if (!stores) {
-    return null;
+  if (!stores || stores.length === 0) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        <p className="text-lg font-medium text-foreground">No stores available</p>
+        <p className="mt-2">Check back soon for local stores near you.</p>
+      </div>
+    )
   }
 
   // Delegate to StoreGrid for better features;
   return <StoreGrid stores={stores} onStoreClick={handleStoreClick} />
 }
-

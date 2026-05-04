@@ -3,7 +3,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import type { StoreResponse, StoreWithDistance } from '@api/backend-types'
+import type { StoreWithDistance } from '@api/types'
 
 export function useNewestStores(limit = 6) {
   return useQuery<StoreWithDistance[]>({

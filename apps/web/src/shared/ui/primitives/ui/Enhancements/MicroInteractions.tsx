@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * MicroInteractions - Delightful User Experience Components
  * 

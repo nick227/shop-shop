@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '{print $3}')",
+      "Bash(cat)",
+      "Bash(chmod +x /tmp/find_dead_components.sh)",
+      "Bash(/tmp/find_dead_components.sh)",
+      "Bash(chmod +x /tmp/check_services.sh)",
+      "Bash(/tmp/check_services.sh)",
+      "Bash(pnpm --filter @shop/server tsc --noEmit)",
+      "Bash(xargs grep *)",
+      "Bash(npx prisma *)",
+      "Bash(pnpm --filter @apps/server exec tsc --noEmit)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm *)",
+      "Bash(npx tsc *)",
+      "Bash(sed -i \"s|from '@/types/location\\\\.types'|from '@shared/types/types/location.types'|g\" features/home/components/ErrorState.tsx features/home/components/LoadingState.tsx features/home/components/NoResults.tsx features/stores/components/LocationSearch/LocationHistory.tsx features/stores/components/LocationSearch/LocationSearch.tsx features/stores/components/StoreMap/hooks/useMapCenter.ts shared/hooks/hooks/useGeocoding.ts shared/hooks/hooks/useLocationDisplay.ts shared/hooks/hooks/useSearchOrchestration.ts)",
+      "Bash(sed -i \"s|from '@/types/component-props'|from '@shared/types/types/component-props'|g\" features/stores/components/StoreMap/components/UserLocationMarker.tsx shared/hooks/hooks/useLocationDisplay.ts)",
+      "Bash(sed -i \"s|from '@/types/page-config\\\\.types'|from '@shared/types/types/page-config.types'|g\" shared/lib/utils/page-builder.tsx)",
+      "Bash(npx vitest *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(node -e \"require\\('dotenv'\\)\")",
+      "Bash(node -e \"import\\('dotenv'\\).then\\(m => console.log\\('ok', Object.keys\\(m\\)\\)\\)\")",
+      "Bash(node --input-type=module)",
+      "Bash(node_modules/.bin/vitest run *)",
+      "Bash(npx --yes vitest --version)"
+    ]
+  }
+}

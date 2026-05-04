@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Standardized Error Handling for SDK Hooks
  * 

@@ -3,7 +3,7 @@
  * Single Responsibility: Map center calculation logic
  */
 import { useMemo } from 'react'
-import type { LocationData } from '@/types/location.types'
+import type { LocationData } from '@shared/types/types/location.types'
 
 
 
@@ -29,4 +29,4 @@ export function useMapCenter({
   }, [userLocation, stores, defaultCenter])
 }
 
-export {type LocationData} from '@/types/location.types'
+export {type LocationData} from '@shared/types/types/location.types'
