@@ -1,0 +1,14 @@
+# Default Railway config-as-code for the primary API service.
+# For web + River cron, point each Railway service at the matching file under infra/railway/
+# (see RAILWAY_DEPLOYMENT.md).
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @apps/server build"
+
+[deploy]
+startCommand = "pnpm --filter @apps/server start"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

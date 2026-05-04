@@ -43,7 +43,7 @@ Idempotency: same key as today’s `createPost` path — duplicate insert return
 
 | Aspect | MVP choice |
 |--------|------------|
-| **Schedule** | Cron **every 2–5 minutes** |
+| **Schedule** | Cron **every 5+ minutes** (Railway minimum **5**; repo default **10** in `infra/railway/river-ingest.toml`) |
 | **State** | **Stateless** — no `lastRun`, **no** event bus, **no** queue table |
 | **Logic** | For each candidate entity, compute **`automationKey`**. **If no `Post` exists with that key** → call **`createPost`** (or `prisma.post.create` with the same guardrails). If one exists → **no-op** |
 | **Discovery** | Each run queries current DB truth (e.g. published stores, active items with media, items matching restock policy). “Catch-up” is implicit: anything matching rules eventually gets a post when key is free |
@@ -102,7 +102,8 @@ Bundles (`Bundle`), promotions (`Promotion`), verification (`VendorVerification`
 | **API** | `runRiverIngestion(prisma)` in `@packages/db` — `river-ingest.runner.ts` (re-exported from `river-ingest.service.ts`) |
 | **CLI** | From repo root: `pnpm ingest:river` or `pnpm --filter @packages/db ingest:river` (`packages/db/src/cli/river-ingest-run.ts`, loads root `.env`, prints JSON result) |
 | **Restock** | Off unless `RIVER_INGEST_RESTOCK=true` or `runRiverIngestion(db, { enableRestock: true })` |
-| **Cron** | OS / platform scheduler: run CLI every 2–5 minutes |
+| **Production (Railway)** | Separate **`river-ingest`** service: config file `infra/railway/river-ingest.toml` (`cronSchedule` + `pnpm ingest:river`). See **`RAILWAY_DEPLOYMENT.md` §5**. |
+| **Cron (local / other)** | Run the same CLI on an interval (e.g. systemd timer, GitHub Actions, or `while sleep` in dev only). |
 
 ---
 

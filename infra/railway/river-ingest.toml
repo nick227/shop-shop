@@ -1,0 +1,13 @@
+# River ingestion (stateless cron). In Railway: set "Config as code" path to /infra/railway/river-ingest.toml
+# Root directory: repository root.
+# Service must be type "Cron" in Railway (or set cron schedule below); process must exit when done.
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate"
+
+[deploy]
+startCommand = "pnpm ingest:river"
+cronSchedule = "*/10 * * * *"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

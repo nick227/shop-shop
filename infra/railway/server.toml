@@ -1,0 +1,13 @@
+# API (Fastify). In Railway: set "Config as code" path to /infra/railway/server.toml
+# Root directory: repository root (monorepo).
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @apps/server build"
+
+[deploy]
+startCommand = "pnpm --filter @apps/server start"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
