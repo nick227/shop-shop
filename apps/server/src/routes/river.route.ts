@@ -170,24 +170,23 @@ export const riverRoutes = async (app: FastifyInstance) => {
       try {
         const bodyRaw = req.body as Record<string, unknown>
         const parsed = CreatePostInputSchema.parse(req.body)
-        const input: CreatePostInput = {
-          storeId: parsed.storeId,
-          content: parsed.content,
-          mediaUrls: parsed.mediaUrls ?? [],
-          priority: parsed.priority,
-          layout: parsed.layout,
-          source:
-            parsed.source ??
-            (bodyRaw.source === 'MANUAL' ||
-            bodyRaw.source === 'AUTO_STORE' ||
-            bodyRaw.source === 'AUTO_PRODUCT'
-              ? (bodyRaw.source as CreatePostInput['source'])
-              : undefined),
-          automationKey:
-            parsed.automationKey ??
-            (typeof bodyRaw.automationKey === 'string' ? bodyRaw.automationKey : undefined),
-          linkedItemId: parsed.linkedItemId,
+        const fallbackSource = (): CreatePostInput['source'] | undefined => {
+          const s = bodyRaw.source
+          if (s === 'MANUAL' || s === 'AUTO_STORE' || s === 'AUTO_PRODUCT') return s
+          return undefined
         }
+        const input = {
+          storeId: parsed.storeId as string,
+          content: parsed.content as string | undefined,
+          mediaUrls: (parsed.mediaUrls ?? []) as CreatePostInput['mediaUrls'],
+          priority: parsed.priority as number | undefined,
+          layout: parsed.layout as string | undefined,
+          source: (parsed.source as CreatePostInput['source'] | undefined) ?? fallbackSource(),
+          automationKey:
+            (parsed.automationKey as string | undefined) ??
+            (typeof bodyRaw.automationKey === 'string' ? bodyRaw.automationKey : undefined),
+          linkedItemId: parsed.linkedItemId as string | undefined,
+        } satisfies CreatePostInput
 
         // TODO: Verify user owns the store
         const userId = req.user!.id
@@ -323,7 +322,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.get('/river/posts/:id/comments', async (req, reply) => {
     try {
       const { id } = req.params as { id: string }
-      const raw = { ...(req.query as Record<string, string>), postId: id }
+      const raw: Record<string, string> = {
+        ...(req.query as Record<string, string>),
+        postId: id,
+      }
       if (raw.pageSize && raw.limit === undefined) {
         raw.limit = raw.pageSize
       }
