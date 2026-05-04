@@ -19,6 +19,23 @@ declare module 'fastify' {
   }
 }
 
+/** Sets `req.user` when a valid Bearer token is present; does not reject unauthenticated requests. */
+export const optionalAuthenticate = async (req: FastifyRequest, _reply: FastifyReply) => {
+  const authHeader = req.headers.authorization
+  if (!authHeader?.startsWith('Bearer ')) return
+
+  try {
+    const token = authHeader.substring(7)
+    const decoded = verifyJWT(token)
+    const user = await getUserById(decoded.userId)
+    if (user) {
+      req.user = user as AuthenticatedUser
+    }
+  } catch {
+    // Intentionally ignore; request proceeds without user
+  }
+}
+
 export const authenticate = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     // Extract token from Authorization header

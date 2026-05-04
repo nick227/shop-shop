@@ -9,8 +9,10 @@ import {
   exportServiceFeesToCSV,
   exportFinancialSummaryToCSV,
   exportVendorPayoutsToCSV,
+  prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const DateRangeSchema = z.object({
   startDate: z.string().datetime().optional(),
@@ -93,19 +95,20 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/orders - Export orders to CSV (small datasets)
   app.get('/exports/orders', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR'])],
+    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const query = OrdersExportSchema.parse(req.query)
 
-      // If vendor, restrict to their stores only
       let storeId = query.storeId
-      if (req.user?.role === 'VENDOR') {
-        // TODO: Verify store ownership and restrict to owned stores
+      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
         if (!storeId) {
-          return reply.code(400).send({ 
-            error: 'Vendors must specify storeId' 
-          })
+          return reply.code(400).send({ error: 'Vendors must specify storeId' })
+        }
+        const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
+        if (!store) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
         }
       }
 
@@ -132,18 +135,20 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/orders/stream - Stream orders export for large datasets
   app.get('/exports/orders/stream', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR'])],
+    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const query = OrdersExportSchema.parse(req.query)
 
-      // If vendor, restrict to their stores only
       let storeId = query.storeId
-      if (req.user?.role === 'VENDOR') {
+      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
         if (!storeId) {
-          return reply.code(400).send({ 
-            error: 'Vendors must specify storeId' 
-          })
+          return reply.code(400).send({ error: 'Vendors must specify storeId' })
+        }
+        const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
+        if (!store) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
         }
       }
 
@@ -177,17 +182,20 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/tax-summary - Export tax summary to CSV
   app.get('/exports/tax-summary', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR'])],
+    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const query = TaxSummarySchema.parse(req.query)
 
       let storeId = query.storeId
-      if (req.user?.role === 'VENDOR') {
+      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
         if (!storeId) {
-          return reply.code(400).send({ 
-            error: 'Vendors must specify storeId' 
-          })
+          return reply.code(400).send({ error: 'Vendors must specify storeId' })
+        }
+        const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
+        if (!store) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
         }
       }
 

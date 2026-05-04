@@ -1,6 +1,7 @@
 import { prisma } from '../client'
 import { refundOrder } from './payment.service'
 import { publishOrderStatusChanged } from './order-realtime.publisher.js'
+import { assertValidTransition, canTransitionTo } from '../order-state-machine.js'
 import { Decimal } from 'decimal.js'
 
 export interface CancelOrderInput {
@@ -29,6 +30,24 @@ export const CANCELLATION_REASONS = {
   OTHER: 'Other reason',
 } as const
 
+async function userCanManageOrdersOnStore(
+  userId: string,
+  storeId: string,
+  storeOwnerId: string,
+): Promise<boolean> {
+  if (userId === storeOwnerId) return true
+  const member = await prisma.teamMember.findFirst({
+    where: { storeId, userId, isActive: true },
+    select: { permissionsJson: true },
+  })
+  if (!member) return false
+  const raw = member.permissionsJson
+  const perms: string[] = Array.isArray(raw)
+    ? raw.filter((p): p is string => typeof p === 'string')
+    : []
+  return perms.includes('MANAGE_ORDERS') || perms.includes('FULL_ACCESS')
+}
+
 /**
  * Cancel an order with optional refund
  */
@@ -45,23 +64,25 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
     throw new Error('Order not found')
   }
 
-  // Check authorization
+  const actor = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { role: true },
+  })
+  const isAdmin = actor?.role === 'ADMIN'
+
   const isCustomer = order.userId === input.userId
-  const isVendor = order.store.ownerUserId === input.userId
-  // TODO: Check if user is admin
+  const isStoreSide = await userCanManageOrdersOnStore(
+    input.userId,
+    order.storeId,
+    order.store.ownerUserId,
+  )
 
-  if (!isCustomer && !isVendor) {
-    throw new Error('Unauthorized: Only customer or vendor can cancel this order')
+  if (!isCustomer && !isStoreSide && !isAdmin) {
+    throw new Error('Unauthorized: Only customer, store staff, or admin can cancel this order')
   }
 
-  // Check if order can be canceled
-  if (order.status === 'COMPLETED') {
-    throw new Error('Cannot cancel completed order - use refund instead')
-  }
-
-  if (order.status === 'CANCELED') {
-    throw new Error('Order already canceled')
-  }
+  // Check if cancellation is a valid transition (state machine enforced)
+  assertValidTransition(order.status, 'CANCELED')
 
   // Determine if refund is needed
   let refunded = false
@@ -82,8 +103,19 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
     }
   }
 
-  // Update order status
   const previousStatus = order.status
+
+  console.log(
+    JSON.stringify({
+      event: 'order.transition',
+      orderId: input.orderId,
+      from: previousStatus,
+      to: 'CANCELED',
+      changedBy: input.userId,
+      note: `Canceled: ${input.reason}`,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 
   const updatedOrder = await prisma.order.update({
     where: { id: input.orderId },
@@ -224,23 +256,26 @@ export async function canCancelOrder(orderId: string, userId: string): Promise<{
     return { canCancel: false, reason: 'Order not found', requiresRefund: false }
   }
 
-  const isCustomer = order.userId === userId
-  const isVendor = order.store.ownerUserId === userId
+  const actor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  })
+  const isAdmin = actor?.role === 'ADMIN'
 
-  if (!isCustomer && !isVendor) {
+  const isCustomer = order.userId === userId
+  const isStoreSide = await userCanManageOrdersOnStore(
+    userId,
+    order.storeId,
+    order.store.ownerUserId,
+  )
+
+  if (!isCustomer && !isStoreSide && !isAdmin) {
     return { canCancel: false, reason: 'Unauthorized', requiresRefund: false }
   }
 
-  if (order.status === 'COMPLETED') {
-    return { 
-      canCancel: false, 
-      reason: 'Order completed - use refund instead', 
-      requiresRefund: false 
-    }
-  }
-
-  if (order.status === 'CANCELED') {
-    return { canCancel: false, reason: 'Order already canceled', requiresRefund: false }
+  const { valid, reason } = canTransitionTo(order.status, 'CANCELED')
+  if (!valid) {
+    return { canCancel: false, reason, requiresRefund: false }
   }
 
   const requiresRefund = order.paymentStatus === 'PAID'

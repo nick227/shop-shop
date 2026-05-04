@@ -22,10 +22,12 @@ import {
   getCommentsByPostId,
   deleteComment,
   RiverAutomationRejected,
+  prisma,
   type CreatePostInput,
 } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 export const riverRoutes = async (app: FastifyInstance) => {
   // ========================================
@@ -164,7 +166,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.post(
     '/river/posts',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can create posts
+      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       try {
@@ -189,8 +191,13 @@ export const riverRoutes = async (app: FastifyInstance) => {
           publishAt: parsed.publishAt as Date | undefined,
         } satisfies CreatePostInput
 
-        // TODO: Verify user owns the store
         const userId = req.user!.id
+
+        const postStore = await prisma.store.findUnique({ where: { id: input.storeId }, select: { id: true } })
+        if (!postStore) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(userId, req.user!.role, input.storeId, 'content'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+        }
 
         const post = await createPost(input)
 
@@ -217,11 +224,11 @@ export const riverRoutes = async (app: FastifyInstance) => {
     }
   )
 
-  // PATCH /river/posts/:id — adjust priority (curation); vendor/admin TODO: scope to store ownership
+  // PATCH /river/posts/:id — adjust priority (curation)
   app.patch(
     '/river/posts/:id',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],
+      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -232,6 +239,15 @@ export const riverRoutes = async (app: FastifyInstance) => {
           issues: parsed.error.issues,
         })
       }
+
+      const postToUpdate = await getPostById(id)
+      if (!postToUpdate) return reply.code(404).send({ error: 'Post not found' })
+      const patchStore = await prisma.store.findUnique({ where: { id: postToUpdate.storeId }, select: { id: true } })
+      if (!patchStore) return reply.code(404).send({ error: 'Store not found' })
+      if (!(await userHasStoreAccess(req.user!.id, req.user!.role, postToUpdate.storeId, 'content'))) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+      }
+
       const post = await updatePostPriority(id, parsed.data.priority)
       return reply.code(200).send(post)
     },
@@ -241,13 +257,19 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.delete(
     '/river/posts/:id',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can delete their own posts
+      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
       const userId = req.user!.id
 
-      // TODO: Verify user owns the store that owns the post
+      const postToDelete = await getPostById(id)
+      if (!postToDelete) return reply.code(404).send({ error: 'Post not found' })
+      const deletePostStore = await prisma.store.findUnique({ where: { id: postToDelete.storeId }, select: { id: true } })
+      if (!deletePostStore) return reply.code(404).send({ error: 'Store not found' })
+      if (!(await userHasStoreAccess(userId, req.user!.role, postToDelete.storeId, 'content'))) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+      }
 
       await deletePost(id)
 
@@ -418,7 +440,11 @@ export const riverRoutes = async (app: FastifyInstance) => {
       const { id } = req.params as { id: string }
       const userId = req.user!.id
 
-      // TODO: Verify user owns the comment
+      const commentToDelete = await prisma.comment.findUnique({ where: { id }, select: { userId: true } })
+      if (!commentToDelete) return reply.code(404).send({ error: 'Comment not found' })
+      if (req.user!.role !== 'ADMIN' && commentToDelete.userId !== userId) {
+        return reply.code(403).send({ error: 'Forbidden: you do not own this comment' })
+      }
 
       await deleteComment(id)
 

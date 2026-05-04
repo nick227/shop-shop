@@ -8,8 +8,11 @@ import {
   getStoreDeliveryZones,
   calculateDeliveryFee,
   bulkUpdateZonePriorities,
+  prisma,
 } from '@packages/db'
+import { optionalAuthenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const GeoJSONPolygonSchema = z.object({
   type: z.literal('Polygon'),
@@ -53,15 +56,15 @@ const BulkUpdatePrioritiesSchema = z.object({
 export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   // POST /delivery-zones - Create delivery zone
   app.post('/delivery-zones', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const input = CreateDeliveryZoneSchema.parse(req.body)
-      
-      // Verify user owns the store
-      const userId = req.user?.id
-      if (!userId || req.user?.role !== 'ADMIN') {
-        // TODO: Verify store ownership
+
+      const store = await prisma.store.findUnique({ where: { id: input.storeId }, select: { id: true } })
+      if (!store) return reply.code(404).send({ error: 'Store not found' })
+      if (!(await userHasStoreAccess(req.user!.id, req.user!.role, input.storeId, 'settings'))) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
       }
 
       const zone = await createDeliveryZone({
@@ -82,13 +85,21 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   })
 
   // GET /delivery-zones/:id - Get delivery zone
-  app.get('/delivery-zones/:id', async (req, reply) => {
+  app.get('/delivery-zones/:id', { preHandler: [optionalAuthenticate] }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
       const zone = await getDeliveryZone(params.id)
 
       if (!zone) {
         return reply.code(404).send({ error: 'Delivery zone not found' })
+      }
+
+      if (
+        req.user &&
+        (req.user.role === 'VENDOR' || req.user.role === 'STAFF') &&
+        !(await userHasStoreAccess(req.user.id, req.user.role, zone.storeId, 'settings'))
+      ) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
       }
 
       return reply.code(200).send({ zone })
@@ -99,13 +110,19 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // PATCH /delivery-zones/:id - Update delivery zone
   app.patch('/delivery-zones/:id', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
       const input = UpdateDeliveryZoneSchema.parse(req.body)
 
-      // TODO: Verify user owns the store
+      const existingZone = await getDeliveryZone(params.id)
+      if (!existingZone) return reply.code(404).send({ error: 'Delivery zone not found' })
+      const zoneStore = await prisma.store.findUnique({ where: { id: existingZone.storeId }, select: { id: true } })
+      if (!zoneStore) return reply.code(404).send({ error: 'Store not found' })
+      if (!(await userHasStoreAccess(req.user!.id, req.user!.role, existingZone.storeId, 'settings'))) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+      }
 
       const zone = await updateDeliveryZone(params.id, input)
       return reply.code(200).send({ zone })
@@ -119,12 +136,18 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // DELETE /delivery-zones/:id - Delete delivery zone
   app.delete('/delivery-zones/:id', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
 
-      // TODO: Verify user owns the store
+      const zoneToDelete = await getDeliveryZone(params.id)
+      if (!zoneToDelete) return reply.code(404).send({ error: 'Delivery zone not found' })
+      const deleteStore = await prisma.store.findUnique({ where: { id: zoneToDelete.storeId }, select: { id: true } })
+      if (!deleteStore) return reply.code(404).send({ error: 'Store not found' })
+      if (!(await userHasStoreAccess(req.user!.id, req.user!.role, zoneToDelete.storeId, 'settings'))) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+      }
 
       await deleteDeliveryZone(params.id)
       return reply.code(204).send()
@@ -134,9 +157,20 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   })
 
   // GET /stores/:storeId/delivery-zones - Get all zones for a store
-  app.get('/stores/:storeId/delivery-zones', async (req, reply) => {
+  app.get('/stores/:storeId/delivery-zones', { preHandler: [optionalAuthenticate] }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
+      const store = await prisma.store.findUnique({ where: { id: params.storeId }, select: { id: true } })
+      if (!store) return reply.code(404).send({ error: 'Store not found' })
+
+      if (
+        req.user &&
+        (req.user.role === 'VENDOR' || req.user.role === 'STAFF') &&
+        !(await userHasStoreAccess(req.user.id, req.user.role, params.storeId, 'settings'))
+      ) {
+        return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+      }
+
       const zones = await getStoreDeliveryZones(params.storeId)
 
       return reply.code(200).send({ zones })
@@ -167,12 +201,22 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // POST /delivery-zones/bulk-update-priorities - Bulk update zone priorities
   app.post('/delivery-zones/bulk-update-priorities', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const input = BulkUpdatePrioritiesSchema.parse(req.body)
 
-      // TODO: Verify user owns all stores
+      if (req.user!.role !== 'ADMIN') {
+        for (const update of input.updates) {
+          const z = await getDeliveryZone(update.zoneId)
+          if (!z) return reply.code(404).send({ error: `Delivery zone ${update.zoneId} not found` })
+          const s = await prisma.store.findUnique({ where: { id: z.storeId }, select: { id: true } })
+          if (!s) return reply.code(404).send({ error: 'Store not found' })
+          if (!(await userHasStoreAccess(req.user!.id, req.user!.role, z.storeId, 'settings'))) {
+            return reply.code(403).send({ error: 'Forbidden: you do not manage all zones in this update' })
+          }
+        }
+      }
 
       await bulkUpdateZonePriorities(input.updates)
       return reply.code(200).send({ success: true })

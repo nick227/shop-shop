@@ -6,9 +6,11 @@ import {
   getRecentCancellations,
   canCancelOrder,
   CANCELLATION_REASONS,
+  prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
 import { rateLimits } from '../constants/rateLimits.js'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const CancelOrderSchema = z.object({
   orderId: z.string().uuid(),
@@ -28,7 +30,7 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.orderCancel,
     },
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -64,7 +66,7 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
 
   // GET /orders/:id/can-cancel - Check if order can be canceled
   app.get('/orders/:id/can-cancel', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -89,12 +91,21 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
 
   // GET /orders/cancellations/recent - Get recent cancellations
   app.get('/orders/cancellations/recent', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const query = req.query as { storeId?: string; limit?: string; offset?: string }
 
-      // TODO: For vendors, verify store ownership
+      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+        if (!query.storeId) {
+          return reply.code(400).send({ error: 'Vendors must specify storeId' })
+        }
+        const store = await prisma.store.findUnique({ where: { id: query.storeId }, select: { id: true } })
+        if (!store) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(req.user!.id, req.user!.role, query.storeId, 'orders'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+        }
+      }
 
       const cancellations = await getRecentCancellations({
         storeId: query.storeId,
@@ -110,12 +121,18 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
 
   // GET /orders/cancellations/stats - Get cancellation statistics
   app.get('/orders/cancellations/stats', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const query = CancellationStatsSchema.parse(req.query)
 
-      // TODO: For vendors, verify store ownership
+      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+        const store = await prisma.store.findUnique({ where: { id: query.storeId }, select: { id: true } })
+        if (!store) return reply.code(404).send({ error: 'Store not found' })
+        if (!(await userHasStoreAccess(req.user!.id, req.user!.role, query.storeId, 'orders'))) {
+          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+        }
+      }
 
       const stats = await getStoreCancellationStats(
         query.storeId,
