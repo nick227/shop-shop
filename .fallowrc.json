@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "workspaces": {
+    "packages": ["apps/*", "packages/*"]
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/__generated__/**",
+    "**/coverage/**",
+    "packages/schemas/src/**/*.dto.js",
+    "packages/schemas/src/index.js",
+    "packages/schemas/src/dtos/index.js",
+    "packages/schemas/src/core/index.js",
+    "packages/schemas/src/core/types.js",
+    "packages/schemas/src/core/dto.generator.js",
+    "packages/schemas/src/core/openapi.loader.js",
+    "packages/schemas/src/core/resource.factory.js"
+  ],
+  "health": {
+    "ignore": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/__generated__/**",
+      "**/coverage/**"
+    ]
+  },
+  "duplicates": {
+    "ignore": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/__generated__/**",
+      "**/coverage/**"
+    ]
+  },
+  "rules": {}
+}
