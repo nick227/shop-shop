@@ -1,7 +1,9 @@
 import { prisma } from '../client.js'
-import type { Post, PostLike, Comment, Prisma } from '../generated/client/index.js'
-import { PostSource } from '../generated/client/index.js'
+import type { Post, PostLike, Comment } from '../generated/client/index.js'
+import { PostSource, Prisma } from '../generated/client/index.js'
 import type { RiverFeedItem } from '@packages/schemas'
+import { RIVER_AUTO_PRODUCT_COOLDOWN_HOURS } from './river.constants.js'
+import { queryRiverFeedIdsWithGeo } from './river-feed-query.js'
 
 // ========================================
 // River Service
@@ -47,6 +49,20 @@ export interface PostWithDetails extends Post {
   likes: Array<{ userId: string }>
 }
 
+/** Rejected automation insert (cooldown, duplicate welcome, missing media). */
+export class RiverAutomationRejected extends Error {
+  readonly code: 'DUPLICATE_AUTO_STORE' | 'AUTO_PRODUCT_COOLDOWN' | 'AUTO_MISSING_MEDIA'
+
+  constructor(
+    code: RiverAutomationRejected['code'],
+    message: string,
+  ) {
+    super(message)
+    this.name = 'RiverAutomationRejected'
+    this.code = code
+  }
+}
+
 function sourceToWire(s: Post['source']): NonNullable<RiverFeedItem['source']> {
   if (s === PostSource.AUTO_STORE) return 'auto_store'
   if (s === PostSource.AUTO_PRODUCT) return 'auto_product'
@@ -85,9 +101,13 @@ function encodeRiverCursor(row: { priority: number; createdAt: Date; id: string 
 function buildRiverFeedWhere(
   storeId: string | undefined,
   decoded: { p: number; t: string; id: string } | undefined,
+  options: { requireMedia: boolean },
 ): Prisma.PostWhereInput {
-  const parts: Prisma.PostWhereInput[] = []
+  const parts: Prisma.PostWhereInput[] = [{ store: { isPublished: true } }]
   if (storeId) parts.push({ storeId })
+  if (options.requireMedia) {
+    parts.push({ mediaUrls: { not: { equals: [] } } })
+  }
   if (decoded) {
     parts.push({
       OR: [
@@ -105,9 +125,37 @@ function buildRiverFeedWhere(
       ],
     })
   }
-  if (parts.length === 0) return {}
   if (parts.length === 1) return parts[0]!
   return { AND: parts }
+}
+
+async function assertRiverAutomationAllowed(input: CreatePostInput): Promise<void> {
+  const src = resolvePostSource(input.source)
+  if (src === PostSource.MANUAL) return
+
+  if (!input.mediaUrls?.length) {
+    throw new RiverAutomationRejected(
+      'AUTO_MISSING_MEDIA',
+      'Automated River posts must include at least one media item',
+    )
+  }
+
+  if (src === PostSource.AUTO_PRODUCT) {
+    const since = new Date(Date.now() - RIVER_AUTO_PRODUCT_COOLDOWN_HOURS * 60 * 60 * 1000)
+    const recent = await prisma.post.count({
+      where: {
+        storeId: input.storeId,
+        source: PostSource.AUTO_PRODUCT,
+        createdAt: { gte: since },
+      },
+    })
+    if (recent >= 1) {
+      throw new RiverAutomationRejected(
+        'AUTO_PRODUCT_COOLDOWN',
+        `At most one auto_product post per store per ${RIVER_AUTO_PRODUCT_COOLDOWN_HOURS} hour(s)`,
+      )
+    }
+  }
 }
 
 function mapMediaJsonToRiver(raw: unknown): RiverFeedItem['media'] {
@@ -175,17 +223,48 @@ function mapPostToRiverFeedItem(post: PostRowForRiver): RiverFeedItem {
 // ========================================
 
 export const createPost = async (input: CreatePostInput): Promise<Post> => {
-  return prisma.post.create({
-    data: {
-      storeId: input.storeId,
-      content: input.content,
-      mediaUrls: input.mediaUrls as unknown as Prisma.InputJsonValue,
-      priority: input.priority ?? 0,
-      layout: input.layout ?? 'instagram_basic',
-      source: resolvePostSource(input.source),
-      automationKey: input.automationKey,
-      linkedItemId: input.linkedItemId,
-    },
+  const src = resolvePostSource(input.source)
+  const automationKey =
+    input.automationKey ??
+    (src === PostSource.AUTO_STORE ? `auto_store:${input.storeId}` : input.automationKey)
+
+  await assertRiverAutomationAllowed({ ...input, automationKey, source: input.source })
+
+  try {
+    return await prisma.post.create({
+      data: {
+        storeId: input.storeId,
+        content: input.content,
+        mediaUrls: input.mediaUrls as unknown as Prisma.InputJsonValue,
+        priority: input.priority ?? 0,
+        layout: input.layout ?? 'instagram_basic',
+        source: src,
+        automationKey,
+        linkedItemId: input.linkedItemId,
+      },
+    })
+  } catch (e) {
+    if (
+      src === PostSource.AUTO_STORE &&
+      automationKey &&
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === 'P2002'
+    ) {
+      const existing = await prisma.post.findUnique({ where: { automationKey } })
+      if (existing) return existing
+    }
+    throw e
+  }
+}
+
+export const updatePostPriority = async (
+  postId: string,
+  priority: number,
+  scope?: Readonly<{ storeId: string }>,
+): Promise<Post> => {
+  return prisma.post.update({
+    where: scope ? { id: postId, storeId: scope.storeId } : { id: postId },
+    data: { priority },
   })
 }
 
@@ -233,8 +312,10 @@ export const getPosts = async (options: {
     userId,
   } = options
 
-  const where: Record<string, unknown> = {}
-  
+  const where: Prisma.PostWhereInput = {
+    store: { isPublished: true },
+  }
+
   if (storeId) {
     where.storeId = storeId
   }
@@ -312,27 +393,74 @@ export const getRiverFeed = async (options: {
   cursor?: string
   limit: number
   storeId?: string
+  near?: { lat: number; lng: number; radiusMiles: number }
+  /** When true (default), exclude rows with empty mediaUrls JSON array */
+  requireMedia?: boolean
 }): Promise<{ items: RiverFeedItem[]; nextCursor: string | null }> => {
-  const { cursor, limit, storeId } = options
+  const { cursor, limit, storeId, near } = options
+  const requireMedia = options.requireMedia ?? true
   const take = limit + 1
   const decoded = cursor ? parseRiverCursor(cursor) : undefined
-  const where = buildRiverFeedWhere(storeId, decoded)
+
+  const storeInclude = {
+    select: {
+      name: true,
+      media: {
+        take: 1,
+        orderBy: { sortIndex: 'asc' as const },
+        select: { url: true },
+      },
+    },
+  }
+
+  if (near !== undefined) {
+    const ids = await queryRiverFeedIdsWithGeo(prisma, {
+      take,
+      cursor: decoded,
+      storeId,
+      near,
+      requireMedia,
+    })
+    if (ids.length === 0) {
+      return { items: [], nextCursor: null }
+    }
+
+    const unordered = await prisma.post.findMany({
+      where: { id: { in: ids } },
+      include: { store: storeInclude },
+    })
+
+    const byId = new Map(unordered.map((p) => [p.id, p]))
+    const posts = ids
+      .map((id) => byId.get(id))
+      .filter((p): p is NonNullable<typeof p> => p !== undefined) as PostRowForRiver[]
+
+    const hasMore = posts.length > limit
+    const pageRows = hasMore ? posts.slice(0, limit) : posts
+    const last = pageRows[pageRows.length - 1]
+    const nextCursor =
+      hasMore && last
+        ? encodeRiverCursor({
+            priority: last.priority,
+            createdAt: last.createdAt,
+            id: last.id,
+          })
+        : null
+
+    return {
+      items: pageRows.map(mapPostToRiverFeedItem),
+      nextCursor,
+    }
+  }
+
+  const where = buildRiverFeedWhere(storeId, decoded, { requireMedia })
 
   const rows = await prisma.post.findMany({
     where,
     orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
     take,
     include: {
-      store: {
-        select: {
-          name: true,
-          media: {
-            take: 1,
-            orderBy: { sortIndex: 'asc' },
-            select: { url: true },
-          },
-        },
-      },
+      store: storeInclude,
     },
   })
 

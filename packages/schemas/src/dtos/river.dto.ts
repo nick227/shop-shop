@@ -84,16 +84,51 @@ export const RiverFeedQuerySchema = z
     cursor: z.string().optional(),
     limit: z.string().optional(),
     storeId: z.string().uuid().optional(),
+    /** Pair with `lng`. Uses Store coordinates + Haversine miles filter on server. */
+    lat: z.string().optional(),
+    lng: z.string().optional(),
+    /** Default 25 when `lat`+`lng` are set. */
+    radiusMiles: z.string().optional(),
+    /** When true, include posts with empty `mediaUrls` (default: false — noise control). */
+    allowEmptyMedia: z.string().optional(),
   })
+  .refine(
+    (d) => {
+      const hasLat = d.lat !== undefined && d.lat !== ''
+      const hasLng = d.lng !== undefined && d.lng !== ''
+      return hasLat === hasLng
+    },
+    { message: 'lat and lng must be provided together', path: ['lat'] },
+  )
   .transform((data) => {
     const n = Number(data.limit ?? '20')
     const limit = Number.isFinite(n) ? n : 20
+    const latNum = data.lat !== undefined && data.lat !== '' ? Number(data.lat) : undefined
+    const lngNum = data.lng !== undefined && data.lng !== '' ? Number(data.lng) : undefined
+    const hasGeo =
+      latNum !== undefined &&
+      lngNum !== undefined &&
+      Number.isFinite(latNum) &&
+      Number.isFinite(lngNum)
+    const rm = Number(data.radiusMiles ?? '')
+    const radiusMiles =
+      hasGeo && Number.isFinite(rm) && rm > 0 ? rm : hasGeo ? 25 : undefined
+
     return {
       cursor: data.cursor,
       limit: Math.min(Math.max(limit, 1), 50),
       storeId: data.storeId,
+      near:
+        hasGeo && latNum !== undefined && lngNum !== undefined && radiusMiles !== undefined
+          ? { lat: latNum, lng: lngNum, radiusMiles }
+          : undefined,
+      allowEmptyMedia: data.allowEmptyMedia === 'true' || data.allowEmptyMedia === '1',
     }
   })
+
+export const UpdatePostPrioritySchema = z.object({
+  priority: z.number().int().min(0).max(1_000_000),
+})
 
 const RiverFeedMediaSchema = z.object({
   type: z.enum(['image', 'video']),
@@ -198,4 +233,5 @@ export type UnlikePostInput = z.infer<typeof UnlikePostInputSchema>
 export type RiverFeedQuery = z.infer<typeof RiverFeedQuerySchema>
 export type RiverFeedItem = z.infer<typeof RiverFeedItemSchema>
 export type RiverFeedPage = z.infer<typeof RiverFeedPageSchema>
+export type UpdatePostPriorityInput = z.infer<typeof UpdatePostPrioritySchema>
 

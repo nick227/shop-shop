@@ -94,9 +94,11 @@ These are registered explicitly in `src/index.ts` **before** `registerAllResourc
 
 | Method | Path | Notes |
 | --- | --- | --- |
+| GET | `/river/feed` | Cursor feed; optional **`lat`**, **`lng`**, **`radiusMiles`**, **`allowEmptyMedia`**, **`storeId`** |
 | GET | `/river/posts` | Public list |
 | GET | `/river/posts/:id` | Public |
 | POST | `/river/posts` | Authenticated |
+| PATCH | `/river/posts/:id` | **`priority`** — Authenticated (ownership TODO) |
 | DELETE | `/river/posts/:id` | Authenticated |
 | POST | `/river/posts/:id/like` | |
 | DELETE | `/river/posts/:id/like` | |

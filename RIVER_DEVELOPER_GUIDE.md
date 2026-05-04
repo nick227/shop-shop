@@ -26,7 +26,9 @@ Practical reference for working on the **River** social feed: code locations, pi
 |------|----------|
 | Prisma schema (`Post`, `PostSource`, `Item.linkedPosts`) | `packages/db/prisma/schema.prisma` |
 | Migrations | `packages/db/prisma/migrations/` |
-| Feed logic, cursor pagination, creation | `packages/db/src/services/river.service.ts` |
+| Feed logic, cursor pagination, creation, automation guards | `packages/db/src/services/river.service.ts` |
+| Geo distance SQL (Haversine miles) | `packages/db/src/services/river-feed-query.ts` |
+| Automation cooldown default | `packages/db/src/services/river.constants.ts` (`RIVER_AUTO_PRODUCT_COOLDOWN_HOURS`) |
 | HTTP routes | `apps/server/src/routes/river.route.ts` |
 | Zod DTOs & River wire schemas | `packages/schemas/src/dtos/river.dto.ts` |
 | Barrel exports (River types/schemas) | `packages/schemas/src/index.ts` |
@@ -55,7 +57,12 @@ After schema changes: `cd packages/db && npx prisma generate` and apply migratio
 ```
 
 - **Today:** implement automation by calling **`createPost`** (or Prisma) in the same transaction or immediately after the business mutation you care about (e.g. store published, item listed).
-- **Guardrails** (duplicates, bursts, rate limits) belong in that domain layer — see the table in `RIVER_ARCHITECTURE.md` §5. Use **`automationKey`** for idempotent inserts (e.g. one welcome post per store).
+- **Guardrails (enforced in `createPost` for non-`MANUAL` sources):**
+  - **`AUTO_STORE`** — default **`automationKey`** `auto_store:{storeId}`; duplicate insert returns existing row if unique constraint hits (idempotent welcome card).
+  - **`AUTO_PRODUCT`** — at most **one** per store per **`RIVER_AUTO_PRODUCT_COOLDOWN_HOURS`** (default **24**, env override).
+  - **Any automation** — **`mediaUrls` must be non-empty** or **`RiverAutomationRejected`** (`409` from API).
+- **Feed noise (read path):** **`GET /river/feed`** excludes empty **`mediaUrls`** by default; pass **`allowEmptyMedia=true`** to include text-only posts.
+- See also **`RIVER_ARCHITECTURE.md` §5** for batch/import policy and ops-level limits.
 
 ---
 
@@ -66,11 +73,13 @@ After schema changes: `cd packages/db && npx prisma generate` and apply migratio
 | | |
 |--|--|
 | **Method / path** | `GET /river/feed` |
-| **Query** | `cursor` (opaque, optional), `limit` (optional string coerced to number, clamped **1–50**, default **20**), `storeId` (optional UUID — scope feed to one store) |
+| **Query** | `cursor` (opaque, optional), `limit` (optional, clamped **1–50**, default **20**), **`storeId`** (optional UUID). **`lat`** + **`lng`** together — Haversine filter via **`Store.latitude` / `Store.longitude`** (published stores only); **`radiusMiles`** (optional, default **25**). **`allowEmptyMedia`** — `true` / `1` to include posts with no media (default excludes them). |
 | **Response** | `{ items: RiverFeedItem[], nextCursor: string | null }` |
-| **Errors** | `400` with `{ error: 'Invalid cursor' }` if cursor cannot be decoded |
+| **Errors** | `400` — invalid cursor, or **`lat`/`lng` not paired** (Zod). |
 
-Implementation: `getRiverFeed` in `river.service.ts`; cursor payload is base64url JSON `{ p, t, id }` matching `(priority, createdAt ISO, post id)`.
+**Client location:** the web app can supply **`lat`/`lng`** from browser geolocation or `apps/web/src/services/LocationService.ts` so the feed stays aligned with map/search context.
+
+Implementation: **`queryRiverFeedIdsWithGeo`** (`river-feed-query.ts`) when **`lat`+`lng`** are present; otherwise Prisma **`getRiverFeed`** with the same ordering and filters. Cursor payload remains base64url JSON **`{ p, t, id }`**.
 
 ### 5.2 Legacy list (page-based)
 
@@ -78,7 +87,7 @@ Implementation: `getRiverFeed` in `river.service.ts`; cursor payload is base64ur
 |--|--|
 | **Method / path** | `GET /river/posts` |
 | **Query** | Parsed via `PostQuerySchema`: `page`, `limit`, plus filters **`storeId`**, **`sortBy`** (`recent` \| `popular` \| `trending`), **`hasMedia`**, **`pageSize`** (alias mapped to page size with `limit`) |
-| **Response** | `{ data, total, page, pageSize, hasMore }` — rows include **`priority`**, **`layout`**, **`source`**, **`linkedItemId`** |
+| **Response** | `{ data, total, page, pageSize, hasMore }` — rows include **`priority`**, **`layout`**, **`source`**, **`linkedItemId`**. Only posts whose **`Store`** is **`isPublished`** are returned. |
 
 ### 5.3 Create post
 
@@ -87,8 +96,19 @@ Implementation: `getRiverFeed` in `river.service.ts`; cursor payload is base64ur
 | **Method / path** | `POST /river/posts` |
 | **Auth** | Required; roles per route |
 | **Body** | `CreatePostInputSchema` — includes optional **`priority`**, **`layout`**, **`source`**, **`automationKey`**, **`linkedItemId`** |
+| **Errors** | **`409`** — automation rejected (`DUPLICATE_AUTO_STORE` handled by returning existing row when possible; **`AUTO_PRODUCT_COOLDOWN`**, **`AUTO_MISSING_MEDIA`** — see `RiverAutomationRejected`) |
 
 Ownership checks are still marked TODO on the route file; review `DEVELOPER_BACKEND.md` before production hardening.
+
+### 5.4 Curation — priority (API foundation)
+
+| | |
+|--|--|
+| **Method / path** | `PATCH /river/posts/:id` |
+| **Body** | `{ "priority": number }` — **`UpdatePostPrioritySchema`** |
+| **Auth** | Authenticated vendor/admin (ownership enforcement TODO) |
+
+**Admin UI / vendor dashboard** for bulk curation is not built yet; use this endpoint, SQL, or a small internal tool until a dedicated UI ships.
 
 ---
 
@@ -96,8 +116,8 @@ Ownership checks are still marked TODO on the route file; review `DEVELOPER_BACK
 
 Import from `@packages/schemas`:
 
-- **`RiverFeedQuerySchema`**, **`RiverFeedItemSchema`**, **`RiverFeedPageSchema`**
-- Types: **`RiverFeedQuery`**, **`RiverFeedItem`**, **`RiverFeedPage`**
+- **`RiverFeedQuerySchema`**, **`RiverFeedItemSchema`**, **`RiverFeedPageSchema`**, **`UpdatePostPrioritySchema`**
+- Types: **`RiverFeedQuery`**, **`RiverFeedItem`**, **`RiverFeedPage`**, **`UpdatePostPriorityInput`**
 - **`CreatePostInputSchema`**, **`PostQuerySchema`**, etc.
 
 The **`RiverFeedItem`** shape is the **stable contract** for clients; map DB enums and JSON media to this in the service layer only.
@@ -106,7 +126,7 @@ The **`RiverFeedItem`** shape is the **stable contract** for clients; map DB enu
 
 ## 7. Frontend expectations
 
-- Call **`GET /river/feed`** with **`nextCursor`** until `nextCursor` is null.
+- Call **`GET /river/feed`** with **`nextCursor`** until `nextCursor` is null. Pass **`lat`**, **`lng`**, and optional **`radiusMiles`** when you have a user location (see **`LocationService`**).
 - Branch UI on **`layout`** (default **`instagram_basic`**). **`title`** may stay null until a dedicated column exists; **`body`** maps from `Post.content`.
 - **`media`** entries are normalized to **`image` \| `video`** for the feed (youtube/link types from storage are mapped in `river.service.ts`).
 
@@ -117,7 +137,7 @@ The **`RiverFeedItem`** shape is the **stable contract** for clients; map DB enu
 | Task | Where / how |
 |------|-------------|
 | New automated card | Insert `Post` with appropriate **`source`**, **`automationKey`** (unique), optional **`linkedItemId`**, **`priority`** as needed |
-| Curate / feature | Raise **`priority`** on specific rows (manual SQL, admin API when you add one) |
+| Curate / feature | **`PATCH /river/posts/:id`** with **`priority`**, or SQL / admin tooling |
 | New layout | Add a **`layout`** string value and a matching React component switch; optional future **`layoutPayload`** JSON column if the architecture doc is extended |
 | New feed source without workers | Still insert **`Post`** rows — keeps one read path |
 

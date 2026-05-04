@@ -5,6 +5,7 @@ import {
   PostQuerySchema,
   CommentQuerySchema,
   RiverFeedQuerySchema,
+  UpdatePostPrioritySchema,
   type CreateCommentInput,
   type CommentQuery,
 } from '@packages/schemas'
@@ -13,6 +14,7 @@ import {
   getPosts,
   getRiverFeed,
   getPostById,
+  updatePostPriority,
   deletePost,
   likePost,
   unlikePost,
@@ -20,6 +22,7 @@ import {
   createComment,
   getCommentsByPostId,
   deleteComment,
+  RiverAutomationRejected,
   type CreatePostInput,
 } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
@@ -38,6 +41,8 @@ export const riverRoutes = async (app: FastifyInstance) => {
         cursor: q.cursor,
         limit: q.limit,
         storeId: q.storeId,
+        near: q.near,
+        requireMedia: !q.allowEmptyMedia,
       })
       return reply.code(200).send(page)
     } catch (error) {
@@ -189,6 +194,9 @@ export const riverRoutes = async (app: FastifyInstance) => {
 
         return reply.code(201).send(post)
       } catch (error) {
+        if (error instanceof RiverAutomationRejected) {
+          return reply.code(409).send({ error: error.message, code: error.code })
+        }
         if (error instanceof Error && 'issues' in error) {
           return reply.code(400).send({
             error: 'Validation error',
@@ -198,6 +206,30 @@ export const riverRoutes = async (app: FastifyInstance) => {
         throw error
       }
     }
+  )
+
+  // PATCH /river/posts/:id — adjust priority (curation); vendor/admin TODO: scope to store ownership
+  app.patch(
+    '/river/posts/:id',
+    {
+      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    },
+    async (req, reply) => {
+      try {
+        const { id } = req.params as { id: string }
+        const body = UpdatePostPrioritySchema.parse(req.body)
+        const post = await updatePostPriority(id, body.priority)
+        return reply.code(200).send(post)
+      } catch (error) {
+        if (error instanceof Error && 'issues' in error) {
+          return reply.code(400).send({
+            error: 'Validation error',
+            issues: (error as { issues: unknown[] }).issues,
+          })
+        }
+        throw error
+      }
+    },
   )
 
   // DELETE /river/posts/:id - Delete post (vendor only, own posts)

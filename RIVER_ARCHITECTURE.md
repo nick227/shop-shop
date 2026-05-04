@@ -110,7 +110,9 @@ Triggers live next to the real create/publish flows so behavior stays consistent
 
 | Risk | Guardrail |
 |------|-----------|
-| Duplicate flood | **Idempotency**: at most one `auto_store` welcome post per `storeId`; at most one `auto_product` post per `itemId` (or per publish event). Enforce with **unique partial index** / composite unique on `(storeId, source)` where applicable, or a dedicated `automationKey` column. |
+| Duplicate flood | **Idempotency**: at most one `auto_store` welcome post per `storeId` — enforced by **`automationKey`** default `auto_store:{storeId}` (unique) + idempotent return on conflict. **`AUTO_PRODUCT`**: at most one per store per **`RIVER_AUTO_PRODUCT_COOLDOWN_HOURS`** (see `packages/db/src/services/river.constants.ts`). Per-item idempotency still uses **`automationKey`** when you set it (e.g. per `itemId`). |
+| Empty automation | **Non-empty `mediaUrls`** required for any non-`MANUAL` `createPost`; API returns **409** if violated. |
+| Feed readability | **`GET /river/feed`** omits posts with **empty `media`** unless **`allowEmptyMedia=true`**. |
 | Catalog import bursts | **Batch creates**: do not emit one River post per SKU on bulk import; **debounce**, **digest** (single “new arrivals” post), or **cap** posts per job. |
 | Feed spam | **Per-store rate limit**: e.g. max *N* `auto_product` posts per store per **day** (config); oldest-over or drop with metric. Optional **global** cap on automation rows per hour for safety. |
 | Wrong lifecycle | Fire only on **publish** (or your canonical “visible” transition), not on draft save or internal fixtures. |
@@ -125,14 +127,21 @@ Together with **`priority`**, ops can **pull up** important manual or featured c
 
 **Endpoint (implemented):** `GET /river/feed` — cursor pagination, `ORDER BY priority DESC, createdAt DESC, id DESC`.
 
-**Legacy list:** `GET /river/posts` remains page-based; it now respects the same priority ordering for `sortBy=recent` and exposes `priority`, `layout`, `source`, `linkedItemId` on each row.
+**Location (implemented):** optional **`lat`**, **`lng`** (must appear together), **`radiusMiles`** (default 25). Filters to stores within great-circle distance using **`Store.latitude` / `Store.longitude`** (published stores). Connects the feed to the same coordinates you use for **`LocationService`** / map UX on the client.
+
+**Legacy list:** `GET /river/posts` remains page-based; it now respects the same priority ordering for `sortBy=recent`, restricts to **published** stores, and exposes `priority`, `layout`, `source`, `linkedItemId` on each row.
+
+**Curation (API foundation):** `PATCH /river/posts/:id` with `{ priority }` — admin/vendor UI still TBD.
 
 **Query parameters**
 
 | Param | Description |
 |-------|-------------|
 | `cursor` | Opaque; omit for first page |
-| `limit` | Page size; server caps (e.g. max 20) |
+| `limit` | Page size; server caps (e.g. max 50) |
+| `lat`, `lng` | Optional pair; geo-filtered feed when both set |
+| `radiusMiles` | Optional; default 25 when geo active |
+| `allowEmptyMedia` | Optional; when `true`, include posts with no media |
 
 **Response**
 
