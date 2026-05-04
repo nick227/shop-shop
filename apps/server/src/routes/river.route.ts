@@ -7,8 +7,7 @@ import {
   RiverFeedQuerySchema,
   UpdatePostPrioritySchema,
   type CreateCommentInput,
-  type CommentQuery,
-} from '@packages/schemas'
+} from '@packages/schemas-river-dto'
 import {
   createPost,
   getPosts,
@@ -35,8 +34,15 @@ export const riverRoutes = async (app: FastifyInstance) => {
 
   // GET /river/feed — cursor feed (home River contract)
   app.get('/river/feed', async (req, reply) => {
+    const parsed = RiverFeedQuerySchema.safeParse(req.query)
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'Validation error',
+        issues: parsed.error.issues,
+      })
+    }
+    const q = parsed.data
     try {
-      const q = RiverFeedQuerySchema.parse(req.query)
       const page = await getRiverFeed({
         cursor: q.cursor,
         limit: q.limit,
@@ -48,12 +54,6 @@ export const riverRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid cursor') {
         return reply.code(400).send({ error: 'Invalid cursor' })
-      }
-      if (error instanceof Error && 'issues' in error) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          issues: (error as { issues: unknown[] }).issues,
-        })
       }
       throw error
     }
@@ -168,6 +168,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
     },
     async (req, reply) => {
       try {
+        const bodyRaw = req.body as Record<string, unknown>
         const parsed = CreatePostInputSchema.parse(req.body)
         const input: CreatePostInput = {
           storeId: parsed.storeId,
@@ -175,8 +176,16 @@ export const riverRoutes = async (app: FastifyInstance) => {
           mediaUrls: parsed.mediaUrls ?? [],
           priority: parsed.priority,
           layout: parsed.layout,
-          source: parsed.source,
-          automationKey: parsed.automationKey,
+          source:
+            parsed.source ??
+            (bodyRaw.source === 'MANUAL' ||
+            bodyRaw.source === 'AUTO_STORE' ||
+            bodyRaw.source === 'AUTO_PRODUCT'
+              ? (bodyRaw.source as CreatePostInput['source'])
+              : undefined),
+          automationKey:
+            parsed.automationKey ??
+            (typeof bodyRaw.automationKey === 'string' ? bodyRaw.automationKey : undefined),
           linkedItemId: parsed.linkedItemId,
         }
 
@@ -215,20 +224,16 @@ export const riverRoutes = async (app: FastifyInstance) => {
       preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],
     },
     async (req, reply) => {
-      try {
-        const { id } = req.params as { id: string }
-        const body = UpdatePostPrioritySchema.parse(req.body)
-        const post = await updatePostPriority(id, body.priority)
-        return reply.code(200).send(post)
-      } catch (error) {
-        if (error instanceof Error && 'issues' in error) {
-          return reply.code(400).send({
-            error: 'Validation error',
-            issues: (error as { issues: unknown[] }).issues,
-          })
-        }
-        throw error
+      const { id } = req.params as { id: string }
+      const parsed = UpdatePostPrioritySchema.safeParse(req.body)
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: parsed.error.issues,
+        })
       }
+      const post = await updatePostPriority(id, parsed.data.priority)
+      return reply.code(200).send(post)
     },
   )
 
@@ -318,12 +323,16 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.get('/river/posts/:id/comments', async (req, reply) => {
     try {
       const { id } = req.params as { id: string }
-      const query = CommentQuerySchema.parse(req.query) as CommentQuery
+      const raw = { ...(req.query as Record<string, string>), postId: id }
+      if (raw.pageSize && raw.limit === undefined) {
+        raw.limit = raw.pageSize
+      }
+      const query = CommentQuerySchema.parse(raw) as { page: number; limit: number }
 
       const { comments, total } = await getCommentsByPostId({
         postId: id,
         page: query.page,
-        pageSize: query.pageSize,
+        pageSize: query.limit,
       })
 
       const transformedComments = comments.map((comment) => ({
@@ -341,8 +350,8 @@ export const riverRoutes = async (app: FastifyInstance) => {
         data: transformedComments,
         total,
         page: query.page,
-        pageSize: query.pageSize,
-        hasMore: total > query.page * query.pageSize,
+        pageSize: query.limit,
+        hasMore: total > query.page * query.limit,
       })
     } catch (error) {
       if (error instanceof Error && 'issues' in error) {

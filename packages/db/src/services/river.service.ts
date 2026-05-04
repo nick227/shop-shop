@@ -3,7 +3,7 @@ import type { Post, PostLike, Comment } from '../generated/client/index.js'
 import { PostSource, Prisma } from '../generated/client/index.js'
 import type { RiverFeedItem } from '@packages/schemas'
 import { RIVER_AUTO_PRODUCT_COOLDOWN_HOURS } from './river.constants.js'
-import { queryRiverFeedIdsWithGeo } from './river-feed-query.js'
+import { queryRiverFeedIdsStandard, queryRiverFeedIdsWithGeo } from './river-feed-query.js'
 
 // ========================================
 // River Service
@@ -96,37 +96,6 @@ function encodeRiverCursor(row: { priority: number; createdAt: Date; id: string 
     JSON.stringify({ p: row.priority, t: row.createdAt.toISOString(), id: row.id }),
     'utf8',
   ).toString('base64url')
-}
-
-function buildRiverFeedWhere(
-  storeId: string | undefined,
-  decoded: { p: number; t: string; id: string } | undefined,
-  options: { requireMedia: boolean },
-): Prisma.PostWhereInput {
-  const parts: Prisma.PostWhereInput[] = [{ store: { isPublished: true } }]
-  if (storeId) parts.push({ storeId })
-  if (options.requireMedia) {
-    parts.push({ mediaUrls: { not: { equals: [] } } })
-  }
-  if (decoded) {
-    parts.push({
-      OR: [
-        { priority: { lt: decoded.p } },
-        {
-          AND: [{ priority: decoded.p }, { createdAt: { lt: new Date(decoded.t) } }],
-        },
-        {
-          AND: [
-            { priority: decoded.p },
-            { createdAt: new Date(decoded.t) },
-            { id: { lt: decoded.id } },
-          ],
-        },
-      ],
-    })
-  }
-  if (parts.length === 1) return parts[0]!
-  return { AND: parts }
 }
 
 async function assertRiverAutomationAllowed(input: CreatePostInput): Promise<void> {
@@ -453,18 +422,26 @@ export const getRiverFeed = async (options: {
     }
   }
 
-  const where = buildRiverFeedWhere(storeId, decoded, { requireMedia })
-
-  const rows = await prisma.post.findMany({
-    where,
-    orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+  const ids = await queryRiverFeedIdsStandard(prisma, {
     take,
-    include: {
-      store: storeInclude,
-    },
+    cursor: decoded,
+    storeId,
+    requireMedia,
+  })
+  if (ids.length === 0) {
+    return { items: [], nextCursor: null }
+  }
+
+  const unordered = await prisma.post.findMany({
+    where: { id: { in: ids } },
+    include: { store: storeInclude },
   })
 
-  const posts = rows as PostRowForRiver[]
+  const byId = new Map(unordered.map((p) => [p.id, p]))
+  const posts = ids
+    .map((id) => byId.get(id))
+    .filter((p): p is NonNullable<typeof p> => p !== undefined) as PostRowForRiver[]
+
   const hasMore = posts.length > limit
   const pageRows = hasMore ? posts.slice(0, limit) : posts
   const last = pageRows[pageRows.length - 1]

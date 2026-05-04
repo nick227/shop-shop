@@ -15,7 +15,10 @@
       "@packages/db": ["./packages/db/src"],
       "@packages/db/*": ["./packages/db/src/*"],
       "@packages/schemas": ["./packages/schemas/src"],
-      "@packages/schemas/*": ["./packages/schemas/src/*"]
+      "@packages/schemas/*": ["./packages/schemas/src/*"],
+      "@packages/schemas-river-dto": ["./packages/schemas/src/dtos/river.dto.ts"],
+      "@packages/sdk": ["./packages/sdk/src"],
+      "@packages/sdk/*": ["./packages/sdk/src/*"]
     }
   }
 }

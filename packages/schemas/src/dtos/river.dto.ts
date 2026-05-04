@@ -127,7 +127,7 @@ export const RiverFeedQuerySchema = z
   })
 
 export const UpdatePostPrioritySchema = z.object({
-  priority: z.number().int().min(0).max(1_000_000),
+  priority: z.coerce.number().int().min(0).max(1_000_000),
 })
 
 const RiverFeedMediaSchema = z.object({

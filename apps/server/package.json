@@ -10,6 +10,7 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "vitest run",
+    "test:river": "vitest run src/routes/river.route.test.ts",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
@@ -30,6 +31,7 @@
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "fastify": "^4.29.1",
+    "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
     "pino": "^9.3.2",
     "stripe": "^19.1.0",

@@ -6,6 +6,10 @@ import { ALL_RESOURCES } from '../resources/index.js'
 import { registerAllResources } from './loader.js'
 import { prisma } from '@packages/db'
 
+const defaultRiverMedia = [
+  { type: 'image' as const, url: 'https://example.com/river-default.jpg' },
+]
+
 /**
  * River Routes E2E Tests
  * Tests social feed functionality (posts, likes, comments)
@@ -83,6 +87,15 @@ describe('River Routes E2E', () => {
     })
     const storeData = JSON.parse(storeResponse.body)
     storeId = storeData.id
+
+    await prisma.store.update({
+      where: { id: storeId },
+      data: {
+        isPublished: true,
+        latitude: 40.7128,
+        longitude: -74.006,
+      },
+    })
   })
 
   afterAll(async () => {
@@ -181,6 +194,153 @@ describe('River Routes E2E', () => {
 
       expect(response.statusCode).toBe(400)
     })
+
+    it('rejects AUTO_PRODUCT without media (409)', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/river/posts',
+        headers: {
+          authorization: `Bearer ${user1Token}`,
+        },
+        payload: {
+          storeId,
+          content: 'no media',
+          mediaUrls: [],
+          source: 'AUTO_PRODUCT',
+        },
+      })
+      expect(response.statusCode).toBe(409)
+      const body = JSON.parse(response.body)
+      expect(body.code).toBe('AUTO_MISSING_MEDIA')
+    })
+
+    it('enforces AUTO_PRODUCT cooldown per store (409)', async () => {
+      const media = [{ type: 'image', url: 'https://example.com/cooldown-a.jpg' }]
+      const first = await app.inject({
+        method: 'POST',
+        url: '/river/posts',
+        headers: { authorization: `Bearer ${user1Token}` },
+        payload: {
+          storeId,
+          content: 'first auto product',
+          mediaUrls: media,
+          source: 'AUTO_PRODUCT',
+        },
+      })
+      expect(first.statusCode).toBe(201)
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/river/posts',
+        headers: { authorization: `Bearer ${user1Token}` },
+        payload: {
+          storeId,
+          content: 'second auto product',
+          mediaUrls: media,
+          source: 'AUTO_PRODUCT',
+        },
+      })
+      expect(second.statusCode).toBe(409)
+      expect(JSON.parse(second.body).code).toBe('AUTO_PRODUCT_COOLDOWN')
+    })
+  })
+
+  describe('GET /river/feed', () => {
+    const feedMedia = [{ type: 'image' as const, url: 'https://example.com/feed-seed.jpg' }]
+
+    beforeEach(async () => {
+      for (let i = 0; i < 3; i++) {
+        await app.inject({
+          method: 'POST',
+          url: '/river/posts',
+          headers: { authorization: `Bearer ${user1Token}` },
+          payload: {
+            storeId,
+            content: `feed seed ${i}`,
+            mediaUrls: feedMedia,
+          },
+        })
+      }
+    })
+
+    it('returns RiverFeedPage shape and paginates with cursor', async () => {
+      const first = await app.inject({ method: 'GET', url: '/river/feed?limit=2' })
+      expect(first.statusCode).toBe(200)
+      const body = JSON.parse(first.body)
+      expect(Array.isArray(body.items)).toBe(true)
+      expect(body.items.length).toBe(2)
+      expect(body.items[0]).toMatchObject({
+        priority: expect.any(Number),
+        layout: expect.any(String),
+        actor: { kind: 'store', displayName: expect.any(String) },
+      })
+      expect(body.nextCursor).toBeTruthy()
+
+      const second = await app.inject({
+        method: 'GET',
+        url: `/river/feed?limit=2&cursor=${encodeURIComponent(body.nextCursor)}`,
+      })
+      expect(second.statusCode).toBe(200)
+      const page2 = JSON.parse(second.body)
+      expect(page2.items.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('scopes by lat/lng + radius (includes NYC store)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/river/feed?lat=40.713&lng=-74.006&radiusMiles=10&limit=10',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(JSON.parse(res.body).items.length).toBeGreaterThan(0)
+    })
+
+    it('returns no items when radius excludes store', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/river/feed?lat=34.05&lng=-118.25&radiusMiles=5&limit=20',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(JSON.parse(res.body).items.length).toBe(0)
+    })
+
+    it('returns 400 when lat is set without lng', async () => {
+      const res = await app.inject({ method: 'GET', url: '/river/feed?lat=40.71' })
+      expect(res.statusCode).toBe(400)
+    })
+
+    it('returns 400 for invalid cursor', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/river/feed?cursor=%%%invalid%%%',
+      })
+      expect(res.statusCode).toBe(400)
+    })
+  })
+
+  describe('PATCH /river/posts/:id — priority', () => {
+    it('updates post priority', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/river/posts',
+        headers: { authorization: `Bearer ${user1Token}` },
+        payload: {
+          storeId,
+          content: 'priority target',
+          mediaUrls: [{ type: 'image', url: 'https://example.com/pr.jpg' }],
+        },
+      })
+      expect(created.statusCode).toBe(201)
+      const id = JSON.parse(created.body).id
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/river/posts/${id}`,
+        headers: { authorization: `Bearer ${user1Token}` },
+        payload: { priority: 42 },
+      })
+      expect(patch.statusCode).toBe(200)
+      expect(JSON.parse(patch.body).priority).toBe(42)
+    })
   })
 
   describe('GET /river/posts - List Posts', () => {
@@ -193,6 +353,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'First post',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(post1.body).id
@@ -204,6 +365,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Second post',
+          mediaUrls: defaultRiverMedia,
         },
       })
     })
@@ -270,6 +432,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Test post for retrieval',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(response.body).id
@@ -307,6 +470,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post to be deleted',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(response.body).id
@@ -354,6 +518,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post to be liked',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(response.body).id
@@ -412,6 +577,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post to unlike',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(response.body).id
@@ -459,6 +625,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post for comments',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(response.body).id
@@ -523,6 +690,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post with comments',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(postResponse.body).id
@@ -584,6 +752,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Post for comment deletion',
+          mediaUrls: defaultRiverMedia,
         },
       })
       postId = JSON.parse(postResponse.body).id
@@ -634,6 +803,7 @@ describe('River Routes E2E', () => {
         payload: {
           storeId,
           content: 'Lifecycle test post',
+          mediaUrls: defaultRiverMedia,
         },
       })
       expect(createResponse.statusCode).toBe(201)
