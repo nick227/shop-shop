@@ -109,6 +109,13 @@ enum PromotionStatus {
   EXPIRED
 }
 
+/// Origin of a River post (manual vs automation)
+enum PostSource {
+  MANUAL
+  AUTO_STORE
+  AUTO_PRODUCT
+}
+
 model User {
   id                  String              @id @default(uuid())
   role                Role                @default(USER)
@@ -270,6 +277,7 @@ model Item {
   cartItems    CartItem[]
   orderItems   OrderItem[]
   bundleItems  BundleItem[]   @relation("ItemBundles")
+  linkedPosts  Post[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   FavoriteItem FavoriteItem[]
@@ -551,21 +559,31 @@ model PromotionRedemption {
 }
 
 model Post {
-  id            String     @id @default(uuid()) @db.Char(36)
-  storeId       String     @db.Char(36)
-  store         Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  content       String?    @db.Text
-  mediaUrls     Json // MediaItem[] - { type, url, thumbnail, title?, provider?, width?, height? }
-  likesCount    Int        @default(0)
-  commentsCount Int        @default(0)
-  sharesCount   Int        @default(0)
-  likes         PostLike[]
-  comments      Comment[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String      @id @default(uuid()) @db.Char(36)
+  storeId        String      @db.Char(36)
+  store          Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  content        String?     @db.Text
+  mediaUrls      Json // MediaItem[] - { type, url, thumbnail, title?, provider?, width?, height? }
+  likesCount     Int         @default(0)
+  commentsCount  Int         @default(0)
+  sharesCount    Int         @default(0)
+  /// Higher sorts first; default 0 for chronological-within-priority
+  priority       Int         @default(0)
+  /// Presentation key (e.g. instagram_basic)
+  layout         String      @default("instagram_basic") @db.VarChar(64)
+  source         PostSource  @default(MANUAL)
+  /// Idempotency for automation: e.g. welcome:storeId, item:itemId
+  automationKey  String?     @unique @db.VarChar(128)
+  linkedItemId   String?     @db.Char(36)
+  linkedItem     Item?       @relation(fields: [linkedItemId], references: [id], onDelete: SetNull)
+  likes          PostLike[]
+  comments       Comment[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@index([storeId])
   @@index([createdAt])
+  @@index([priority, createdAt, id])
 }
 
 model PostLike {

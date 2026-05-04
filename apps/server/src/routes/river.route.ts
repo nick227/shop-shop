@@ -4,14 +4,14 @@ import {
   CreateCommentInputSchema,
   PostQuerySchema,
   CommentQuerySchema,
-  type CreatePostInput,
+  RiverFeedQuerySchema,
   type CreateCommentInput,
-  type PostQuery,
   type CommentQuery,
 } from '@packages/schemas'
 import {
   createPost,
   getPosts,
+  getRiverFeed,
   getPostById,
   deletePost,
   likePost,
@@ -20,6 +20,7 @@ import {
   createComment,
   getCommentsByPostId,
   deleteComment,
+  type CreatePostInput,
 } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
@@ -29,20 +30,59 @@ export const riverRoutes = async (app: FastifyInstance) => {
   // POST ROUTES
   // ========================================
 
+  // GET /river/feed — cursor feed (home River contract)
+  app.get('/river/feed', async (req, reply) => {
+    try {
+      const q = RiverFeedQuerySchema.parse(req.query)
+      const page = await getRiverFeed({
+        cursor: q.cursor,
+        limit: q.limit,
+        storeId: q.storeId,
+      })
+      return reply.code(200).send(page)
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid cursor') {
+        return reply.code(400).send({ error: 'Invalid cursor' })
+      }
+      if (error instanceof Error && 'issues' in error) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: (error as { issues: unknown[] }).issues,
+        })
+      }
+      throw error
+    }
+  })
+
   // GET /river/posts - List posts (public)
   app.get('/river/posts', async (req, reply) => {
     try {
-      const query = PostQuerySchema.parse(req.query) as PostQuery
-      
+      const raw = { ...(req.query as Record<string, string>) }
+      if (raw.pageSize && raw.limit === undefined) {
+        raw.limit = raw.pageSize
+      }
+      const query = PostQuerySchema.parse(raw) as {
+        page: number
+        limit: number
+        filters: {
+          storeId?: string
+          sortBy?: 'recent' | 'popular' | 'trending'
+          hasMedia?: boolean
+          pageSize?: number
+        }
+      }
+      const f = query.filters
+      const pageSize = f.pageSize ?? query.limit
+
       // Get userId from auth if authenticated (optional)
       const userId = (req as { user?: { userId: string } }).user?.userId
 
       const { posts, total } = await getPosts({
-        storeId: query.storeId,
-        sortBy: query.sortBy as 'recent' | 'popular' | 'trending',
-        hasMedia: query.hasMedia,
+        storeId: f.storeId,
+        sortBy: f.sortBy ?? 'recent',
+        hasMedia: f.hasMedia,
         page: query.page,
-        pageSize: query.pageSize,
+        pageSize,
         userId,
       })
 
@@ -54,6 +94,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
         storeImage: post.store.media[0]?.url,
         content: post.content,
         media: Array.isArray(post.mediaUrls) ? post.mediaUrls : [],
+        priority: post.priority,
+        layout: post.layout,
+        source: post.source,
+        linkedItemId: post.linkedItemId,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
         sharesCount: post.sharesCount,
@@ -66,8 +110,8 @@ export const riverRoutes = async (app: FastifyInstance) => {
         data: transformedPosts,
         total,
         page: query.page,
-        pageSize: query.pageSize,
-        hasMore: total > query.page * query.pageSize,
+        pageSize,
+        hasMore: total > query.page * pageSize,
       })
     } catch (error) {
       if (error instanceof Error && 'issues' in error) {
@@ -98,6 +142,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
       storeImage: post.store.media[0]?.url,
       content: post.content,
       media: Array.isArray(post.mediaUrls) ? post.mediaUrls : [],
+      priority: post.priority,
+      layout: post.layout,
+      source: post.source,
+      linkedItemId: post.linkedItemId,
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
       sharesCount: post.sharesCount,
@@ -115,12 +163,22 @@ export const riverRoutes = async (app: FastifyInstance) => {
     },
     async (req, reply) => {
       try {
-        const input = CreatePostInputSchema.parse(req.body) as CreatePostInput
+        const parsed = CreatePostInputSchema.parse(req.body)
+        const input: CreatePostInput = {
+          storeId: parsed.storeId,
+          content: parsed.content,
+          mediaUrls: parsed.mediaUrls ?? [],
+          priority: parsed.priority,
+          layout: parsed.layout,
+          source: parsed.source,
+          automationKey: parsed.automationKey,
+          linkedItemId: parsed.linkedItemId,
+        }
 
         // TODO: Verify user owns the store
         const userId = req.user!.id
 
-        const post = (await createPost(input as never)) as unknown as { id: string; storeId: string; content: string; mediaUrls?: string[] }
+        const post = await createPost(input)
 
         req.log.info({
           event: 'post_created',

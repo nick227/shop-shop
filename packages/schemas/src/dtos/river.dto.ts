@@ -33,6 +33,11 @@ const postFields = defineFields([
   { name: 'likesCount', type: 'Int', isOptional: false, hasDefault: true },
   { name: 'commentsCount', type: 'Int', isOptional: false, hasDefault: true },
   { name: 'sharesCount', type: 'Int', isOptional: false, hasDefault: true },
+  { name: 'priority', type: 'Int', isOptional: false, hasDefault: true },
+  { name: 'layout', type: 'String', isOptional: false, hasDefault: true },
+  { name: 'source', type: 'String', isOptional: false, hasDefault: true },
+  { name: 'automationKey', type: 'String', isOptional: true, hasDefault: false },
+  { name: 'linkedItemId', type: 'String', isOptional: true, hasDefault: false },
   { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
   { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
 ])
@@ -46,6 +51,11 @@ export const CreatePostInputSchema = generateCreateInputSchema({
   },
 }).extend({
   storeId: z.string().uuid(),
+  priority: z.number().int().min(0).max(1_000_000).optional(),
+  layout: z.string().max(64).optional(),
+  source: z.enum(['MANUAL', 'AUTO_STORE', 'AUTO_PRODUCT']).optional(),
+  automationKey: z.string().max(128).optional(),
+  linkedItemId: z.string().uuid().optional(),
 })
 
 export const PostResponseSchema = generateResponseSchema({
@@ -63,8 +73,62 @@ export const PostQuerySchema = generateQuerySchema({
   additionalFilters: {
     storeId: z.string().uuid().optional(),
     sortBy: z.enum(['recent', 'popular', 'trending']).optional().default('recent'),
-    hasMedia: z.string().transform(val => val === 'true').optional(),
+    hasMedia: z.string().transform((val) => val === 'true').optional(),
+    pageSize: z.string().transform(Number).optional(),
   },
+})
+
+/** Cursor-based home River feed (`ORDER BY priority DESC, createdAt DESC, id DESC`) */
+export const RiverFeedQuerySchema = z
+  .object({
+    cursor: z.string().optional(),
+    limit: z.string().optional(),
+    storeId: z.string().uuid().optional(),
+  })
+  .transform((data) => {
+    const n = Number(data.limit ?? '20')
+    const limit = Number.isFinite(n) ? n : 20
+    return {
+      cursor: data.cursor,
+      limit: Math.min(Math.max(limit, 1), 50),
+      storeId: data.storeId,
+    }
+  })
+
+const RiverFeedMediaSchema = z.object({
+  type: z.enum(['image', 'video']),
+  url: z.string(),
+  thumbnailUrl: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+})
+
+export const RiverFeedItemSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  priority: z.number().int(),
+  layout: z.string(),
+  actor: z.object({
+    kind: z.enum(['store', 'system']),
+    storeId: z.string().optional(),
+    displayName: z.string(),
+    avatarUrl: z.string().optional(),
+  }),
+  title: z.string().nullable(),
+  body: z.string().nullable(),
+  media: z.array(RiverFeedMediaSchema),
+  source: z.enum(['manual', 'auto_store', 'auto_product']).optional(),
+  links: z
+    .object({
+      storeId: z.string().optional(),
+      itemId: z.string().optional(),
+    })
+    .optional(),
+})
+
+export const RiverFeedPageSchema = z.object({
+  items: z.array(RiverFeedItemSchema),
+  nextCursor: z.string().nullable(),
 })
 
 // ========================================
@@ -130,4 +194,8 @@ export type CommentQuery = z.infer<typeof CommentQuerySchema>
 
 export type LikePostInput = z.infer<typeof LikePostInputSchema>
 export type UnlikePostInput = z.infer<typeof UnlikePostInputSchema>
+
+export type RiverFeedQuery = z.infer<typeof RiverFeedQuerySchema>
+export type RiverFeedItem = z.infer<typeof RiverFeedItemSchema>
+export type RiverFeedPage = z.infer<typeof RiverFeedPageSchema>
 
