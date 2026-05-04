@@ -1,9 +1,11 @@
 // Services - Business logic layer
 // Pure functions, no HTTP concerns
 
+export * from '../order-state-machine.js'
 export * from './base.service.js'
 export * from './user.service.js'
 export * from './river.service.js'
+export * from './river-ingest.service.js'
 export * from './payment.service.js'
 export * from './media.service.js'
 export * from './order.service.js'
