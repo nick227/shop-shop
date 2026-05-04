@@ -6,8 +6,9 @@
  * Interface Segregation: Clean, focused interfaces
  * Dependency Inversion: Depends on abstractions
  */
-import { Configuration, type Middleware } from '@packages/sdk'
-import type {
+import {
+  Configuration,
+  type Middleware,
   AuthApi,
   StoresApi,
   ItemsApi,
@@ -18,10 +19,15 @@ import type {
   PaymentsApi,
   UsersApi,
   MediaApi,
-  BundlesApi
+  BundlesApi,
 } from '@packages/sdk'
-import { createRequestValidationMiddleware } from './middleware/RequestValidationMiddleware'
-import { getAllRequestValidationSchemas } from './schemas/RequestValidationSchemas'
+
+let lastApiRequestId: string | undefined
+
+/** Last `x-request-id` from a response (set by API middleware). For error reports and support. */
+export function getLastApiRequestId(): string | undefined {
+  return lastApiRequestId
+}
 
 class ApiClient {
   private config: Configuration | undefined = undefined
@@ -56,20 +62,6 @@ class ApiClient {
    * Setup middleware
    */
   private setupMiddleware(): void {
-    // Request validation middleware
-    this.middleware.push(
-      createRequestValidationMiddleware(getAllRequestValidationSchemas(), {
-        enabled: true,
-        onValidationError: (error, url, method) => {
-          console.error('❌ [Request Validation] Invalid request:', {
-            url,
-            method,
-            errors: error.errors
-          })
-        }
-      })
-    )
-
     // Development logging middleware
     if (import.meta.env.MODE === 'development') {
       this.middleware.push({
@@ -87,8 +79,12 @@ class ApiClient {
     // Auth middleware - handle 401 for authenticated requests only
     this.middleware.push({
       post: async (context) => {
+        const rid = context.response.headers.get('x-request-id')
+        if (rid) {
+          lastApiRequestId = rid
+        }
         const hasAuthHeader = this.checkHasAuthHeader(context.init.headers)
-        
+
         if (context.response.status === 401 && hasAuthHeader) {
           this.setToken(undefined)
           window.dispatchEvent(new CustomEvent('auth:logout'))
@@ -190,4 +186,3 @@ class ApiClient {
 
 // Singleton instance
 export const apiClient = new ApiClient()
-

@@ -20,6 +20,11 @@ import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { ActionCard } from '@shared/ui/primitives/ui/ActionCard/ActionCard'
 import { ShoppingCart, ArrowLeft } from 'lucide-react'
+import {
+  clearPendingOrderForCheckout,
+  getPendingOrderForCart,
+  setPendingOrderForCart,
+} from '@shared/lib/checkoutPendingOrder'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -73,12 +78,17 @@ export default function CheckoutPage() {
       return mapOrder(rawOrder)
     },
     onSuccess: () => {
-      clearCart()
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
-      queryClient.invalidateQueries({ queryKey: ['carts'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
   })
+
+  const finalizeSuccessfulCheckout = useCallback(() => {
+    clearPendingOrderForCheckout()
+    clearCart()
+    queryClient.invalidateQueries({ queryKey: ['cart'] })
+    queryClient.invalidateQueries({ queryKey: ['carts'] })
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+  }, [clearCart, queryClient])
 
   // Memoized handlers to prevent recreation on every render
   const handleContinueToPayment = useCallback(() => {
@@ -120,50 +130,58 @@ export default function CheckoutPage() {
     if (!cart) return
 
     try {
-      // 1. Create order first
-      let orderId: string
-      try {
-        const orderResponse: OrderResponse = await createOrderMutation.mutateAsync({
-          cartId: cart?.id,
-          deliveryType,
-          tip: tipAmount > 0 ? tipAmount.toFixed(2) : undefined,
-        })
+      let orderId: string | undefined = getPendingOrderForCart(cart.id)
 
-        orderId = orderResponse.id
-      } catch (error: unknown) {
-        const appError = await handleApiError(error)
-        const msg = 'Order could not be created: ' + appError.message
-        toast.error(msg)
-        setPaymentError(msg)
+      if (!orderId) {
+        try {
+          const orderResponse: OrderResponse = await createOrderMutation.mutateAsync({
+            cartId: cart.id,
+            deliveryType,
+            tip: tipAmount > 0 ? tipAmount.toFixed(2) : undefined,
+          })
+
+          orderId = orderResponse.id
+          setPendingOrderForCart(cart.id, orderId)
+        } catch (error: unknown) {
+          const appError = await handleApiError(error)
+          const msg = 'Order could not be created: ' + appError.message
+          toast.error(msg)
+          setPaymentError(msg)
+          return
+        }
+      }
+
+      if (!orderId) {
         return
       }
 
-      // 2. If test mode (no payment method), we're done
+      // Test / COD path — no Stripe payment method
       if (!paymentMethodId) {
         toast.success('Order placed successfully!')
-        navigate('/order/' + orderId + '')
+        finalizeSuccessfulCheckout()
+        navigate('/order/' + orderId)
         return
       }
 
-      // 3. For real payment, create payment intent
       const paymentIntent = await createPaymentIntentAsync({
-        orderId: orderId,
+        orderId,
         paymentMethodId,
       })
 
-      // 4. Handle payment confirmation with proper routing
       if (paymentIntent.status === 'succeeded') {
         toast.success('Order placed and paid successfully!')
-        navigate('/order/' + orderId, { 
-          state: { 
+        finalizeSuccessfulCheckout()
+        navigate('/order/' + orderId, {
+          state: {
             paymentStatus: 'succeeded',
-            showSuccessAnimation: true 
-          } 
+            showSuccessAnimation: true,
+          },
         })
       } else if (paymentIntent.status === 'requires_action') {
         toast.info('Additional payment authentication required. Check your order status for next steps.')
+        finalizeSuccessfulCheckout()
         navigate('/order/' + orderId, {
-          state: { paymentStatus: 'requires_action' }
+          state: { paymentStatus: 'requires_action' },
         })
       } else if (paymentIntent.status === 'requires_payment_method') {
         const msg =
@@ -178,10 +196,11 @@ export default function CheckoutPage() {
         return
       } else {
         toast.info('Payment status: ' + paymentIntent.status + '. Check order history for details.')
-        navigate('/order/' + orderId, { 
-          state: { 
-            paymentStatus: paymentIntent.status 
-          } 
+        finalizeSuccessfulCheckout()
+        navigate('/order/' + orderId, {
+          state: {
+            paymentStatus: paymentIntent.status,
+          },
         })
       }
     } catch (error: unknown) {
