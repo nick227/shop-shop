@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node --import tsx prisma/seed.ts"
   },
   "main": "./dist/db/src/index.js",
   "types": "./dist/db/src/index.d.ts",
@@ -38,7 +38,7 @@
     "format": "prisma format",
     "studio": "prisma studio",
     "reset": "prisma migrate reset",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "node --import tsx prisma/seed.ts",
     "ingest:river": "tsx src/cli/river-ingest-run.ts",
     "import-zips": "tsx import-us-zips.ts",
     "build": "tsc -p tsconfig.json",
