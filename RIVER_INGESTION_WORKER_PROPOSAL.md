@@ -71,11 +71,11 @@ Idempotency: same key as today’s `createPost` path — duplicate insert return
 | **`priority`** | Controls **order** in feed (`ORDER BY priority DESC, createdAt DESC, id DESC`) |
 | **`publishAt`** (optional) | Controls **when** a row becomes visible — **not** on `Post` yet |
 
-### `publishAt` (optional enhancement)
+### `publishAt` (implemented)
 
-- **Today:** `Post` has no `publishAt` field (`schema.prisma`). Immediate visibility only.
-- **To support scheduling:** Add nullable **`publishAt DateTime?`** to **`Post`**, migrate DB, then filter feed reads: **`publishAt == null OR publishAt <= now()`** in `getRiverFeed` / geo queries.
-- Worker sets **`publishAt`** when you want embargoed drops; omit or set “now” for instant posts.
+- **`Post.publishAt`** nullable — null or past ⇒ visible on **`GET /river/feed`**, **`getPosts`**, **`getPostById`**; future ⇒ hidden from public reads.
+- **`POST /river/posts`** accepts optional **`publishAt`** (ISO / JSON date).
+- Worker leaves **`publishAt`** unset for immediate ingest.
 
 ---
 

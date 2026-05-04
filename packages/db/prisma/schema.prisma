@@ -569,13 +569,15 @@ model Post {
   sharesCount    Int         @default(0)
   /// Higher sorts first; default 0 for chronological-within-priority
   priority       Int         @default(0)
-  /// Presentation key (e.g. instagram_basic)
-  layout         String      @default("instagram_basic") @db.VarChar(64)
+  /// Presentation key (e.g. default_layout)
+  layout         String      @default("default_layout") @db.VarChar(64)
   source         PostSource  @default(MANUAL)
   /// Idempotency for automation: e.g. welcome:storeId, item:itemId
   automationKey  String?     @unique @db.VarChar(128)
   linkedItemId   String?     @db.Char(36)
   linkedItem     Item?       @relation(fields: [linkedItemId], references: [id], onDelete: SetNull)
+  /// If set, post is hidden from public feed / list until this time (UTC). Null = visible immediately.
+  publishAt      DateTime?
   likes          PostLike[]
   comments       Comment[]
   createdAt      DateTime    @default(now())
@@ -584,6 +586,7 @@ model Post {
   @@index([storeId])
   @@index([createdAt])
   @@index([priority, createdAt, id])
+  @@index([publishAt])
 }
 
 model PostLike {

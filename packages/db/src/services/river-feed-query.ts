@@ -22,6 +22,11 @@ function storeWhere(storeId: string | undefined): Prisma.Sql {
   return storeId === undefined ? Prisma.sql`TRUE` : Prisma.sql`p.storeId = ${storeId}`
 }
 
+/** Posts visible to the public River feed (null or past publishAt). */
+function publishVisibleWhere(): Prisma.Sql {
+  return Prisma.sql`(p.publishAt IS NULL OR p.publishAt <= UTC_TIMESTAMP(3))`
+}
+
 /**
  * Standard River feed ordering when geo is off (MySQL-safe media filter via JSON_LENGTH).
  */
@@ -41,6 +46,7 @@ export async function queryRiverFeedIdsStandard(
     FROM Post p
     INNER JOIN Store s ON p.storeId = s.id
     WHERE s.isPublished = TRUE
+      AND ${publishVisibleWhere()}
       AND ${storeWhere(storeId)}
       AND ${cursorWhere(cursor)}
       AND ${mediaWhere(requireMedia)}
@@ -74,6 +80,7 @@ export async function queryRiverFeedIdsWithGeo(
     FROM Post p
     INNER JOIN Store s ON p.storeId = s.id
     WHERE s.isPublished = TRUE
+      AND ${publishVisibleWhere()}
       AND s.latitude IS NOT NULL
       AND s.longitude IS NOT NULL
       AND ${storeWhere(storeId)}

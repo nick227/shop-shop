@@ -186,6 +186,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
             (parsed.automationKey as string | undefined) ??
             (typeof bodyRaw.automationKey === 'string' ? bodyRaw.automationKey : undefined),
           linkedItemId: parsed.linkedItemId as string | undefined,
+          publishAt: parsed.publishAt as Date | undefined,
         } satisfies CreatePostInput
 
         // TODO: Verify user owns the store

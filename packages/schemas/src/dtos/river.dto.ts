@@ -56,6 +56,8 @@ export const CreatePostInputSchema = generateCreateInputSchema({
   source: z.enum(['MANUAL', 'AUTO_STORE', 'AUTO_PRODUCT']).optional(),
   automationKey: z.string().max(128).optional(),
   linkedItemId: z.string().uuid().optional(),
+  /** Omit or null for immediate visibility; future instant hides post from public feed until then. */
+  publishAt: z.coerce.date().optional(),
 })
 
 export const PostResponseSchema = generateResponseSchema({

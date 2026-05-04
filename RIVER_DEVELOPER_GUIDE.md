@@ -95,7 +95,7 @@ Implementation: **`queryRiverFeedIdsWithGeo`** (`river-feed-query.ts`) when **`l
 |--|--|
 | **Method / path** | `POST /river/posts` |
 | **Auth** | Required; roles per route |
-| **Body** | `CreatePostInputSchema` — includes optional **`priority`**, **`layout`**, **`source`**, **`automationKey`**, **`linkedItemId`** |
+| **Body** | `CreatePostInputSchema` — includes optional **`priority`**, **`layout`**, **`source`**, **`automationKey`**, **`linkedItemId`**, **`publishAt`** (scheduled public visibility; omit for immediate) |
 | **Errors** | **`409`** — automation rejected (`DUPLICATE_AUTO_STORE` handled by returning existing row when possible; **`AUTO_PRODUCT_COOLDOWN`**, **`AUTO_MISSING_MEDIA`** — see `RiverAutomationRejected`) |
 
 Ownership checks are still marked TODO on the route file; review `DEVELOPER_BACKEND.md` before production hardening.

@@ -29,6 +29,8 @@ export interface CreatePostInput {
   source?: 'MANUAL' | 'AUTO_STORE' | 'AUTO_PRODUCT'
   automationKey?: string
   linkedItemId?: string
+  /** If set, post stays hidden from public feed until this instant (UTC). Omitted = immediate. */
+  publishAt?: Date
 }
 
 export interface CreateCommentInput {
@@ -206,10 +208,11 @@ export const createPost = async (input: CreatePostInput): Promise<Post> => {
         content: input.content,
         mediaUrls: input.mediaUrls as unknown as Prisma.InputJsonValue,
         priority: input.priority ?? 0,
-        layout: input.layout ?? 'instagram_basic',
+        layout: input.layout ?? 'default_layout',
         source: src,
         automationKey,
         linkedItemId: input.linkedItemId,
+        publishAt: input.publishAt,
       },
     })
   } catch (e) {
@@ -238,8 +241,11 @@ export const updatePostPriority = async (
 }
 
 export const getPostById = async (id: string): Promise<PostWithDetails | null> => {
-  return prisma.post.findUnique({
-    where: { id },
+  return prisma.post.findFirst({
+    where: {
+      id,
+      OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }],
+    },
     include: {
       store: {
         select: {
@@ -281,19 +287,24 @@ export const getPosts = async (options: {
     userId,
   } = options
 
-  const where: Prisma.PostWhereInput = {
-    store: { isPublished: true },
-  }
+  const and: Prisma.PostWhereInput[] = [
+    { store: { isPublished: true } },
+    { OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }] },
+  ]
 
   if (storeId) {
-    where.storeId = storeId
+    and.push({ storeId })
   }
 
   if (hasMedia) {
-    where.mediaUrls = {
-      not: { equals: [] },
-    }
+    and.push({
+      mediaUrls: {
+        not: { equals: [] },
+      },
+    })
   }
+
+  const where: Prisma.PostWhereInput = { AND: and }
 
   const orderBy: Record<string, unknown>[] = []
   const priorityFirst: Record<string, unknown>[] = [
@@ -314,7 +325,7 @@ export const getPosts = async (options: {
   } else if (sortBy === 'trending') {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    where.createdAt = { gte: sevenDaysAgo }
+    and.push({ createdAt: { gte: sevenDaysAgo } })
     orderBy.push(
       { priority: 'desc' },
       { likesCount: 'desc' },
