@@ -53,6 +53,8 @@ export interface PageCompositionProps {
   responsive: boolean
   accessibility: boolean
   children: React.ReactNode
+  /** Renders inside the layout `<header>` only — avoids duplicating `children` in main. */
+  header?: React.ReactNode
   className?: string
 }
 
@@ -71,6 +73,7 @@ const PageCompositionComponent = memo<PageCompositionProps>(({
   layout,
   sections,
   children,
+  header,
   className,
   responsive = true,
   accessibility = true
@@ -141,8 +144,8 @@ const PageCompositionComponent = memo<PageCompositionProps>(({
       },
       className
     )}>
-      {/* Header Section */}
-      {sections.includes('header') && (
+      {/* Header Section — use `header` prop only; never mirror `children` here */}
+      {sections.includes('header') && header != null && (
         <header className={cn(
           'page-header',
           {
@@ -150,7 +153,7 @@ const PageCompositionComponent = memo<PageCompositionProps>(({
             'page-header--responsive': responsive
           }
         )}>
-          {children}
+          {header}
         </header>
       )}
       

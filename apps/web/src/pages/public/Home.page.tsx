@@ -1,10 +1,6 @@
 /**
- * HomePage - Single-focus store discovery with location-based search and map
- * Philosophy: One Store at a time, bold design, minimal distraction
- * Optimized: Extracted logic into composable hooks, clean render flow
- * URL Parameters: lat, lng, radius, city, state, zip for shareable searches
- * Enhanced: Input validation, URL encoding, browser navigation support
- * Composition: Uses unified page composition system for consistent layout
+ * HomePage — Phase 1: core funnel only (search → store → item → cart → checkout).
+ * Discovery carousels / bundles / marketing blocks deferred; River is phase 2 (placeholder below).
  */
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
@@ -14,24 +10,17 @@ import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearchWithTransforme
 import { useGeocoding } from '@shared/hooks/hooks/useGeocoding'
 import { useLocationDisplay } from '@shared/hooks/hooks/useLocationDisplay'
 import { useSearchOrchestration } from '@shared/hooks/hooks/useSearchOrchestration'
-import { 
-  LocationSearch, 
-  NewestStores,
-  FeaturedStores,
-  StoreCategoryCarousels,
-  AvailableLocations
-} from '@features/stores/components'
+import { LocationSearch, AvailableLocations } from '@features/stores/components'
 import type { StoreWithDistance } from '@api/types'
 import type { LocationData } from '@shared/types'
 import { usePromotionalCopy } from '@features/content/hooks/usePromotionalCopy'
 import {
   Header,
   HeroSection,
-  BenefitsSection,
   UrlParamError,
   ResultsSection,
   ResultsContainer,
-  FeaturedBundles
+  HomeRiverPlaceholder,
 } from '@features/home/components'
 import { PageComposition as PageCompositionFactory, LayoutComposition as LayoutCompositionFactory } from '@shared/ui/composition'
 
@@ -237,15 +226,16 @@ export default function HomePage() {
       responsive={true}
       accessibility={true}
       className="min-h-screen bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700"
+      header={
+        <Header
+          locationDisplayName={locationDisplayName}
+          currentRadius={currentRadius}
+          citiesContextResult={citiesContextResult}
+          onClearLocation={clearLocation}
+          onNavigateToVendor={() => navigate('/vendor')}
+        />
+      }
     >
-      <Header
-        locationDisplayName={locationDisplayName}
-        currentRadius={currentRadius}
-        citiesContextResult={citiesContextResult}
-        onClearLocation={clearLocation}
-        onNavigateToVendor={() => navigate('/vendor')}
-      />
-
       <LayoutCompositionFactory.Stack
         direction="column"
         gap="lg"
@@ -262,21 +252,12 @@ export default function HomePage() {
           subheadline={copy.hero.subheadline}
         />
 
-        {/* Search Form - Always visible */}
-        <div className="max-w-2xl mx-auto my-8">
+        <div className="max-w-2xl mx-auto my-6">
           <LocationSearch 
             onLocationChange={handleLocationChangeWithErrorClear}
             showHistory={true}
           />
         </div>
-
-        <BenefitsSection 
-          title={copy.benefits.title}
-          items={copy.benefits.items}
-        />
-
-        {/* Featured Bundles */}
-        <FeaturedBundles />
 
         <ResultsSection
           ref={resultsRef}
@@ -300,29 +281,15 @@ export default function HomePage() {
           />
         </ResultsSection>
 
-        {/* Newest Stores - ALWAYS visible (even on page load) */}
-        <div className="my-8">
-          <NewestStores />
-        </div>
-
-        {/* Available Locations - when no location set, error exists, or when search returns no results */}
         {showAvailableLocations && (
-          <div className="my-8">
+          <div className="my-6">
             <AvailableLocations onLocationClick={(city, state) => {
               void handleAvailableLocationClick(city, state)
             }} />
           </div>
         )}
 
-        {/* Featured Stores - ALWAYS visible (even on page load) */}
-        <div className="my-8">
-          <FeaturedStores />
-        </div>
-        
-        {/* Store Category Carousels - ALWAYS visible (even on page load) */}
-        <div className="my-8">
-          <StoreCategoryCarousels />
-        </div>
+        <HomeRiverPlaceholder className="mt-4" />
       </LayoutCompositionFactory.Stack>
     </PageCompositionFactory.Marketing>
   )

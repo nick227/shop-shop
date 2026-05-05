@@ -2,6 +2,7 @@
 
 **Scope:** Authenticated route `/` implemented by `apps/web/src/pages/public/Home.page.tsx`  
 **Product framing:** Local **store discovery + ordering** (delivery/pickup), not a generic property dashboard.  
+**Phasing:** **Phase 1** = ship the core funnel (search → store → product → cart → checkout) with a **minimal home**; **Phase 2** = River / community (see `HomeRiverPlaceholder` on home).  
 **Note:** A captured screenshot labeled “PropLog” / property-management UI does not match this repo’s branding (“Shop Shop”) or primary copy (food/restaurants). Treat that capture as **environment or build mismatch** unless you confirm the same deployment.
 
 ---
@@ -14,33 +15,31 @@ The home page is the **primary entry after login**: users **set or confirm deliv
 
 ## Current on-page sections (top → bottom)
 
-Order follows `Home.page.tsx` render tree:
+Order follows `Home.page.tsx` (Phase 1 — stripped):
 
 | # | Section | Role |
 |---|---------|------|
-| 1 | **App header** (`features/home/components/Header.tsx`) | Brand (“Shop Shop”), vendor CTA (“Sell”), optional location + radius chip |
+| 1 | **App header** (`PageComposition` `header` + `Header.tsx`) | Brand (“Shop Shop”), vendor CTA (“Sell”), optional location + radius chip |
 | 2 | **URL / query errors** (`UrlParamError`) | Surfaces bad `lat`/`lng`/radius etc. from shareable URLs |
-| 3 | **Hero** (`HeroSection`) | Dynamic headline/subhead from `usePromotionalCopy` (time-of-day + store count) |
-| 4 | **Location search** (`LocationSearch`) | Core action: geocode / radius / history |
-| 5 | **Benefits** (`BenefitsSection`) | “Why Choose Us?” — six value bullets |
-| 6 | **Featured bundles** (`FeaturedBundles`) | Carousel when active bundles exist; otherwise hidden |
-| 7 | **Search results region** (`ResultsSection` → `ResultsContainer`) | Status, errors, geocoding message, list/map of stores for current search |
-| 8 | **Newest stores** (`NewestStores`) | Always shown |
-| 9 | **Available locations** (`AvailableLocations`) | When no location, geocode error, or empty results — pick a city |
-| 10 | **Featured stores** (`FeaturedStores`) | Always shown |
-| 11 | **Category carousels** (`StoreCategoryCarousels`) | Always shown |
+| 3 | **Hero** (`HeroSection`) | Dynamic headline/subhead from `usePromotionalCopy` |
+| 4 | **Location search** (`LocationSearch`) | Geocode / radius / history |
+| 5 | **Search results region** (`ResultsSection` → `ResultsContainer`) | Status, list/map, expand radius, empty states |
+| 6 | **Available locations** (`AvailableLocations`) | When no location, geocode error, or no results — pick a city |
+| 7 | **River placeholder** (`HomeRiverPlaceholder`) | Phase 2 — community feed (non-interactive copy only) |
+
+**Deferred from home (re-add later if needed):** benefits grid, featured bundles, newest/featured store rails, category carousels.
 
 **Global chrome:** root `Layout` also mounts `CartWidget` (floating cart entry).
 
+**Layout fix:** `PageComposition` takes optional `header`; header slot no longer mirrors `children` in `<main>` (removes full-page duplication).
+
 ---
 
-## Why the page can feel like an “incoherent mess”
+## Why the page used to feel like an “incoherent mess”
 
-1. **Full duplicate render (high severity)**  
-   `PageComposition.Marketing` (`shared/ui/composition/PageComposition.tsx`) injects the **same `children` into both** the composed `<header>` wrapper **and** `<main>`. Any page using this pattern will show **two copies** of everything (header + body stacked twice). This matches a “entire page repeats on scroll” symptom.
-2. **Competing jobs on one scroll:** reassurance (benefits), primary task (search + results), and **three always-on discovery feeds** (newest, featured, categories) plus conditional geography fallback — many sections fight for attention without a single dominant funnel.
-3. **Copy vs. product drift:** `usePromotionalCopy` still speaks **restaurants/food** in places; the rest of the app is **stores/items**. Mixed metaphors weaken clarity.
-4. **Empty / redundant visual rhythm:** Multiple carousels and full-width purple gradient increase perceived length; sections that return `null` (e.g. no bundles) create uneven density.
+1. **Duplicate render (fixed):** `PageComposition` used to mirror `children` in both `<header>` and `<main>`. Use the **`header` prop** for the top bar; `children` render once in `<main>`.
+2. **Competing jobs (reduced in Phase 1):** extra discovery rails and marketing blocks are **removed from home** until the funnel is solid.
+3. **Copy vs. product drift:** `usePromotionalCopy` may still mix restaurant wording — align with **stores** when tightening copy.
 
 ---
 
