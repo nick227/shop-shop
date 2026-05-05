@@ -91,6 +91,10 @@ export const createPaymentIntent = async (
   const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
     amount: amountInCents,
     currency: params.currency || 'usd',
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: 'never',
+    },
     metadata: {
       orderId: params.orderId,
     },
@@ -300,4 +304,3 @@ export const setDefaultPaymentMethod = async (
     },
   })
 }
-
