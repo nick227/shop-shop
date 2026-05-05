@@ -1,53 +1,60 @@
 /**
- * SearchResults - Component for displaying search results
+ * SearchResults — grid first (above fold), map compact below.
  */
 import { StoreGrid } from '@features/stores/components/StoreGrid/StoreGrid'
 import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
 import type { LocationData } from '@shared/types'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 
-interface SearchResultsProps {
-  error: Error | undefined
-  location: LocationData | undefined
-  stores: StoreResponse[] | undefined
-  userLocation: LocationData | undefined  
-  onStoreClick: (store: StoreResponse | StoreWithDistance) => void
-  highlightedStoreId?: string | undefined
+export interface SearchResultsProps {
+  readonly error: Error | undefined
+  readonly location: LocationData | undefined
+  readonly stores: StoreResponse[] | undefined
+  readonly userLocation: LocationData | undefined
+  readonly onStoreClick: (store: StoreResponse | StoreWithDistance) => void
+  readonly highlightedStoreId?: string | undefined
+  readonly areaLabel?: string | undefined
 }
 
-export function SearchResults({ 
-  error, 
-  location, 
-  stores, 
-  userLocation, 
-  onStoreClick, 
-  highlightedStoreId 
+export function SearchResults({
+  error,
+  location,
+  stores,
+  userLocation,
+  onStoreClick,
+  highlightedStoreId,
+  areaLabel,
 }: SearchResultsProps) {
   if (error || !location || !stores || stores.length === 0) return
 
+  const nearLabel = areaLabel ?? location.displayName ?? 'you'
+
   return (
     <>
-      {/* Results Header */}
-      <div className="text-center mb-8 text-white">
-        <h2 className="text-3xl mb-2">Stores Found</h2>
-        <p className="text-lg opacity-90">Found {stores.length} stores in {location.displayName}</p>
+      <div className="mb-3 text-center text-gray-900">
+        <p className="text-lg font-semibold">
+          {stores.length} {stores.length === 1 ? 'store' : 'stores'} near {nearLabel}
+        </p>
       </div>
 
-      {/* StoreWithDistance Map */}
-      <div className="my-8 rounded-xl overflow-hidden shadow-lg">
-        <StoreMapLazy 
-          stores={stores || []}
-          userLocation={userLocation ? { latitude: userLocation.latitude, longitude: userLocation.longitude } : undefined}
-          radiusMiles={location?.radiusMiles}
-        />
-      </div>
-
-      {/* StoreWithDistance Grid */}
       <StoreGrid
         stores={stores}
         onStoreClick={onStoreClick}
-        highlightedStoreId={highlightedStoreId || undefined}
+        highlightedStoreId={highlightedStoreId}
+        className="px-1 py-2 md:px-2"
       />
+
+      <div className="mt-4 max-h-[220px] overflow-hidden rounded-xl shadow-lg ring-1 ring-white/20 md:max-h-[280px]">
+        <StoreMapLazy
+          stores={stores || []}
+          userLocation={
+            userLocation
+              ? { latitude: userLocation.latitude, longitude: userLocation.longitude }
+              : undefined
+          }
+          radiusMiles={location?.radiusMiles}
+        />
+      </div>
     </>
   )
 }

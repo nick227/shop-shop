@@ -5,9 +5,11 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import type { StoreWithDistance } from '@api/types'
 
-export function useFeaturedStores(limit = 4) {
+export function useFeaturedStores(limit = 4, options?: { readonly enabled?: boolean }) {
+  const enabled = options?.enabled ?? true
   return useQuery<StoreWithDistance[]>({
     queryKey: ['featured-stores', limit],
+    enabled,
     queryFn: async () => {
       console.log('⭐ Fetching featured stores...')
       // For now, fetch published stores and pick some at random;

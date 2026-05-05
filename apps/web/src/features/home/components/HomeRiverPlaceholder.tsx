@@ -1,5 +1,5 @@
 /**
- * Phase 2 placeholder — social / River feed entry from home (not built yet).
+ * Phase 2 — minimal footer hint only (no large section).
  */
 import React from 'react'
 import { cn } from '@shared/lib/cn'
@@ -10,17 +10,11 @@ export interface HomeRiverPlaceholderProps {
 
 export function HomeRiverPlaceholder({ className }: HomeRiverPlaceholderProps) {
   return (
-    <section
-      className={cn(
-        'rounded-xl border border-white/20 bg-white/10 p-4 text-center text-white/90',
-        className
-      )}
-      aria-label="Community feed, coming in a later release"
+    <p
+      className={cn('mt-8 text-center text-xs text-white/45', className)}
+      aria-label="Personalized feed coming later"
     >
-      <p className="text-sm font-medium">Community & updates</p>
-      <p className="mt-1 text-xs text-white/70">
-        Coming soon — follow stores and discover posts here (phase 2).
-      </p>
-    </section>
+      Personalized feed coming soon
+    </p>
   )
 }

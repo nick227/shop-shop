@@ -4,11 +4,12 @@
 import React, { forwardRef } from 'react'
 import { GeocodingError } from './GeocodingError'
 import { DebugInfo } from './DebugInfo'
+import type { SearchStatus } from '@shared/hooks/hooks/useSearchOrchestration'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 
 interface ResultsSectionProps {
-  searchStatus: 'idle' | 'loading' | 'error' | 'no-results' | 'results'
+  searchStatus: SearchStatus
   stores: StoreWithDistance[] | undefined;
   geocodingError: string | undefined;
   onClearGeocodingError: () => void;
@@ -18,29 +19,27 @@ interface ResultsSectionProps {
   isProd: boolean;
 }
 
-// Centralized status messages helper to keep copy consistent;
-const getStatusMessage = (status: 'idle' | 'loading' | 'error' | 'no-results' | 'results', storeCount?: number) => {
+const getStatusMessage = (status: SearchStatus, storeCount?: number) => {
   const storeText = storeCount === 1 ? 'store' : 'stores'
-  
+
   switch (status) {
-    case 'idle': {
-      return ' '
+    case 'no-location': {
+      return 'Enter a location to find stores.'
     }
     case 'loading': {
       return 'Searching for ' + storeText + '...'
     }
     case 'error': {
-      return '' + storeText.charAt(0).toUpperCase() + storeText.slice(1) + ' search failed. Please try again.'
+      return 'Store search failed. Retry or change your location.'
     }
     case 'no-results': {
       return 'No ' + storeText + ' found in this area.'
     }
     case 'results': {
-      // Handle storeCount === 0 explicitly to avoid flicker during transitions;
       if (storeCount === 0) {
         return ' '
       }
-      return '${storeCount} ' + storeText + ' found.'
+      return `${storeCount ?? 0} ${storeText} found.`
     }
     default: {
       return ' '
@@ -62,7 +61,7 @@ export const ResultsSection = forwardRef<HTMLElement, ResultsSectionProps>(({
   return (
     <section
       ref={ref}
-      className="my-8 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 rounded-lg" 
+      className="my-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 rounded-lg" 
       tabIndex={-1}
       role="region"
       aria-labelledby="results-heading"

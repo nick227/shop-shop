@@ -49,17 +49,17 @@ function getTimeOfDay(): CopyContext["timeOfDay"] {
 }
 
 /**
- * Get hero subheadline based on time of day
+ * Static hero line when location is set (optional contexts).
  */
 function getHeroSubheadline(timeOfDay: CopyContext["timeOfDay"]): string {
-  if (timeOfDay === 'morning') return 'Fresh breakfast delivered fast. Start your day delicious.'
-  if (timeOfDay === 'afternoon') return 'Lunch sorted. From local favorites to hidden gems, find your perfect meal.'
-  if (timeOfDay === 'evening') return 'Dinner made easy. Explore cuisines from around the corner and around the world.'
-  return 'Open late and ready to deliver. Because hunger doesn\'t sleep.'
+  if (timeOfDay === 'morning') return 'Local vendors open now — order for pickup or delivery.'
+  if (timeOfDay === 'afternoon') return 'Browse stores near you — same-day pickup and delivery.'
+  if (timeOfDay === 'evening') return 'Shops and kitchens near you — transparent fees, secure checkout.'
+  return 'Open late — local vendors ready when you are.'
 }
 
 /**
- * Get contextual promotional copy based on location and results
+ * Promotional copy — stores/vendors (not restaurant-specific).
  */
 export function usePromotionalCopy(
   locationName?: string,
@@ -69,66 +69,61 @@ export function usePromotionalCopy(
     const storeCount = stores?.length ?? 0
     const hasStores = storeCount > 0
     const timeOfDay = getTimeOfDay()
-    
-    // Contextual greeting
+
     const greetings = {
-      morning: 'Good Morning!',
-      afternoon: 'Good Afternoon!',
-      evening: 'Good Evening!',
-      night: 'Late Night Cravings?'
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening',
+      night: 'Still shopping?'
     }
 
-    // Hero section - changes based on context
     const verbText = storeCount === 1 ? 'is' : 'are'
     const headlineText = locationName
-      ? `${getStoreCountText(storeCount)} ${verbText} ready to serve you ${locationName}`
-      : `${getStoreCountText(storeCount)} ${verbText} waiting to serve you`
-    
+      ? `${getStoreCountText(storeCount)} ${verbText} ready near ${locationName}`
+      : `${getStoreCountText(storeCount)} ${verbText} available to browse`
+
     const hero = hasStores
       ? {
           headline: headlineText,
           subheadline: getHeroSubheadline(timeOfDay),
-          cta: 'Browse Restaurants'
+          cta: 'Browse stores'
         }
       : {
           headline: greetings[timeOfDay],
-          subheadline: 'Discover amazing restaurants delivering to your neighborhood. Fresh food, fast delivery, unforgettable flavors.',
-          cta: 'Find Restaurants Near You'
+          subheadline:
+            'Discover local vendors delivering and offering pickup in your area.',
+          cta: 'Find stores near you'
         }
 
-    // Featured section
     const featured = {
-      title: hasStores ? '⭐ Featured Restaurants' : '🌟 Explore Local Favorites',
+      title: hasStores ? '⭐ Featured stores' : '🌟 Explore local vendors',
       subtitle: hasStores
-        ? 'Hand-picked gems from your area. Award-winning chefs, crowd favorites, and hidden treasures.'
-        : 'Search your location to discover incredible restaurants ready to deliver straight to your door.'
+        ? 'Top picks from your search area — sorted by distance where available.'
+        : 'Set your location to see stores that deliver or offer pickup.'
     }
 
-    // Nearby section
     const nearby = {
-      title: hasStores ? '📍 Restaurants Near You' : '🗺️ Deliver to Your Door',
+      title: hasStores ? '📍 Stores near you' : '🗺️ Deliver or pick up',
       subtitle: hasStores
-        ? 'Sorted by distance. ' + storeCount + ' local restaurants offering delivery and pickup.'
-        : 'Enter your ZIP code or use your location to see restaurants delivering to you right now.'
+        ? `Sorted by distance. ${storeCount} vendor${storeCount === 1 ? '' : 's'} in range.`
+        : 'Enter ZIP or city, or use your device location.'
     }
 
-    // Benefits section
     const benefits = {
-      title: 'Why Choose Us?',
+      title: 'Why shop here?',
       items: [
-        '🚀 Lightning-fast delivery from local restaurants',
-        '⭐ Curated selection of verified, quality vendors',
-        '💰 Transparent pricing with no hidden fees',
-        '🔒 Secure checkout and protected transactions',
-        '📱 Real-time order tracking from kitchen to door',
-        '❤️ Support local businesses in your community'
+        '🚀 Fast fulfillment from local vendors',
+        '⭐ Verified shops and clear menus',
+        '💰 Transparent pricing — no surprise fees',
+        '🔒 Secure checkout',
+        '📱 Track orders from placement to pickup or delivery',
+        '❤️ Support independent sellers in your community'
       ]
     }
 
-    // Social/community section
     const social = {
-      title: '🎉 Join the Foodie Community',
-      subtitle: 'Share photos, discover new dishes, and connect with fellow food lovers. Follow your favorite restaurants and never miss their latest creations.'
+      title: '🎉 Community',
+      subtitle: 'Follow vendors and see updates — more social features coming soon.'
     }
 
     return {

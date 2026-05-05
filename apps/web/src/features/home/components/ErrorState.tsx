@@ -1,22 +1,32 @@
 /**
- * ErrorState - Component for displaying search error state
+ * ErrorState — single recovery action (retry).
  */
 import React from 'react'
-import type { LocationData } from '@shared/types/types/location.types'
 
-interface ErrorStateProps {
-  error: Error | undefined
-  location: LocationData | undefined
+export interface ErrorStateProps {
+  readonly error: Error | undefined
+  readonly onRetry: () => void
 }
 
-export function ErrorState({ error, location }: ErrorStateProps) {
-  if (!error || !location) return
+export function ErrorState({ error, onRetry }: ErrorStateProps) {
+  if (!error) return
 
   return (
-    <div className="text-center py-8 px-4 bg-red-100 text-red-800 rounded-xl my-4" role="alert">
-      <h2 className="text-xl font-bold mb-2">Search Error</h2>
-      <p className="text-base">{error.message}</p>
-      <p className="text-sm mt-2">Please try searching again using the form above.</p>
+    <div
+      className="rounded-xl border border-red-200 bg-red-50 px-4 py-5 text-center text-red-900 shadow-sm"
+      role="alert"
+    >
+      <h3 className="text-lg font-semibold">Something went wrong</h3>
+      <p className="mt-2 text-sm">{error.message}</p>
+      <button
+        type="button"
+        className="mt-4 rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-800"
+        onClick={() => {
+          onRetry()
+        }}
+      >
+        Retry
+      </button>
     </div>
   )
 }

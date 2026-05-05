@@ -24,6 +24,7 @@ interface UseStoresResult {
   isLoading: boolean
   error: Error | undefined
   handleLocationChange: (newLocation: LocationData | undefined) => void
+  refetch: () => Promise<unknown>
 }
 
 export function useStores(location: LocationData | undefined): UseStoresResult {
@@ -42,7 +43,7 @@ export function useStores(location: LocationData | undefined): UseStoresResult {
   
   // Use generated hook for raw API data
   // Cast to StoreWithDistance[] — the API includes `distance` when locationParams are provided
-  const { data: rawStoresData, isLoading, error: rawError } = useStoresRaw(locationParams, {
+  const { data: rawStoresData, isLoading, error: rawError, refetch } = useStoresRaw(locationParams, {
     enabled: Boolean(location)
   })
   const rawStores = rawStoresData as StoreWithDistance[] | undefined
@@ -105,7 +106,8 @@ export function useStores(location: LocationData | undefined): UseStoresResult {
     stores,
     isLoading,
     error,
-    handleLocationChange
+    handleLocationChange,
+    refetch
   }
 }
 

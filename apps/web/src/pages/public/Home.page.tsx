@@ -1,6 +1,5 @@
 /**
- * HomePage — Phase 1: core funnel only (search → store → item → cart → checkout).
- * Discovery carousels / bundles / marketing blocks deferred; River is phase 2 (placeholder below).
+ * HomePage — Search → store → product → cart; one card = location + results; one discovery rail when needed.
  */
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
@@ -10,10 +9,9 @@ import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearchWithTransforme
 import { useGeocoding } from '@shared/hooks/hooks/useGeocoding'
 import { useLocationDisplay } from '@shared/hooks/hooks/useLocationDisplay'
 import { useSearchOrchestration } from '@shared/hooks/hooks/useSearchOrchestration'
-import { LocationSearch, AvailableLocations } from '@features/stores/components'
+import { LocationSearch, AvailableLocations, PopularStoresRow } from '@features/stores/components'
 import type { StoreWithDistance } from '@api/types'
 import type { LocationData } from '@shared/types'
-import { usePromotionalCopy } from '@features/content/hooks/usePromotionalCopy'
 import {
   Header,
   HeroSection,
@@ -24,7 +22,6 @@ import {
 } from '@features/home/components'
 import { PageComposition as PageCompositionFactory, LayoutComposition as LayoutCompositionFactory } from '@shared/ui/composition'
 
-// Radius policy constants - single source of truth
 const RADIUS_POLICY = {
   MIN_MILES: 5,
   MAX_MILES: 100,
@@ -32,7 +29,6 @@ const RADIUS_POLICY = {
   EXPAND_STEP_MILES: 10,
 } as const
 
-// Centralized radius utilities - single source of truth for all radius operations
 const clampRadius = (radius: number) => {
   return Math.min(Math.max(radius, RADIUS_POLICY.MIN_MILES), RADIUS_POLICY.MAX_MILES)
 }
@@ -42,29 +38,21 @@ const getNextRadius = (currentRadius: number) => {
 }
 
 const radiusUtils = {
-  // Get display radius (ensures minimum for UI)
-  getDisplay: (location: { radiusMiles?: number } | undefined) => {
-    const radius = location?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
+  getDisplay: (loc: { radiusMiles?: number } | undefined) => {
+    const radius = loc?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
     return Math.max(radius, RADIUS_POLICY.MIN_MILES)
   },
-  
-  // Get actual radius (for queries, can be 0)
-  getActual: (location: { radiusMiles?: number } | undefined) => {
-    return location?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
+  getActual: (loc: { radiusMiles?: number } | undefined) => {
+    return loc?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
   },
-  
-  // Clamp radius to valid range
   clamp: clampRadius,
-  
-  // Get next radius for expand search
   getNext: getNextRadius
 } as const
 
 export default function HomePage() {
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  
-  // Extract URL location logic into hook
+
   const urlLocationResult: {
     location: LocationData | undefined
     urlParamError: string | undefined
@@ -72,41 +60,33 @@ export default function HomePage() {
     setUrlParamError: (error: string | undefined) => void
     clearLocation: () => void
   } = useUrlLocation()
-  
-  const { 
-    location, 
-    urlParamError, 
-    setLocation, 
-    setUrlParamError, 
-    clearLocation 
+
+  const {
+    location,
+    urlParamError,
+    setLocation,
+    setUrlParamError,
+    clearLocation
   } = urlLocationResult
-  
-  // Extract store search logic into hook
-  const { stores, isLoading, error } = useStoreSearch(location)
-  
-  // Extract geocoding logic into hook
+
+  const { stores, isLoading, error, refetch } = useStoreSearch(location)
+
   const { geocodeLocation, geocodingError, clearError } = useGeocoding()
-  
-  // Wrapper function to ensure geocoding errors are cleared on any location change
+
   const handleLocationChangeWithErrorClear = useCallback((newLocation: LocationData | undefined) => {
     setLocation(newLocation)
     clearError()
   }, [setLocation, clearError])
-  
-  // Extract location display logic into hook
+
   const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores as StoreWithDistance[] | undefined)
-  
-  // Extract search orchestration logic into hook
+
   const { searchStatus } = useSearchOrchestration(location, stores as StoreWithDistance[] | undefined, isLoading, error)
-  
-  // Focus management ref for accessibility
+
   const resultsRef = useRef<HTMLElement>(null)
   const previousHadResults = useRef(false)
-  
-  // Environment-safe logging helper - Vite approach
+
   const isProd = import.meta.env.PROD
-  
-  // Consolidated debug logging - single effect for better performance
+
   useEffect(() => {
     if (!isProd) {
       console.log('🔍 [HomePage] State changed:', {
@@ -118,55 +98,44 @@ export default function HomePage() {
     }
   }, [location, stores?.length, isLoading, error?.message, isProd])
 
-  // Focus management for accessibility - focus only on first transition to results
   useEffect(() => {
-    // SSR safety check
     if (typeof document === 'undefined') return
-    
+
     const currentHasResults = (stores?.length ?? 0) > 0
     const previousHadResultsValue = previousHadResults.current
-    
-    // Focus when transitioning from no results to having results
-    // Simplified guard - just check if body is active element
-    if (!previousHadResultsValue && currentHasResults && resultsRef.current && 
+
+    if (!previousHadResultsValue && currentHasResults && resultsRef.current &&
         document.activeElement === document.body) {
       resultsRef.current.focus()
     }
-    
+
     previousHadResults.current = currentHasResults
   }, [stores])
 
   const handleViewMenu = useCallback((store: StoreWithDistance) => {
-    // Guard against bad data
     if (!store?.id) return
-    
-    // Navigate immediately - preserve minimal search context in navigation state
-    navigate('/stores/' + store.id, { 
-      state: { 
+
+    navigate('/stores/' + store.id, {
+      state: {
         fromLocation: location,
         searchResultCount: stores?.length ?? 0,
         searchRadius: location?.radiusMiles ?? RADIUS_POLICY.DEFAULT_MILES
-      } 
+      }
     })
   }, [navigate, location, stores])
 
   const handleExpandSearch = useCallback(() => {
     if (!location) return
-    
-    // Get actual radius (for queries, can be 0)
+
     const base = radiusUtils.getActual(location)
-    
-    // Guard against malformed URL injecting non-number radius
+
     if (Number.isNaN(base)) {
       return
     }
-    
-    // Get next radius using centralized utility
+
     const newRadius = radiusUtils.getNext(base)
-    
-    // Equality guard - only update if radius actually changed
+
     if (newRadius !== base) {
-      // Use the wrapper function to ensure geocoding errors are cleared
       handleLocationChangeWithErrorClear({
         ...location,
         radiusMiles: newRadius
@@ -175,49 +144,50 @@ export default function HomePage() {
   }, [location, handleLocationChangeWithErrorClear])
 
   const handleAvailableLocationClick = useCallback(async (city: string, state: string) => {
-    if (!isProd) {
-      console.log('Search for ${city}, ' + state + '')
-    }
-    
-    // Clear any existing geocoding error
     clearError()
-    
+
     try {
-      // Use the geocoding hook with proper cancellation and debouncing
-      // The useGeocoding hook already handles debouncing internally
       const newLocation = await geocodeLocation(city, state, location)
-      
+
       if (newLocation) {
-        // This will trigger the search with valid coordinates
         handleLocationChangeWithErrorClear(newLocation)
       }
-    } catch (error: unknown) {
-      // Surface failures via geocodingError - the useGeocoding hook handles this
+    } catch (geocodeErr: unknown) {
       if (!isProd) {
-        console.error('Geocoding error in handleAvailableLocationClick:', error)
+        console.error('Geocoding error in handleAvailableLocationClick:', geocodeErr)
       }
     }
   }, [location, handleLocationChangeWithErrorClear, geocodeLocation, clearError, isProd])
 
+  const handleRetrySearch = useCallback(() => {
+    void refetch()
+  }, [refetch])
 
-  // Get promotional copy
-  const copy = usePromotionalCopy(locationDisplayName, stores as StoreWithDistance[] | undefined)
+  const handlePickNearbyCity = useCallback(() => {
+    document.getElementById('available-locations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
-  // Authentication check - redirect if not authenticated
+  const handleQuickCity = useCallback((city: string, state: string) => {
+    void handleAvailableLocationClick(city, state)
+  }, [handleAvailableLocationClick])
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
-  // OPTIMIZED: Simplified conditional logic with early returns
   const currentRadius = radiusUtils.getDisplay(location)
-  
-  // Consolidated logic: show available locations when no search results
+
   const showAvailableLocations = (() => {
     if (!location) return true
     if (geocodingError) return true
     if (error) return !stores?.length
     return !stores?.length
   })()
+
+  const areaLabel = citiesContextResult.short ?? locationDisplayName ?? location?.displayName
+
+  const showPopularFallback = !isLoading && (!location || !stores || stores.length === 0)
+  const popularTitle = location ? 'Popular stores to try' : 'Popular stores'
 
   return (
     <PageCompositionFactory.Marketing
@@ -238,58 +208,72 @@ export default function HomePage() {
     >
       <LayoutCompositionFactory.Stack
         direction="column"
-        gap="lg"
+        gap="md"
         responsive={true}
-        className="max-w-6xl mx-auto px-4 py-8"
+        className="max-w-6xl mx-auto px-4 py-6"
       >
-        <UrlParamError 
-          error={urlParamError} 
-          onDismiss={() => setUrlParamError(undefined)} 
-        />
-        
-        <HeroSection 
-          headline={copy.hero.headline}
-          subheadline={copy.hero.subheadline}
+        <UrlParamError
+          error={urlParamError}
+          onDismiss={() => setUrlParamError(undefined)}
         />
 
-        <div className="max-w-2xl mx-auto my-6">
-          <LocationSearch 
-            onLocationChange={handleLocationChangeWithErrorClear}
-            showHistory={true}
-          />
+        <HeroSection
+          headline="Find stores near you"
+          subheadline="Delivery or pickup from local vendors"
+          variant="compact"
+        />
+
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-white/25 bg-white/95 shadow-xl overflow-hidden">
+          <div id="home-location-search" className="border-b border-gray-100 px-4 py-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Where are you shopping?
+            </p>
+            <LocationSearch
+              onLocationChange={handleLocationChangeWithErrorClear}
+              showHistory={true}
+            />
+          </div>
+
+          <div className="px-4 py-4">
+            <ResultsSection
+              ref={resultsRef}
+              searchStatus={searchStatus}
+              stores={stores as StoreWithDistance[] | undefined}
+              geocodingError={geocodingError}
+              onClearGeocodingError={clearError}
+              location={location}
+              error={error}
+              isProd={isProd}
+            >
+              <ResultsContainer
+                searchStatus={searchStatus}
+                isLoading={isLoading}
+                location={location}
+                areaLabel={areaLabel}
+                error={error}
+                stores={stores as StoreWithDistance[] | undefined}
+                userLocation={undefined}
+                onStoreClick={handleViewMenu}
+                onExpandSearch={handleExpandSearch}
+                onRetrySearch={handleRetrySearch}
+                onQuickCity={handleQuickCity}
+                onPickNearbyCity={handlePickNearbyCity}
+              />
+            </ResultsSection>
+          </div>
         </div>
 
-        <ResultsSection
-          ref={resultsRef}
-          searchStatus={searchStatus}
-          stores={stores as StoreWithDistance[] | undefined}
-          geocodingError={geocodingError}
-          onClearGeocodingError={clearError}
-          location={location}
-          error={error}
-          isProd={isProd}
-        >
-          <ResultsContainer
-            searchStatus={searchStatus}
-            isLoading={isLoading}
-            location={location}
-            error={error}
-            stores={stores as StoreWithDistance[] | undefined}
-            userLocation={undefined}
-            onStoreClick={handleViewMenu}
-            onExpandSearch={handleExpandSearch}
-          />
-        </ResultsSection>
+        <PopularStoresRow enabled={showPopularFallback} title={popularTitle} />
 
         {showAvailableLocations && (
-          <div className="my-6">
+          <div id="available-locations" className="scroll-mt-28 mt-2">
             <AvailableLocations onLocationClick={(city, state) => {
               void handleAvailableLocationClick(city, state)
             }} />
           </div>
         )}
 
-        <HomeRiverPlaceholder className="mt-4" />
+        <HomeRiverPlaceholder />
       </LayoutCompositionFactory.Stack>
     </PageCompositionFactory.Marketing>
   )

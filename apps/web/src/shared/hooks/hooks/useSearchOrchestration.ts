@@ -6,7 +6,7 @@ import { useCallback, useMemo } from 'react'
 import type { LocationData } from '@shared/types/types/location.types'
 import type { StoreWithDistance } from '@api/types'
 
-type SearchStatus = 'idle' | 'loading' | 'error' | 'no-results' | 'results'
+export type SearchStatus = 'no-location' | 'loading' | 'error' | 'no-results' | 'results'
 
 interface UseSearchOrchestrationResult {
   searchStatus: SearchStatus
@@ -21,11 +21,11 @@ export function useSearchOrchestration(
 ): UseSearchOrchestrationResult {
   // Centralize status logic for better readability and testability
   const getSearchStatus = useCallback((): SearchStatus => {
-    if (isLoading && location) return 'loading'
-    if (error && location) return 'error'
-    if (!error && location && (!stores || stores.length === 0)) return 'no-results'
-    if (!error && location && stores && stores.length > 0) return 'results'
-    return 'idle'
+    if (!location) return 'no-location'
+    if (isLoading) return 'loading'
+    if (error) return 'error'
+    if (!stores || stores.length === 0) return 'no-results'
+    return 'results'
   }, [isLoading, location, error, stores])
 
   // Memoize the current status to prevent unnecessary re-renders
