@@ -19,7 +19,8 @@ export interface ResultsContainerProps {
   readonly stores: StoreWithDistance[] | undefined
   readonly userLocation: LocationData | undefined
   readonly onStoreClick: (store: StoreWithDistance) => void
-  readonly onExpandSearch: () => void
+  readonly onExpandToMiles: (miles: number) => void
+  readonly searchRadiusMiles: number
   readonly onRetrySearch: () => void
   readonly onQuickCity: (city: string, state: string) => void
   readonly onPickNearbyCity: () => void
@@ -34,7 +35,8 @@ export function ResultsContainer({
   stores,
   userLocation,
   onStoreClick,
-  onExpandSearch,
+  onExpandToMiles,
+  searchRadiusMiles,
   onRetrySearch,
   onQuickCity,
   onPickNearbyCity,
@@ -59,8 +61,9 @@ export function ResultsContainer({
       return (
         <NoResults
           location={location}
+          searchRadiusMiles={searchRadiusMiles}
           areaLabel={areaLabel}
-          onExpandSearch={onExpandSearch}
+          onExpandToMiles={onExpandToMiles}
           onPickNearbyCity={onPickNearbyCity}
         />
       )

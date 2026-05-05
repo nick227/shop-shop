@@ -36,7 +36,7 @@ export function StoreGrid({ stores, onStoreClick, highlightedStoreId, className 
   }
 
   return (
-    <div className={cn('p-4', className)}>
+    <div className={cn('p-2 md:p-3', className)}>
       <GridView items={stores} config={VIEW_CONFIG} testId="store-grid" />
     </div>
   )

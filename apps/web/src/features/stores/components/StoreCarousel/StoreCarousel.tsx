@@ -1,18 +1,21 @@
 /**
- * StoreCarousel - Horizontal scrollable carousel for stores;
+ * StoreCarousel — horizontal strip; `fallback` variant stays visually secondary.
  */
 import { useNavigate } from 'react-router-dom'
 import { StoreCardCompact } from '../StoreCard/StoreCardCompact'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
+import { cn } from '@shared/lib/cn'
 
-interface StoreCarouselProps {
+export interface StoreCarouselProps {
   readonly stores: StoreWithDistance[]
-  readonly title?: string;
-  readonly isLoading?: boolean;
+  readonly title?: string
+  readonly isLoading?: boolean
+  readonly variant?: 'default' | 'fallback'
 }
 
-export function StoreCarousel({ stores, title, isLoading }: StoreCarouselProps) {
+export function StoreCarousel({ stores, title, isLoading, variant = 'default' }: StoreCarouselProps) {
   const navigate = useNavigate()
+  const fallback = variant === 'fallback'
 
   const handleStoreClick = (store: StoreResponse) => {
     navigate(`/stores/${store.id}`)
@@ -20,11 +23,26 @@ export function StoreCarousel({ stores, title, isLoading }: StoreCarouselProps) 
 
   if (isLoading) {
     return (
-      <div className="py-4">
-        {title && <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>}
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="min-w-[280px] h-[180px] bg-white/10 rounded-xl animate-pulse" />
+      <div className={cn('py-4', fallback && 'py-2')}>
+        {title && (
+          <h2
+            className={cn(
+              'mb-2 font-semibold text-white',
+              fallback ? 'text-xs uppercase tracking-wide text-white/55' : 'mb-4 text-2xl font-bold'
+            )}
+          >
+            {title}
+          </h2>
+        )}
+        <div className={cn('flex overflow-x-auto pb-2', fallback ? 'gap-2' : 'gap-4 pb-4')}>
+          {Array.from({ length: fallback ? 3 : 4 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'animate-pulse rounded-lg',
+                fallback ? 'h-[72px] min-w-[200px] bg-white/10' : 'h-[180px] min-w-[280px] bg-white/10'
+              )}
+            />
           ))}
         </div>
       </div>
@@ -33,25 +51,46 @@ export function StoreCarousel({ stores, title, isLoading }: StoreCarouselProps) 
 
   if (stores?.length === 0) {
     return (
-      <div className="py-4">
-        {title && <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>}
-        <div className="text-center py-8 text-white/70">
-          <p className="text-lg">No stores available at the moment</p>
-          <p className="text-sm mt-2">Check back soon for new stores!</p>
+      <div className={cn('py-4', fallback && 'py-2')}>
+        {title && (
+          <h2 className={cn('mb-2 font-semibold text-white', fallback ? 'text-xs text-white/55' : 'mb-4 text-2xl')}>
+            {title}
+          </h2>
+        )}
+        <div className="py-4 text-center text-sm text-white/60">
+          <p>No stores to show here yet.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="py-4">
-      {title && <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>}
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {stores.map(store => (
-          <div key={store.id} className="min-w-[280px] flex-shrink-0">
+    <div
+      className={cn(
+        'py-4',
+        fallback && 'rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3'
+      )}
+    >
+      {title && (
+        <h2
+          className={cn(
+            'font-semibold text-white',
+            fallback ? 'mb-2 text-xs uppercase tracking-wide text-white/55' : 'mb-4 text-2xl font-bold'
+          )}
+        >
+          {title}
+        </h2>
+      )}
+      <div className={cn('flex overflow-x-auto scrollbar-hide', fallback ? 'gap-2 pb-1' : 'gap-4 pb-4')}>
+        {stores.map((store) => (
+          <div
+            key={store.id}
+            className={cn('flex-shrink-0', fallback ? 'min-w-[200px] max-w-[220px]' : 'min-w-[280px]')}
+          >
             <StoreCardCompact
               store={store}
               onClick={handleStoreClick}
+              variant={fallback ? 'fallback' : 'default'}
             />
           </div>
         ))}

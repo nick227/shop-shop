@@ -1,13 +1,9 @@
-// @ts-nocheck
 /**
- * StoreCard - Modern store card with Tailwind
- * Domain component using SDK types
- * Memoized for performance optimization
+ * StoreCard — scannable: name, distance, one hook, one image.
  */
 import { memo, useMemo } from 'react'
 import { Card, CardContent, Badge } from '@shared/ui/primitives'
-import { MapPin, Clock, Star, DollarSign } from 'lucide-react'
-import { parseStore } from '@api/types/helpers'
+import { MapPin } from 'lucide-react'
 import type { StoreWithDistance, StoreClickHandler } from '@api/types'
 import { formatDistance } from '@shared/lib/format'
 import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'
@@ -19,69 +15,51 @@ export interface StoreCardProps {
   readonly className?: string
 }
 
+function storeHookLabel(store: StoreWithDistance): string {
+  const d = store.deliveryEnabled === true
+  const p = store.pickupEnabled === true
+  if (d && p) return 'Delivery · Pickup'
+  if (d) return 'Delivery'
+  if (p) return 'Pickup'
+  return 'Local vendor'
+}
+
 function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
-  const typedStore = useMemo(() => parseStore(store), [store])
-  const handleClick = useMemo(() => onClick ? () => onClick(store) : undefined, [onClick, store])
+  const handleClick = useMemo(() => (onClick ? () => onClick(store) : undefined), [onClick, store])
+  const hook = useMemo(() => storeHookLabel(store), [store])
 
   return (
-    <Card 
-      onClick={handleClick} 
+    <Card
+      onClick={handleClick}
       className={cn(
         'overflow-hidden tap-scale hover:shadow-lg transition-all cursor-pointer',
         className
       )}
     >
-      {/* Image */}
-      <div className="relative aspect-video overflow-hidden bg-muted">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         <img
           src={getStoreImageUrl(store, 'standard')}
           alt={store.name}
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
           loading="lazy"
         />
         {!store.isPublished && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute right-2 top-2">
             <Badge variant="warning">Draft</Badge>
           </div>
         )}
       </div>
 
-      <CardContent className="p-4">
-        {/* Name */}
-        <h3 className="text-lg font-semibold mb-2 line-clamp-1">{store.name}</h3>
-        
-        {/* Description */}
-        {store.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {store.description}
-          </p>
-        )}
-        
-        {/* Meta Info */}
-        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-          {store.distance !== undefined && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>{formatDistance(store.distance)}</span>
-            </div>
-          )}
-          
-          <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{store.prepTimeMin} min</span>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-            <span>4.8</span>
-          </div>
-          
-          {(typedStore.deliveryFee ? (
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-3.5 w-3.5" />
-              <span>${typedStore.deliveryFee.toFixed(2)} delivery</span>
-            </div>
-          ) : undefined) as React.ReactNode}
+      <CardContent className="p-3">
+        <h3 className="line-clamp-1 text-base font-semibold leading-tight">{store.name}</h3>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            {store.distance !== undefined ? formatDistance(store.distance) : 'Near you'}
+          </span>
+          <Badge variant="secondary" className="shrink-0 text-xs font-normal">
+            {hook}
+          </Badge>
         </div>
       </CardContent>
     </Card>

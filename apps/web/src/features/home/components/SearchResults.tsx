@@ -44,7 +44,7 @@ export function SearchResults({
         className="px-1 py-2 md:px-2"
       />
 
-      <div className="mt-4 max-h-[220px] overflow-hidden rounded-xl shadow-lg ring-1 ring-white/20 md:max-h-[280px]">
+      <div className="mt-3 max-h-[120px] overflow-hidden rounded-lg shadow-md ring-1 ring-black/5 md:max-h-[160px]">
         <StoreMapLazy
           stores={stores || []}
           userLocation={

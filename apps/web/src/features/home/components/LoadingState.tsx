@@ -6,6 +6,7 @@ import { SkeletonGrid } from '@shared/ui/primitives'
 import type { LocationData } from '@shared/types/types/location.types'
 
 export interface LoadingStateProps {
+  /** True while request in flight or while delaying empty-state reveal. */
   readonly isLoading: boolean
   readonly location: LocationData | undefined
   readonly areaLabel: string | undefined
@@ -18,11 +19,10 @@ export function LoadingState({ isLoading, location, areaLabel }: LoadingStatePro
 
   return (
     <>
-      <div className="mb-3 text-center text-gray-900">
-        <p className="text-base font-semibold">
-          Finding stores near {label}
+      <div className="mb-2 text-center text-gray-900">
+        <p className="text-base font-semibold" role="status">
+          Searching near {label}…
         </p>
-        <p className="text-xs text-gray-500">Results update automatically.</p>
       </div>
       <SkeletonGrid count={3} />
     </>

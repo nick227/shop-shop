@@ -11,13 +11,18 @@ export interface PopularStoresRowProps {
 }
 
 export function PopularStoresRow({ enabled, title = 'Popular stores' }: PopularStoresRowProps) {
-  const { data: stores, isLoading } = useFeaturedStores(8, { enabled })
+  const { data: stores, isLoading } = useFeaturedStores(6, { enabled })
   if (!enabled) {
     return null
   }
   return (
-    <div className="mt-4">
-      <StoreCarousel stores={stores ?? []} title={title} isLoading={isLoading} />
+    <div className="mt-3 opacity-95">
+      <StoreCarousel
+        stores={(stores ?? []).slice(0, 6)}
+        title={title}
+        isLoading={isLoading}
+        variant="fallback"
+      />
     </div>
   )
 }

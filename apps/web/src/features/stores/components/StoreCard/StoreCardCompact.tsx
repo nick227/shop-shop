@@ -15,55 +15,76 @@ export interface StoreCardCompactProps {
   readonly onClick?: StoreClickHandler
   readonly showDistance?: boolean
   readonly showMeta?: boolean
+  /** Lighter, smaller — e.g. fallback carousel. */
+  readonly variant?: 'default' | 'fallback'
   readonly className?: string
 }
 
-function StoreCardCompactComponent({ 
-  store, 
-  onClick, 
+function hookLabel(store: StoreWithDistance): string {
+  const d = store.deliveryEnabled === true
+  const p = store.pickupEnabled === true
+  if (d && p) return 'Delivery · Pickup'
+  if (d) return 'Delivery'
+  if (p) return 'Pickup'
+  return 'Store'
+}
+
+function StoreCardCompactComponent({
+  store,
+  onClick,
   showDistance = true,
   showMeta = true,
+  variant = 'default',
   className
 }: StoreCardCompactProps) {
   const handleClick = useCallback(() => onClick?.(store), [onClick, store])
-  
+
   const imageUrl = getImageUrl((store as { imageUrl?: string }).imageUrl, store.id, 'store')
+  const fallback = variant === 'fallback'
+  const imgSize = fallback ? 'h-14 w-14' : 'h-20 w-20'
 
   return (
     <button
       type="button"
       className={cn(
-        'flex gap-3 p-3 rounded-lg border border-border bg-background tap-scale hover:shadow-md transition-all text-left w-full',
+        'flex w-full gap-2 rounded-lg border text-left tap-scale transition-all',
+        fallback
+          ? 'border-white/15 bg-white/5 p-2 hover:bg-white/10'
+          : 'gap-3 border-border bg-background p-3 hover:shadow-md',
         className
       )}
       onClick={handleClick}
       aria-label={ARIA_LABEL.VIEW_STORE(store.name)}
     >
-      {/* Image */}
-      <div className="flex-shrink-0 w-20 h-20">
+      <div className={cn('flex-shrink-0', imgSize)}>
         <Image
           src={imageUrl}
           alt={store.name}
           fallbackSeed={store.id}
           aspectRatio={ASPECT_RATIO.SQUARE}
-          containerClassName="w-full h-full rounded-md overflow-hidden"
+          containerClassName="h-full w-full overflow-hidden rounded-md"
         />
       </div>
-      
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-sm line-clamp-1 mb-1">{store.name}</h4>
-        
+
+      <div className="min-w-0 flex-1">
+        <h4 className={cn('line-clamp-1 font-semibold', fallback ? 'text-xs text-white' : 'mb-1 text-sm')}>
+          {store.name}
+        </h4>
         {showMeta && (
-          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+          <div className={cn('text-muted-foreground', fallback ? 'mt-0.5 text-[10px] text-white/75' : 'flex flex-col gap-0.5 text-xs')}>
             {showDistance && store.distance !== undefined && (
               <span>
                 {ICON.LOCATION} {formatDistance(store.distance)}
               </span>
             )}
-            <span>
-              {ICON.TIME} {store.prepTimeMin}{TIME_SUFFIX}
-            </span>
+            {fallback ? (
+              <span className="line-clamp-1">{hookLabel(store)}</span>
+            ) : (
+              <span>
+                {ICON.TIME} {store.prepTimeMin}
+                {TIME_SUFFIX}
+              </span>
+            )}
           </div>
         )}
       </div>

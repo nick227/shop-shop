@@ -9,6 +9,7 @@ import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearchWithTransforme
 import { useGeocoding } from '@shared/hooks/hooks/useGeocoding'
 import { useLocationDisplay } from '@shared/hooks/hooks/useLocationDisplay'
 import { useSearchOrchestration } from '@shared/hooks/hooks/useSearchOrchestration'
+import { useDelayedEmptyReveal } from '@shared/hooks/hooks/useDelayedEmptyReveal'
 import { LocationSearch, AvailableLocations, PopularStoresRow } from '@features/stores/components'
 import type { StoreWithDistance } from '@api/types'
 import type { LocationData } from '@shared/types'
@@ -36,6 +37,8 @@ const clampRadius = (radius: number) => {
 const getNextRadius = (currentRadius: number) => {
   return clampRadius(currentRadius + RADIUS_POLICY.EXPAND_STEP_MILES)
 }
+
+const EMPTY_STATE_DELAY_MS = 320
 
 const radiusUtils = {
   getDisplay: (loc: { radiusMiles?: number } | undefined) => {
@@ -78,9 +81,19 @@ export default function HomePage() {
     clearError()
   }, [setLocation, clearError])
 
-  const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores as StoreWithDistance[] | undefined)
+  const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores)
 
-  const { searchStatus } = useSearchOrchestration(location, stores as StoreWithDistance[] | undefined, isLoading, error)
+  const { searchStatus: rawSearchStatus } = useSearchOrchestration(
+    location,
+    stores,
+    isLoading,
+    error
+  )
+  const isAwaitingEmptyReveal = rawSearchStatus === 'no-results'
+  const emptyRevealReady = useDelayedEmptyReveal(isAwaitingEmptyReveal, EMPTY_STATE_DELAY_MS)
+  const searchStatus =
+    isAwaitingEmptyReveal && !emptyRevealReady ? 'loading' : rawSearchStatus
+  const loadingUi = isLoading || (isAwaitingEmptyReveal && !emptyRevealReady)
 
   const resultsRef = useRef<HTMLElement>(null)
   const previousHadResults = useRef(false)
@@ -124,24 +137,17 @@ export default function HomePage() {
     })
   }, [navigate, location, stores])
 
-  const handleExpandSearch = useCallback(() => {
-    if (!location) return
-
-    const base = radiusUtils.getActual(location)
-
-    if (Number.isNaN(base)) {
-      return
-    }
-
-    const newRadius = radiusUtils.getNext(base)
-
-    if (newRadius !== base) {
+  const handleExpandToMiles = useCallback(
+    (miles: number) => {
+      if (!location) return
+      const next = radiusUtils.clamp(miles)
       handleLocationChangeWithErrorClear({
         ...location,
-        radiusMiles: newRadius
+        radiusMiles: next
       })
-    }
-  }, [location, handleLocationChangeWithErrorClear])
+    },
+    [location, handleLocationChangeWithErrorClear]
+  )
 
   const handleAvailableLocationClick = useCallback(async (city: string, state: string) => {
     clearError()
@@ -152,9 +158,9 @@ export default function HomePage() {
       if (newLocation) {
         handleLocationChangeWithErrorClear(newLocation)
       }
-    } catch (geocodeErr: unknown) {
+    } catch {
       if (!isProd) {
-        console.error('Geocoding error in handleAvailableLocationClick:', geocodeErr)
+        console.error('Geocoding error in handleAvailableLocationClick')
       }
     }
   }, [location, handleLocationChangeWithErrorClear, geocodeLocation, clearError, isProd])
@@ -164,7 +170,7 @@ export default function HomePage() {
   }, [refetch])
 
   const handlePickNearbyCity = useCallback(() => {
-    document.getElementById('available-locations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.querySelector('#available-locations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   const handleQuickCity = useCallback((city: string, state: string) => {
@@ -177,8 +183,9 @@ export default function HomePage() {
 
   const currentRadius = radiusUtils.getDisplay(location)
 
+  /** Quick cities in-card replace the bottom list until a location exists. */
   const showAvailableLocations = (() => {
-    if (!location) return true
+    if (!location) return false
     if (geocodingError) return true
     if (error) return !stores?.length
     return !stores?.length
@@ -238,7 +245,7 @@ export default function HomePage() {
             <ResultsSection
               ref={resultsRef}
               searchStatus={searchStatus}
-              stores={stores as StoreWithDistance[] | undefined}
+              stores={stores}
               geocodingError={geocodingError}
               onClearGeocodingError={clearError}
               location={location}
@@ -247,14 +254,15 @@ export default function HomePage() {
             >
               <ResultsContainer
                 searchStatus={searchStatus}
-                isLoading={isLoading}
+                isLoading={loadingUi}
                 location={location}
                 areaLabel={areaLabel}
                 error={error}
-                stores={stores as StoreWithDistance[] | undefined}
+                stores={stores}
                 userLocation={undefined}
                 onStoreClick={handleViewMenu}
-                onExpandSearch={handleExpandSearch}
+                onExpandToMiles={handleExpandToMiles}
+                searchRadiusMiles={currentRadius}
                 onRetrySearch={handleRetrySearch}
                 onQuickCity={handleQuickCity}
                 onPickNearbyCity={handlePickNearbyCity}
