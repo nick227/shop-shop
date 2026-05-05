@@ -1,0 +1,451 @@
+openapi: 3.1.0
+info:
+  title: Shop Shop Checkout API
+  version: 0.1.0
+  description: Contract-first single source of truth for implemented checkout behavior.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Checkout
+paths:
+  /checkout/session:
+    post:
+      tags: [Checkout]
+      operationId: createCheckoutSession
+      summary: Create checkout session
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckoutSessionRequest'
+      responses:
+        '200':
+          description: Checkout session created.
+          headers:
+            X-Idempotency-Key:
+              $ref: '#/components/headers/GeneratedIdempotencyKey'
+            X-Idempotency-Response:
+              $ref: '#/components/headers/IdempotencyResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCheckoutSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /checkout/complete:
+    post:
+      tags: [Checkout]
+      operationId: completeCheckout
+      summary: Complete checkout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteCheckoutRequest'
+      responses:
+        '200':
+          description: Order record created and payment processing requested.
+          headers:
+            X-Idempotency-Key:
+              $ref: '#/components/headers/GeneratedIdempotencyKey'
+            X-Idempotency-Response:
+              $ref: '#/components/headers/IdempotencyResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteCheckoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /checkout/status/{sessionId}:
+    get:
+      tags: [Checkout]
+      operationId: getCheckoutStatus
+      summary: Get checkout status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Checkout session status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: X-Idempotency-Key
+      in: header
+      required: false
+      description: Optional idempotency key for non-GET checkout requests. If supplied, it must match ^[a-zA-Z0-9_-]{8,64}$ and successful 2xx responses are cached for 24 hours.
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]{8,64}$'
+        minLength: 8
+        maxLength: 64
+  headers:
+    GeneratedIdempotencyKey:
+      description: Present when the request omitted X-Idempotency-Key.
+      schema:
+        type: string
+    IdempotencyResponse:
+      description: Present with value "true" when the response was served from the idempotency cache.
+      schema:
+        type: string
+        enum: ['true']
+  responses:
+    BadRequest:
+      description: Bad request or validation failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Authenticated user cannot access this checkout session.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Checkout session was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Checkout session already has an order.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Gone:
+      description: Checkout session has expired.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      additionalProperties: true
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        details:
+          description: Validation details are included outside production only.
+    CheckoutItem:
+      type: object
+      required: [itemId, quantity]
+      additionalProperties: false
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        specialInstructions:
+          type: string
+    DeliveryType:
+      type: string
+      enum: [PICKUP, DELIVERY]
+    DeliveryAddress:
+      type: object
+      required: [street, city, state, zipCode]
+      additionalProperties: false
+      properties:
+        street:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+        zipCode:
+          type: string
+          minLength: 5
+        instructions:
+          type: string
+    PaymentMethodType:
+      type: string
+      enum: [CREDIT_CARD, DEBIT_CARD, DIGITAL_WALLET]
+    PaymentMethod:
+      type: object
+      required: [type, token]
+      additionalProperties: false
+      properties:
+        type:
+          $ref: '#/components/schemas/PaymentMethodType'
+        token:
+          type: string
+          minLength: 1
+    CreateCheckoutSessionRequest:
+      type: object
+      required: [items, deliveryType, paymentMethod]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CheckoutItem'
+        deliveryType:
+          $ref: '#/components/schemas/DeliveryType'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddress'
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        tipAmount:
+          type: number
+          minimum: 0
+        promoCode:
+          type: string
+      allOf:
+        - if:
+            properties:
+              deliveryType:
+                const: DELIVERY
+            required: [deliveryType]
+          then:
+            required: [deliveryAddress]
+    CreateCheckoutSessionResponse:
+      type: object
+      required: [sessionId, total, estimatedDelivery]
+      additionalProperties: false
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        total:
+          type: number
+        estimatedDelivery:
+          type: string
+          format: date-time
+    CompleteCheckoutRequest:
+      type: object
+      required: [sessionId, paymentMethod]
+      additionalProperties: false
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        tipAmount:
+          type: number
+          minimum: 0
+        promoCode:
+          type: string
+    CompleteCheckoutResponse:
+      type: object
+      required: [order, paymentId]
+      additionalProperties: false
+      properties:
+        order:
+          $ref: '#/components/schemas/CheckoutOrderSummary'
+        paymentId:
+          type: string
+    CheckoutOrderSummary:
+      type: object
+      required: [id, status, total, createdAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        total:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+    CheckoutStatus:
+      type: string
+      enum: [pending, awaiting_payment, completed]
+      x-state-transitions:
+        pending:
+          - awaiting_payment
+          - completed
+        awaiting_payment:
+          - completed
+        completed: []
+    CartStatus:
+      type: string
+      enum: [ACTIVE, SUBMITTED, ABANDONED]
+      x-state-transitions:
+        ACTIVE:
+          - SUBMITTED
+          - ABANDONED
+        SUBMITTED: []
+        ABANDONED: []
+    OrderStatus:
+      type: string
+      enum:
+        - PENDING_PAYMENT
+        - PLACED
+        - ACCEPTED
+        - PREPARING
+        - READY
+        - OUT_FOR_DELIVERY
+        - DELIVERED
+        - COMPLETED
+        - CANCELED
+      x-state-transitions:
+        PENDING_PAYMENT:
+          - PLACED
+          - CANCELED
+        PLACED:
+          - ACCEPTED
+          - CANCELED
+        ACCEPTED:
+          - PREPARING
+          - CANCELED
+        PREPARING:
+          - READY
+          - CANCELED
+        READY:
+          - OUT_FOR_DELIVERY
+          - CANCELED
+        OUT_FOR_DELIVERY:
+          - DELIVERED
+        DELIVERED: []
+        COMPLETED: []
+        CANCELED: []
+    PaymentStatus:
+      type: string
+      enum: [UNPAID, PAID, REFUNDED]
+      x-state-transitions:
+        UNPAID:
+          - PAID
+        PAID:
+          - REFUNDED
+        REFUNDED: []
+    CheckoutStatusOrder:
+      type: object
+      required:
+        - id
+        - status
+        - paymentStatus
+        - deliveryType
+        - subtotal
+        - fees
+        - tax
+        - tip
+        - total
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        deliveryType:
+          $ref: '#/components/schemas/DeliveryType'
+        subtotal:
+          type: number
+        fees:
+          type: number
+        tax:
+          type: number
+        tip:
+          type: number
+        total:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CheckoutStatusResponse:
+      type: object
+      required: [sessionId, cartStatus, status, order, createdAt]
+      additionalProperties: false
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        cartStatus:
+          $ref: '#/components/schemas/CartStatus'
+        status:
+          $ref: '#/components/schemas/CheckoutStatus'
+        order:
+          anyOf:
+            - $ref: '#/components/schemas/CheckoutStatusOrder'
+            - type: 'null'
+        createdAt:
+          type: string
+          format: date-time
