@@ -8,88 +8,90 @@ interface PostActionsProps {
   readonly onShare?: (postId: string) => void
 }
 
-export const PostActions = ({
-  post,
-  onLike,
-  onComment,
-  onShare,
-}: PostActionsProps) => {
+export const PostActions = ({ post, onLike, onComment, onShare }: PostActionsProps) => {
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onLike && post.id) {
-      onLike(String(post.id))
-    }
+    if (onLike && post.id) onLike(String(post.id))
   }
 
   const handleComment = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onComment && post.id) {
-      onComment(String(post.id))
-    }
+    if (onComment && post.id) onComment(String(post.id))
   }
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onShare && post.id) {
-      onShare(String(post.id))
-    }
+    if (onShare && post.id) onShare(String(post.id))
   }
 
   return (
-    <footer className="flex items-center gap-6 pt-4 border-t border-border">
+    <footer className="flex items-center gap-1 py-1 -mx-1">
       <button
-        className={`flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors ${post.isLiked ? 'text-red-600' : ''}`}
         onClick={handleLike}
-        aria-label="Like post"
+        aria-label={post.isLiked ? 'Unlike post' : 'Like post'}
+        aria-pressed={post.isLiked}
+        className={[
+          'flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium transition-all duration-150 tap-scale',
+          post.isLiked
+            ? 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+        ].join(' ')}
       >
         <svg
-          className="w-5 h-5"
+          className="w-[18px] h-[18px] flex-shrink-0"
           viewBox="0 0 24 24"
           fill={post.isLiked ? 'currentColor' : 'none'}
           stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
         </svg>
         <span>{formatCount(Number(post.likesCount ?? 0))}</span>
       </button>
 
       <button
-        className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
         onClick={handleComment}
         aria-label="Comment on post"
+        className="flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
+        <svg
+          className="w-[18px] h-[18px] flex-shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         <span>{formatCount(Number(post.commentsCount ?? 0))}</span>
       </button>
 
       <button
-        className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
         onClick={handleShare}
         aria-label="Share post"
+        className="flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale ml-auto"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-          />
+        <svg
+          className="w-[18px] h-[18px] flex-shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
         <span>{formatCount(Number(post.sharesCount ?? 0))}</span>
       </button>
     </footer>
   )
 }
-

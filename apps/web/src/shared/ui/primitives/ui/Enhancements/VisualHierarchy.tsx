@@ -314,7 +314,7 @@ const VisualCueComponent = memo<VisualCueProps>(({
   
   const renderCue = () => {
     switch (cue) {
-      case 'arrow':
+      case 'arrow': {
         return (
           <div className="flex items-center justify-center">
             <svg className="h-full w-full" fill="currentColor" viewBox="0 0 20 20">
@@ -322,17 +322,20 @@ const VisualCueComponent = memo<VisualCueProps>(({
             </svg>
           </div>
         )
-      case 'highlight':
+      }
+      case 'highlight': {
         return (
           <div className="h-full w-full rounded-full bg-current opacity-20" />
         )
-      case 'badge':
+      }
+      case 'badge': {
         return (
           <div className="flex h-full w-full items-center justify-center rounded-full text-xs font-bold">
             !
           </div>
         )
-      case 'icon':
+      }
+      case 'icon': {
         return (
           <div className="flex h-full w-full items-center justify-center">
             <svg className="h-3/4 w-3/4" fill="currentColor" viewBox="0 0 20 20">
@@ -340,24 +343,29 @@ const VisualCueComponent = memo<VisualCueProps>(({
             </svg>
           </div>
         )
-      case 'number':
+      }
+      case 'number': {
         return (
           <div className="flex h-full w-full items-center justify-center text-xs font-bold">
             1
           </div>
         )
-      case 'progress':
+      }
+      case 'progress': {
         return (
           <div className="h-full w-full rounded-full bg-current opacity-20">
             <div className="h-full w-1/2 rounded-full bg-current" />
           </div>
         )
-      case 'pulse':
+      }
+      case 'pulse': {
         return (
           <div className="h-full w-full rounded-full bg-current animate-ping" />
         )
-      default:
+      }
+      default: {
         return null
+      }
     }
   }
   

@@ -5,13 +5,20 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { useCustomerStats } from '@shared/hooks/hooks/customer/useCustomerStats'
 
 export interface ProfileFormData {
   name: string
   email: string
   phone: string
+}
+
+interface ProfileUserSnapshot {
+  name?: string
+  email?: string
+  phone?: string
+  createdAt?: string | number | Date
 }
 
 export function useCustomerProfile() {
@@ -21,6 +28,7 @@ export function useCustomerProfile() {
   
   const { user } = useAuth()
   const { data: stats, isLoading } = useCustomerStats()
+  const profileUser = user as ProfileUserSnapshot | undefined
   
   // ========================================
   // Form State
@@ -28,9 +36,9 @@ export function useCustomerProfile() {
   
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || ''
+    name: profileUser?.name ?? '',
+    email: profileUser?.email ?? '',
+    phone: profileUser?.phone ?? ''
   })
   
   // ========================================
@@ -40,11 +48,11 @@ export function useCustomerProfile() {
   // Update form data when user data changes
   useEffect(() => {
     setFormData({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || ''
+      name: profileUser?.name ?? '',
+      email: profileUser?.email ?? '',
+      phone: profileUser?.phone ?? ''
     })
-  }, [user?.name, user?.email, user?.phone])
+  }, [profileUser?.name, profileUser?.email, profileUser?.phone])
   
   // ========================================
   // Event Handlers
@@ -57,23 +65,23 @@ export function useCustomerProfile() {
   const handleCancel = useCallback(() => {
     setIsEditing(false)
     setFormData({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || ''
+      name: profileUser?.name ?? '',
+      email: profileUser?.email ?? '',
+      phone: profileUser?.phone ?? ''
     })
-  }, [user?.name, user?.email, user?.phone])
+  }, [profileUser?.name, profileUser?.email, profileUser?.phone])
   
   const handleSave = useCallback(async () => {
     try {
       console.log('Saving profile:', formData)
-      // TODO: Implement actual profile update API call
+      // Pending: implement actual profile update API call.
       await new Promise(resolve => setTimeout(resolve, 500)) // Mock API call
       
       setIsEditing(false)
-      // TODO: Show success message
+      // Pending: show success message.
     } catch (error) {
       console.error('Failed to save profile:', error)
-      // TODO: Show error message
+      // Pending: show error message.
     }
   }, [formData])
   
@@ -86,12 +94,12 @@ export function useCustomerProfile() {
   // ========================================
   
   const hasChanges = JSON.stringify(formData) !== JSON.stringify({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || ''
+    name: profileUser?.name ?? '',
+    email: profileUser?.email ?? '',
+    phone: profileUser?.phone ?? ''
   })
   
-  const memberSince = user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'
+  const memberSince = profileUser?.createdAt ? new Date(profileUser.createdAt).toLocaleDateString() : '-'
   
   return {
     // Data

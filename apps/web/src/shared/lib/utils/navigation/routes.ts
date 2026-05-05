@@ -1,4 +1,4 @@
-import { createItemSlug } from '../slugify'
+import { createItemSlug, createStoreSlug } from '../slugify'
 
 interface StoreRouteInput {
   id: string
@@ -10,11 +10,11 @@ interface ItemRouteInput {
   title: string
 }
 
-export function getStoreRoute({ id }: StoreRouteInput): string {
-  return `/store/${id}`
+export function getStoreRoute({ id, name }: StoreRouteInput): string {
+  const slug = createStoreSlug(name, id)
+  return `/kitchen/${slug}`
 }
 
-export function getItemRouteSimple({ id, title }: ItemRouteInput): string {
-  const slug = createItemSlug(title, id)
-  return slug ? `/items/${slug}-${id}` : `/items/${id}`
+export function getItemRouteSimple({ id, title: _title }: ItemRouteInput): string {
+  return `/items/${id}`
 }

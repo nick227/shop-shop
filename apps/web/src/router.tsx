@@ -14,6 +14,7 @@ const LoginPage = lazy(() => import('./pages/public/Login.page'))
 const SignupPage = lazy(() => import('./pages/public/Signup.page'))
 // Temporarily disable lazy loading for HomePage to fix render2 error;
 import HomePage from './pages/public/Home.page'
+const SearchPage = lazy(() => import('./pages/search/Search.page'))
 const StoreDetailPage = lazy(() => import('./pages/shared/StoreDetail.page'))
 const ItemDetailPage = lazy(() => import('./pages/shared/ItemDetail.page'))
 const CartPage = lazy(() => import('./pages/shared/Cart.page'))
@@ -54,70 +55,28 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: '/signup',
         element: lazyRoute(SignupPage)},
-      // Protected routes;
+      // Public shopping routes;
       {
         path: '/',
-        element: (
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        )},
+        element: <HomePage />},
       {
-        path: '/store/:id',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(StoreDetailPage)}
-          </ProtectedRoute>
-        )},
+        path: '/search',
+        element: lazyRoute(SearchPage)},
       {
-        path: '/stores/:storeId',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(StoreDetailPage)}
-          </ProtectedRoute>
-        )},
+        path: '/kitchen/:slug',
+        element: lazyRoute(StoreDetailPage)},
       {
-        path: '/stores/:storeId/items/:itemId',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(ItemDetailPage)}
-          </ProtectedRoute>
-        )},
-      {
-        path: '/items/:itemSlug',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(ItemDetailPage)}
-          </ProtectedRoute>
-        )},
+        path: '/items/:itemId',
+        element: lazyRoute(ItemDetailPage)},
       {
         path: '/cart',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(CartPage)}
-          </ProtectedRoute>
-        )},
+        element: lazyRoute(CartPage)},
       {
         path: '/checkout',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(CheckoutPage)}
-          </ProtectedRoute>
-        )},
+        element: lazyRoute(CheckoutPage)},
       {
-        path: '/order/:id',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(OrderTrackingPage)}
-          </ProtectedRoute>
-        )},
-      {
-        path: '/orders/:orderId',
-        element: (
-          <ProtectedRoute>
-            {lazyRoute(OrderTrackingPage)}
-          </ProtectedRoute>
-        )},
+        path: '/orders/:id',
+        element: lazyRoute(OrderTrackingPage)},
       {
         path: '/orders',
         element: (

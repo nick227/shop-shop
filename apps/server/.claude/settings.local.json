@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\wamp64\\\\www\\\\shop-shop\\\\apps\\\\server\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(pnpm add *)",
+      "Bash(pnpm install *)",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "Bash(git -C \"c:\\\\wamp64\\\\www\\\\shop-shop\" status packages/db/prisma/seed-demo.ts)",
+      "Bash(git -C \"c:\\\\wamp64\\\\www\\\\shop-shop\" show HEAD:packages/db/prisma/seed-demo.ts)",
+      "Bash(git -C \"c:\\\\wamp64\\\\www\\\\shop-shop\" restore packages/db/prisma/seed-demo.ts)",
+      "Bash(pnpm --filter @packages/db exec prisma migrate status)",
+      "Bash(pnpm --filter @packages/db exec prisma migrate dev --name cart-expires-at-index)",
+      "Bash(pnpm --filter @packages/db seed)",
+      "Bash(node --import tsx -e ' *)",
+      "Bash(grep -v \"^$\")"
+    ]
+  }
+}

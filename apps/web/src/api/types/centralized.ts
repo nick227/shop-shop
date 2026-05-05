@@ -50,7 +50,7 @@ export type {
   ListItems200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListOrders200ResponseDataInner,
-  ListAddresss200ResponseDataInner,
+  ListAddresses200ResponseDataInner,
   ListPromotions200ResponseDataInner,
   ListBundles200ResponseDataInner
 } from '../../../../../packages/sdk/generated/sdk/models'

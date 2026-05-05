@@ -5,7 +5,7 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react'
 import { Button, Input, Alert } from '@shared/ui/primitives'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { loginFormSchema, type LoginFormData } from '@/schemas/ConsistentSchemas'
 
@@ -14,7 +14,7 @@ export interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const { login, isLoggingIn, loginError } = useAuth()
+  const { login, isLoggingIn, loginError } = useAuth({ onSuccess })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { errors, validate } = useFormValidation(loginFormSchema)
@@ -23,19 +23,15 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     e.preventDefault()
 
     if (!validate({ email, password })) return;
-    login(
-      { email, password },
-      {
-        onSuccess: () => {
-          onSuccess?.()
-        }}
-    )
+    void login({ email, password }).catch(() => {
+      // useAuth owns the rendered login error.
+    })
   }
 
   return (
     <form onSubmit={handleSubmit}>
       {loginError && (
-        <Alert variant="error">{loginError.message}</Alert>
+        <Alert variant="error">{loginError}</Alert>
       )}
 
       <div className="space-y-4">

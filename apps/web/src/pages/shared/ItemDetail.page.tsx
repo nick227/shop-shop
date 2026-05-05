@@ -1,15 +1,13 @@
 // @ts-nocheck
 /**
  * ItemDetailPage - Display full item details
- * Supports SEO-friendly slug-based URLs:
- *   /items/:itemSlug
- *   /stores/:storeSlug/items/:itemSlug
+ * Canonical route:
+ *   /items/:itemId
  */
 import { useParams, useNavigate } from 'react-router-dom'
 import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
-import { parseItemSlug, parseStoreSlug } from '@shared/lib/utils/slugify'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { Button, Spinner, Badge } from '@shared/ui/primitives'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
@@ -20,18 +18,12 @@ import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import { useHaptics } from '@shared/hooks/useHaptics'
 
 export default function ItemDetailPage() {
-  const { itemSlug, storeSlug } = useParams<{ itemSlug: string; storeSlug?: string }>()
+  const { itemId } = useParams<{ itemId: string }>()
   const navigate = useNavigate()
   const haptics = useHaptics()
-  
-  const { id: itemId } = parseItemSlug(itemSlug || '')
-  const { id: storeIdFromSlug } = storeSlug ? parseStoreSlug(storeSlug) : { id: undefined }
-  
-  const itemIdToUse = itemId || itemSlug
-  const storeIdToUse = storeIdFromSlug || storeSlug
-  
-  const { data: item, isLoading, error } = useItem(itemIdToUse || '')
-  const targetStoreId = storeIdToUse || item?.storeId
+
+  const { data: item, isLoading, error } = useItem(itemId || '')
+  const targetStoreId = item?.storeId
   const { data: store } = useStore(targetStoreId || '', { enabled: !!targetStoreId } as any)
   const addToCart = useAddToCart()
 
@@ -40,7 +32,7 @@ export default function ItemDetailPage() {
       const route = getStoreRoute({ id: store.id, name: store.name })
       navigate(route)
     } else if (targetStoreId) {
-      navigate('/stores/' + targetStoreId + '')
+      navigate('/kitchen/' + targetStoreId + '')
     } else {
       navigate('/')
     }

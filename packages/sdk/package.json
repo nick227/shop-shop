@@ -62,14 +62,14 @@
   "dependencies": {
     "@packages/realtime": "workspace:*",
     "@packages/schemas": "workspace:*",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.13.4",
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.1",
     "@types/node": "^20.11.30",
     "eslint": "^9.9.0",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
   }
 }

@@ -158,28 +158,32 @@ const SmartSuggestionComponent = memo<SmartSuggestionProps>(({
     if (!isOpen || filteredSuggestions.length === 0) return
     
     switch (e.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': {
         e.preventDefault()
         setSelectedIndex(prev => 
           prev < filteredSuggestions.length - 1 ? prev + 1 : 0
         )
         break
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         e.preventDefault()
         setSelectedIndex(prev => 
           prev > 0 ? prev - 1 : filteredSuggestions.length - 1
         )
         break
-      case 'Enter':
+      }
+      case 'Enter': {
         e.preventDefault()
         if (selectedIndex >= 0) {
           handleSuggestionSelect(filteredSuggestions[selectedIndex])
         }
         break
-      case 'Escape':
+      }
+      case 'Escape': {
         setIsOpen(false)
         setSelectedIndex(-1)
         break
+      }
     }
   }, [isOpen, filteredSuggestions, selectedIndex, handleSuggestionSelect])
   
@@ -262,7 +266,7 @@ const SmartFormComponent = memo<SmartFormProps>(({
     
     // Validate all fields
     const newErrors: Record<string, string> = {}
-    fields.forEach(field => {
+    for (const field of fields) {
       if (field.required && !formData[field.name]) {
         newErrors[field.name] = `${field.label} is required`
       } else if (field.validation) {
@@ -271,7 +275,7 @@ const SmartFormComponent = memo<SmartFormProps>(({
           newErrors[field.name] = error
         }
       }
-    })
+    }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -288,7 +292,7 @@ const SmartFormComponent = memo<SmartFormProps>(({
       case 'text':
       case 'email':
       case 'password':
-      case 'number':
+      case 'number': {
         return (
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-foreground">
@@ -320,8 +324,9 @@ const SmartFormComponent = memo<SmartFormProps>(({
             )}
           </div>
         )
+      }
       
-      case 'textarea':
+      case 'textarea': {
         return (
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-foreground">
@@ -341,8 +346,9 @@ const SmartFormComponent = memo<SmartFormProps>(({
             )}
           </div>
         )
+      }
       
-      case 'select':
+      case 'select': {
         return (
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-foreground">
@@ -367,9 +373,11 @@ const SmartFormComponent = memo<SmartFormProps>(({
             )}
           </div>
         )
+      }
       
-      default:
+      default: {
         return null
+      }
     }
   }, [formData, errors, handleFieldChange, disabled, suggestions])
   
@@ -535,28 +543,32 @@ const PredictiveSearchComponent = memo<PredictiveSearchProps>(({
     if (!isOpen || results.length === 0) return
     
     switch (e.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': {
         e.preventDefault()
         setSelectedIndex(prev => 
           prev < results.length - 1 ? prev + 1 : 0
         )
         break
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         e.preventDefault()
         setSelectedIndex(prev => 
           prev > 0 ? prev - 1 : results.length - 1
         )
         break
-      case 'Enter':
+      }
+      case 'Enter': {
         e.preventDefault()
         if (selectedIndex >= 0) {
           handleResultSelect(results[selectedIndex])
         }
         break
-      case 'Escape':
+      }
+      case 'Escape': {
         setIsOpen(false)
         setSelectedIndex(-1)
         break
+      }
     }
   }, [isOpen, results, selectedIndex, handleResultSelect])
   

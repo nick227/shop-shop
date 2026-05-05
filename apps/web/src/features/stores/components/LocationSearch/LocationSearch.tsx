@@ -12,7 +12,6 @@ import { ZipCodeInput } from './ZipCodeInput'
 import { CityStateInput } from './CityStateInput'
 import { RadiusControl } from './RadiusControl'
 import { LocationHistory } from './LocationHistory'
-import styles from './LocationSearch.module.css'
 
 interface LocationSearchProps {
   readonly onLocationChange: (location: LocationData | undefined) => void
@@ -44,6 +43,7 @@ export function LocationSearch({
   // Use ref to store the latest callback to avoid infinite loops
   const onLocationChangeRef = useRef(onLocationChange)
   onLocationChangeRef.current = onLocationChange
+  const hasSeenInitialLocation = useRef(false)
 
   // OPTIMIZED: One-time radius seeding to prevent flicker
   const [radiusInitialized, setRadiusInitialized] = useState(false)
@@ -56,6 +56,11 @@ export function LocationSearch({
 
   // Notify parent of location changes - only when location actually changes
   useEffect(() => {
+    if (!hasSeenInitialLocation.current) {
+      hasSeenInitialLocation.current = true
+      if (currentLocation === undefined) return
+    }
+
     onLocationChangeRef.current(currentLocation)
   }, [currentLocation])
 
@@ -151,8 +156,8 @@ export function LocationSearch({
   }), [activeInput, isLoading])
 
   return (
-    <div 
-      className="min-h-screen bg-gray-50 px-4 md:px-6 py-8"
+    <div
+      className="w-full space-y-4"
       aria-busy={loadingStates.any}
       aria-live="polite"
     >
@@ -167,15 +172,17 @@ export function LocationSearch({
       )}
 
       {/* OPTIMIZED: Consolidated search controls with coordinated loading states */}
-      <div className="">
+      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
         {isGeolocationSupported && (
           <>
             <GeolocationButton
               onGetLocation={() => { void handleUseMyLocation() }}
               isLoading={loadingStates.geolocation}
             />
-            <div className="">
-              <span>or</span>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              <span className="px-2">or</span>
+              <span className="h-px flex-1 bg-border" />
             </div>
           </>
         )}
@@ -185,8 +192,10 @@ export function LocationSearch({
           isLoading={loadingStates.zip}
         />
 
-        <div className="">
-          <span>or</span>
+        <div className="flex items-center text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          <span className="px-2">or</span>
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         <CityStateInput 
@@ -213,10 +222,10 @@ export function LocationSearch({
       {/* Error Message with Recovery Action */}
       {error && (
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-destructive" role="alert" aria-live="polite">
-          <span className="" aria-hidden="true">⚠️</span>
+          <span className="text-2xl leading-none" aria-hidden="true">⚠️</span>
           <span>{error}</span>
           <button 
-            className=""
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/15"
             onClick={() => window.location.reload()}
             aria-label="Try again"
           >

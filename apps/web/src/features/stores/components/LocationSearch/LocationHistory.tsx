@@ -68,10 +68,10 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
   }
 
   return (
-    <div className="">
-      <div className="">
-        <span className="">🕒</span>
-        <span className="">Recent Locations</span>
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm leading-none">🕒</span>
+        <span className="text-sm font-semibold text-foreground">Recent Locations</span>
       </div>
       
       <div className="space-y-1 mt-2 max-h-48 overflow-y-auto">
@@ -90,21 +90,21 @@ export function LocationHistory({ history, onSelect, onSetDefault }: LocationHis
             tabIndex={0}
             aria-label={`Select location: ${formatLocationName(location)}`}
           >
-            <div className="">
-              <span className="">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="text-base leading-none">
                 {getLocationIcon(location?.source)}
               </span>
-              <div className="">
-                <div className="">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-foreground">
                   {formatLocationName(location)}
                 </div>
-                <div className="">
+                <div className="text-xs text-muted-foreground">
                   {location.radiusMiles}mi radius • {formatTimeAgo(location?.timestamp)}
                 </div>
               </div>
             </div>
             <button
-              className=""
+              className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation()
                 onSetDefault(location)

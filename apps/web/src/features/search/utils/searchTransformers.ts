@@ -27,20 +27,20 @@ export function transformProductResult(result: ProductSearchResult): ItemRespons
   // Create a minimal ItemResponse with all required properties
   return {
     id: result.id,
-    storeId: result.storeId || '',
+    storeId: result.storeId ?? '',
     store: undefined, // Will be populated if needed
-    title: result.title || 'Unknown Product',
-    description: result.description || '',
-    price: typeof result.price === 'number' ? result.price.toString() : (result.price || '0'),
-    isActive: result.isActive || false,
-    isSoldOut: result.isSoldOut || false,
-    sortIndex: result.sortIndex || 0,
+    title: result.title ?? 'Unknown Product',
+    description: result.description ?? '',
+    price: typeof result.price === 'number' ? result.price.toString() : (result.price ?? '0'),
+    isActive: result.isActive ?? false,
+    isSoldOut: result.isSoldOut ?? false,
+    sortIndex: result.sortIndex ?? 0,
     stockQty: 0, // Default value since stockQty doesn't exist on ProductSearchResult
-    optionsJson: null,
-    allergensJson: null,
-    nutritionJson: null,
-    category: result.category || '',
-    imageUrl: result.imageUrl || '',
+    optionsJson: undefined,
+    allergensJson: undefined,
+    nutritionJson: undefined,
+    category: result.category ?? '',
+    imageUrl: result.imageUrl ?? '',
     isVegan: false,
     isVegetarian: false,
     isGlutenFree: false,
@@ -59,13 +59,13 @@ export function transformProductResult(result: ProductSearchResult): ItemRespons
  * Batch transform stores
  */
 export function transformStoreResults(results: StoreSearchResult[]): StoreWithDistance[] {
-  return results.map(transformStoreResult)
+  return results.map((result) => transformStoreResult(result))
 }
 
 /**
  * Batch transform products
  */
 export function transformProductResults(results: ProductSearchResult[]): ItemResponse[] {
-  return results.map(transformProductResult)
+  return results.map((result) => transformProductResult(result))
 }
 

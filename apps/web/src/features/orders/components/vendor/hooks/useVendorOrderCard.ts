@@ -51,9 +51,9 @@ export function useVendorOrderCard({
     
     const selectionClasses = isBulkMode && isBulkSelected 
       ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
-      : isSelected 
+      : (isSelected 
         ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
-        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+        : 'border-gray-200 hover:border-gray-300 hover:shadow-md')
     
     const urgencyClasses = isUrgent ? ' border-l-4 border-l-red-500 bg-red-50' : ''
     

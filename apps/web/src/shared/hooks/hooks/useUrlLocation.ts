@@ -43,7 +43,7 @@ export function useUrlLocation(): UseUrlLocationResult {
   // ========================================
   
   useEffect(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && window.localStorage.getItem('__debugUrlLocation') === 'true') {
       console.log('🔍 [useUrlLocation] URL params changed:', memoizedUrlParams)
     }
 

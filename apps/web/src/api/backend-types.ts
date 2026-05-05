@@ -6,12 +6,12 @@
  * To regenerate: pnpm gen:types
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable unicorn/no-null */
+ 
+ 
+ 
 
 import type {
-  ListAddresss200ResponseDataInner,
+  ListAddresses200ResponseDataInner,
   ListBundles200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListItems200ResponseDataInner,
@@ -25,7 +25,7 @@ import type {
 // Base Type Exports (From SDK)
 // ========================================
 
-export type AddressResponse = ListAddresss200ResponseDataInner & {
+export type AddressResponse = ListAddresses200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
@@ -54,8 +54,8 @@ export type OrderResponse = ListOrders200ResponseDataInner & {
   createdAt: string
   updatedAt: string
   /** Canonical delivery pin (preferred over snapshot geo when present). */
-  deliveryLatitude?: string | number | null
-  deliveryLongitude?: string | number | null
+  deliveryLatitude?: ListOrders200ResponseDataInner['deliveryLatitude']
+  deliveryLongitude?: ListOrders200ResponseDataInner['deliveryLongitude']
 }
 
 export type PromotionResponse = ListPromotions200ResponseDataInner & {
@@ -197,6 +197,12 @@ export interface CreateOrderInput {
   deliveryLongitude?: number | string
 }
 
+export interface UpdateOrderInput {
+  status?: string
+  riderId?: string
+  estimatedDeliveryTime?: string
+}
+
 export interface CreateAddressInput {
   label?: string
   line1: string
@@ -228,6 +234,48 @@ export interface LoginInput {
   email: string
   password: string
 }
+
+export type {
+  CreateStoreInput,
+  UpdateStoreInput,
+  CreateItemInput,
+  UpdateItemInput,
+  CreatePromotionInput,
+  UpdatePromotionInput,
+  AddToCartInput,
+  UpdateCartInput,
+  UpdateAddressInput,
+  CreatePaymentIntentInput,
+  CreateConnectAccountInput,
+  CreateTipInput,
+  UpdateTipInput,
+  ProcessTipInput,
+  TipStatusUpdate,
+  PostResponse,
+  PostListResponse,
+  PostQuery,
+  CreateCommentInput,
+  CommentResponse,
+  CommentListResponse,
+  CommentQuery,
+  LikePostInput,
+  UnlikePostInput,
+  UploadMediaInput,
+  MediaListResponse,
+} from '@packages/schemas'
+
+export interface CreateUserInput {
+  role?: string
+  email: string
+  name: string
+  phone: string
+  isCompany?: boolean
+  companyName?: string
+  affiliate?: string
+  vendorVerification?: string
+}
+
+export interface UpdateUserInput extends Partial<CreateUserInput> {}
 
 // ========================================
 // Utility Types for UI Components
@@ -573,7 +621,7 @@ function extractTimestamps(data: unknown): { createdAt: string; updatedAt: strin
 // Type Mappers (SDK → App Types)
 // ========================================
 
-export function mapAddresses(sdk: ListAddresss200ResponseDataInner): AddressResponse {
+export function mapAddresses(sdk: ListAddresses200ResponseDataInner): AddressResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, 'addresses-' + Date.now())
 

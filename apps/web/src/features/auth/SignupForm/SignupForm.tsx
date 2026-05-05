@@ -5,7 +5,7 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react'
 import { Button, Input, Alert } from '@shared/ui/primitives'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { signupFormSchema, type SignupFormData } from '@/schemas/ConsistentSchemas'
 
@@ -25,20 +25,13 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
 
     if (!validate({ email, password, name })) return
 
-    signup(
-      { email, password, firstName: name?.split(' ')[0], lastName: name?.split(' ').slice(1).join(' ') } as any,
-      {
-        onSuccess: () => {
-          onSuccess?.()
-        },
-      }
-    )
+    signup({ email, password, firstName: name?.split(' ')[0], lastName: name?.split(' ').slice(1).join(' ') } as any)
   }
 
   return (
     <form onSubmit={handleSubmit}>
       {signupError && (
-        <Alert variant="error">{signupError.message}</Alert>
+        <Alert variant="error">{signupError}</Alert>
       )}
 
       <div className="space-y-4">

@@ -8,7 +8,7 @@
  * Usage: npx tsx seed-geocoding-cache.ts
  */
 
-import { prisma } from './src/client'
+import { PrismaClient } from '@prisma/client'
 
 // Major US ZIP codes with verified coordinates
 const MAJOR_ZIP_CODES = [
@@ -75,7 +75,7 @@ const MAJOR_ZIP_CODES = [
   { zip: '99501', lat: 61.2181, lon: -149.9003, city: 'Anchorage', state: 'AK' },
 ]
 
-async function seedGeocodingCache() {
+export async function seedGeocodingCache(prisma: PrismaClient): Promise<void> {
   console.log('\n💾 Seeding Geocoding Cache')
   console.log('='.repeat(60))
   console.log(`\nPopulating ${MAJOR_ZIP_CODES.length} major US ZIP codes...`)
@@ -136,11 +136,5 @@ async function seedGeocodingCache() {
   console.log('\n💡 These ZIP codes will now work instantly without API calls!')
   console.log('💰 Estimated API quota saved: ~' + created + ' requests\n')
   
-  await prisma.$disconnect()
 }
-
-seedGeocodingCache().catch((error) => {
-  console.error('\n❌ Seeding failed:', error)
-  process.exit(1)
-})
 

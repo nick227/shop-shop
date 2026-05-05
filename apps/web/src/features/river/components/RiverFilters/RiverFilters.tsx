@@ -5,64 +5,70 @@ interface RiverFiltersProps {
   onFiltersChange: (filters: RiverFiltersType) => void
 }
 
-export const RiverFilters = ({ filters, onFiltersChange }: RiverFiltersProps) => {
-  const sortOptions: { value: RiverFiltersType["sortBy"]; label: string }[] = [
-    { value: 'recent', label: 'Recent' },
-    { value: 'popular', label: 'Popular' },
-    { value: 'trending', label: 'Trending' },
-  ]
+const SORT_OPTIONS: { value: NonNullable<RiverFiltersType['sortBy']>; label: string }[] = [
+  { value: 'recent', label: 'Recent' },
+  { value: 'popular', label: 'Popular' },
+  { value: 'trending', label: 'Trending' },
+]
 
-  const handleSortChange = (sortBy: RiverFiltersType["sortBy"]) => {
+export const RiverFilters = ({ filters, onFiltersChange }: RiverFiltersProps) => {
+  const handleSortChange = (sortBy: RiverFiltersType['sortBy']) => {
     onFiltersChange({ ...filters, sortBy: sortBy ?? 'recent' })
   }
 
   const handleMediaFilterToggle = () => {
-    onFiltersChange({
-      ...filters,
-      hasMedia: filters.hasMedia ? false : true,
-    })
+    onFiltersChange({ ...filters, hasMedia: !filters.hasMedia })
   }
 
   return (
-    <nav className="flex gap-2 mb-8 overflow-x-auto pb-2">
-      <div className="flex gap-2">
-        {sortOptions.map((option) => (
+    <nav
+      aria-label="Feed filters"
+      className="flex gap-2 overflow-x-auto pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none"
+    >
+      {SORT_OPTIONS.map((option) => {
+        const isActive = filters.sortBy === option.value
+        return (
           <button
             key={option.value}
-            className={'px-6 py-3 border-2 rounded-lg font-medium whitespace-nowrap transition-all ' + 
-              filters.sortBy === option.value 
-                ? 'border-primary bg-primary text-primary-foreground' 
-                : 'border-border bg-background hover:border-primary hover:bg-accent'
-             + ''}
             onClick={() => handleSortChange(option.value)}
+            aria-pressed={isActive}
+            className={[
+              'flex-shrink-0 h-9 px-4 rounded-full text-sm font-medium transition-all duration-150 tap-scale',
+              isActive
+                ? 'bg-foreground text-background shadow-sm'
+                : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
+            ].join(' ')}
           >
             {option.label}
           </button>
-        ))}
-      </div>
+        )
+      })}
 
       <button
-        className={'px-4 py-2 border-2 rounded-lg hover:border-primary transition-colors flex items-center gap-2 ' + 
-          filters.hasMedia ? 'border-primary bg-accent' : 'border-border bg-background'
-         + ''}
         onClick={handleMediaFilterToggle}
+        aria-pressed={filters.hasMedia ?? false}
+        className={[
+          'flex-shrink-0 h-9 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-all duration-150 tap-scale',
+          filters.hasMedia
+            ? 'bg-foreground text-background shadow-sm'
+            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
+        ].join(' ')}
       >
         <svg
-          className="w-5 h-5"
+          className="w-3.5 h-3.5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
         </svg>
-        <span>Media only</span>
+        Media
       </button>
     </nav>
   )
 }
-

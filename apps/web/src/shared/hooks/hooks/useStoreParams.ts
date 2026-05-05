@@ -1,33 +1,32 @@
 /**
- * useStoreParams - Hook for reading store-related URL parameters (slugs)
+ * useStoreParams - Hook for reading kitchen/item URL parameters
  */
 import { useParams } from 'react-router-dom'
-import { parseStoreSlug, parseItemSlug } from '@shared/lib/utils/slugify'
+import { parseStoreSlug } from '@shared/lib/utils/slugify'
 
 export interface StoreParams {
-  storeSlug: string;
+  kitchenSlug: string;
   storeId: string | undefined;
-  itemSlug?: string;
   itemId?: string | undefined;
 }
 
 /**
- * Hook to read store and item slugs from URL params;
- * Automatically extracts IDs from slugs when present;
+ * Hook to read kitchen and item route params.
+ * Supports canonical routes:
+ * - /kitchen/:slug
+ * - /items/:itemId
  */
 export function useStoreParams(): StoreParams {
-  const params = useParams<{ storeSlug: string; itemSlug?: string }>()
+  const params = useParams<{ slug?: string; itemId?: string }>()
   
-  const storeSlug = params.storeSlug || ''
-  const itemSlug = params.itemSlug;
-  // Parse slugs to extract potential IDs;
-  const { id: storeId } = parseStoreSlug(storeSlug)
-  const { id: itemId } = itemSlug ? parseItemSlug(itemSlug) : { id: undefined }
+  const kitchenSlug = params.slug || ''
+  // Parse slug to extract potential store ID suffix if present.
+  const { id: storeId } = parseStoreSlug(kitchenSlug)
+  const itemId = params.itemId
   
   return {
-    storeSlug,
+    kitchenSlug,
     storeId,
-    itemSlug,
     itemId}
 }
 

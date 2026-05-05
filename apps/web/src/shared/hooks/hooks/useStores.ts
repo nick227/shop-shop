@@ -51,7 +51,7 @@ export function useStores(location: LocationData | undefined): UseStoresResult {
 
   // Apply search utilities - this wires the dead code into runtime
   const stores = useMemo(() => {
-    if (!rawStores?.length) return undefined
+    if (!rawStores?.length) return
     
     // Transform raw stores into search results format
     const searchResults = rawStores.map((store): StoreSearchResult => ({
@@ -68,12 +68,10 @@ export function useStores(location: LocationData | undefined): UseStoresResult {
     }))
     
     // Use filterAndTransformStores to apply search transformations
-    const transformedStores = filterAndTransformStores(searchResults, (storeResult) => {
+    return filterAndTransformStores(searchResults, (storeResult) => {
       // Apply any filtering logic here (open stores, within radius, etc.)
       return storeResult.isOpen !== false
     })
-    
-    return transformedStores
   }, [rawStores])
 
   const handleLocationChange = (newLocation: LocationData | undefined) => {

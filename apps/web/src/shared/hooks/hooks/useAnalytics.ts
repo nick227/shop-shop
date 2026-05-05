@@ -28,8 +28,8 @@ export function useAnalytics() {
       }
     }
     
-    // Console log in development;
-    if (import.meta.env.MODE === 'development') {
+    // Console log in development when explicitly enabled;
+    if (import.meta.env.MODE === 'development' && window.localStorage.getItem('__debugAnalytics') === 'true') {
       console.log('[Analytics]', event)
     }
   }, [])
@@ -78,4 +78,3 @@ export function useAnalytics() {
     trackStoreView,
     trackItemView}
 }
-

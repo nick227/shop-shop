@@ -18,11 +18,11 @@ function getExpandMileOptions(currentMiles: number): number[] {
   }
   const above = EXPAND_RUNGS.filter((r) => r > c)
   if (above.length >= 2) {
-    return [above[0]!, above[1]!]
+    return [above[0], above[1]]
   }
   if (above.length === 1) {
-    const second = Math.min(RADIUS_POLICY.MAX_MILES, Math.max(c + 15, above[0]! + 15))
-    return second > above[0]! ? [above[0]!, second] : [above[0]!]
+    const second = Math.min(RADIUS_POLICY.MAX_MILES, Math.max(c + 15, above[0] + 15))
+    return second > above[0] ? [above[0], second] : [above[0]]
   }
   const stepA = Math.min(RADIUS_POLICY.MAX_MILES, c + 10)
   const stepB = Math.min(RADIUS_POLICY.MAX_MILES, c + 25)

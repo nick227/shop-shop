@@ -2,13 +2,13 @@
 import type { StoreWithDistance } from '@api/types'
 import type { LocationCoordinates } from '@shared/types'
 
-type ProcessOptions = {
+interface ProcessOptions {
   findNearest?: boolean
   filterValid?: boolean
   sortByDistance?: boolean
 }
 
-type ProcessResult = {
+interface ProcessResult {
   validStores: StoreWithDistance[]
   storeLocations: LocationCoordinates[]
   nearestStore: StoreWithDistance | undefined
@@ -21,7 +21,7 @@ type ProcessResult = {
 // ========================================
 
 function isValidStore(store: StoreWithDistance): boolean {
-  if (store.latitude == null || store.longitude == null) return false
+  if (store.latitude == undefined || store.longitude == undefined) return false
   if (!Number.isFinite(Number(store.latitude)) || !Number.isFinite(Number(store.longitude))) return false
   return true
 }

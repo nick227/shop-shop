@@ -34,7 +34,7 @@ export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
         {/* Render pricing breakdown */}
         {breakdown.map((item: PricingLineItem, index: number) => (
           <div key={index} className="flex items-center justify-between text-sm">
-            <span className={item.isTotal ? 'text-lg font-bold' : item.isSubtotal ? 'text-muted-foreground' : 'text-muted-foreground'}>
+            <span className={item.isTotal ? 'text-lg font-bold' : (item.isSubtotal ? 'text-muted-foreground' : 'text-muted-foreground')}>
               {item.label}
               {item.isSubtotal && ` (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`}
             </span>

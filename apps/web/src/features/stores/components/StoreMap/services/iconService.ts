@@ -19,11 +19,11 @@ export class IconService {
   static getIcon(key: string, options: IconOptions): L.DivIcon {
     if (!ICON_CACHE.has(key)) {
       ICON_CACHE.set(key, L.divIcon({
-        className: options.className || 'custom-marker',
-        html: options.html || '<div>📍</div>',
-        iconSize: options.iconSize || [40, 40],
-        iconAnchor: options.iconAnchor || [20, 40],
-        popupAnchor: options.popupAnchor || [0, -40]
+        className: options.className ?? 'custom-marker',
+        html: options.html ?? '<div>📍</div>',
+        iconSize: options.iconSize ?? [40, 40],
+        iconAnchor: options.iconAnchor ?? [20, 40],
+        popupAnchor: options.popupAnchor ?? [0, -40]
       }))
     }
     
@@ -31,10 +31,10 @@ export class IconService {
   }
 
   static getStoreIcon(isNearest: boolean, styles?: Record<string, string>): L.DivIcon {
-    const key = 'store-' + isNearest ? 'nearest' : 'regular' + ''
-    const markerClass = styles?.marker || 'w-8 h-8 flex items-center justify-center rounded-full bg-blue-600 text-white cursor-pointer'
-    const nearestClass = isNearest ? (styles?.nearestMarker || 'bg-green-600 ring-4 ring-green-200') : ''
-    const iconClass = styles?.markerIcon || 'text-xl'
+    const key = `store-${isNearest ? 'nearest' : 'regular'}`
+    const markerClass = styles?.marker ?? 'w-8 h-8 flex items-center justify-center rounded-full bg-blue-600 text-white cursor-pointer'
+    const nearestClass = isNearest ? (styles?.nearestMarker ?? 'bg-green-600 ring-4 ring-green-200') : ''
+    const iconClass = styles?.markerIcon ?? 'text-xl'
     
     return this.getIcon(key, {
       className: 'custom-store-marker',
@@ -46,7 +46,7 @@ export class IconService {
   }
 
   static getUserIcon(styles?: Record<string, string>): L.DivIcon {
-    const userClass = styles?.userMarker || 'w-4 h-4 bg-red-600 rounded-full ring-4 ring-red-200'
+    const userClass = styles?.userMarker ?? 'w-4 h-4 bg-red-600 rounded-full ring-4 ring-red-200'
     
     return this.getIcon('user', {
       className: 'custom-user-marker',

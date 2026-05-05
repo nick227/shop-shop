@@ -1,12 +1,31 @@
 import type { RiverComment } from '@api/types'
 import { Button } from '@shared/ui/primitives'
+import { formatRelativeTime } from '@shared/lib/utils/format'
 
 interface PostCommentListProps {
   comments: RiverComment[]
-  postId: string // UUID;
-  onLoadMore?: () => void;
-  hasMore?: boolean;
-  isLoading?: boolean;
+  postId: string
+  onLoadMore?: () => void
+  hasMore?: boolean
+  isLoading?: boolean
+}
+
+function CommentAvatar({ src, name }: { src?: string; name: string }) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border"
+      />
+    )
+  }
+  const initial = name[0]?.toUpperCase() ?? '?'
+  return (
+    <div className="w-8 h-8 rounded-full flex-shrink-0 bg-muted flex items-center justify-center ring-1 ring-border">
+      <span className="text-xs font-semibold text-muted-foreground">{initial}</span>
+    </div>
+  )
 }
 
 export const PostCommentList = ({
@@ -14,58 +33,45 @@ export const PostCommentList = ({
   postId: _postId,
   onLoadMore,
   hasMore = false,
-  isLoading = false}: PostCommentListProps) => {
-  const formatTimestamp = (dateString?: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-    if (diffInSeconds < 60) return 'Just now'
-    if (diffInSeconds < 3600) return '' + Math.floor(diffInSeconds / 60) + 'm ago'
-    if (diffInSeconds < 86_400) return '' + Math.floor(diffInSeconds / 3600) + 'h ago'
-    return date.toLocaleDateString()
-  }
-
+  isLoading = false,
+}: PostCommentListProps) => {
   if (comments.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>No comments yet. Be the first to comment!</p>
-      </div>
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        No comments yet. Be the first!
+      </p>
     )
   }
 
   return (
-    <div className="space-y-4 mt-4 pt-4 border-t border-border">
+    <div className="space-y-4 mt-3 pt-3 border-t border-border">
       {comments.map((comment) => (
-        <article key={comment.id} className="flex gap-3">
-          <div className="flex items-center gap-2 mb-2">
-            {comment.userImage && (
-              <img
-                src={comment.userImage}
-                alt={comment.userName}
-                className="w-8 h-8 rounded-full"
-              />
-            )}
-            <div className="flex-1">
-              <h5 className="font-semibold text-sm text-foreground">{comment.userName}</h5>
-              <time className="text-xs text-muted-foreground">
-                {formatTimestamp(comment.createdAt)}
+        <article key={comment.id} className="flex gap-2.5">
+          <CommentAvatar src={comment.userImage} name={comment.userName ?? 'User'} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="text-sm font-semibold text-foreground leading-tight">
+                {comment.userName}
+              </span>
+              <time className="text-xs text-secondary flex-shrink-0">
+                {formatRelativeTime(
+                  comment.createdAt ? new Date(comment.createdAt) : new Date()
+                )}
               </time>
             </div>
-          </div>
-          <div className="flex-1 bg-muted rounded-lg p-3">
-            <p className="text-sm text-foreground">{comment.content}</p>
+            <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
           </div>
         </article>
       ))}
 
       {hasMore && (
-        <div className="text-center mt-4">
+        <div className="pt-1">
           <Button
-            variant="secondary"
+            variant="ghost"
+            size="small"
             onClick={onLoadMore}
             disabled={isLoading}
+            fullWidth
           >
             {isLoading ? 'Loading...' : 'Load more comments'}
           </Button>
@@ -74,5 +80,3 @@ export const PostCommentList = ({
     </div>
   )
 }
-
-

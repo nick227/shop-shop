@@ -41,7 +41,7 @@ const envSchema = z.object({
   
   // Frontend/CORS
   WEB_PORT: z.string().transform(Number).default(process.env.WEB_PORT ?? '5177'),
-  CORS_ORIGINS: z.string().default(process.env.CORS_ORIGINS ?? 'http://localhost:5177'),
+  CORS_ORIGINS: z.string().default(process.env.CORS_ORIGINS ?? 'http://localhost:5177,http://localhost:3005'),
 })
 
 export type ServerEnv = z.infer<typeof envSchema>

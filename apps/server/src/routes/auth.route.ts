@@ -13,12 +13,13 @@ import {
   toPublicUser,
 } from '@packages/db'
 import { rateLimits } from '../constants/rateLimits.js'
+import { authenticate } from '../middleware/auth.js'
 
 export const authRoutes = async (app: FastifyInstance) => {
-  // POST /auth/signup — brute-force / signup spam protection
-  app.post('/auth/signup', {
+  // POST /signup — brute-force / signup spam protection
+  app.post('/signup', {
     config: {
-      rateLimit: rateLimits.authCredentials,
+      rateLimit: rateLimits.authSignup,
     },
   }, async (req, reply) => {
     try {
@@ -62,10 +63,10 @@ export const authRoutes = async (app: FastifyInstance) => {
     }
   })
 
-  // POST /auth/login — brute-force protection
-  app.post('/auth/login', {
+  // POST /login — brute-force protection
+  app.post('/login', {
     config: {
-      rateLimit: rateLimits.authCredentials,
+      rateLimit: rateLimits.authLogin,
     },
   }, async (req, reply) => {
     try {
@@ -119,6 +120,40 @@ export const authRoutes = async (app: FastifyInstance) => {
         })
       }
       throw error
+    }
+  })
+
+  // GET /me — get current user info
+  app.get('/me', {
+    preHandler: [authenticate],
+  }, async (req, reply) => {
+    try {
+      // User is attached to request by authenticate middleware
+      const user = (req as any).user
+      
+      if (!user) {
+        return reply.code(401).send({
+          error: 'User not found'
+        })
+      }
+
+      return reply.code(200).send({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isCompany: user.isCompany,
+        companyName: user.companyName,
+        phone: user.phone,
+        roles: user.roles,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      })
+    } catch (error) {
+      req.log.error(error, 'Failed to get user info')
+      return reply.code(500).send({
+        error: 'Internal server error'
+      })
     }
   })
 }

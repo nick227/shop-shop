@@ -7,7 +7,7 @@ export function useHaptics() {
     if (!isSupported) return
     try {
       navigator.vibrate(10)
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }, [isSupported])
@@ -16,7 +16,7 @@ export function useHaptics() {
     if (!isSupported) return
     try {
       navigator.vibrate([30, 50, 30])
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }, [isSupported])
@@ -25,7 +25,7 @@ export function useHaptics() {
     if (!isSupported) return
     try {
       navigator.vibrate([10, 30, 20, 30, 40])
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }, [isSupported])
@@ -34,7 +34,7 @@ export function useHaptics() {
     if (!isSupported) return
     try {
       navigator.vibrate([50, 30, 50])
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }, [isSupported])

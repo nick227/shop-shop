@@ -1,7 +1,8 @@
 import type { PrismaClient } from '../src/generated/client/index.js'
 
 /**
- * Deletes seed-owned data in FK-safe order. Skips SystemSetting, GeocodingCache.
+ * Deletes seed-owned data in FK-safe order. Skips SystemSetting.
+ * GeocodingCache is cleared so the geocoding seed phases repopulate it cleanly.
  */
 export async function cleanSeedTables(prisma: PrismaClient): Promise<void> {
   await prisma.paymentWebhook.deleteMany()

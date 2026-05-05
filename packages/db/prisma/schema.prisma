@@ -311,6 +311,7 @@ model Cart {
   store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
   status    CartStatus @default(ACTIVE)
   note      String?
+  expiresAt DateTime?
   items     CartItem[]
   order     Order?
   createdAt DateTime   @default(now())
@@ -318,6 +319,7 @@ model Cart {
 
   @@index([userId])
   @@index([storeId])
+  @@index([expiresAt])
 }
 
 model CartItem {

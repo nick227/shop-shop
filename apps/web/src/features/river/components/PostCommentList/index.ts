@@ -1,2 +1,0 @@
-export { PostCommentList } from './PostCommentList'
-

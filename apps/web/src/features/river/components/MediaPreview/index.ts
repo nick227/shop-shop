@@ -1,2 +1,0 @@
-export { MediaPreview } from './MediaPreview'
-

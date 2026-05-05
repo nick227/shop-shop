@@ -7,7 +7,7 @@
  * Usage: npx tsx seed-city-cache.ts
  */
 
-import { prisma } from './src/client'
+import { PrismaClient } from '@prisma/client'
 
 const MAJOR_CITIES = [
   { city: 'Austin', state: 'TX', lat: 30.2672, lon: -97.7431 },
@@ -42,7 +42,7 @@ const MAJOR_CITIES = [
   { city: 'Charlotte', state: 'NC', lat: 35.2271, lon: -80.8431 },
 ]
 
-async function seedCityCache() {
+export async function seedCityCache(prisma: PrismaClient): Promise<void> {
   console.log('\n💾 Seeding City/State Geocoding Cache')
   console.log('='.repeat(60))
   console.log(`\nPopulating ${MAJOR_CITIES.length} major US cities...`)
@@ -104,11 +104,5 @@ async function seedCityCache() {
   console.log('\n💡 These cities will now work instantly without API calls!')
   console.log(`💰 Estimated API quota saved: ~${created} requests\n`)
   
-  await prisma.$disconnect()
 }
-
-seedCityCache().catch((error) => {
-  console.error('\n❌ Seeding failed:', error)
-  process.exit(1)
-})
 

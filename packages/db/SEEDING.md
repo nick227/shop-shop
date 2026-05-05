@@ -17,20 +17,31 @@ Creates:
 - 3 stores (Pizza, Burger, Sushi) in various US cities
 - 20 menu items
 
-### 2. Austin Area Stores (Comprehensive)
+### 2. Austin Area Stores (Enhanced)
 
 ```bash
 cd packages/db
 pnpm tsx src/scripts/seed-austin-stores.ts
 ```
 
-Creates stores in Austin, TX near ZIP code 78758 with:
+Creates comprehensive stores in Austin, TX near ZIP code 78758 with:
 - Multiple vendors (auto-generated)
 - 10-30+ stores across 8 Austin neighborhoods
-- Full menu items for each store type
-- Store cover images (from placehold.co)
-- Item images (from placehold.co)
+- Full menu items for each store type with dietary information
+- Store cover images (from picsum.photos)
+- Item images (from picsum.photos)
 - 2-5 river posts per store with images
+- **Bundle combinations** for each store type
+- **Delivery zones** with realistic polygon areas
+- **Sample favorites** for user engagement
+
+**Enhanced Features:**
+- 🌱 **Dietary flags**: vegan, vegetarian, gluten-free, dairy-free
+- ⚠️ **Allergen information**: common allergens tagged on items
+- 🌶️ **Spice levels**: 1-5 scale for appropriate items
+- 📦 **Bundle deals**: 2 bundles per store type with pricing strategies
+- 🗺️ **Delivery zones**: 3-tier polygon-based delivery areas
+- ❤️ **Favorites**: Sample user favorites for testing
 
 **Store Types Included:**
 - ☕ Coffee shops
@@ -60,6 +71,44 @@ Creates stores in Austin, TX near ZIP code 78758 with:
 - Commission rates
 - Phone numbers and emails
 
+**Delivery Zones**
+Each store gets 3 concentric delivery zones:
+
+1. **Nearby Delivery** (1-mile radius)
+   - Base fee: $2.99
+   - Minimum order: $15.00
+   - Priority: 3 (highest)
+
+2. **Extended Delivery** (3-mile radius)
+   - Base fee: $4.99
+   - Minimum order: $20.00
+   - Priority: 2
+
+3. **Far Delivery** (5-mile radius)
+   - Base fee: $7.99
+   - Minimum order: $25.00
+   - Priority: 1 (lowest)
+
+All zones use GeoJSON polygon coordinates for accurate geographic boundaries.
+
+**Bundle System**
+Each store type gets 2 pre-configured bundles:
+
+- **Coffee Shops**: Morning Starter Pack, Coffee Lover's Combo
+- **Pizza**: Classic Pizza Night, Family Feast
+- **Burgers**: Burger & Fries Combo, Double Burger Deluxe
+- **Sushi**: Sushi Sampler, Sushi Master Platter
+- **Tacos**: Taco Trio, Taco Feast
+- **Thai**: Thai Favorites, Spicy Thai Experience
+- **BBQ**: BBQ Sampler, BBQ Feast
+- **Bakery**: Morning Pastries, Sweet Tooth Special
+
+**Pricing Strategies**:
+- Fixed price bundles
+- Percentage discount bundles
+- Amount discount bundles
+- Savings labels for marketing
+
 ### 3. Store Locations Seed
 
 ```bash
@@ -84,13 +133,28 @@ Adds coordinates to existing stores without location data. Uses 20 major US citi
 
 ## Image Placeholders
 
-All seeded data uses placeholder images from **placehold.co**:
+All seeded data uses realistic images from **picsum.photos**:
 
-- **Store covers**: `https://placehold.co/1200x400/0066cc/white?text={Store Name}`
-- **Menu items**: `https://placehold.co/{size}x{size}/ff6b6b/white?text={Item Name}`
-- **River posts**: `https://placehold.co/{width}x{height}/20b2aa/white?text={Store Name} Post`
+- **Store covers**: `https://picsum.photos/seed/{store-name}/1200x400.jpg`
+- **Menu items**: `https://picsum.photos/seed/{item-name}/{size}x{size}.jpg`
+- **River posts**: `https://picsum.photos/seed/{store-name}-post-{id}/{width}x{height}.jpg`
+- **Bundle images**: `https://picsum.photos/seed/{bundle-name}/600x400.jpg`
 
-You can replace these with real images later or use a different placeholder service.
+Images use consistent seeds for reproducibility.
+
+**Dietary Information**
+All menu items include:
+- **Vegan/Vegetarian flags** for plant-based options
+- **Gluten-free indicators** for celiac-friendly items
+- **Dairy-free flags** for lactose-intolerant customers
+- **Allergen arrays** containing: wheat, dairy, eggs, nuts, fish, shellfish, peanuts
+- **Spice levels** (1-5) for appropriate cuisines
+
+**Sample Favorites**
+Creates realistic user engagement:
+- 3-5 favorite stores per customer
+- 5-10 favorite items per customer
+- Uses customer@seed.local account
 
 ## Full Reset & Reseed
 

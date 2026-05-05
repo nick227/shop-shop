@@ -64,9 +64,15 @@
         "apps/*",
         "packages/*"
     ],
+    "pnpm": {
+        "overrides": {
+            "zod-to-json-schema": "3.23.5"
+        }
+    },
     "devDependencies": {
         "@rollup/rollup-linux-x64-gnu": "^4.60.2",
         "@vitest/coverage-v8": "^2.1.1",
+        "baseline-browser-mapping": "^2.10.27",
         "eslint": "^9.9.0",
         "knip": "^5.27.0",
         "madge": "^8.0.0",

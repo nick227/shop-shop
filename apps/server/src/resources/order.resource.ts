@@ -49,7 +49,7 @@ export const orderResource = defineResource({
   },
   access: {
     create: ['USER', 'VENDOR', 'ADMIN'],
-    read: ['USER', 'VENDOR', 'ADMIN', 'RIDER'],
+    read: [],
     update: ['VENDOR', 'ADMIN'],
     delete: ['ADMIN'],
     list: ['USER', 'VENDOR', 'ADMIN', 'RIDER'],

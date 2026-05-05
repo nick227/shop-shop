@@ -10,13 +10,14 @@ import { StoreGrid } from '../StoreGrid'
 import { Spinner } from '@shared/ui/primitives'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 import { useNavigate } from 'react-router-dom'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 
 export function StoreList() {
   const { stores, isLoading, error } = useStoreSearchWithTransformers(undefined) // No location constraint
   const navigate = useNavigate()
 
   const handleStoreClick = (store: StoreResponse | StoreWithDistance) => {
-    navigate(`/store/${store.id}`)
+    navigate(getStoreRoute({ id: store.id, name: store.name }))
   }
 
   if (isLoading) {

@@ -2,7 +2,7 @@
  * useLocationParams - Unified URL parameter handling for location data;
  * Integrates with the LocationService for consistent data management;
  */
-import { useSearchParams as useRouterSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams as useRouterSearchParams, useNavigate, useLocation as useRouterLocation } from 'react-router-dom'
 import { useCallback, useMemo } from 'react'
 export interface LocationSearchParams {
   latitude?: string;
@@ -12,6 +12,14 @@ export interface LocationSearchParams {
   state?: string;
   zip?: string;
   source?: string;
+}
+
+function clearLocationKeys(params: URLSearchParams, keys: string[]): void {
+  for (const key of keys) params.delete(key)
+}
+
+function setParamIfPresent(params: URLSearchParams, key: string, value: string | undefined): void {
+  if (value) params.set(key, value)
 }
 
 /**
@@ -44,13 +52,13 @@ export function useLocationSearchParams() {
     const source = searchParams.get('source')
     
     return {
-      latitude: lat || undefined,
-      longitude: lng || undefined,
-      radiusMiles: radius || undefined,
-      city: safeDecodeURIComponent(city || undefined),
-      state: safeDecodeURIComponent(state || undefined),
-      zip: zip || undefined,
-      source: source || undefined}
+      latitude: lat ?? undefined,
+      longitude: lng ?? undefined,
+      radiusMiles: radius ?? undefined,
+      city: safeDecodeURIComponent(city ?? undefined),
+      state: safeDecodeURIComponent(state ?? undefined),
+      zip: zip ?? undefined,
+      source: source ?? undefined}
   }, [searchParams])
 }
 
@@ -60,6 +68,7 @@ export function useLocationSearchParams() {
  */
 export function useUpdateLocationParams() {
   const navigate = useNavigate()
+  const routerLocation = useRouterLocation()
   const [searchParams] = useRouterSearchParams()
   
   const updateParams = useCallback((params: Partial<LocationSearchParams>) => {
@@ -73,39 +82,34 @@ export function useUpdateLocationParams() {
     if (params.zip) {
       // ZIP-based search (cleanest URL)
       newParams.set('zip', params.zip)
-      if (params.source) newParams.set('source', params.source)
-      if (params.radiusMiles) newParams.set('radius', params.radiusMiles)
+      setParamIfPresent(newParams, 'source', params.source)
+      setParamIfPresent(newParams, 'radius', params.radiusMiles)
       // Remove other location params;
-      newParams.delete('lat')
-      newParams.delete('lng')
-      newParams.delete('city')
-      newParams.delete('state')
+      clearLocationKeys(newParams, ['lat', 'lng', 'city', 'state'])
     } else if (params.city && params.state) {
       // City/State-based search (readable URL)
       newParams.set('city', params.city)
       newParams.set('state', params.state)
-      if (params.source) newParams.set('source', params.source)
-      if (params.radiusMiles) newParams.set('radius', params.radiusMiles)
+      setParamIfPresent(newParams, 'source', params.source)
+      setParamIfPresent(newParams, 'radius', params.radiusMiles)
       // Remove other location params;
-      newParams.delete('lat')
-      newParams.delete('lng')
-      newParams.delete('zip')
+      clearLocationKeys(newParams, ['lat', 'lng', 'zip'])
     } else if (params.latitude && params.longitude) {
       // Coordinate-based search (fallback for geolocation)
       newParams.set('lat', params.latitude)
       newParams.set('lng', params.longitude)
-      if (params.source) newParams.set('source', params.source)
-      if (params.radiusMiles) newParams.set('radius', params.radiusMiles)
+      setParamIfPresent(newParams, 'source', params.source)
+      setParamIfPresent(newParams, 'radius', params.radiusMiles)
       // Keep city/state if available (for display)
-      if (params.city) newParams.set('city', params.city)
-      if (params.state) newParams.set('state', params.state)
+      setParamIfPresent(newParams, 'city', params.city)
+      setParamIfPresent(newParams, 'state', params.state)
       // Remove zip since we're using coordinates;
-      newParams.delete('zip')
+      clearLocationKeys(newParams, ['zip'])
     }
     
     // Check if the new URL is different from the current one;
-    const newUrl = '?' + newParams.toString() + ''
-    const currentUrl = '?' + searchParams.toString() + ''
+    const newUrl = `?${newParams.toString()}`
+    const currentUrl = `?${searchParams.toString()}`
     
     if (newUrl !== currentUrl) {
       // Navigate with new params (replace to avoid cluttering history)
@@ -114,8 +118,17 @@ export function useUpdateLocationParams() {
   }, [navigate, searchParams])
   
   const clearParams = useCallback(() => {
-    navigate('/', { replace: true })
-  }, [navigate])
+    const newParams = new URLSearchParams(searchParams)
+    clearLocationKeys(newParams, ['lat', 'lng', 'radius', 'city', 'state', 'zip', 'source'])
+
+    const query = newParams.toString()
+    const newUrl = `${routerLocation.pathname}${query ? `?${query}` : ''}${routerLocation.hash}`
+    const currentUrl = `${routerLocation.pathname}${routerLocation.search}${routerLocation.hash}`
+
+    if (newUrl !== currentUrl) {
+      navigate(newUrl, { replace: true })
+    }
+  }, [navigate, routerLocation.hash, routerLocation.pathname, routerLocation.search, searchParams])
   
   return { updateParams, clearParams }
 }

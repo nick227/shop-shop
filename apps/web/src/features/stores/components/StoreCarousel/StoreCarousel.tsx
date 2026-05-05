@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { StoreCardCompact } from '../StoreCard/StoreCardCompact'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 import { cn } from '@shared/lib/cn'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 
 export interface StoreCarouselProps {
   readonly stores: StoreWithDistance[]
@@ -18,7 +19,7 @@ export function StoreCarousel({ stores, title, isLoading, variant = 'default' }:
   const fallback = variant === 'fallback'
 
   const handleStoreClick = (store: StoreResponse) => {
-    navigate(`/stores/${store.id}`)
+    navigate(getStoreRoute({ id: store.id, name: store.name }))
   }
 
   if (isLoading) {

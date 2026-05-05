@@ -3,7 +3,8 @@
  * Testing pure location calculations and business rules
  */
 
-import { LocationService, LocationData, StoreData } from '../LocationService';
+import type { LocationData, StoreData } from '../LocationService';
+import { LocationService } from '../LocationService';
 
 describe('LocationService', () => {
   let locationService: LocationService;
@@ -19,7 +20,7 @@ describe('LocationService', () => {
 
   describe('getDistance', () => {
     test('calculates distance between NYC and Boston correctly', () => {
-      const nyc: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const nyc: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       const boston = { latitude: 42.3601, longitude: -71.0589 };
       
       const distance = locationService.getDistance(nyc, boston);
@@ -31,7 +32,7 @@ describe('LocationService', () => {
     });
 
     test('calculates zero distance for same location', () => {
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const distance = locationService.getDistance(location, location);
       
@@ -89,12 +90,12 @@ describe('LocationService', () => {
         name: 'Test Store',
         address: '123 Test St',
         latitude: 40.7128,
-        longitude: -74.0060,
+        longitude: -74.006,
         distance: 10, // Within 15 mile radius
         travelTime: 24,
         isDeliverable: false
       };
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = locationService.isDeliverable(store, location);
       
@@ -107,12 +108,12 @@ describe('LocationService', () => {
         name: 'Test Store',
         address: '123 Test St',
         latitude: 40.7128,
-        longitude: -74.0060,
+        longitude: -74.006,
         distance: 20, // Outside 15 mile radius
         travelTime: 48,
         isDeliverable: false
       };
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = locationService.isDeliverable(store, location);
       
@@ -126,12 +127,12 @@ describe('LocationService', () => {
         name: 'Test Store',
         address: '123 Test St',
         latitude: 40.7128,
-        longitude: -74.0060,
+        longitude: -74.006,
         distance: 25, // Outside default 15 miles but within 30 miles
         travelTime: 60,
         isDeliverable: false
       };
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = customService.isDeliverable(store, location);
       
@@ -146,7 +147,7 @@ describe('LocationService', () => {
         name: 'Nearby Store',
         address: '123 Nearby St',
         latitude: 40.7128,
-        longitude: -74.0060
+        longitude: -74.006
       },
       {
         id: '2',
@@ -165,7 +166,7 @@ describe('LocationService', () => {
     ];
 
     test('filters stores by max distance and sorts by distance', () => {
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = locationService.getNearbyStores(location, mockStores);
       
@@ -181,19 +182,19 @@ describe('LocationService', () => {
       }
       
       // All stores should have calculated distance and travel time
-      result.forEach(store => {
+      for (const store of result) {
         expect(store.distance).toBeGreaterThanOrEqual(0);
         expect(store.travelTime).toBeGreaterThanOrEqual(0);
         expect(typeof store.isDeliverable).toBe('boolean');
-      });
+      }
     });
 
     test('calculates distance and travel time for all stores', () => {
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = locationService.getNearbyStores(location, mockStores);
       
-      result.forEach(store => {
+      for (const store of result) {
         // Distance should be calculated
         expect(store.distance).toBeGreaterThanOrEqual(0);
         
@@ -203,23 +204,23 @@ describe('LocationService', () => {
         // Delivery eligibility should be calculated based on distance <= 15 miles
         const expectedDelivery = store.distance <= 15;
         expect(store.isDeliverable).toBe(expectedDelivery);
-      });
+      }
     });
 
     test('uses config maxDistance correctly', () => {
       const customService = new LocationService({ maxDistance: 10 });
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = customService.getNearbyStores(location, mockStores);
       
       // All stores should be within 10 miles
-      result.forEach(store => {
+      for (const store of result) {
         expect(store.distance).toBeLessThanOrEqual(10);
-      });
+      }
     });
 
     test('handles empty stores array', () => {
-      const location: LocationData = { latitude: 40.7128, longitude: -74.0060, source: 'gps' };
+      const location: LocationData = { latitude: 40.7128, longitude: -74.006, source: 'gps' };
       
       const result = locationService.getNearbyStores(location, []);
       

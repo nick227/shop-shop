@@ -15,6 +15,10 @@ export async function assertOrderAccess(
 ): Promise<void> {
   const uid = context?.userId
   const role = context?.userRole
+  if (operation === 'read' && !uid) {
+    return
+  }
+
   if (!uid || !role) {
     throw new Error('Forbidden')
   }

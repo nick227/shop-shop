@@ -121,7 +121,7 @@ export const ContentLoading = memo<LoadingConfig>(({
               key={i}
               className={cn(
                 'rounded-full bg-primary animate-pulse',
-                size === 'xs' ? 'w-1 h-1' : size === 'sm' ? 'w-2 h-2' : 'w-3 h-3'
+                size === 'xs' ? 'w-1 h-1' : (size === 'sm' ? 'w-2 h-2' : 'w-3 h-3')
               )}
               style={{
                 animationDelay: `${i * 0.2}s`,
@@ -135,7 +135,7 @@ export const ContentLoading = memo<LoadingConfig>(({
       {variant === 'pulse' && (
         <div className={cn(
           'rounded-full bg-primary animate-pulse mb-4',
-          size === 'xs' ? 'w-6 h-6' : size === 'sm' ? 'w-8 h-8' : 'w-12 h-12'
+          size === 'xs' ? 'w-6 h-6' : (size === 'sm' ? 'w-8 h-8' : 'w-12 h-12')
         )} />
       )}
       
@@ -174,7 +174,7 @@ export const FullScreenLoading = memo<LoadingConfig>(({
                 key={i}
                 className={cn(
                   'rounded-full bg-primary animate-pulse',
-                  size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-3 h-3' : 'w-4 h-4'
+                  size === 'sm' ? 'w-2 h-2' : (size === 'md' ? 'w-3 h-3' : 'w-4 h-4')
                 )}
                 style={{
                   animationDelay: `${i * 0.2}s`,
@@ -211,7 +211,7 @@ export const SkeletonLoading = memo<SkeletonConfig>(({
   
   const style = {
     width: width || (variant === 'avatar' ? '40px' : '100%'),
-    height: height || (variant === 'avatar' ? '40px' : variant === 'text' ? '16px' : '200px')
+    height: height || (variant === 'avatar' ? '40px' : (variant === 'text' ? '16px' : '200px'))
   }
   
   return (
@@ -275,7 +275,7 @@ export const LoadingStates = {
   spinner: (size: LoadingSize = 'md') => <InlineLoading size={size} variant="spinner" />,
   dots: (size: LoadingSize = 'md') => <InlineLoading size={size} variant="dots" />,
   pulse: (size: LoadingSize = 'md') => <InlineLoading size={size} variant="pulse" />,
-  skeleton: (count: number = 3) => <SkeletonLoading count={count} variant="card" />
+  skeleton: (count = 3) => <SkeletonLoading count={count} variant="card" />
 } as const
 
 // ========================================

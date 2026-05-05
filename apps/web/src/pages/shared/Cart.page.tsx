@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '@shared/hooks/hooks/useCart'
-import { MobileShell } from '@shared/ui/layout/MobileShell'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { Button } from '@shared/ui/primitives'
-import { SkeletonList } from '@shared/ui/primitives'
+import { CartSkeleton } from '@components/skeletons/CartSkeleton'
 import { 
   Dialog,
   DialogContent,
@@ -13,9 +12,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@shared/ui/primitives'
-import { ShoppingCart, ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 import { CartItemRow } from '@features/cart/components/CartItemRow'
 import { CartSummary } from '@features/cart/components/CartSummary'
+import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
 import { toast } from 'sonner'
 
 /**
@@ -38,62 +38,62 @@ export default function CartPage() {
 
   const handleCheckout = () => navigate('/checkout')
 
-  // Loading
-  if (isLoading) {
+  const itemCount = Array.isArray(cart?.items) ? cart.items.length : 0
+  const cartErrorMessage = (error as { message?: string } | undefined)?.message ?? 'Something went wrong.'
+  const status: 'loading' | 'error' | 'empty' | 'ready' = (() => {
+    if (isLoading) return 'loading'
+    if (error) return 'error'
+    if (!cart || itemCount === 0) return 'empty'
+    return 'ready'
+  })()
+
+  if (status === 'loading') {
     return (
-      <MobileShell title="Cart" showHeader showBottomNav>
-        <div className="p-4">
-          <SkeletonList count={3} />
-        </div>
-      </MobileShell>
+      <PageShell className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-4 py-6">
+        <section className="rounded-xl border border-border bg-card p-4">
+          <CartSkeleton />
+        </section>
+      </PageShell>
     )
   }
 
-  // Error
-  if (error) {
+  if (status === 'error') {
     return (
-      <MobileShell title="Cart" showHeader showBottomNav>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-          <h2 className="text-2xl font-bold mb-2">Error Loading Cart</h2>
-          <p className="text-destructive mb-6">{error.message}</p>
-          <Button variant="primary" onClick={handleContinueShopping}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to Shopping
-          </Button>
-        </div>
-      </MobileShell>
+      <PageShell className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-4 py-6">
+        <StateBlock
+          title="Error loading cart"
+          message={cartErrorMessage}
+          actionLabel="Back to search"
+          onAction={handleContinueShopping}
+          className="rounded-xl border border-border bg-card p-4"
+        />
+      </PageShell>
     )
   }
 
-  const isEmpty = !cart || !Array.isArray(cart.items) || cart.items.length === 0
-
-  // Empty State
-  if (isEmpty) {
+  if (status === 'empty') {
     return (
-      <MobileShell title="Cart" showHeader showBottomNav>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-          <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
-          <p className="text-muted-foreground mb-6">
-            Add items from your favorite stores to get started!
-          </p>
-          <Button variant="primary" size="large" onClick={handleContinueShopping}>
-            Browse Restaurants
-          </Button>
-        </div>
-      </MobileShell>
+      <PageShell className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-4 py-6">
+        <section className="rounded-xl border border-border bg-card p-4">
+          <StateBlock
+            title="Your cart is empty"
+            message="Add items from a kitchen to continue."
+            actionLabel="Back to search"
+            onAction={handleContinueShopping}
+            className="mt-2"
+          />
+        </section>
+      </PageShell>
     )
   }
 
-  // Success - Cart with Items
   return (
-    <MobileShell title="Shopping Cart" showHeader showBottomNav>
-      <div className="flex flex-col">
-        {/* Header Actions */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
+    <PageShell className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-4 py-6">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+        <header className="flex items-center justify-between border-b border-border p-4">
           <Button variant="ghost" size="small" onClick={handleContinueShopping}>
             <ArrowLeft className="h-4 w-4" />
-            Continue Shopping
+            Back
           </Button>
 
           <Dialog>
@@ -118,15 +118,14 @@ export default function CartPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        </header>
 
-        {/* Items Section */}
-        <div className="p-4">
-          <h2 className="text-xl font-semibold mb-4">
-            Items ({Array.isArray(cart?.items) ? cart.items.length : 0})
+        <section className="p-4">
+          <h2 className="mb-4 text-xl font-semibold text-foreground">
+            Items ({itemCount})
           </h2>
           <div className="space-y-3">
-            {Array.isArray(cart?.items) && cart.items.map((item: any) => (
+            {Array.isArray(cart?.items) && cart.items.map((item) => (
               <CartItemRow 
                 key={item.id} 
                 cartItem={item}
@@ -134,13 +133,12 @@ export default function CartPage() {
               />
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Summary Section */}
-        <div className="p-4 border-t border-border bg-muted/30">
+        <footer className="sticky bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur">
           {cart && <CartSummary cart={cart} onCheckout={handleCheckout} />}
-        </div>
+        </footer>
       </div>
-    </MobileShell>
+    </PageShell>
   )
 }

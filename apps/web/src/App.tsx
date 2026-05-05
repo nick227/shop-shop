@@ -9,6 +9,7 @@ import { apiClient } from './api/client'
 import { useAuthStore } from './stores/authStore'
 import { ErrorBoundary } from '@shared/ui/ErrorBoundary'
 import { Toaster } from '@shared/ui/primitives'
+import { AuthProvider } from './features/auth/context/AuthContext'
 // Use a relative import here to avoid TS path-alias resolution issues in some editors/tooling.
 import { setupViewTransitions } from './shared/lib/utils/view-transitions'
 
@@ -54,8 +55,10 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Toaster />
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   )

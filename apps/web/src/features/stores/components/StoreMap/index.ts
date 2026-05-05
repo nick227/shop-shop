@@ -4,8 +4,6 @@
  */
 
 // Main components;
-export { default as StoreMap } from './StoreMap'
-export { default as StoreMapRefactored } from './StoreMapRefactored'
 export { StoreDestinationMap } from './StoreDestinationMap'
 export type { StoreMapProps } from './StoreMap'
 

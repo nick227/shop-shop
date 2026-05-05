@@ -37,7 +37,7 @@ export function useMediaList({ storeId, itemId }: UseMediaListParams) {
       const list = Array.isArray(payload?.data) ? payload.data : []
 
       return list.map((m: any) => {
-        const meta = (m?.metadata ?? {}) as any
+        const meta = (m?.metadata ?? {})
         return {
           id: String(m.id),
           url: String(m.url),

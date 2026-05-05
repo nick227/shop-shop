@@ -123,7 +123,7 @@ export const StoreListResponseSchema = z.object({
 export const StoreQuerySchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
-}).transform(data => ({
+}).passthrough().transform(data => ({
   page: data.page,
   limit: data.limit,
   filters: Object.keys(data)
@@ -140,4 +140,3 @@ export type UpdateStoreInput = z.infer<typeof UpdateStoreInputSchema>
 export type StoreResponse = z.infer<typeof StoreResponseSchema>
 export type StoreListResponse = z.infer<typeof StoreListResponseSchema>
 export type StoreQuery = z.infer<typeof StoreQuerySchema>
-

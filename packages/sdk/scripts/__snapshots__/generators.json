@@ -1,0 +1,34 @@
+{
+  "src\\api\\apiWrapper.ts": {
+    "file": "src\\api\\apiWrapper.ts",
+    "hash": "a241b1d3492bc4b4fbe8c2933555a09d",
+    "lineCount": 374,
+    "resources": [
+      "stores",
+      "items",
+      "carts",
+      "orders",
+      "addresses",
+      "posts",
+      "bundles"
+    ],
+    "timestamp": "2025-10-26T12:12:14.946Z",
+    "methods": 27
+  },
+  "src\\hooks\\generated.ts": {
+    "file": "src\\hooks\\generated.ts",
+    "hash": "16fba7c174026199783b4a38d6585147",
+    "lineCount": 218,
+    "resources": [
+      "stores",
+      "items",
+      "carts",
+      "orders",
+      "addresses",
+      "posts",
+      "bundles"
+    ],
+    "timestamp": "2025-10-26T12:12:14.947Z",
+    "hooks": 27
+  }
+}

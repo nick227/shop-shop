@@ -1,4 +1,5 @@
 import Fastify from 'fastify'
+import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod'
 import swagger from '@fastify/swagger'
 import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
@@ -33,22 +34,48 @@ import { realtimeBroker } from './services/realtime.broker.js'
 import { globalErrorHandler, handleUncaughtException, handleUnhandledRejection } from './middleware/errorHandler.js'
 import { requestIdMiddleware } from './middleware/requestId.js'
 
-// Better logging in development
 const app = Fastify({
   logger: env.NODE_ENV === 'development' ? {
     transport: {
       target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: 'HH:MM:ss',
-        ignore: 'pid,hostname',
-      }
+      options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' }
     }
-  } : true
+  } : true,
 })
 
+// Zod is the single validation + serialization layer for all routes with schema declarations.
+// Resource routes only use schema.tags/summary — no body schemas — so this is safe globally.
+app.setValidatorCompiler(validatorCompiler)
+app.setSerializerCompiler(serializerCompiler)
+
+const safeJsonSchemaTransform: typeof jsonSchemaTransform = (input) => {
+  try {
+    return jsonSchemaTransform(input)
+  } catch (error) {
+    app.log.warn({ url: input.url, error }, 'Swagger transform failed for route; hiding from docs')
+    return {
+      schema: { hide: true },
+      url: input.url,
+    }
+  }
+}
+
 await app.register(cors, {
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    // Allow non-browser clients (no Origin header)
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+
+    // Always allow localhost dev ports (e.g., Vite auto-port shifts)
+    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+      callback(null, true)
+      return
+    }
+
+    callback(null, corsOrigins.includes(origin))
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -83,7 +110,8 @@ await app.register(swagger, {
   openapi: {
     openapi: '3.0.3',
     info: { title: 'Delivery API', version: '0.1.0' }
-  }
+  },
+  transform: safeJsonSchemaTransform,
 })
 await app.register(swaggerUI, { routePrefix: '/docs' })
 
@@ -94,10 +122,9 @@ app.addHook('preHandler', requestIdMiddleware)
 app.get('/healthz', async () => ({ ok: true }))
 
 // Register routes
-await app.register(authRoutes, { prefix: '/auth/v1' })     // New secure auth
-await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' }) // New checkout with idempotency
-await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' }) // Order status with validation
-await app.register(authRoutes)     // Custom auth logic
+await app.register(authRoutes, { prefix: '/auth/v1' })
+await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
+await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
 await app.register(stripeWebhookRoutes) // Stripe webhooks (raw JSON body for signatures)
 await app.register(paymentRoutes)  // Payment & Stripe Connect
 await app.register(mediaRoutes)    // Media uploads (custom multipart handling)

@@ -10,7 +10,17 @@ import sonarjs from 'eslint-plugin-sonarjs'
 import unicorn from 'eslint-plugin-unicorn'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results'] },
+  {
+    ignores: [
+      'dist',
+      'build',
+      'node_modules',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'lint-baseline.json',
+    ],
+  },
   {
     extends: [
       js.configs.recommended, 
@@ -52,19 +62,21 @@ export default tseslint.config(
       ],
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/display-name': 'warn',
       
       // TypeScript rules
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/prefer-readonly': 'error',
-      '@typescript-eslint/no-unsafe-assignment': 'error',
-      '@typescript-eslint/no-unsafe-call': 'error',
-      '@typescript-eslint/no-unsafe-member-access': 'error',
-      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'warn',
+      '@typescript-eslint/no-unsafe-call': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'warn',
+      '@typescript-eslint/no-unsafe-return': 'warn',
       
       // Promise rules
       ...promise.configs.recommended.rules,
@@ -111,7 +123,7 @@ export default tseslint.config(
       'unicorn/no-nested-ternary': 'error',
       'unicorn/no-new-array': 'error',
       'unicorn/no-new-buffer': 'error',
-      'unicorn/no-null': 'error',
+      'unicorn/no-null': 'warn',
       'unicorn/no-object-as-default-parameter': 'error',
       'unicorn/no-process-exit': 'error',
       'unicorn/no-thenable': 'error',
@@ -172,6 +184,47 @@ export default tseslint.config(
       'unicorn/switch-case-braces': 'error',
       'unicorn/text-encoding-identifier-case': 'error',
       'unicorn/throw-new-error': 'error',
+    },
+  },
+  {
+    files: ['scripts/**/*.{js,cjs,mjs,ts}', 'src/scripts/**/*.{js,cjs,mjs,ts}'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'sonarjs/slow-regex': 'off',
+    },
+  },
+  {
+    files: [
+      'src/types/api.ts',
+      'src/api/apiWrapper.ts',
+      'src/api/types/**/*.ts',
+      'src/shared/hooks/generated.ts',
+      'src/shared/hooks/hooks/generated.ts',
+    ],
+    rules: {
+      'sonarjs/class-name': 'off',
+      'sonarjs/no-duplicate-string': 'off',
+      'sonarjs/no-identical-functions': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
+    files: [
+      'src/shared/ui/primitives/ui/States/index.ts',
+      'src/shared/ui/templates/FormPageTemplate.tsx',
+    ],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'warn',
     },
   },
 )

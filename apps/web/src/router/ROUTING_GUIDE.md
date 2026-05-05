@@ -46,16 +46,16 @@ function MyComponent() {
 }
 ```
 
-### Store Profile
+### Kitchen Profile
 
-**Route:** `/stores/:storeId`
+**Route:** `/kitchen/:slug`
 
 **URL Parameters:**
-- `storeId` - Store UUID
+- `slug` - Kitchen slug (name + id suffix)
 
 **Example:**
 ```
-/stores/abc123-def456-ghi789
+/kitchen/joes-pizza-abc123def456
 ```
 
 **Usage:**
@@ -67,17 +67,16 @@ function StoreComponent() {
 }
 ```
 
-### Store + Item Context
+### Item Detail
 
-**Route:** `/stores/:storeId/items/:itemId`
+**Route:** `/items/:itemId`
 
 **URL Parameters:**
-- `storeId` - Store UUID
 - `itemId` - Item UUID
 
 **Example:**
 ```
-/stores/abc123-def456/items/xyz789-uvw012
+/items/xyz789uvw012
 ```
 
 **Usage:**
@@ -85,14 +84,14 @@ function StoreComponent() {
 import { useParams } from 'react-router-dom'
 
 function ItemComponent() {
-  const { storeId, itemId } = useParams<{ storeId: string; itemId: string }>()
+  const { itemId } = useParams<{ itemId: string }>()
   
-  // Navigate back to store
-  navigate(`/stores/${storeId}`)
+  // Navigate to canonical item route
+  navigate(`/items/${itemId}`)
 }
 ```
 
-**Note:** Items can also be accessed directly via `/items/:itemId` for backward compatibility.
+**Note:** `/items/:itemId` is the canonical item route.
 
 ## Benefits
 
@@ -109,13 +108,13 @@ function ItemComponent() {
 - `useLocationParams()` - Read/write location search parameters
 - `useLocationSearchParams()` - Read-only location parameters
 - `useUpdateLocationParams()` - Write-only parameter updater
-- `useStoreParams()` - Read store and item IDs from URL
+- `useStoreParams()` - Read kitchen and item IDs from URL
 
 ### Components
 
 - **HomePage** - Automatically syncs location state with URL parameters
 - **LocationSearch** - Updates URL when location changes
-- **ItemDetailPage** - Supports both direct and store-context routes
+- **ItemDetailPage** - Uses canonical `/items/:itemId` route
 
 ### Type Safety
 
@@ -150,11 +149,11 @@ function MyComponent() {
   // Navigate to home with location params
   navigate('/?lat=30.2672&lng=-97.7431&radius=25&city=Austin&state=TX')
   
-  // Navigate to store
-  navigate(`/stores/${storeId}`)
+  // Navigate to kitchen
+  navigate(`/kitchen/${kitchenSlug}`)
   
-  // Navigate to item in store context
-  navigate(`/stores/${storeId}/items/${itemId}`)
+  // Navigate to item
+  navigate(`/items/${itemId}`)
 }
 ```
 
@@ -163,11 +162,11 @@ function MyComponent() {
 ```tsx
 import { Link } from 'react-router-dom'
 
-// Store link
-<Link to={`/stores/${storeId}`}>View Store</Link>
+// Kitchen link
+<Link to={`/kitchen/${kitchenSlug}`}>View Kitchen</Link>
 
-// Item in store context
-<Link to={`/stores/${storeId}/items/${itemId}`}>View Item</Link>
+// Item link
+<Link to={`/items/${itemId}`}>View Item</Link>
 
 // Search with params
 <Link to="/?lat=30.2672&lng=-97.7431&radius=25">Austin Stores</Link>

@@ -37,7 +37,7 @@
     "api-smoke-test": "tsx scripts/api-smoke-test.ts",
     "simple-smoke-test": "tsx scripts/simple-smoke-test.ts",
     "working-smoke-test": "tsx scripts/working-smoke-test.ts",
-    "build": "tsc && npm run gen:all",
+    "build": "tsc && pnpm gen:all",
     "typecheck": "echo 'Schemas imports server code - typecheck at app level'",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

@@ -71,8 +71,7 @@ function processStoresOptimized(
   let maxDistance = 0
 
   // ✅ Single pass - filter + transform + nearest calculation
-  for (let i = 0; i < stores.length; i++) {
-    const store = stores[i]
+  for (const store of stores) {
     
     if (!hasValidCoordinates(store)) continue
 
@@ -106,8 +105,7 @@ function processStoresOptimized(
     validStores.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0))
     
     // ✅ Update storeLocations in sync with sorted stores
-    for (let i = 0; i < validStores.length; i++) {
-      const store = validStores[i]
+    for (const [i, store] of validStores.entries()) {
       storeLocations[i] = { latitude: store.latitude, longitude: store.longitude }
     }
   }
@@ -207,19 +205,18 @@ export function useOptimizedMarkersConsolidated(
     const { findNearest = true } = options
     
     // ✅ Pre-allocate with known size
-    const markerData: Array<{
+    const markerData: {
       store: StoreWithDistance
       isNearest: boolean
       position: [number, number]
       distance?: number
-    }> = []
+    }[] = []
     
     let nearestStore: StoreWithDistance | undefined
     let nearestDistance = Infinity
     
     // ✅ Direct iteration - no batch slicing overhead
-    for (let i = 0; i < stores.length; i++) {
-      const store = stores[i]
+    for (const store of stores) {
       
       if (!hasValidCoordinates(store)) continue
       

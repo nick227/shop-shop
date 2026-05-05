@@ -250,11 +250,11 @@ export function PaymentSection({
               <>
                 <span className="">⏳</span> Processing...
               </>
-            ) : paymentError ? (
+            ) : (paymentError ? (
               '🔄 Retry Payment'
             ) : (
               '💳 Pay $' + amount.toFixed(2) + ''
-            )}
+            ))}
           </Button>
         )}
       </div>

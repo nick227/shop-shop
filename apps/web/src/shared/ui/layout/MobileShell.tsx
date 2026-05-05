@@ -26,7 +26,7 @@ export function MobileShell({
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
-    { path: '/stores', icon: Store, label: 'Stores' },
+    { path: '/search', icon: Store, label: 'Stores' },
     { path: '/cart', icon: ShoppingCart, label: 'Cart' },
     { path: '/profile', icon: User, label: 'Profile' },
   ]

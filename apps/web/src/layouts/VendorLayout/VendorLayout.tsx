@@ -10,7 +10,7 @@
  */
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { Button } from '@shared/ui/primitives'
 import { OrderCountWidget } from '@features/orders/components/OrderCountWidget'
 import { useVendorStores, useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor'

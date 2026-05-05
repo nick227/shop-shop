@@ -5,7 +5,7 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react'
 import { Button, Input, Alert } from '@shared/ui/primitives'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { useFormValidation } from '@shared/hooks/useFormValidation'
 import { loginFormSchema, signupFormSchema, type LoginFormData, type SignupFormData } from '@/schemas/ConsistentSchemas'
 
@@ -16,7 +16,7 @@ export interface DualAuthWidgetProps {
 type AuthMode = 'login' | 'register'
 
 export function DualAuthWidget({ onSuccess }: DualAuthWidgetProps) {
-  const { login, signup, isLoggingIn, isSigningUp, loginError, signupError } = useAuth()
+  const { login, signup, isLoggingIn, isSigningUp, loginError, signupError } = useAuth({ onSuccess })
   const [mode, setMode] = useState<AuthMode>('login')
   
   // Login form state
@@ -35,20 +35,18 @@ export function DualAuthWidget({ onSuccess }: DualAuthWidgetProps) {
     e.preventDefault()
     if (!loginValidate.validate({ email: loginEmail, password: loginPassword })) return;
     
-    login(
-      { email: loginEmail, password: loginPassword },
-      { onSuccess: () => onSuccess?.() }
-    )
+    void login({ email: loginEmail, password: loginPassword }).catch(() => {
+      // useAuth owns the rendered login error.
+    })
   }
 
   const handleRegister = (e: FormEvent) => {
     e.preventDefault()
     if (!registerValidate.validate({ email: registerEmail, password: registerPassword, name: registerName })) return;
     
-    signup(
-      { email: registerEmail, password: registerPassword, name: registerName },
-      { onSuccess: () => onSuccess?.() }
-    )
+    void signup({ email: registerEmail, password: registerPassword, name: registerName } as any).catch(() => {
+      // useAuth owns the rendered signup error.
+    })
   }
 
   const isLoading = isLoggingIn || isSigningUp
@@ -85,7 +83,7 @@ export function DualAuthWidget({ onSuccess }: DualAuthWidgetProps) {
       <div className="p-6">
         {currentError && (
           <Alert variant="error" className="mb-4">
-            {currentError.message}
+            {currentError}
           </Alert>
         )}
 

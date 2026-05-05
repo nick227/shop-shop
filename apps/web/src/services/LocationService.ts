@@ -43,9 +43,9 @@ export interface DeliveryResult {
 export class LocationService {
   private static instance: LocationService;
   private cachedLocation: LocationData | null = null;
-  private cacheExpiry: number = 0;
+  private cacheExpiry = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  private config: LocationConfig;
+  private readonly config: LocationConfig;
 
   constructor(config: Partial<LocationConfig> = {}) {
     this.config = {
@@ -113,23 +113,27 @@ export class LocationService {
         },
         (error) => {
           switch (error.code) {
-            case error.PERMISSION_DENIED:
+            case error.PERMISSION_DENIED: {
               reject(new Error('Location permission denied'));
               break;
-            case error.POSITION_UNAVAILABLE:
+            }
+            case error.POSITION_UNAVAILABLE: {
               reject(new Error('Location unavailable'));
               break;
-            case error.TIMEOUT:
+            }
+            case error.TIMEOUT: {
               reject(new Error('Location request timeout'));
               break;
-            default:
+            }
+            default: {
               reject(new Error('Unknown location error'));
               break;
+            }
           }
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 10_000,
           maximumAge: 0
         }
       );
@@ -155,7 +159,7 @@ export class LocationService {
     return {
       latitude: data.latitude,
       longitude: data.longitude,
-      accuracy: 10000, // IP location is less accurate (~10km)
+      accuracy: 10_000, // IP location is less accurate (~10km)
       source: 'ip'
     };
   }

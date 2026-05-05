@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * API Wrapper with Type Validation
  * ⚠️  AUTO-GENERATED - DO NOT EDIT MANUALLY
@@ -9,16 +8,39 @@
 
 import { apiClient } from './client'
 import type { 
-  StoreResponse as Store, 
-  ItemResponse as Item, 
+  StoreResponse as Store,
+  ItemResponse as Item,
   CartWithTotals,
   OrderResponse as Order,
   AddressResponse as Address,
+  PromotionResponse as Promotion,
+  UserResponse as User,
   Bundle,
+  CreateAddressInput,
+  UpdateAddressInput,
+  CreateStoreInput,
+  UpdateStoreInput,
+  CreateItemInput,
+  UpdateItemInput,
+  CreatePromotionInput,
+  UpdatePromotionInput,
+  UpdateOrderInput,
+  UpdateUserInput,
 } from './backend-types'
 // Inline types (previously from deleted adapters/validation)
 interface AddCartItemInput { itemId: string; quantity: number; notes?: string }
 interface UpdateCartItemInput { quantity?: number; notes?: string }
+const CART_NOT_IMPLEMENTED_MESSAGE = 'Cart API methods not yet in OpenAPI spec'
+
+function getApiBaseUrl(): string {
+  return (import.meta.env.VITE_API_URL || 'http://localhost:3005').replace(/\/$/, '')
+}
+
+function setQueryParam(params: URLSearchParams, key: string, value: string | number | undefined): void {
+  if (value !== undefined) {
+    params.set(key, String(value))
+  }
+}
 
 /**
  * Custom error class for API errors
@@ -31,8 +53,11 @@ export class APIError extends Error {
     public details?: unknown,
     options?: { cause?: unknown }
   ) {
-    super(message, options as ErrorOptions)
+    super(message)
     this.name = 'APIError'
+    if (options?.cause !== undefined) {
+      ;(this as Error & { cause?: unknown }).cause = options.cause
+    }
   }
 }
 
@@ -65,9 +90,9 @@ function isAxiosError(error: unknown): error is {
   return error !== null && 
          typeof error === 'object' && 
          'response' in error &&
-         (error as any).response === undefined || 
+         ((error as any).response === undefined || 
          (typeof (error as any).response === 'object' && 
-          typeof (error as any).response.status === 'number')
+          typeof (error as any).response.status === 'number'))
 }
 
 function isGenericError(error: unknown): error is { message: string; status?: number; code?: string } {
@@ -92,7 +117,7 @@ async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
     // Handle Response-like errors (fetch API)
     if (isResponseError(error)) {
       throw new APIError(
-        error.message || error.statusText,
+        error.message ?? error.statusText,
         error.status,
         'HTTP_ERROR',
         error,
@@ -103,7 +128,7 @@ async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
     // Handle Axios-like errors
     if (isAxiosError(error)) {
       const status = error.response?.status
-      const message = error.response?.data?.message || error.message || 'Request failed'
+      const message = error.response?.data?.message ?? error.message ?? 'Request failed'
       throw new APIError(
         message,
         status,
@@ -118,7 +143,7 @@ async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
       throw new APIError(
         error.message,
         error.status,
-        error.code || 'UNKNOWN_ERROR',
+        error.code ?? 'UNKNOWN_ERROR',
         error,
         { cause: error }
       )
@@ -144,46 +169,46 @@ export const addresses = {
   /**
    * List addresses
    */
-  list: async (params?: { page?: string; limit?: string }): Promise<Addresses[]> => {
+  list: async (): Promise<Address[]> => {
     const response = await handleRequest(() =>
-      apiClient.addresses().listAddressess(params)
+      apiClient.addresses().listAddresss()
     )
-    return unwrapData<Addresses[]>(response)
+    return unwrapData<Address[]>(response)
   },
 
   /**
    * Get address by ID
    */
-  getById: async (id: string): Promise<Addresses> => {
+  getById: async (id: string): Promise<Address> => {
     const result = await handleRequest(() =>
-      apiClient.addresses().getAddressesById({ id: id })
+      apiClient.addresses().getAddressById({ id })
     )
-    return unwrapData<Addresses>(result)
+    return unwrapData<Address>(result)
   },
 
   /**
    * Create new address
    */
-  create: async (input: CreateAddressesInput): Promise<Addresses> => {
+  create: async (input: CreateAddressInput): Promise<Address> => {
     const result = await handleRequest(() =>
-        apiClient.addresses().createAddresses({
-          createAddressesRequest: input
-        })
+      apiClient.addresses().createAddress({
+        createAddressRequest: input as never,
+      })
     )
-    return unwrapData<Addresses>(result)
+    return unwrapData<Address>(result)
   },
 
   /**
    * Update address
    */
-  update: async (id: string, input: CreateAddressesInput): Promise<Addresses> => {
+  update: async (id: string, input: UpdateAddressInput): Promise<Address> => {
     const result = await handleRequest(() =>
-        apiClient.addresses().updateAddresses({
-          id,
-          updateAddressesRequest: input
-        })
+      apiClient.addresses().updateAddress({
+        id,
+        updateAddressRequest: input as never,
+      })
     )
-    return unwrapData<Addresses>(result)
+    return unwrapData<Address>(result)
   },
 
   /**
@@ -191,7 +216,7 @@ export const addresses = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.addresses().deleteAddresses({ id: id })
+      apiClient.addresses().deleteAddress({ id })
     )
   },
 }
@@ -205,7 +230,7 @@ export const bundles = {
    */
   list: async (params?: { page?: string; limit?: string; storeId?: string; isActive?: boolean }): Promise<Bundle[]> => {
     const response = await handleRequest(() =>
-      apiClient.bundles().listBundles(params as any)
+      apiClient.bundles().listBundles(params)
     )
     return unwrapData<Bundle[]>(response)
   },
@@ -223,26 +248,26 @@ export const bundles = {
   /**
    * Create new bundle
    */
-  create: async (input: CreateBundlesInput): Promise<Bundles> => {
+  create: async (input: Partial<Bundle>): Promise<Bundle> => {
     const result = await handleRequest(() =>
-        apiClient.bundles().createBundles({
-          createBundlesRequest: input
-        })
+      apiClient.bundles().createBundle({
+        createBundleRequest: input as never,
+      })
     )
-    return unwrapData<Bundles>(result)
+    return unwrapData<Bundle>(result)
   },
 
   /**
    * Update bundle
    */
-  update: async (id: string, input: CreateBundlesInput): Promise<Bundles> => {
+  update: async (id: string, input: Partial<Bundle>): Promise<Bundle> => {
     const result = await handleRequest(() =>
-        apiClient.bundles().updateBundles({
-          id,
-          updateBundlesRequest: input
-        })
+      apiClient.bundles().updateBundle({
+        id,
+        updateBundleRequest: input as never,
+      })
     )
-    return unwrapData<Bundles>(result)
+    return unwrapData<Bundle>(result)
   },
 
   /**
@@ -250,7 +275,7 @@ export const bundles = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.bundles().deleteBundles({ id: id })
+      apiClient.bundles().deleteBundle({ id })
     )
   },
 }
@@ -262,9 +287,9 @@ export const carts = {
   /**
    * List carts
    */
-  list: async (params?: { page?: string; limit?: string }): Promise<CartWithTotals[]> => {
+  list: async (): Promise<CartWithTotals[]> => {
     const response = await handleRequest(() =>
-      apiClient.carts().listCarts(params)
+      apiClient.carts().listCarts()
     )
     return unwrapData<CartWithTotals[]>(response)
   },
@@ -282,7 +307,7 @@ export const carts = {
   /**
    * Create new cart
    */
-  create: async (input: unknown): Promise<CartWithTotals> => {
+  create: async (input: Partial<CartWithTotals>): Promise<CartWithTotals> => {
     const result = await handleRequest(() =>
         apiClient.carts().createCart({
           createCartRequest: input as any
@@ -294,15 +319,9 @@ export const carts = {
   /**
    * Update cart
    */
-  update: async (id: string, input: CreateCartsInput): Promise<Carts> => {
-    const result = await handleRequest(() =>
-        apiClient.carts().updateCarts({
-          id,
-          updateCartsRequest: input
-        })
-    )
-    return unwrapData<Carts>(result)
-  },
+  update: async (_id: string, _input: Partial<CartWithTotals>): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Delete cart
@@ -322,10 +341,36 @@ export const items = {
    * List items
    */
   list: async (params?: { page?: string; limit?: string; storeId?: string }): Promise<Item[]> => {
-    const response = await handleRequest(() =>
-      apiClient.items().listItems(params as any)
-    )
-    return unwrapData<Item[]>(response)
+    const response = await handleRequest(async () => {
+      const searchParams = new URLSearchParams()
+      setQueryParam(searchParams, 'page', params?.page)
+      setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'storeId', params?.storeId)
+
+      const query = searchParams.toString()
+      const url = `${getApiBaseUrl()}/items${query ? `?${query}` : ''}`
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] -> GET ' + url)
+      }
+
+      const result = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] <- ' + result.status + ' ' + url)
+      }
+
+      if (!result.ok) {
+        throw new APIError(result.statusText || 'Request failed', result.status, 'HTTP_ERROR')
+      }
+
+      return await result.json()
+    })
+    const data = unwrapData<Item[]>(response)
+    return params?.storeId ? data.filter((item) => item.storeId === params.storeId) : data
   },
 
   /**
@@ -341,26 +386,26 @@ export const items = {
   /**
    * Create new item
    */
-  create: async (input: CreateItemsInput): Promise<Items> => {
+  create: async (input: CreateItemInput): Promise<Item> => {
     const result = await handleRequest(() =>
-        apiClient.items().createItems({
-          createItemsRequest: input
-        })
+      apiClient.items().createItem({
+        createItemRequest: input,
+      })
     )
-    return unwrapData<Items>(result)
+    return unwrapData<Item>(result)
   },
 
   /**
    * Update item
    */
-  update: async (id: string, input: CreateItemsInput): Promise<Items> => {
+  update: async (id: string, input: UpdateItemInput): Promise<Item> => {
     const result = await handleRequest(() =>
-        apiClient.items().updateItems({
-          id,
-          updateItemsRequest: input
-        })
+      apiClient.items().updateItem({
+        id,
+        updateItemRequest: input,
+      })
     )
-    return unwrapData<Items>(result)
+    return unwrapData<Item>(result)
   },
 
   /**
@@ -368,7 +413,7 @@ export const items = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.items().deleteItems({ id: id })
+      apiClient.items().deleteItem({ id })
     )
   },
 }
@@ -412,14 +457,14 @@ export const orders = {
   /**
    * Update order
    */
-  update: async (id: string, input: CreateOrdersInput): Promise<Orders> => {
+  update: async (id: string, input: UpdateOrderInput): Promise<Order> => {
     const result = await handleRequest(() =>
-        apiClient.orders().updateOrders({
-          id,
-          updateOrdersRequest: input
-        })
+      apiClient.orders().updateOrder({
+        id,
+        updateOrderRequest: input as never,
+      })
     )
-    return unwrapData<Orders>(result)
+    return unwrapData<Order>(result)
   },
 
   /**
@@ -427,7 +472,7 @@ export const orders = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.orders().deleteOrders({ id: id })
+      apiClient.orders().deleteOrder({ id })
     )
   },
 }
@@ -439,46 +484,46 @@ export const promotions = {
   /**
    * List promotions
    */
-  list: async (params?: { page?: string; limit?: string }): Promise<Promotions[]> => {
+  list: async (): Promise<Promotion[]> => {
     const response = await handleRequest(() =>
-      apiClient.promotions().listPromotionss(params)
+      apiClient.promotions().listPromotions()
     )
-    return unwrapData<Promotions[]>(response)
+    return unwrapData<Promotion[]>(response)
   },
 
   /**
    * Get promotion by ID
    */
-  getById: async (id: string): Promise<Promotions> => {
+  getById: async (id: string): Promise<Promotion> => {
     const result = await handleRequest(() =>
-      apiClient.promotions().getPromotionsById({ id: id })
+      apiClient.promotions().getPromotionById({ id })
     )
-    return unwrapData<Promotions>(result)
+    return unwrapData<Promotion>(result)
   },
 
   /**
    * Create new promotion
    */
-  create: async (input: CreatePromotionsInput): Promise<Promotions> => {
+  create: async (input: CreatePromotionInput): Promise<Promotion> => {
     const result = await handleRequest(() =>
-        apiClient.promotions().createPromotions({
-          createPromotionsRequest: input
-        })
+      apiClient.promotions().createPromotion({
+        createPromotionRequest: input,
+      })
     )
-    return unwrapData<Promotions>(result)
+    return unwrapData<Promotion>(result)
   },
 
   /**
    * Update promotion
    */
-  update: async (id: string, input: CreatePromotionsInput): Promise<Promotions> => {
+  update: async (id: string, input: UpdatePromotionInput): Promise<Promotion> => {
     const result = await handleRequest(() =>
-        apiClient.promotions().updatePromotions({
-          id,
-          updatePromotionsRequest: input
-        })
+      apiClient.promotions().updatePromotion({
+        id,
+        updatePromotionRequest: input,
+      })
     )
-    return unwrapData<Promotions>(result)
+    return unwrapData<Promotion>(result)
   },
 
   /**
@@ -486,7 +531,7 @@ export const promotions = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.promotions().deletePromotions({ id: id })
+      apiClient.promotions().deletePromotion({ id })
     )
   },
 }
@@ -498,10 +543,40 @@ export const stores = {
   /**
    * List stores
    */
-  list: async (params?: { page?: string; limit?: string; latitude?: number; longitude?: number; radiusMiles?: number }): Promise<Store[]> => {
-    const response = await handleRequest(() =>
-      apiClient.stores().listStores(params as any)
-    )
+  list: async (params?: { page?: string; limit?: string; latitude?: number; longitude?: number; radiusMiles?: number; isPublished?: string; sortBy?: string; order?: string }): Promise<Store[]> => {
+    const response = await handleRequest(async () => {
+      const searchParams = new URLSearchParams()
+      setQueryParam(searchParams, 'page', params?.page)
+      setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'latitude', params?.latitude)
+      setQueryParam(searchParams, 'longitude', params?.longitude)
+      setQueryParam(searchParams, 'radiusMiles', params?.radiusMiles)
+      setQueryParam(searchParams, 'isPublished', params?.isPublished)
+      setQueryParam(searchParams, 'sortBy', params?.sortBy)
+      setQueryParam(searchParams, 'order', params?.order)
+
+      const query = searchParams.toString()
+      const url = `${getApiBaseUrl()}/stores${query ? `?${query}` : ''}`
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] -> GET ' + url)
+      }
+
+      const result = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] <- ' + result.status + ' ' + url)
+      }
+
+      if (!result.ok) {
+        throw new APIError(result.statusText || 'Request failed', result.status, 'HTTP_ERROR')
+      }
+
+      return await result.json()
+    })
     return unwrapData<Store[]>(response)
   },
 
@@ -518,26 +593,26 @@ export const stores = {
   /**
    * Create new store
    */
-  create: async (input: CreateStoresInput): Promise<Stores> => {
+  create: async (input: CreateStoreInput): Promise<Store> => {
     const result = await handleRequest(() =>
-        apiClient.stores().createStores({
-          createStoresRequest: input
-        })
+      apiClient.stores().createStore({
+        createStoreRequest: input,
+      })
     )
-    return unwrapData<Stores>(result)
+    return unwrapData<Store>(result)
   },
 
   /**
    * Update store
    */
-  update: async (id: string, input: CreateStoresInput): Promise<Stores> => {
+  update: async (id: string, input: UpdateStoreInput): Promise<Store> => {
     const result = await handleRequest(() =>
-        apiClient.stores().updateStores({
-          id,
-          updateStoresRequest: input
-        })
+      apiClient.stores().updateStore({
+        id,
+        createStoreRequest: input,
+      })
     )
-    return unwrapData<Stores>(result)
+    return unwrapData<Store>(result)
   },
 
   /**
@@ -545,7 +620,7 @@ export const stores = {
    */
   delete: async (id: string): Promise<void> => {
     await handleRequest(() =>
-      apiClient.stores().deleteStores({ id: id })
+      apiClient.stores().deleteStore({ id })
     )
   },
 }
@@ -557,56 +632,49 @@ export const users = {
   /**
    * List users
    */
-  list: async (params?: { page?: string; limit?: string }): Promise<Users[]> => {
+  list: async (): Promise<User[]> => {
     const response = await handleRequest(() =>
-      apiClient.users().listUserss(params)
+      apiClient.users().listUsers()
     )
-    return unwrapData<Users[]>(response)
+    return unwrapData<User[]>(response)
   },
 
   /**
    * Get user by ID
    */
-  getById: async (id: string): Promise<Users> => {
+  getById: async (id: string): Promise<User> => {
     const result = await handleRequest(() =>
-      apiClient.users().getUsersById({ id: id })
+      apiClient.users().getUserById({ id })
     )
-    return unwrapData<Users>(result)
+    return unwrapData<User>(result)
   },
 
   /**
    * Create new user
    */
-  create: async (input: CreateUsersInput): Promise<Users> => {
-    const result = await handleRequest(() =>
-        apiClient.users().createUsers({
-          createUsersRequest: input
-        })
-    )
-    return unwrapData<Users>(result)
-  },
+  create: async (_input: unknown): Promise<User> => Promise.reject(
+    new APIError('Users.create not implemented by current SDK', undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Update user
    */
-  update: async (id: string, input: CreateUsersInput): Promise<Users> => {
+  update: async (id: string, input: UpdateUserInput): Promise<User> => {
     const result = await handleRequest(() =>
-        apiClient.users().updateUsers({
-          id,
-          updateUsersRequest: input
-        })
+      apiClient.users().updateUser({
+        id,
+        updateUserRequest: input as never,
+      })
     )
-    return unwrapData<Users>(result)
+    return unwrapData<User>(result)
   },
 
   /**
    * Delete user
    */
-  delete: async (id: string): Promise<void> => {
-    await handleRequest(() =>
-      apiClient.users().deleteUsers({ id: id })
-    )
-  },
+  delete: async (_id: string): Promise<void> => Promise.reject(
+    new APIError('Users.delete not implemented by current SDK', undefined, 'NOT_IMPLEMENTED')
+  ),
 }
 
 // ============================================
@@ -618,57 +686,37 @@ export const cart = {
    * Get active cart for current user
    * NOTE: This will be auto-generated when added to OpenAPI spec
    */
-  getActive: async (): Promise<CartWithTotals> => {
-    throw new APIError(
-      'Cart API methods not yet in OpenAPI spec',
-      undefined,
-      'NOT_IMPLEMENTED'
-    )
-  },
+  getActive: (): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Add item to cart
    */
-  addItem: async (_input: AddCartItemInput): Promise<CartWithTotals> => {
-    throw new APIError(
-      'Cart API methods not yet in OpenAPI spec',
-      undefined,
-      'NOT_IMPLEMENTED'
-    )
-  },
+  addItem: (_input: AddCartItemInput): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Update cart item
    */
-  updateItem: async (_itemId: string, _input: UpdateCartItemInput): Promise<CartWithTotals> => {
-    throw new APIError(
-      'Cart API methods not yet in OpenAPI spec',
-      undefined,
-      'NOT_IMPLEMENTED'
-    )
-  },
+  updateItem: (_itemId: string, _input: UpdateCartItemInput): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Remove item from cart
    */
-  removeItem: async (_itemId: string): Promise<CartWithTotals> => {
-    throw new APIError(
-      'Cart API methods not yet in OpenAPI spec',
-      undefined,
-      'NOT_IMPLEMENTED'
-    )
-  },
+  removeItem: (_itemId: string): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 
   /**
    * Clear cart
    */
-  clear: async (): Promise<CartWithTotals> => {
-    throw new APIError(
-      'Cart API methods not yet in OpenAPI spec',
-      undefined,
-      'NOT_IMPLEMENTED'
-    )
-  },
+  clear: (): Promise<CartWithTotals> => Promise.reject(
+    new APIError(CART_NOT_IMPLEMENTED_MESSAGE, undefined, 'NOT_IMPLEMENTED')
+  ),
 }
 
 // ============================================
@@ -678,19 +726,19 @@ export const cart = {
 // `src/shared/hooks/hooks/vendor/*` and uses `apiClient.media()` directly.
 // This wrapper exists to satisfy generated hook imports during bundling.
 export const mediaAssets = {
-  list: async (): Promise<any[]> => [],
-  getById: async (_id: string): Promise<any> => {
-    throw new APIError('MediaAssets.getById not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  create: async (_input: any): Promise<any> => {
-    throw new APIError('MediaAssets.create not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  update: async (_id: string, _input: any): Promise<any> => {
-    throw new APIError('MediaAssets.update not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  delete: async (_id: string): Promise<void> => {
-    throw new APIError('MediaAssets.delete not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
+  list: (): Promise<any[]> => Promise.resolve([]),
+  getById: (_id: string): Promise<any> => Promise.reject(
+    new APIError('MediaAssets.getById not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  create: (_input: any): Promise<any> => Promise.reject(
+    new APIError('MediaAssets.create not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  update: (_id: string, _input: any): Promise<any> => Promise.reject(
+    new APIError('MediaAssets.update not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  delete: (_id: string): Promise<void> => Promise.reject(
+    new APIError('MediaAssets.delete not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
 }
 
 // ============================================
@@ -699,17 +747,17 @@ export const mediaAssets = {
 // NOTE: Store "river" posts are currently fetched via custom hooks under
 // `src/shared/hooks/hooks/river/*`.
 export const posts = {
-  list: async (): Promise<any[]> => [],
-  getById: async (_id: string): Promise<any> => {
-    throw new APIError('Posts.getById not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  create: async (_input: any): Promise<any> => {
-    throw new APIError('Posts.create not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  update: async (_id: string, _input: any): Promise<any> => {
-    throw new APIError('Posts.update not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
-  delete: async (_id: string): Promise<void> => {
-    throw new APIError('Posts.delete not implemented', undefined, 'NOT_IMPLEMENTED')
-  },
+  list: (): Promise<any[]> => Promise.resolve([]),
+  getById: (_id: string): Promise<any> => Promise.reject(
+    new APIError('Posts.getById not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  create: (_input: any): Promise<any> => Promise.reject(
+    new APIError('Posts.create not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  update: (_id: string, _input: any): Promise<any> => Promise.reject(
+    new APIError('Posts.update not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
+  delete: (_id: string): Promise<void> => Promise.reject(
+    new APIError('Posts.delete not implemented', undefined, 'NOT_IMPLEMENTED')
+  ),
 }

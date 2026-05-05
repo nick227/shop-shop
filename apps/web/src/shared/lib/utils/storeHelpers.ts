@@ -132,7 +132,7 @@ function extractUniqueCities(stores: StoreWithDistance[]): string[] {
     }
   }
   
-  return Array.from(cityStateMap.keys())
+  return [...cityStateMap.keys()]
 }
 
 /**

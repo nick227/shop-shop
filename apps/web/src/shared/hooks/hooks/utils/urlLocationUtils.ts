@@ -8,7 +8,7 @@ import { locationValidator } from '@shared/lib/utils/validation/unified'
 import type { LocationData } from '@shared/types'
 
 // Re-export LocationData for use in other modules
-export type { LocationData }
+
 
 // ========================================
 // Location Comparison Utilities
@@ -205,13 +205,19 @@ export function processUrlParams(params: {
   const paramType = detectUrlParamType(params)
   
   switch (paramType) {
-    case 'coordinates':
+    case 'coordinates': {
       return processCoordinateParams(params)
-    case 'cityState':
+    }
+    case 'cityState': {
       return processCityStateParams(params)
-    case 'zip':
+    }
+    case 'zip': {
       return processZipParams(params)
-    default:
+    }
+    default: {
       return { valid: false, error: 'No valid location parameters found' }
+    }
   }
 }
+
+export {type LocationData} from '@shared/types'

@@ -5,7 +5,8 @@
  * Handles token storage, user session management, and auto-refresh.
  */
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
+import type { ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import type { User } from '../types'
 
 // ========================================
@@ -61,14 +62,15 @@ const initialState: AuthState = {
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case 'LOGIN_START':
+    case 'LOGIN_START': {
       return {
         ...state,
         loading: true,
         error: null
       }
+    }
     
-    case 'LOGIN_SUCCESS':
+    case 'LOGIN_SUCCESS': {
       return {
         ...state,
         user: action.payload.user,
@@ -78,8 +80,9 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: action.payload.accessToken,
         refreshToken: action.payload.refreshToken
       }
+    }
     
-    case 'LOGIN_FAILURE':
+    case 'LOGIN_FAILURE': {
       return {
         ...state,
         user: null,
@@ -89,8 +92,9 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: null,
         refreshToken: null
       }
+    }
     
-    case 'LOGOUT':
+    case 'LOGOUT': {
       return {
         ...state,
         user: null,
@@ -100,22 +104,26 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: null,
         refreshToken: null
       }
+    }
     
-    case 'REFRESH_TOKEN':
+    case 'REFRESH_TOKEN': {
       return {
         ...state,
         accessToken: action.payload.accessToken,
         refreshToken: action.payload.refreshToken
       }
+    }
     
-    case 'CLEAR_ERROR':
+    case 'CLEAR_ERROR': {
       return {
         ...state,
         error: null
       }
+    }
     
-    default:
+    default: {
       return state
+    }
   }
 }
 
@@ -209,7 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call logout endpoint to invalidate session
       const { accessToken } = getStoredTokens()
       if (accessToken) {
-        await fetch('/api/auth/v1/logout', {
+        await fetch('/auth/v1/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -237,7 +245,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      const response = await fetch('/api/auth/v1/refresh', {
+      const response = await fetch('/auth/v1/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -280,16 +288,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      let authResolved = false
       const { accessToken, refreshToken: storedRefreshToken } = getStoredTokens()
       
       if (!accessToken || !storedRefreshToken) {
         dispatch({ type: 'LOGIN_FAILURE', payload: { error: 'No tokens found' } })
+        authResolved = true
         return
       }
 
       try {
-        // Validate current access token
-        const response = await fetch('/api/auth/v1/me', {
+        // Validate current access token by getting current user info
+        const response = await fetch('/auth/v1/me', {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
@@ -301,18 +311,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           dispatch({
             type: 'LOGIN_SUCCESS',
             payload: {
-              user: data.user,
+              user: data,
               accessToken,
               refreshToken: storedRefreshToken
             }
           })
+          authResolved = true
         } else {
           // Access token invalid, try refresh
           await refreshToken()
+          authResolved = true
         }
       } catch (error) {
         console.error('Auth initialization failed:', error)
         dispatch({ type: 'LOGIN_FAILURE', payload: { error: 'Session expired' } })
+        authResolved = true
+      } finally {
+        // Guarantee auth loading terminates on every async path.
+        if (!authResolved) {
+          dispatch({ type: 'LOGIN_FAILURE', payload: { error: 'Session initialization failed' } })
+        }
       }
     }
 

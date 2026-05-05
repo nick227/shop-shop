@@ -82,7 +82,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
       const pageSize = f.pageSize ?? query.limit
 
       // Get userId from auth if authenticated (optional)
-      const userId = (req as { user?: { userId: string } }).user?.userId
+      const userId = req.user?.id
 
       const { posts, total } = await getPosts({
         storeId: f.storeId,
@@ -134,7 +134,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   // GET /river/posts/:id - Get post by ID (public)
   app.get('/river/posts/:id', async (req, reply) => {
     const { id } = req.params as { id: string }
-    const userId = (req as { user?: { userId: string } }).user?.userId
+    const userId = req.user?.id
 
     const post = await getPostById(id)
 

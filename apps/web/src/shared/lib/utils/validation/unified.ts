@@ -1,13 +1,13 @@
 import { VALIDATION } from '@shared/constants'
 
-type ValidationResult<T> = {
+interface ValidationResult<T> {
   valid: boolean
   data?: T
   error?: string
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PHONE_REGEX = /^\+?[\d\s\-\(\)]+$/
+const PHONE_REGEX = /^\+?[\d\s()\-]+$/
 const ZIP_REGEX = /^\d{5}(?:-\d{4})?$/
 const STATE_REGEX = /^[A-Z]{2}$/
 
@@ -41,7 +41,7 @@ export const formValidator = {
     if (VALIDATION.PASSWORD.REQUIRE_NUMBERS && !/\d/.test(value)) {
       return 'Password must include a number'
     }
-    if (VALIDATION.PASSWORD.REQUIRE_SPECIAL && !/[^\da-zA-Z]/.test(value)) {
+    if (VALIDATION.PASSWORD.REQUIRE_SPECIAL && !/[^\dA-Za-z]/.test(value)) {
       return 'Password must include a special character'
     }
     return undefined
@@ -93,7 +93,7 @@ export const locationValidator = {
     return { valid: true, data: value }
   },
   sanitizeCityName: (city: string): ValidationResult<string> => {
-    const value = city.trim().replace(/\s+/g, ' ')
+    const value = city.trim().replaceAll(/\s+/g, ' ')
     if (!value) return { valid: false, error: 'City is required' }
     return { valid: true, data: value }
   },

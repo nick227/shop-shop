@@ -40,6 +40,23 @@ async function getOk(url: string) {
   return response.json().catch(() => null) as Promise<unknown>
 }
 
+function expectArrayWithItems(body: unknown, keys: string[]) {
+  expect(body).toBeTruthy()
+  expect(typeof body).toBe('object')
+  expect(Array.isArray(body)).toBe(false)
+
+  const record = body as Record<string, unknown>
+  for (const key of keys) {
+    const value = record[key]
+    if (Array.isArray(value)) {
+      expect(value.length).toBeGreaterThan(0)
+      return value
+    }
+  }
+
+  throw new Error(`Expected one of [${keys.join(', ')}] to be a non-empty array`)
+}
+
 async function apiJson(path: string, init: RequestInit) {
   const baseUrl = path.startsWith('/checkout/') ? checkoutBaseUrl : resourceBaseUrl
   const response = await fetch(`${baseUrl}${path}`, init)
@@ -59,12 +76,17 @@ describe('funnel smoke validation', () => {
 
     if (searchUrl) {
       const search = await getOk(searchUrl)
-      expect(search).toBeDefined()
+      const results = expectArrayWithItems(search, ['results', 'items', 'data'])
+      expect(results.length).toBeGreaterThan(0)
     }
 
     if (kitchenUrl) {
       const kitchen = await getOk(kitchenUrl)
-      expect(kitchen).toBeDefined()
+      const items = expectArrayWithItems(kitchen, ['items', 'results', 'data'])
+      expect(items.length).toBeGreaterThan(0)
+
+      const firstItem = items[0] as Record<string, unknown>
+      expect(Number(firstItem.price ?? firstItem.unitPrice ?? 0)).toBeGreaterThan(0)
     }
 
     const cart = await apiJson('/carts', {
@@ -73,8 +95,11 @@ describe('funnel smoke validation', () => {
       body: JSON.stringify({ itemId, quantity: 1 }),
     })
 
+    const cartItems = Array.isArray(cart.items) ? cart.items : []
     expectNonEmptyString(cart.id)
     expect(cart.status).toBe('ACTIVE')
+    expect(cartItems.length).toBeGreaterThan(0)
+    expect(Number((cartItems[0] as Record<string, unknown>)?.currentItem?.price ?? (cartItems[0] as Record<string, unknown>)?.item?.price ?? 0)).toBeGreaterThan(0)
     expect(Number(cart.itemCount ?? 0)).toBeGreaterThanOrEqual(1)
     expect(Number(cart.subtotal ?? 0)).toBeGreaterThan(0)
 

@@ -6,7 +6,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '@shared/hooks/hooks/useCart'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
 import { Button } from '@shared/ui/primitives'
 import { BottomSheet } from '@shared/ui/primitives'
 import { ShoppingCart, Trash2 } from 'lucide-react'
@@ -17,7 +16,6 @@ import { cn } from '@shared/lib/cn'
 
 export function CartWidget() {
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
   const { cart, deleteCart, isDeleting, isLoading } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -54,7 +52,7 @@ export function CartWidget() {
   }, [itemCount])
 
   // Conditional rendering instead of early returns
-  if (!isAuthenticated || isLoading || itemCount === 0) {
+  if (isLoading || itemCount === 0) {
     return null
   }
 

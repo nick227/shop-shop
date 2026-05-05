@@ -166,7 +166,7 @@ const EnhancedButtonComponent = forwardRef<HTMLButtonElement, EnhancedButtonProp
         return (
           <>
             <LoadingStates.Inline 
-              size={size === 'xs' ? 'xs' : size === 'sm' ? 'sm' : 'md'}
+              size={size === 'xs' ? 'xs' : (size === 'sm' ? 'sm' : 'md')}
               variant="spinner"
             />
             {displayLoadingText && (

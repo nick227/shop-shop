@@ -37,8 +37,10 @@ export function slugify(text: string): string {
  * Returns clean slug without ID
  * Format: store-name
  */
-export function createStoreSlug(storeName: string, _storeId?: string): string {
-  return slugify(storeName)
+export function createStoreSlug(storeName: string, storeId?: string): string {
+  const base = slugify(storeName)
+  if (!storeId) return base
+  return base ? `${base}-${storeId}` : storeId
 }
 
 /**
@@ -55,15 +57,8 @@ export function createItemSlug(itemTitle: string, _itemId?: string): string {
  * Example: "joes-pizza-abc123" → "abc123" (if it ends with 6 chars)
  */
 export function extractIdFromSlug(slug: string): string | undefined {
-  const parts = slug.split('-')
-  const lastPart = parts[parts.length - 1]
-  
-  // Check if last part looks like an ID (6+ alphanumeric chars)
-  if (lastPart && lastPart.length >= 6 && /^[\da-z]+$/i.test(lastPart)) {
-    return lastPart
-  }
-  
-  return undefined
+  const uuidMatch = slug.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  return uuidMatch?.[0]
 }
 
 /**
@@ -91,4 +86,3 @@ export function isValidSlug(slug: string): boolean {
   // Slug should be lowercase, alphanumeric with hyphens
   return /^[\da-z]+(-[\da-z]+)*$/.test(slug)
 }
-

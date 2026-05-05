@@ -16,7 +16,7 @@ import type {
   ListStores200ResponseDataInner,
   ListItems200ResponseDataInner,
   ListOrders200ResponseDataInner,
-  ListAddresss200ResponseDataInner, // Note: Triple 's' is correct per SDK generation
+  ListAddresses200ResponseDataInner,
   ListBundles200ResponseDataInner,
   ListCarts200ResponseDataInner,
   ListPromotions200ResponseDataInner,
@@ -265,7 +265,7 @@ export function mapOrder(sdk: ListOrders200ResponseDataInner): OrderResponse {
 /**
  * Map SDK address data to frontend AddressResponse
  */
-export function mapAddress(sdk: ListAddresss200ResponseDataInner): AddressResponse {
+export function mapAddress(sdk: ListAddresses200ResponseDataInner): AddressResponse {
   const timestamps = extractTimestamps(sdk)
   const id = extractId(sdk, `address-${hasSdkId(sdk) ? sdk.id ?? 'unknown' : 'unknown'}`)
   

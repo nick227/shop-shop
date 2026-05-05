@@ -21,10 +21,10 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false }: ZipCodeInputPro
   }
 
   return (
-    <form onSubmit={handleSubmit} className="">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
       <input
         type="text"
-        className="flex gap-2"
+        className="h-11 flex-1 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring"
         placeholder="Enter ZIP code"
         value={zipCode}
         onChange={(e) => setZipCode(e.target.value)}
@@ -35,7 +35,7 @@ export function ZipCodeInput({ onZipSubmit, isLoading = false }: ZipCodeInputPro
       />
       <button
         type="submit" 
-        className=""
+        className="h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={zipCode.length !== 5 || !/^\d{5}$/.test(zipCode) || isLoading}
       >
         {isLoading ? 'Searching...' : 'Search'}

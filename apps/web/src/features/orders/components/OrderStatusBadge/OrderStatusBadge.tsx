@@ -47,7 +47,7 @@ export function OrderStatusBadge({
   }
   
   const label = customLabel || config.label
-  const displayText = showIcon ? '${config.icon} ' + label + '' : label
+  const displayText = showIcon ? `${config.icon} ${label}` : label
   
   return <Badge variant={config.variant}>{displayText}</Badge>
 }
@@ -70,7 +70,7 @@ export function isOrderPending(status: OrderStatus): boolean {
  * Check if order is in active state (customer waiting)
  */
 export function isOrderActive(status: OrderStatus): boolean {
-  return ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(status)
+  return ['PENDING_PAYMENT', 'PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(status)
 }
 
 /**

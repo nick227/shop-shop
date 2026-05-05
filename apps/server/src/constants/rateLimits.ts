@@ -5,9 +5,14 @@
  */
 
 export const rateLimits = {
-  /** Login / signup — brute-force protection */
-  authCredentials: {
+  /** Login — brute-force protection */
+  authLogin: {
     max: 5,
+    timeWindow: '15 minutes' as const,
+  },
+  /** Signup — allow normal retries during onboarding */
+  authSignup: {
+    max: 20,
     timeWindow: '15 minutes' as const,
   },
   /** Stripe PaymentIntent creation — expensive + fraud surface */

@@ -53,9 +53,9 @@ function recalculateCart(cart: CartWithTotals): CartWithTotals {
   const items = (Array.isArray(cart.items) ? cart.items : []) as any[]
   const subtotal = items.reduce((sum, item) => {
     const price = toNumber(item.unitPrice ?? item.currentItem?.price)
-    return sum + price * (item.quantity || 0)
+    return sum + price * (item.quantity ?? 0)
   }, 0)
-  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+  const itemCount = items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
   const tax = subtotal * 0.1
   const deliveryFee = subtotal > 0 ? 5.99 : 0
   const fees = deliveryFee
@@ -95,7 +95,7 @@ export const useCartStore = create<CartStoreState>()(
           const existing = items[existingIndex]
           items[existingIndex] = {
             ...existing,
-            quantity: (existing.quantity || 0) + input.quantity,
+            quantity: (existing.quantity ?? 0) + input.quantity,
             unitPrice,
           }
         } else {
@@ -118,19 +118,19 @@ export const useCartStore = create<CartStoreState>()(
 
       decrementItem: (itemId, quantity = 1) => {
         const currentCart = get().cart
-        if (!currentCart) return undefined
+        if (!currentCart) return
 
         const currentItems = (currentCart as any).items
         const items: any[] = (Array.isArray(currentItems) ? currentItems : [])
           .map((item) => item.itemId === itemId
-            ? { ...item, quantity: Math.max(0, (item.quantity || 0) - quantity) }
+            ? { ...item, quantity: Math.max(0, (item.quantity ?? 0) - quantity) }
             : item
           )
           .filter((item) => item.quantity > 0)
 
         if (items.length === 0) {
           set({ cart: undefined })
-          return undefined
+          return
         }
 
         const nextCart = recalculateCart(({ ...(currentCart as any), items } as unknown) as CartWithTotals)
@@ -140,7 +140,7 @@ export const useCartStore = create<CartStoreState>()(
 
       removeItem: (itemId) => {
         const currentCart = get().cart
-        if (!currentCart) return undefined
+        if (!currentCart) return
 
         const currentItems = (currentCart as any).items
         const items: any[] = (Array.isArray(currentItems) ? currentItems : [])
@@ -148,7 +148,7 @@ export const useCartStore = create<CartStoreState>()(
 
         if (items.length === 0) {
           set({ cart: undefined })
-          return undefined
+          return
         }
 
         const nextCart = recalculateCart(({ ...(currentCart as any), items } as unknown) as CartWithTotals)

@@ -7,7 +7,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { OrderStatus, OrderResponse, StoreResponse } from '@api/types'
 import { useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor/useVendorRealtimeOrders'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { useVendorOrders, usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
 import { useVendorStores } from '@shared/hooks/hooks/vendor/useVendorStores'
 import { useUpdateOrderStatus } from '@shared/hooks/hooks/vendor/useUpdateOrderStatus'
@@ -76,12 +76,12 @@ export default function VendorOrdersPage() {
     if (!autoAccept) return
     
     const pendingOrders = orders.filter(order => order.status === 'PLACED')
-    pendingOrders.forEach(order => {
+    for (const order of pendingOrders) {
       setTimeout(() => {
         handleStatusUpdate(order.id, 'ACCEPTED')
         toast.success('Auto-accepted order #' + order.id.slice(0, 8).toUpperCase())
       }, 1000)
-    })
+    }
   }, [orders, autoAccept])
 
   // Real-time subscriptions
@@ -105,9 +105,9 @@ export default function VendorOrdersPage() {
   const handleBulkStatusUpdate = (status: OrderStatus) => {
     if (selectedOrders.length === 0) return
     haptics.heavy()
-    selectedOrders.forEach(orderId => {
+    for (const orderId of selectedOrders) {
       updateStatusMutation.mutate({ orderId, status })
-    })
+    }
     setSelectedOrders([])
     setBulkMode(false)
   }
@@ -133,25 +133,30 @@ export default function VendorOrdersPage() {
     let targetStatus: OrderStatus | undefined
 
     switch (e.key.toLowerCase()) {
-      case 'a':
+      case 'a': {
         targetOrder = activeOrders.find(order => order.status === 'PLACED')
         targetStatus = 'ACCEPTED'
         break
-      case 'p':
+      }
+      case 'p': {
         targetOrder = activeOrders.find(order => order.status === 'ACCEPTED')
         targetStatus = 'PREPARING'
         break
-      case 'r':
+      }
+      case 'r': {
         targetOrder = activeOrders.find(order => order.status === 'PREPARING')
         targetStatus = 'READY'
         break
+      }
       case '1':
       case '2':
-      case '3':
-        const orderIndex = parseInt(e.key) - 1
+      case '3': {
+        const orderIndex = Number.parseInt(e.key) - 1
         if (orderIndex < activeOrders.length) setSelectedOrder(activeOrders[orderIndex].id)
         return
-      default: return
+      }
+      default: { return
+      }
     }
 
     if (targetOrder && targetStatus) {
@@ -168,8 +173,7 @@ export default function VendorOrdersPage() {
   const selectedOrderData = orders.find((o) => o.id === selectedOrder)
 
   const { pending: pendingOrders, completed: completedOrders, canceled: canceledOrders } = useMemo(() => {
-    const partitioned = partitionOrdersByStatus(orders)
-    return partitioned
+    return partitionOrdersByStatus(orders)
   }, [orders])
 
   const nonPendingOrders = useMemo(() => {
@@ -358,7 +362,7 @@ export default function VendorOrdersPage() {
 
 function OrderDetailsModal({ order, onClose }: { order: OrderResponse; onClose: () => void }) {
   const storeQuery = useStore(order.storeId)
-  const store = storeQuery.data as StoreResponse | undefined
+  const store = storeQuery.data
   const haptics = useHaptics()
 
   const storeLL = coerceValidLatLng(store ? { latitude: store.latitude, longitude: store.longitude } : undefined)

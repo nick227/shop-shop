@@ -1,4 +1,4 @@
-export type ValidationIssue = {
+export interface ValidationIssue {
   path: string
   message: string
 }

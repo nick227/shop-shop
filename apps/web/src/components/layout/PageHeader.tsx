@@ -4,9 +4,9 @@ import { cn } from '@shared/lib/cn'
 export interface PageHeaderProps {
   title: string
   subtitle?: string
-  breadcrumbs?: Array<{ label: string; href?: string }>
+  breadcrumbs?: { label: string; href?: string }[]
   backButton?: { label: string; href?: string; onClick?: () => void }
-  actions?: Array<{
+  actions?: {
     id: string
     label: string
     variant?: string
@@ -14,7 +14,7 @@ export interface PageHeaderProps {
     href?: string
     disabled?: boolean
     loading?: boolean
-  }>
+  }[]
   className?: string
 }
 

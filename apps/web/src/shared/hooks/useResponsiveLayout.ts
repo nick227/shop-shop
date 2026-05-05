@@ -100,7 +100,7 @@ export function useResponsiveLayout(
   }, [windowSize.width, breakpoints])
   
   // Determine responsive flags
-  const responsiveConfig = useMemo((): ResponsiveConfig => {
+  return useMemo((): ResponsiveConfig => {
     const { width, height } = windowSize
     
     return {
@@ -114,8 +114,6 @@ export function useResponsiveLayout(
       height
     }
   }, [breakpoint, windowSize.width, windowSize.height])
-  
-  return responsiveConfig
 }
 
 // ========================================
@@ -136,18 +134,24 @@ export function useResponsiveValue<T>(values: {
   
   return useMemo(() => {
     switch (breakpoint) {
-      case 'ultrawide':
+      case 'ultrawide': {
         return values.ultrawide ?? values.wide ?? values.desktop ?? values.tablet ?? values.mobile
-      case 'wide':
+      }
+      case 'wide': {
         return values.wide ?? values.desktop ?? values.tablet ?? values.mobile
-      case 'desktop':
+      }
+      case 'desktop': {
         return values.desktop ?? values.tablet ?? values.mobile
-      case 'tablet':
+      }
+      case 'tablet': {
         return values.tablet ?? values.mobile
-      case 'mobile':
+      }
+      case 'mobile': {
         return values.mobile
-      default:
+      }
+      default: {
         return values.mobile
+      }
     }
   }, [breakpoint, values])
 }
@@ -166,18 +170,24 @@ export function useResponsiveClasses(classes: {
   
   return useMemo(() => {
     switch (breakpoint) {
-      case 'ultrawide':
+      case 'ultrawide': {
         return classes.ultrawide ?? classes.wide ?? classes.desktop ?? classes.tablet ?? classes.mobile ?? ''
-      case 'wide':
+      }
+      case 'wide': {
         return classes.wide ?? classes.desktop ?? classes.tablet ?? classes.mobile ?? ''
-      case 'desktop':
+      }
+      case 'desktop': {
         return classes.desktop ?? classes.tablet ?? classes.mobile ?? ''
-      case 'tablet':
+      }
+      case 'tablet': {
         return classes.tablet ?? classes.mobile ?? ''
-      case 'mobile':
+      }
+      case 'mobile': {
         return classes.mobile ?? ''
-      default:
+      }
+      default: {
         return classes.mobile ?? ''
+      }
     }
   }, [breakpoint, classes])
 }
@@ -207,18 +217,24 @@ export function useResponsiveSpacing(spacing: {
   
   return useMemo(() => {
     switch (breakpoint) {
-      case 'ultrawide':
+      case 'ultrawide': {
         return spacing.ultrawide ?? spacing.wide ?? spacing.desktop ?? spacing.tablet ?? spacing.mobile ?? '0'
-      case 'wide':
+      }
+      case 'wide': {
         return spacing.wide ?? spacing.desktop ?? spacing.tablet ?? spacing.mobile ?? '0'
-      case 'desktop':
+      }
+      case 'desktop': {
         return spacing.desktop ?? spacing.tablet ?? spacing.mobile ?? '0'
-      case 'tablet':
+      }
+      case 'tablet': {
         return spacing.tablet ?? spacing.mobile ?? '0'
-      case 'mobile':
+      }
+      case 'mobile': {
         return spacing.mobile ?? '0'
-      default:
+      }
+      default: {
         return spacing.mobile ?? '0'
+      }
     }
   }, [breakpoint, spacing])
 }

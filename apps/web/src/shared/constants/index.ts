@@ -7,7 +7,7 @@
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL,
-  TIMEOUT: 30000,
+  TIMEOUT: 30_000,
   RETRY_ATTEMPTS: 3,
 } as const
 
@@ -63,7 +63,7 @@ export const VALIDATION = {
     MAX_LENGTH: 254,
   },
   PHONE: {
-    PATTERN: /^\+?[\d\s\-\(\)]+$/,
+    PATTERN: /^\+?[\d\s()\-]+$/,
   },
 } as const
 

@@ -74,7 +74,7 @@ export const ItemListResponseSchema = z.object({
 export const ItemQuerySchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
-}).transform(data => ({
+}).passthrough().transform(data => ({
   page: data.page,
   limit: data.limit,
   filters: Object.keys(data)
@@ -91,4 +91,3 @@ export type UpdateItemInput = z.infer<typeof UpdateItemInputSchema>
 export type ItemResponse = z.infer<typeof ItemResponseSchema>
 export type ItemListResponse = z.infer<typeof ItemListResponseSchema>
 export type ItemQuery = z.infer<typeof ItemQuerySchema>
-

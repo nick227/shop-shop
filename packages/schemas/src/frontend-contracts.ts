@@ -64,7 +64,6 @@ export interface UserResponseContract {
   invitationsReceived: unknown
   createdAt: string
   updatedAt: string
-  updatedAt: unknown
   FavoriteItem: unknown
 }
 

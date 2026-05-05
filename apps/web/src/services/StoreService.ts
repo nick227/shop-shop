@@ -3,12 +3,12 @@
  * Separates store API concerns from pure location calculations
  */
 
-import { StoreData } from './LocationService';
+import type { StoreData } from './LocationService';
 
 export class StoreService {
   private static instance: StoreService;
-  private cache: Map<string, StoreData[]> = new Map();
-  private cacheExpiry: Map<string, number> = new Map();
+  private readonly cache = new Map<string, StoreData[]>();
+  private readonly cacheExpiry = new Map<string, number>();
   private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
   static getInstance(): StoreService {

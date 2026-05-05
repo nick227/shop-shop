@@ -8,14 +8,14 @@ export default function SignupPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   if (isAuthenticated) {
-    const from = (location.state as any)?.from as string | undefined
+    const from = (location.state)?.from as string | undefined
     return <Navigate to={from || '/'} replace />
   }
 
   return (
     <SignupForm
       onSuccess={() => {
-        const from = (location.state as any)?.from as string | undefined
+        const from = (location.state)?.from as string | undefined
         navigate(from || '/', { replace: true })
       }}
     />

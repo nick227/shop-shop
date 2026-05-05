@@ -6,7 +6,8 @@
  * Enables consistent composition patterns and responsive behavior.
  */
 
-import React, { createContext, useContext, useMemo, ReactNode, memo } from 'react'
+import type { ReactNode} from 'react';
+import React, { createContext, useContext, useMemo, memo } from 'react'
 import { useResponsiveLayout } from '@shared/hooks/useResponsiveLayout'
 
 // ========================================

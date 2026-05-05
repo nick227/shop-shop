@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrders } from '@shared/hooks/generated'
 import { useCustomerRealtimeOrder } from '@shared/hooks/hooks/useCustomerRealtimeOrder'
-import { useAuth } from '@shared/hooks/hooks/useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { OrderCard } from '@features/orders/components/OrderCard'
 import { Button, Spinner, Badge } from '@shared/ui/primitives'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
@@ -19,11 +19,16 @@ import type { AddressSnapshot } from '@api/types'
 
 function getStatusBadge(status: string) {
   switch (status) {
-    case 'PLACED': return { label: 'Placed', variant: 'warning' as const }
-    case 'ACCEPTED': return { label: 'Accepted', variant: 'default' as const }
-    case 'PREPARING': return { label: 'Preparing', variant: 'default' as const }
-    case 'READY': return { label: 'Ready', variant: 'success' as const }
-    default: return { label: status, variant: 'secondary' as const }
+    case 'PLACED': { return { label: 'Placed', variant: 'warning' as const }
+    }
+    case 'ACCEPTED': { return { label: 'Accepted', variant: 'default' as const }
+    }
+    case 'PREPARING': { return { label: 'Preparing', variant: 'default' as const }
+    }
+    case 'READY': { return { label: 'Ready', variant: 'success' as const }
+    }
+    default: { return { label: status, variant: 'secondary' as const }
+    }
   }
 }
 

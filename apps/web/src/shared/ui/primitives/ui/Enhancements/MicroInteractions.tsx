@@ -172,7 +172,7 @@ const RippleEffectComponent = memo<RippleEffectProps>(({
   disabled = false,
   className
 }) => {
-  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([])
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([])
   
   const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (disabled) return

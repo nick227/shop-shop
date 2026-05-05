@@ -206,7 +206,7 @@ function validatePassword(password: string): { isValid: boolean; message: string
   }
   
   // Check for at least one letter
-  if (!/[a-zA-Z]/.test(password)) {
+  if (!/[A-Za-z]/.test(password)) {
     return { isValid: false, message: 'Password must contain at least one letter' }
   }
   

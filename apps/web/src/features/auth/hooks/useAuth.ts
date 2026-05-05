@@ -5,9 +5,10 @@
  * Handles login, logout, token refresh, and user session persistence.
  */
 
-import { useCallback, useEffect, useContext } from 'react'
+import { useCallback, useEffect, useContext, useState } from 'react'
 import { AuthContext } from '../context/AuthContext'
 import type { LoginCredentials } from '../types'
+import { useAuthStore } from '@stores/authStore'
 
 export interface UseAuthProps {
   onSuccess?: () => void
@@ -16,6 +17,8 @@ export interface UseAuthProps {
 
 export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
   const authContext = useContext(AuthContext)
+  const authBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+  const setAuth = useAuthStore((state) => state.setAuth)
   
   if (!authContext) {
     throw new Error('useAuth must be used within an AuthProvider')
@@ -32,12 +35,23 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
   } = authContext
 
   // ========================================
+  // State Management
+  // ========================================
+  
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [signupError, setSignupError] = useState<string | null>(null)
+
+  // ========================================
   // Login Function
   // ========================================
   
   const login = useCallback(async (credentials: LoginCredentials) => {
+    setIsLoggingIn(true)
+    setLoginError(null)
     try {
-      const response = await fetch('/api/auth/v1/login', {
+      const response = await fetch(`${authBaseUrl}/auth/v1/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,17 +65,77 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
         throw new Error(data.message || 'Login failed')
       }
 
-      // Store tokens and user data
-      await contextLogin(data.user, data.accessToken, data.refreshToken)
+      const accessToken = data.accessToken ?? data.token
+      const refreshToken = data.refreshToken ?? data.token
+
+      if (!accessToken) {
+        throw new Error('Login response did not include a token')
+      }
+
+      // Store tokens and user data in both auth layers while the app still uses both.
+      await contextLogin(data.user, accessToken, refreshToken)
+      setAuth(data.user, accessToken)
       
       onSuccess?.()
       return data
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      setLoginError(errorMessage)
       onError?.(errorMessage)
       throw error
+    } finally {
+      setIsLoggingIn(false)
     }
-  }, [contextLogin, onSuccess, onError])
+  }, [authBaseUrl, contextLogin, onSuccess, onError, setAuth])
+
+  // ========================================
+  // Signup Function
+  // ========================================
+  
+  const signup = useCallback(async (credentials: LoginCredentials) => {
+    setIsSigningUp(true)
+    setSignupError(null)
+    try {
+      const response = await fetch(`${authBaseUrl}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        const apiError =
+          (typeof data?.message === 'string' && data.message) ||
+          (typeof data?.error === 'string' && data.error) ||
+          'Signup failed'
+        throw new Error(apiError)
+      }
+
+      const accessToken = data.accessToken ?? data.token
+      const refreshToken = data.refreshToken ?? data.token
+
+      if (!accessToken) {
+        throw new Error('Signup response did not include a token')
+      }
+
+      // Store tokens and user data in both auth layers while the app still uses both.
+      await contextLogin(data.user, accessToken, refreshToken)
+      setAuth(data.user, accessToken)
+      
+      onSuccess?.()
+      return data
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed'
+      setSignupError(errorMessage)
+      onError?.(errorMessage)
+      throw error
+    } finally {
+      setIsSigningUp(false)
+    }
+  }, [authBaseUrl, contextLogin, onSuccess, onError, setAuth])
 
   // ========================================
   // Logout Function
@@ -118,6 +192,10 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
     isAuthenticated,
     loading,
     error,
+    isLoggingIn,
+    isSigningUp,
+    loginError,
+    signupError,
     
     // Computed values
     isCustomer,
@@ -126,6 +204,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
     
     // Actions
     login,
+    signup,
     logout,
     refreshToken
   }

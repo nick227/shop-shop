@@ -5,7 +5,7 @@
  * Reduced complexity from 650 CRAP to <50 CRAP.
  */
 
-import { OrderStatusBadge } from './OrderStatusBadge'
+import { OrderStatusBadge } from '../OrderStatusBadge'
 import { OrderActions } from './OrderActions'
 import { OrderDetails } from './OrderDetails'
 import { useVendorOrderCard } from './hooks/useVendorOrderCard'
@@ -62,7 +62,7 @@ export function VendorOrderCard({
           <h3 className="text-lg font-bold text-gray-900 mb-1">
             {orderId}
           </h3>
-          <OrderStatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status as Parameters<typeof OrderStatusBadge>[0]['status']} />
         </div>
         <div className="text-right">
           <span className={isUrgent ? 'text-red-600 font-bold text-sm' : 'text-gray-500 text-sm'}>

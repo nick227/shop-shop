@@ -42,7 +42,7 @@ export function StoreDestinationMap({ store, destination, height = '260px' }: St
       mapRef.current = map
     }
 
-    const map = mapRef.current!
+    const map = mapRef.current
 
     // Clear previous layers (markers/bounds) but keep the tile layer.
     for (const layer of layersRef.current) {

@@ -3,19 +3,19 @@
  */
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCart } from '@shared/hooks/hooks/useCart'
-import { usePayment } from '@shared/hooks/hooks/usePayment'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
 import { calculateOrderPricing } from '@shared/lib/utils/pricing'
-import { mapOrder } from '@api/type-mappers'
-import type { OrderResponse } from '@api/types'
+type CreateCheckoutSessionResponse = Awaited<ReturnType<typeof apiClient.checkout.createSession>>
+type CompleteCheckoutResponse = Awaited<ReturnType<typeof apiClient.checkout.complete>>
 import { Button, Spinner } from '@shared/ui/primitives'
 import { CartSummary } from '@features/cart/components/CartSummary'
 import { PaymentSection } from '@features/checkout/components/PaymentSection'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { ActionCard } from '@shared/ui/primitives/ui/ActionCard/ActionCard'
@@ -31,7 +31,7 @@ export default function CheckoutPage() {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { cart, isLoading, clearCart } = useCart()
-  const { createPaymentIntentAsync, isCreatingIntent } = usePayment()
+  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false)
   
   const [deliveryType, setDeliveryType] = useState<'PICKUP' | 'DELIVERY'>('PICKUP')
   const [tip, setTip] = useState('')
@@ -41,46 +41,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     setPaymentError(undefined)
   }, [location.pathname])
-
-  const createOrderMutation = useMutation({
-    mutationFn: async (params: { cartId: string; deliveryType: 'PICKUP' | 'DELIVERY'; tip?: string }) => {
-      // Calculate totals using pricing utilities
-      const subtotal = Number.parseFloat(cart?.subtotal?.toString() || '0')
-      const tipPercentage = tip ? Number.parseFloat(tip) / subtotal : 0
-      const pricing = calculateOrderPricing({
-        subtotal,
-        tipPercentage,
-        includeServiceFee: false
-      })
-      const tipAmount = pricing.tip
-      const deliveryFee = pricing.deliveryFee
-      const tax = pricing.tax
-      const totalAmount = pricing.total
-      
-      const rawOrder = await apiClient.orders().createOrder({
-        createOrderRequest: {
-          userId: '', // Will be set by backend from auth
-          storeId: cart?.storeId || '',
-          cartId: params.cartId,
-          status: 'PENDING',
-          deliveryType: params.deliveryType,
-          paymentStatus: 'PENDING',
-          subtotal: subtotal.toFixed(2),
-          fees: deliveryFee.toFixed(2),
-          tax: tax.toFixed(2),
-          tip: tipAmount.toFixed(2),
-          total: totalAmount.toFixed(2),
-          serviceFeePercent: '2.9',
-          serviceFeeAmount: (totalAmount * 0.029).toFixed(2),
-          netToVendor: (totalAmount * 0.971).toFixed(2),
-        }
-      })
-      return mapOrder(rawOrder)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-    },
-  })
 
   const finalizeSuccessfulCheckout = useCallback(() => {
     clearPendingOrderForCheckout()
@@ -126,88 +86,65 @@ export default function CheckoutPage() {
   
   const { subtotal, deliveryFee, tax, tipAmount, totalAmount } = calculations
 
+  const createCheckoutSession = useCallback(async (paymentToken: string): Promise<CreateCheckoutSessionResponse> => {
+    if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
+      throw new Error('Cart is empty')
+    }
+    return apiClient.checkout.createSession({
+      items: cart.items.map((item) => ({
+        itemId: item.itemId,
+        quantity: item.quantity,
+      })),
+      deliveryType,
+      paymentMethod: {
+        type: paymentToken === 'cod_test' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
+        token: paymentToken,
+      },
+      ...(tipAmount > 0 ? { tipAmount } : {}),
+    })
+  }, [cart, deliveryType, tipAmount])
+
+  const completeCheckoutSession = useCallback(async (sessionId: string, paymentToken: string): Promise<CompleteCheckoutResponse> => {
+    return apiClient.checkout.complete({
+      sessionId,
+      paymentMethod: {
+        type: paymentToken === 'cod_test' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
+        token: paymentToken,
+      },
+      ...(tipAmount > 0 ? { tipAmount } : {}),
+    })
+  }, [tipAmount])
+
   const handlePayment = async (paymentMethodId?: string) => {
     if (!cart) return
 
     try {
-      let orderId: string | undefined = getPendingOrderForCart(cart.id)
+      setIsSubmittingCheckout(true)
+      const paymentToken = paymentMethodId ?? 'cod_test'
+      let sessionId = getPendingOrderForCart(cart.id)
 
-      if (!orderId) {
-        try {
-          const orderResponse: OrderResponse = await createOrderMutation.mutateAsync({
-            cartId: cart.id,
-            deliveryType,
-            tip: tipAmount > 0 ? tipAmount.toFixed(2) : undefined,
-          })
-
-          orderId = orderResponse.id
-          setPendingOrderForCart(cart.id, orderId)
-        } catch (error: unknown) {
-          const appError = await handleApiError(error)
-          const msg = 'Order could not be created: ' + appError.message
-          toast.error(msg)
-          setPaymentError(msg)
-          return
-        }
+      if (!sessionId) {
+        const session = await createCheckoutSession(paymentToken)
+        sessionId = session.sessionId
+        setPendingOrderForCart(cart.id, sessionId)
       }
 
-      if (!orderId) {
-        return
+      if (!sessionId) {
+        throw new Error('Checkout session could not be created')
       }
 
-      // Test / COD path — no Stripe payment method
-      if (!paymentMethodId) {
-        toast.success('Order placed successfully!')
-        finalizeSuccessfulCheckout()
-        navigate('/order/' + orderId)
-        return
-      }
-
-      const paymentIntent = await createPaymentIntentAsync({
-        orderId,
-        paymentMethodId,
-      })
-
-      if (paymentIntent.status === 'succeeded') {
-        toast.success('Order placed and paid successfully!')
-        finalizeSuccessfulCheckout()
-        navigate('/order/' + orderId, {
-          state: {
-            paymentStatus: 'succeeded',
-            showSuccessAnimation: true,
-          },
-        })
-      } else if (paymentIntent.status === 'requires_action') {
-        toast.info('Additional payment authentication required. Check your order status for next steps.')
-        finalizeSuccessfulCheckout()
-        navigate('/order/' + orderId, {
-          state: { paymentStatus: 'requires_action' },
-        })
-      } else if (paymentIntent.status === 'requires_payment_method') {
-        const msg =
-          'Your payment could not be processed. Try again or use a different payment method.'
-        toast.error(msg)
-        setPaymentError(msg)
-        return
-      } else if (paymentIntent.status === 'canceled') {
-        const msg = 'Payment was canceled. You can retry below or go back to your cart.'
-        toast.error(msg)
-        setPaymentError(msg)
-        return
-      } else {
-        toast.info('Payment status: ' + paymentIntent.status + '. Check order history for details.')
-        finalizeSuccessfulCheckout()
-        navigate('/order/' + orderId, {
-          state: {
-            paymentStatus: paymentIntent.status,
-          },
-        })
-      }
+      const completion = await completeCheckoutSession(sessionId, paymentToken)
+      const orderId = completion.order.id
+      toast.success('Order placed successfully!')
+      finalizeSuccessfulCheckout()
+      navigate('/orders/' + orderId)
     } catch (error: unknown) {
       const appError = await handleApiError(error)
       const errorMessage = 'Payment failed: ' + appError.message
       toast.error(errorMessage)
       setPaymentError(errorMessage)
+    } finally {
+      setIsSubmittingCheckout(false)
     }
   }
 
@@ -219,16 +156,18 @@ export default function CheckoutPage() {
   // Early returns AFTER all hooks
   if (isLoading) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Spinner size="large" />
-        <p className="text-muted-foreground">Loading checkout...</p>
-      </PageContainer>
+      <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="text-muted-foreground">Loading checkout...</p>
+        </div>
+      </PageShell>
     )
   }
 
   if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
     return (
-      <PageContainer>
+      <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
         <EmptyState
           icon={ShoppingCart}
           title="Your cart is empty"
@@ -239,12 +178,12 @@ export default function CheckoutPage() {
             </Button>
           }
         />
-      </PageContainer>
+      </PageShell>
     )
   }
 
   return (
-    <PageContainer>
+    <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
       <PageHeader
         title="Checkout"
         backButton={
@@ -382,10 +321,10 @@ export default function CheckoutPage() {
                 onPaymentReady={handlePayment}
                 onBackToCart={handleBackToCart}
                 onRetryPayment={handleRetryPayment}
-                isProcessing={createOrderMutation.isPending || isCreatingIntent}
+                isProcessing={isSubmittingCheckout}
                 paymentError={paymentError}
               />
-              {(createOrderMutation.isPending || isCreatingIntent) && (
+              {isSubmittingCheckout && (
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-4">
                   <Spinner size="small" />
                   <span>Processing payment...</span>
@@ -395,6 +334,6 @@ export default function CheckoutPage() {
           )}
         </div>
       </div>
-    </PageContainer>
+    </PageShell>
   )
 }

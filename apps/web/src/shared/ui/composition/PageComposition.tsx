@@ -13,7 +13,7 @@ import React, { memo, useMemo } from 'react'
 import { AppLayout } from '@layouts/UnifiedLayout'
 import { PageHeader } from '@components/layout/PageHeader'
 import { PageActions } from '@components/layout/PageActions'
-import { PageSection } from '@components/layout/PageSection'
+import type { PageSection } from '@components/layout/PageSection'
 import { cn } from '@shared/lib/cn'
 
 // ========================================
@@ -145,7 +145,7 @@ const PageCompositionComponent = memo<PageCompositionProps>(({
       className
     )}>
       {/* Header Section — use `header` prop only; never mirror `children` here */}
-      {sections.includes('header') && header != null && (
+      {sections.includes('header') && header != undefined && (
         <header className={cn(
           'page-header',
           {
@@ -230,7 +230,7 @@ const SidebarContent = memo(() => (
     <nav className="page-sidebar-nav">
       <ul className="page-sidebar-nav-list">
         <li><a href="/dashboard">Dashboard</a></li>
-        <li><a href="/stores">Stores</a></li>
+        <li><a href="/search">Stores</a></li>
         <li><a href="/orders">Orders</a></li>
         <li><a href="/settings">Settings</a></li>
       </ul>
@@ -246,7 +246,7 @@ const TopNavContent = memo(() => (
       </div>
       <div className="page-top-nav-menu">
         <a href="/">Home</a>
-        <a href="/stores">Stores</a>
+        <a href="/search">Stores</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
       </div>
@@ -261,7 +261,7 @@ const BottomNavContent = memo(() => (
         <span className="page-bottom-nav-icon">🏠</span>
         <span className="page-bottom-nav-label">Home</span>
       </a>
-      <a href="/stores" className="page-bottom-nav-item">
+      <a href="/search" className="page-bottom-nav-item">
         <span className="page-bottom-nav-icon">🏪</span>
         <span className="page-bottom-nav-label">Stores</span>
       </a>

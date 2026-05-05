@@ -1,205 +1,113 @@
-/**
- * Global Error Handler Middleware
- * 
- * Captures and logs all errors with request context.
- * Prevents server crashes and provides consistent error responses.
- */
+import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
+import { AppError } from './errors.js'
 
-import { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
+const SENSITIVE_KEYS = new Set([
+  'password', 'passwordHash', 'token', 'secret',
+  'paymentMethod', 'cardNumber', 'cvv', 'ssn', 'authorization',
+])
 
-interface ErrorContext {
-  requestId?: string
-  method: string
-  url: string
-  ip: string
-  userAgent?: string
-  userId?: string
-  sessionId?: string
-  timestamp: string
-  body?: any
-  query?: any
-  params?: any
+function scrubBody(body: unknown): unknown {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).map(([k, v]) => [
+      k,
+      SENSITIVE_KEYS.has(k.toLowerCase()) ? '[REDACTED]' : v,
+    ]),
+  )
 }
 
-interface ErrorPayload {
-  error: {
-    name: string
-    message: string
-    stack?: string
-    code?: string | number
-  }
-  context: ErrorContext
-  environment: string
-}
-
-/**
- * Extract request context for error logging
- */
-function extractRequestContext(req: FastifyRequest): ErrorContext {
-  return {
-    requestId: (req as any).id,
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    userAgent: req.headers['user-agent'],
-    userId: (req as any).user?.userId,
-    sessionId: (req as any).sessionId,
-    timestamp: new Date().toISOString(),
-    body: req.body,
-    query: req.query,
-    params: req.params,
-  }
-}
-
-/**
- * Log error with context
- */
-function logError(error: FastifyError, context: ErrorContext) {
-  const payload: ErrorPayload = {
-    error: {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-    },
-    context,
-    environment: process.env.NODE_ENV || 'development',
-  }
-
-  // In production, send to error reporting service
-  if (process.env.NODE_ENV === 'production') {
-    // Try to send to error endpoint if configured
-    if (process.env.ERROR_ENDPOINT) {
-      fetch(process.env.ERROR_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch(() => {
-        // Silently fail if error endpoint fails
-        console.error('Failed to send error to endpoint:', payload)
-      })
-    }
-    
-    // Always log to console as fallback
-    console.error('Production Error:', JSON.stringify(payload, null, 2))
-  } else {
-    // Development: detailed logging
-    console.error('Development Error:', {
-      error: error.message,
-      stack: error.stack,
-      context,
-    })
-  }
-}
-
-/**
- * Global error handler for Fastify
- */
 export const globalErrorHandler = async (
   error: FastifyError,
   req: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
-  const context = extractRequestContext(req)
-  
-  // Log the error with context
-  logError(error, context)
+  const statusCode = (error as AppError).statusCode ?? error.statusCode
 
-  // Don't send error details in production for security
-  const isDevelopment = process.env.NODE_ENV !== 'production'
-  
-  // Handle specific error types
+  if (statusCode && statusCode >= 400 && statusCode < 500) {
+    req.log.warn({ err: error, url: req.url, method: req.method }, 'Request rejected')
+  } else {
+    req.log.error(
+      {
+        err: error,
+        url: req.url,
+        method: req.method,
+        ip: req.ip,
+        userId: req.user?.id,
+        body: scrubBody(req.body),
+      },
+      'Unhandled server error',
+    )
+
+    if (process.env.NODE_ENV === 'production' && process.env.ERROR_ENDPOINT) {
+      fetch(process.env.ERROR_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: { name: error.name, message: error.message, stack: error.stack },
+          url: req.url,
+          method: req.method,
+          requestId: req.id,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {})
+    }
+  }
+
   if (error.validation) {
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Validation failed',
-      details: isDevelopment ? error.validation : undefined,
-      requestId: context.requestId,
+      details: process.env.NODE_ENV !== 'production' ? error.validation : undefined,
+      requestId: req.id,
     })
   }
 
-  const sc = error.statusCode
-  if (sc !== undefined && sc >= 400 && sc < 500) {
-    return reply.status(sc).send({
+  if (statusCode && statusCode >= 400 && statusCode < 500) {
+    return reply.status(statusCode).send({
       error: error.name || 'Client Error',
       message: error.message,
-      requestId: context.requestId,
+      requestId: req.id,
     })
   }
 
-  // Default server error response
-  const statusCode = error.statusCode || 500
-  return reply.status(statusCode).send({
+  return reply.status(statusCode ?? 500).send({
     error: 'Internal Server Error',
-    message: isDevelopment ? error.message : 'Something went wrong',
-    requestId: context.requestId,
+    message: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+    requestId: req.id,
   })
 }
 
-/**
- * Uncaught exception handler
- */
 export const handleUncaughtException = (error: Error) => {
-  const payload: ErrorPayload = {
-    error: {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    },
-    context: {
-      method: 'UNCAUGHT',
-      url: 'process',
-      ip: 'process',
-      timestamp: new Date().toISOString(),
-    },
-    environment: process.env.NODE_ENV || 'development',
-  }
+  console.error('Uncaught Exception — process will exit', {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  })
 
-  console.error('Uncaught Exception:', JSON.stringify(payload, null, 2))
-  
-  // In production, try to send to error endpoint before exiting
   if (process.env.NODE_ENV === 'production' && process.env.ERROR_ENDPOINT) {
     fetch(process.env.ERROR_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).finally(() => {
-      process.exit(1)
-    })
+      body: JSON.stringify({ type: 'uncaughtException', error: { name: error.name, message: error.message, stack: error.stack } }),
+    }).finally(() => process.exit(1))
   } else {
     process.exit(1)
   }
 }
 
-/**
- * Unhandled promise rejection handler
- */
-export const handleUnhandledRejection = (reason: any, promise: Promise<any>) => {
-  const payload: ErrorPayload = {
-    error: {
-      name: 'UnhandledPromiseRejection',
-      message: reason?.message || String(reason),
-      stack: reason?.stack,
-    },
-    context: {
-      method: 'UNHANDLED_REJECTION',
-      url: 'promise',
-      ip: 'process',
-      timestamp: new Date().toISOString(),
-    },
-    environment: process.env.NODE_ENV || 'development',
-  }
+export const handleUnhandledRejection = (reason: unknown) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason))
+  console.error('Unhandled Promise Rejection', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+  })
 
-  console.error('Unhandled Rejection:', JSON.stringify(payload, null, 2))
-  
-  // In production, try to send to error endpoint
   if (process.env.NODE_ENV === 'production' && process.env.ERROR_ENDPOINT) {
     fetch(process.env.ERROR_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Silently fail
-    })
+      body: JSON.stringify({ type: 'unhandledRejection', error: { name: err.name, message: err.message } }),
+    }).catch(() => {})
   }
 }

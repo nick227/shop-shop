@@ -1,6 +1,6 @@
 import { locationValidator } from '@shared/lib/utils/validation/unified'
 
-export type LatLng = { latitude: number; longitude: number }
+export interface LatLng { latitude: number; longitude: number }
 
 function isBrowser() {
   return typeof window !== 'undefined' && typeof navigator !== 'undefined'
@@ -39,7 +39,7 @@ function detectPlatform() {
   if (!isBrowser()) return 'web'
   const ua = navigator.userAgent || ''
   const isIOS = /iPad|iPhone|iPod/.test(ua)
-  const isAndroid = /Android/.test(ua)
+  const isAndroid = ua.includes('Android')
   if (isIOS) return 'ios'
   if (isAndroid) return 'android'
   return 'web'

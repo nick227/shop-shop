@@ -125,7 +125,7 @@ export function useMapData({
     
     return {
       validStores: processed.validStores as unknown as StoreWithDistance[],
-      storeLocations: processed.storeLocations as LocationCoordinates[],
+      storeLocations: processed.storeLocations,
       nearestStore: processed.nearestStore as unknown as StoreWithDistance | undefined,
       mapCenter,
       mapZoom,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Type Helpers & Utilities
  * Runtime helper functions for working with API types
@@ -57,9 +56,10 @@ export function calculateCartTotals(
     for (const item of cart.items) {
       if (!item) continue
       
-      const price = typeof item.price === 'string'
-        ? Number.parseFloat(item.price)
-        : Number(item.price) || 0
+      const rawPrice = item.unitPrice ?? item.item?.price ?? item.currentItem?.price ?? 0
+      const price = typeof rawPrice === 'string'
+        ? Number.parseFloat(rawPrice)
+        : Number(rawPrice) || 0
       
       const quantity = item.quantity ?? 1
       subtotal += price * quantity

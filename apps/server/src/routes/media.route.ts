@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 import type { AuthenticatedUser } from '../middleware/auth.js'
 import {
   UploadMediaInputSchema,
@@ -123,13 +124,10 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       tags: ['Media'],
       summary: 'List media files',
       description: 'List media files for a store or item',
-      querystring: {
-        type: 'object',
-        properties: {
-          storeId: { type: 'string', format: 'uuid' },
-          itemId: { type: 'string', format: 'uuid' },
-        },
-      },
+      querystring: z.object({
+        storeId: z.string().uuid().optional(),
+        itemId: z.string().uuid().optional(),
+      }),
     },
   }, async (req: AuthenticatedRequest, reply) => {
     const { storeId, itemId } = req.query as { storeId?: string; itemId?: string }

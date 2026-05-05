@@ -4,7 +4,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { locationService, LocationData, StoreWithDistance, DeliveryResult, StoreData } from '../../services/LocationService';
+import type { LocationData, StoreWithDistance, DeliveryResult} from '../../services/LocationService';
+import { locationService, StoreData } from '../../services/LocationService';
 import { storeService } from '../../services/StoreService';
 
 export interface UseLocationState {
@@ -45,8 +46,8 @@ export function useLocationService(): UseLocationState & UseLocationActions {
       if (typeof window !== 'undefined' && (window as any).track) {
         (window as any).track('location_detected', { source: userLocation.source });
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Location detection failed');
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : 'Location detection failed');
       setNearbyStores([]);
     } finally {
       setIsLoading(false);
@@ -75,8 +76,8 @@ export function useLocationService(): UseLocationState & UseLocationActions {
       }
       
       return result;
-    } catch (err) {
-      console.error('Delivery check failed:', err);
+    } catch (error_) {
+      console.error('Delivery check failed:', error_);
       return null;
     }
   }, [location, nearbyStores]);

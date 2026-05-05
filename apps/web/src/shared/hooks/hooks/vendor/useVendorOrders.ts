@@ -4,7 +4,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { stores, orders } from '@api/apiWrapper'
-import { useAuth } from '../useAuth'
+import { useAuth } from '@features/auth/hooks/useAuth'
 import { sortOrdersByDateDesc, isOrderPending } from '@shared/lib/utils/orderHelpers'
 import { mapOrder } from '@api/type-mappers'
 import type { OrderResponse } from '@api/types'
@@ -29,7 +29,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
 
       const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
       const rawOrders = await orders.list()
-      const allOrders = rawOrders.map(mapOrder) as OrderResponse[]
+      const allOrders = rawOrders.map(mapOrder)
 
       // Filter to vendor stores + optional status.
       const filtered = allOrders.filter((order) => {
@@ -44,7 +44,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
         if (!order?.id) continue
         byId.set(order.id, order)
       }
-      const uniqueOrders = Array.from(byId.values())
+      const uniqueOrders = [...byId.values()]
       
       // Sort by newest first (using consolidated helper)
       uniqueOrders.sort(sortOrdersByDateDesc)

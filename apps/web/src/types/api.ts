@@ -65,9 +65,7 @@ export interface components {
             requestId?: string;
             /** @description Validation details are included outside production only. */
             details?: unknown;
-        } & {
-            [key: string]: unknown;
-        };
+        } & Record<string, unknown>;
         CheckoutItem: {
             /** Format: uuid */
             itemId: string;
@@ -160,63 +158,49 @@ export interface components {
     responses: {
         /** @description Bad request or validation failure. */
         BadRequest: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Authentication required or invalid. */
         Unauthorized: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Authenticated user cannot access this checkout session. */
         Forbidden: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Checkout session was not found. */
         NotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Checkout session already has an order. */
         Conflict: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Checkout session has expired. */
         Gone: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Internal server error. */
         InternalServerError: {
-            headers: {
-                [name: string]: unknown;
-            };
+            headers: Record<string, unknown>;
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
@@ -318,9 +302,7 @@ export interface operations {
         responses: {
             /** @description Checkout session status. */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
+                headers: Record<string, unknown>;
                 content: {
                     "application/json": components["schemas"]["CheckoutStatusResponse"];
                 };

@@ -6,7 +6,8 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useLocationService } from '../useLocationService';
-import { locationService, StoreData } from '../../../services/LocationService';
+import type { StoreData } from '../../../services/LocationService';
+import { locationService } from '../../../services/LocationService';
 import { storeService } from '../../../services/StoreService';
 
 // Mock the services
@@ -26,7 +27,7 @@ const mockStoreService = storeService as ReturnType<typeof vi.mocked<typeof stor
 describe('useLocationService', () => {
   const mockLocation = {
     latitude: 40.7128,
-    longitude: -74.0060,
+    longitude: -74.006,
     source: 'gps' as const
   };
 
@@ -36,7 +37,7 @@ describe('useLocationService', () => {
       name: 'Test Store',
       address: '123 Test St',
       latitude: 40.7128,
-      longitude: -74.0060
+      longitude: -74.006
     }
   ];
 

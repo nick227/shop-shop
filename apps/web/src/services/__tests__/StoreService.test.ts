@@ -5,7 +5,7 @@
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { StoreService } from '../StoreService';
-import { StoreData } from '../LocationService';
+import type { StoreData } from '../LocationService';
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -18,7 +18,7 @@ describe('StoreService', () => {
       name: 'Test Store 1',
       address: '123 Test St',
       latitude: 40.7128,
-      longitude: -74.0060
+      longitude: -74.006
     },
     {
       id: '2',

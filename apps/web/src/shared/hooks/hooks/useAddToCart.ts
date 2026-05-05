@@ -1,13 +1,12 @@
 // @ts-nocheck
 /**
- * useAddToCart Hook - Shared cart mutation logic;
+ * useAddToCart Hook - Enhanced cart mutation logic with rich notifications
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
 import { useCartStore } from '@stores/cartStore'
+import { useCartToaster } from '@features/cart/components/CartToaster'
 import type { ItemResponse } from '@api/types'
-import { apiClient } from '@api/client'
 
 export interface AddToCartParams {
   storeId: string;
@@ -21,29 +20,29 @@ export interface AddToCartParams {
 export function useAddToCart() {
   const queryClient = useQueryClient()
   const addItem = useCartStore((state) => state.addItem)
+  const cart = useCartStore((state) => state.cart)
+  const { showItemAdded } = useCartToaster()
   
   return useMutation({
     mutationFn: async (params: AddToCartParams) => {
-      const cart = addItem(params)
-      void apiClient.carts().createCart({
-        createCartRequest: {
-          storeId: params.storeId,
-          itemId: params.itemId,
-          quantity: params.quantity,
-        },
-      }).catch((error) => {
-        console.warn('Cart API sync failed; kept local cart state.', error)
-      })
-      return cart
+      return addItem(params)
     },
-    onSuccess: () => {
+    onSuccess: (updatedCart, variables) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
       queryClient.invalidateQueries({ queryKey: ['carts'] })
-      toast.success('Item added to cart!')
+      
+      // Show rich cart notification
+      showItemAdded({
+        item: variables.item,
+        quantity: variables.quantity,
+        cartTotal: updatedCart?.total,
+        cartItemCount: updatedCart?.itemCount,
+        duration: 4000
+      })
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
-      toast.error(appError.message)
+      // Could enhance with error-specific toast here
+      console.error('Add to cart failed:', appError.message)
     }})
 }
-

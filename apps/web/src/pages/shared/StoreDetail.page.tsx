@@ -1,258 +1,126 @@
-// @ts-nocheck
-/**
- * StoreDetailPage - Store menu and details
- * Composition: Uses unified page composition system for consistent layout
- */
-import { useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '@shared/hooks/hooks/useStores'
 import { useItems } from '@shared/hooks/generated'
-import { useBundles } from '@shared/hooks/generated'
-import { useRiverPosts } from '@shared/hooks/hooks/river'
+import { useCart } from '@shared/hooks/hooks/useCart'
+import { parseStoreSlug } from '@shared/lib/utils/slugify'
 import { StoreHeader } from '@features/stores/components/StoreHeader'
-import { StoreMapLazy } from '@features/stores/components/StoreMapLazy'
-import { ItemCard, ItemCarouselCompact } from '@features/products/components'
-import { BundleGrid } from '@features/bundles/components/customer'
-// import { RiverFeed } from '../../features/river' // Disabled until Posts API is available
-import { Button, Spinner, DataState } from '@shared/ui/primitives'
-import type { StoreWithDistance } from '@shared/types'
-import { PageComposition as PageCompositionFactory, LayoutComposition as LayoutCompositionFactory, CardComposition as CardCompositionFactory } from '@shared/ui/composition'
+import { ItemCard } from '@features/products/components'
+import { Button } from '@shared/ui/primitives'
+import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
+import { PageShell } from '@shared/ui/layout/PageShell'
+import { CartBadge } from '@components/CartBadge'
 
-export default function StoreDetailPage() {
-  const { storeId: storeIdParam, id } = useParams<{ storeId?: string; id?: string }>()
-  const storeId = storeIdParam ?? id
+function KitchenContainer() {
   const navigate = useNavigate()
-  const [showCarousel, setShowCarousel] = useState(false)
-  
-  const { data: store, isLoading: storeLoading, error: storeError } = useStore(storeId ?? '')
-  const { data: items, isLoading: itemsLoading, error: itemsError } = useItems(
+  const { slug, storeId: storeIdParam, id } = useParams<{ slug?: string; storeId?: string; id?: string }>()
+  const legacyOrSlug = slug ?? storeIdParam ?? id
+  const { id: parsedStoreId } = legacyOrSlug ? parseStoreSlug(legacyOrSlug) : { id: undefined }
+  const storeId = parsedStoreId ?? legacyOrSlug
+  const { cart } = useCart()
+
+  const { data: store, isLoading: isStoreLoading, error: storeError } = useStore(storeId ?? '')
+  const { data: items, isLoading: isItemsLoading, error: itemsError } = useItems(
     storeId ? { storeId } : undefined,
     { enabled: Boolean(storeId) }
   )
-  const { data: bundles = [] } = useBundles(
-    storeId ? { storeId, isActive: true } : undefined,
-    { enabled: Boolean(storeId) }
-  )
-  const { data: riverPosts = [], isLoading: riverLoading, error: riverError } = useRiverPosts(storeId)
 
-  // Memoize store array for map (must be before early returns per React hooks rules)
-  const storeForMap = useMemo<StoreWithDistance[]>(() => {
-    if (!store) return []
-    // eslint-disable-next-line unicorn/no-null -- SDK types use null, not undefined
-    const hasLocation = store.latitude != null && store.longitude != null
-    return hasLocation ? [store as StoreWithDistance] : []
-  }, [store])
+  const cartCount = useMemo(() => {
+    if (!cart?.items || !Array.isArray(cart.items)) return 0
+    return cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+  }, [cart?.items])
 
-  const handleBack = () => {
-    navigate('/')
-  }
-
-  if (storeLoading) {
+  if (isStoreLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Spinner size="large" />
-        <p>Loading store...</p>
-      </div>
+      <StateBlock
+        title="Loading kitchen"
+        message="Please wait while we load this kitchen."
+      />
     )
   }
 
   if (storeError || !store) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-destructive">
-        <h2>Store Not Found</h2>
-        <p>{storeError?.message ?? 'The store you are looking for does not exist.'}</p>
-        <Button onClick={handleBack}>Back to Home</Button>
-      </div>
+      <StateBlock
+        title="Kitchen not found"
+        message={storeError?.message ?? 'The kitchen could not be loaded.'}
+        actionLabel="Back to search"
+        onAction={() => navigate('/search')}
+      />
+    )
+  }
+
+  if (isItemsLoading) {
+    return (
+      <StateBlock
+        title="Loading menu"
+        message="Please wait while we load menu items."
+      />
+    )
+  }
+
+  if (itemsError) {
+    return (
+      <StateBlock
+        title="Menu unavailable"
+        message={itemsError.message}
+        actionLabel="Retry"
+        onAction={() => navigate(0)}
+      />
+    )
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <StateBlock
+        title="No items yet"
+        message="This kitchen has no active menu items right now."
+        actionLabel="Back to search"
+        onAction={() => navigate('/search')}
+      />
     )
   }
 
   return (
-    <PageCompositionFactory.App
-      layout="sidebar"
-      sections={['header', 'content']}
-      responsive={true}
-      accessibility={true}
-      className="min-h-screen bg-background px-4 md:px-6 py-8"
-    >
-      <LayoutCompositionFactory.Stack
-        direction="column"
-        gap="lg"
-        responsive={true}
-      >
-        <LayoutCompositionFactory.Flex
-          direction="row"
-          alignment="start"
-          justify="between"
-          gap="md"
-          responsive={true}
-        >
-          <Button variant="ghost" onClick={handleBack}>
-            ← Back
-          </Button>
-        </LayoutCompositionFactory.Flex>
+    <div className="space-y-6">
+      <StoreHeader store={store} />
 
-        <StoreHeader store={store} />
+      <section>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Menu</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => (
+            <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
+          ))}
+        </div>
+      </section>
 
-        {/* Store Location Map */}
-        {storeForMap.length > 0 && (
-          <div className="">
-            <StoreMapLazy 
-              stores={storeForMap}
-              height="400px"
-            />
+      <aside className="sticky bottom-4 z-20 rounded-xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CartBadge count={cartCount} />
+            <div>
+            <p className="text-sm text-muted-foreground">Cart</p>
+            <p className="font-semibold">
+              {cartCount} {cartCount === 1 ? 'item' : 'items'}
+            </p>
+            </div>
           </div>
-        )}
-
-        <LayoutCompositionFactory.Stack
-          direction="column"
-          gap="lg"
-          responsive={true}
-          className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8"
-        >
-          {/* Menu Section */}
-          <LayoutCompositionFactory.Stack
-            direction="column"
-            gap="lg"
-            responsive={true}
+          <Link
+            to="/cart"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
           >
-              <LayoutCompositionFactory.Flex
-                direction="row"
-                alignment="center"
-                justify="between"
-                gap="md"
-                responsive={true}
-                className=""
-              >
-                <h2 className="text-xl font-bold flex items-center gap-2">Menu</h2>
-                {items && items.length > 0 && (
-                  <Button 
-                    variant="primary" 
-                    onClick={() => setShowCarousel(true)}
-                  >
-                    📱 View Carousel
-                  </Button>
-                )}
-              </LayoutCompositionFactory.Flex>
+            View cart
+          </Link>
+        </div>
+      </aside>
+    </div>
+  )
+}
 
-              {/* Bundles Section */}
-              {bundles.length > 0 && (
-                <LayoutCompositionFactory.Stack
-                  direction="column"
-                  gap="md"
-                  responsive={true}
-                  className="mb-8"
-                >
-                  <h3 className="text-xl font-semibold">Bundle Deals</h3>
-                  <LayoutCompositionFactory.Grid
-                    columns={{ mobile: 1, tablet: 2, desktop: 3 }}
-                    gap="md"
-                    responsive={true}
-                  >
-                    {bundles.map((bundle) => (
-                      <CardCompositionFactory.Custom
-                        key={bundle.id}
-                        layout="vertical"
-                        size="md"
-                        features={{
-                          actions: { primary: { label: 'View Bundle' } },
-                          meta: { price: { amount: bundle.price || 0 } }
-                        }}
-                        responsive={true}
-                        interactive={true}
-                      >
-                        <BundleGrid
-                          bundles={[bundle]}
-                          columns={1}
-                          showSavings={true}
-                          compact={false}
-                        />
-                      </CardCompositionFactory.Custom>
-                    ))}
-                  </LayoutCompositionFactory.Grid>
-                </LayoutCompositionFactory.Stack>
-              )}
-
-              <DataState
-                data={items}
-                isLoading={itemsLoading}
-                error={itemsError ?? undefined}
-                emptyMessage="No menu items available"
-              >
-                {(items) => (
-                  <LayoutCompositionFactory.Stack
-                    direction="column"
-                    gap="lg"
-                    responsive={true}
-                  >
-                    <LayoutCompositionFactory.Grid
-                      columns={{ mobile: 1, tablet: 2, desktop: 3 }}
-                      gap="md"
-                      responsive={true}
-                      className=""
-                    >
-                      {items.map((item) => (
-                        <CardCompositionFactory.Product
-                          key={item.id}
-                          layout="vertical"
-                          size="md"
-                          features={{
-                            image: { aspectRatio: '4/3', zoom: true },
-                            actions: { primary: { label: 'Add to Cart' } },
-                            meta: { price: { amount: item.price || 0 } }
-                          }}
-                          responsive={true}
-                          interactive={true}
-                        >
-                          <ItemCard item={item} />
-                        </CardCompositionFactory.Product>
-                      ))}
-                    </LayoutCompositionFactory.Grid>
-                    
-                    {showCarousel && (
-                      <ItemCarouselCompact
-                        items={items}
-                        storeName={store?.name || ''}
-                        onClose={() => setShowCarousel(false)}
-                      />
-                    )}
-                  </LayoutCompositionFactory.Stack>
-                )}
-              </DataState>
-            </LayoutCompositionFactory.Stack>
-
-          {/* River Feed Section */}
-          <LayoutCompositionFactory.Stack
-            direction="column"
-            gap="lg"
-            responsive={true}
-            className="mt-8 pt-8 border-t border-border"
-          >
-            <h2 className="text-2xl font-bold text-foreground">Store Updates</h2>
-            
-            {/* TODO: Uncomment when Posts API is available */}
-            {/* {riverPosts.length > 0 ? (
-              <RiverFeed
-                posts={riverPosts}
-                isLoading={riverLoading}
-                error={riverError}
-                hasMore={false}
-                onLoadMore={() => {}}
-                onPostClick={(postId) => console.log('Post clicked:', postId)}
-                onLike={(postId) => console.log('Like post:', postId)}
-                onComment={(postId) => console.log('Comment on post:', postId)}
-                onShare={(postId) => console.log('Share post:', postId)}
-              />
-            ) : ( */}
-              <div className="p-8 text-center text-muted-foreground">
-                <p>River feed is temporarily disabled while we update the Posts API.</p>
-                <p className="text-sm text-muted-foreground/60 mt-2">
-                  This feature will show store updates, customer posts, and social content.
-                </p>
-              </div>
-            {/* )} */}
-          </LayoutCompositionFactory.Stack>
-        </LayoutCompositionFactory.Stack>
-      </LayoutCompositionFactory.Stack>
-    </PageCompositionFactory.App>
+export default function StoreDetailPage() {
+  return (
+    <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-8 md:py-8">
+      <KitchenContainer />
+    </PageShell>
   )
 }

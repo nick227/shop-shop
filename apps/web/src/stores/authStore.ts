@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { UserResponse } from '../../../../packages/sdk/generated/frontend/types/backend-types'
+import type { UserResponse } from '@api/backend-types'
 
 interface AuthState {
   user: UserResponse | undefined

@@ -24,7 +24,13 @@
       "Bash(node -e \"import\\('dotenv'\\).then\\(m => console.log\\('ok', Object.keys\\(m\\)\\)\\)\")",
       "Bash(node --input-type=module)",
       "Bash(node_modules/.bin/vitest run *)",
-      "Bash(npx --yes vitest --version)"
+      "Bash(npx --yes vitest --version)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(npx --prefix packages/sdk tsx --noEmit packages/sdk/scripts/generate-api-wrapper.ts)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Administrator\\\\.claude\\\\projects\\\\c--wamp64-www-shop-shop\\\\memory\" 2>/dev/null; echo \"ok\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"
     ]
   }
 }
