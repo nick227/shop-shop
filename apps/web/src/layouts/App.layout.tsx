@@ -3,14 +3,18 @@
  */
 import { Outlet } from 'react-router-dom'
 import { CartWidget } from '../features/cart/components/CartWidget'
+import { Header } from '../components/header/Header'
+import { HeaderAddressExtrasProvider } from '../components/header/HeaderAddressExtrasContext'
 
 export function Layout() {
-  console.log('📐 Layout rendering')
   return (
-    <>
-      <Outlet />
+    <HeaderAddressExtrasProvider>
+      <Header />
+      <main>
+        <Outlet />
+      </main>
       <CartWidget />
-    </>
+    </HeaderAddressExtrasProvider>
   )
 }
 

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { useStoreSearch } from '@shared/hooks/hooks/useStoreSearchWithTransformers'
@@ -10,7 +10,8 @@ import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 import { PageShell } from '@shared/ui/layout/PageShell'
-import { Header, UrlParamError } from '@features/home/components'
+import { UrlParamError } from '@features/home/components'
+import { useSetHeaderAddressExtras } from '@components/header/HeaderAddressExtrasContext'
 import { SearchControlsSection } from './sections/SearchControlsSection'
 import { SearchStateSection } from './sections/SearchStateSection'
 import { KitchenResultsSection } from './sections/KitchenResultsSection'
@@ -79,20 +80,36 @@ export function SearchContainer() {
     navigate(getStoreRoute({ id: store.id, name: store.name }))
   }, [navigate])
 
+  const setHeaderAddressExtras = useSetHeaderAddressExtras()
+  useLayoutEffect(() => {
+    if (!setHeaderAddressExtras) return
+    if (!location) {
+      setHeaderAddressExtras(undefined)
+      return
+    }
+    setHeaderAddressExtras({
+      locationDisplayName,
+      currentRadius,
+      citiesContextResult,
+      onClearLocation: clearLocation,
+    })
+    return () => {
+      setHeaderAddressExtras(undefined)
+    }
+  }, [
+    clearLocation,
+    citiesContextResult,
+    currentRadius,
+    location,
+    locationDisplayName,
+    setHeaderAddressExtras,
+  ])
+
   return (
     <PageShell
       className="bg-background"
       containerClassName="max-w-6xl"
       contentClassName="space-y-4 py-6 md:space-y-5"
-      header={
-        <Header
-          locationDisplayName={locationDisplayName}
-          currentRadius={currentRadius}
-          citiesContextResult={citiesContextResult}
-          onClearLocation={clearLocation}
-          onNavigateToVendor={() => navigate('/vendor')}
-        />
-      }
     >
       <UrlParamError error={urlParamError} onDismiss={() => setUrlParamError(undefined)} />
 
