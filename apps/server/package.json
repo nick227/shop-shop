@@ -37,6 +37,7 @@
     "pino": "^9.3.2",
     "stripe": "^19.1.0",
     "ws": "^8.18.3",
+    "fastify-type-provider-zod": "^1.1.9",
     "zod": "^3.23.8"
   },
   "devDependencies": {

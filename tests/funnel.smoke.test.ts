@@ -4,7 +4,9 @@ declare const process: {
   env: Record<string, string | undefined>
 }
 
-const apiBaseUrl = (process.env.SHOP_SHOP_API_BASE_URL ?? process.env.API_BASE_URL ?? '').replace(/\/$/, '')
+const apiRootUrl = (process.env.SHOP_SHOP_API_BASE_URL ?? process.env.API_BASE_URL ?? '').replace(/\/$/, '')
+const checkoutBaseUrl = apiRootUrl.endsWith('/api/v1') ? apiRootUrl : `${apiRootUrl}/api/v1`
+const resourceBaseUrl = apiRootUrl.endsWith('/api/v1') ? apiRootUrl.replace(/\/api\/v1$/, '') : apiRootUrl
 const authToken = process.env.SHOP_SHOP_API_TOKEN ?? process.env.API_TOKEN ?? ''
 const itemId = process.env.FUNNEL_ITEM_ID ?? process.env.CHECKOUT_ITEM_ID ?? ''
 const paymentToken = process.env.CHECKOUT_PAYMENT_TOKEN ?? ''
@@ -13,7 +15,7 @@ const kitchenUrl = process.env.FUNNEL_KITCHEN_URL ?? ''
 
 function requireEnv() {
   const missing = [
-    ['SHOP_SHOP_API_BASE_URL or API_BASE_URL', apiBaseUrl],
+    ['SHOP_SHOP_API_BASE_URL or API_BASE_URL', apiRootUrl],
     ['SHOP_SHOP_API_TOKEN or API_TOKEN', authToken],
     ['FUNNEL_ITEM_ID or CHECKOUT_ITEM_ID', itemId],
     ['CHECKOUT_PAYMENT_TOKEN', paymentToken],
@@ -39,7 +41,8 @@ async function getOk(url: string) {
 }
 
 async function apiJson(path: string, init: RequestInit) {
-  const response = await fetch(`${apiBaseUrl}${path}`, init)
+  const baseUrl = path.startsWith('/checkout/') ? checkoutBaseUrl : resourceBaseUrl
+  const response = await fetch(`${baseUrl}${path}`, init)
   const body = await response.json().catch(() => null)
   expect(response.ok, JSON.stringify(body)).toBe(true)
   return body as Record<string, unknown>

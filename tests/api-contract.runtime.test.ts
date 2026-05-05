@@ -19,14 +19,15 @@ const PAYMENT_STATUSES = ['UNPAID', 'PAID', 'REFUNDED'] as const
 const CART_STATUSES = ['ACTIVE', 'SUBMITTED', 'ABANDONED'] as const
 const CHECKOUT_STATUSES = ['pending', 'awaiting_payment', 'completed'] as const
 
-const apiBaseUrl = (process.env.SHOP_SHOP_API_BASE_URL ?? process.env.API_BASE_URL ?? '').replace(/\/$/, '')
+const apiRootUrl = (process.env.SHOP_SHOP_API_BASE_URL ?? process.env.API_BASE_URL ?? '').replace(/\/$/, '')
+const checkoutBaseUrl = apiRootUrl.endsWith('/api/v1') ? apiRootUrl : `${apiRootUrl}/api/v1`
 const authToken = process.env.SHOP_SHOP_API_TOKEN ?? process.env.API_TOKEN ?? ''
 const itemId = process.env.CHECKOUT_ITEM_ID ?? process.env.FUNNEL_ITEM_ID ?? ''
 const paymentToken = process.env.CHECKOUT_PAYMENT_TOKEN ?? ''
 
 function requireEnv() {
   const missing = [
-    ['SHOP_SHOP_API_BASE_URL or API_BASE_URL', apiBaseUrl],
+    ['SHOP_SHOP_API_BASE_URL or API_BASE_URL', apiRootUrl],
     ['SHOP_SHOP_API_TOKEN or API_TOKEN', authToken],
     ['CHECKOUT_ITEM_ID or FUNNEL_ITEM_ID', itemId],
     ['CHECKOUT_PAYMENT_TOKEN', paymentToken],
@@ -46,14 +47,14 @@ function headers(idempotencyKey?: string) {
 }
 
 async function requestJson(path: string, init: RequestInit) {
-  const response = await fetch(`${apiBaseUrl}${path}`, init)
+  const response = await fetch(`${checkoutBaseUrl}${path}`, init)
   const body = await response.json().catch(() => null)
   expect(response.ok, JSON.stringify(body)).toBe(true)
   return body as unknown
 }
 
 async function requestError(path: string, init: RequestInit, expectedStatus: number) {
-  const response = await fetch(`${apiBaseUrl}${path}`, init)
+  const response = await fetch(`${checkoutBaseUrl}${path}`, init)
   const body = await response.json().catch(() => null)
   expect(response.status, JSON.stringify(body)).toBe(expectedStatus)
   expectObject(body)

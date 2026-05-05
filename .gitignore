@@ -21,6 +21,8 @@ test-results/
 **/test-results/
 **/playwright-report/
 **/tests/
+!tests/
+!tests/**
 
 # Generated code
 packages/db/src/generated/
@@ -54,6 +56,18 @@ pnpm-debug.log*
 yarn-debug.log*
 logs/
 docs/
+!docs/
+docs/*
+!docs/api/
+!docs/api/README.md
+!docs/api/coverage.md
+!docs/api/coverage-report.md
+!docs/api/contract-diff.md
+!docs/api/drift-risk.md
+!docs/api/usage.md
+!docs/api/validation-checklist.md
+!docs/api/versioning.md
+!docs/api/openapi.yaml
 src\*.md
 private/
 
@@ -70,6 +84,11 @@ tmp/
 data/
 *.tmp
 scripts/
+!scripts/
+scripts/*
+!scripts/check-api-drift.ts
+!scripts/check-api-contract.ts
+!scripts/check-api-usage.ts
 
 # Database
 *.sqlite

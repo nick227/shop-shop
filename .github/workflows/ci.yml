@@ -29,6 +29,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # PHASE 0: API Contract Gate
+      - name: Check API contract
+        run: pnpm run check:api
+
+      - name: Run API validation tests
+        run: pnpm run test:api
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          CHECKOUT_ITEM_ID: ${{ secrets.CHECKOUT_ITEM_ID }}
+          CHECKOUT_PAYMENT_TOKEN: ${{ secrets.CHECKOUT_PAYMENT_TOKEN }}
+
       # PHASE 1: Package Validation
       - name: Validate package configurations
         run: tsx scripts/validate-packages.ts
@@ -160,4 +172,3 @@ jobs:
           git diff --exit-code packages/sdk/src/ || {
             echo "⚠️  SDK has changed - regenerate if OpenAPI changed"
           }
-
