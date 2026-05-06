@@ -27,6 +27,7 @@ const PermissionSchema = z.enum([
   'MANAGE_DELIVERIES',
   'ASSIGN_DELIVERIES',
   'VIEW_ANALYTICS',
+  'VIEW_FINANCE',
   'MANAGE_STORE_SETTINGS',
   'FULL_ACCESS',
 ])

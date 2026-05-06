@@ -1,5 +1,11 @@
 import { prisma } from '../client'
-import { Decimal } from 'decimal.js'
+import {
+  computePayoutBreakdownCents,
+  decimalToCents,
+  isInUtcPeriodInclusiveExclusive,
+  isPayableOrder,
+  snapshotOrderForPayout,
+} from './payout-calculation.service.js'
 
 export interface ProcessVendorPayoutInput {
   storeId: string
@@ -12,19 +18,20 @@ export interface VendorPayoutSummary {
   storeName: string
   stripeAccountId: string | null
   orderCount: number
-  totalRevenue: number
-  serviceFees: number
-  netPayout: number
+  grossSalesCents: number
+  platformFeesCents: number
+  tipsCents: number
+  netPayoutCents: number
   isOnboarded: boolean
   canPayout: boolean
 }
 
 export interface PayoutResult {
-  transferId: string
-  amount: number
   currency: string
   status: string
-  ordersUpdated: number
+  payoutId: string
+  netPayoutCents: number
+  orderCount: number
 }
 
 /**
@@ -49,50 +56,44 @@ export async function getVendorPayoutSummary(
     throw new Error('Store not found')
   }
 
-  const [orderCount, aggregates] = await Promise.all([
-    prisma.order.count({
-      where: {
-        storeId,
-        paymentStatus: 'PAID',
-        createdAt: {
-          gte: periodStart,
-          lte: periodEnd,
-        },
-        stripeTransferId: null, // Not yet paid out
-      },
-    }),
-    prisma.order.aggregate({
-      where: {
-        storeId,
-        paymentStatus: 'PAID',
-        createdAt: {
-          gte: periodStart,
-          lte: periodEnd,
-        },
-        stripeTransferId: null, // Not yet paid out
-      },
-      _sum: {
-        total: true,
-        serviceFeeAmount: true,
-        netToVendor: true,
-      },
-    }),
-  ])
+  const orders = await prisma.order.findMany({
+    where: {
+      storeId,
+      payoutOrder: { is: null },
+      createdAt: { gte: periodStart, lt: periodEnd },
+      paymentStatus: 'PAID',
+      status: { in: ['DELIVERED', 'COMPLETED'] },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      status: true,
+      paymentStatus: true,
+      subtotal: true,
+      serviceFeeAmount: true,
+      tip: true,
+      netToVendor: true,
+    },
+  })
 
-  const totalRevenue = Number(aggregates._sum.total || 0)
-  const serviceFees = Number(aggregates._sum.serviceFeeAmount || 0)
-  const netPayout = Number(aggregates._sum.netToVendor || 0)
+  const payableSnapshots = orders
+    .filter((o) => isPayableOrder({ status: o.status, paymentStatus: o.paymentStatus }))
+    .filter((o) => isInUtcPeriodInclusiveExclusive({ at: o.createdAt, periodStart, periodEnd }))
+    .map(snapshotOrderForPayout)
+
+  const breakdown = computePayoutBreakdownCents({ orders: payableSnapshots })
 
   return {
     storeId: store.id,
     storeName: store.name,
     stripeAccountId: store.stripeAccountId,
-    orderCount,
-    totalRevenue,
-    serviceFees,
-    netPayout,
+    orderCount: payableSnapshots.length,
+    grossSalesCents: breakdown.grossSalesCents,
+    platformFeesCents: breakdown.platformFeesCents,
+    tipsCents: breakdown.tipsCents,
+    netPayoutCents: breakdown.netPayoutCents,
     isOnboarded: store.stripeOnboarded,
-    canPayout: Boolean(store.stripeAccountId && store.stripeOnboarded && orderCount > 0),
+    canPayout: payableSnapshots.length > 0,
   }
 }
 
@@ -102,84 +103,89 @@ export async function getVendorPayoutSummary(
 export async function processVendorPayout(
   input: ProcessVendorPayoutInput
 ): Promise<PayoutResult> {
-  const summary = await getVendorPayoutSummary(
-    input.storeId,
-    input.periodStart,
-    input.periodEnd
-  )
-
-  if (!summary.canPayout) {
-    throw new Error(
-      !summary.stripeAccountId
-        ? 'Store has no Stripe account'
-        : !summary.isOnboarded
-        ? 'Store Stripe account not fully onboarded'
-        : 'No orders to payout'
-    )
-  }
-
-  if (summary.netPayout <= 0) {
-    throw new Error('Net payout amount must be positive')
-  }
-
-  // Get first order's charge ID for transfer source
-  const firstOrder = await prisma.order.findFirst({
-    where: {
-      storeId: input.storeId,
-      paymentStatus: 'PAID',
-      createdAt: {
-        gte: input.periodStart,
-        lte: input.periodEnd,
-      },
-      stripeTransferId: null,
-      stripeChargeId: { not: null },
-    },
-    select: { stripeChargeId: true },
+  const store = await prisma.store.findUnique({
+    where: { id: input.storeId },
+    select: { id: true, ownerUserId: true },
   })
+  if (!store) throw new Error('Store not found')
 
-  if (!firstOrder?.stripeChargeId) {
-    throw new Error('No charge ID found for transfer')
-  }
-
-  // Create Stripe transfer using the payments adapter
-  const { createTransfer } = await import('../adapters/payments.adapter')
-  const transfer = await createTransfer({
-    amount: new Decimal(summary.netPayout),
-    destination: summary.stripeAccountId!,
-    sourceTransaction: firstOrder.stripeChargeId,
-    orderId: input.storeId, // Using storeId as metadata
-  })
-
-  // Get all unpaid orders for this period
   const orders = await prisma.order.findMany({
     where: {
       storeId: input.storeId,
+      payoutOrder: { is: null },
+      createdAt: { gte: input.periodStart, lt: input.periodEnd },
       paymentStatus: 'PAID',
-      createdAt: {
-        gte: input.periodStart,
-        lte: input.periodEnd,
-      },
-      stripeTransferId: null,
+      status: { in: ['DELIVERED', 'COMPLETED'] },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      createdAt: true,
+      status: true,
+      paymentStatus: true,
+      subtotal: true,
+      serviceFeeAmount: true,
+      tip: true,
+      netToVendor: true,
+    },
+    orderBy: { createdAt: 'asc' },
   })
 
-  // Update all orders with transfer ID
-  await prisma.order.updateMany({
-    where: {
-      id: { in: orders.map((o) => o.id) },
-    },
-    data: {
-      stripeTransferId: transfer.transferId,
-    },
+  const payableSnapshots = orders
+    .filter((o) => isPayableOrder({ status: o.status, paymentStatus: o.paymentStatus }))
+    .filter((o) =>
+      isInUtcPeriodInclusiveExclusive({ at: o.createdAt, periodStart: input.periodStart, periodEnd: input.periodEnd }),
+    )
+    .map(snapshotOrderForPayout)
+
+  if (payableSnapshots.length === 0) {
+    throw new Error('No orders to payout')
+  }
+
+  const breakdown = computePayoutBreakdownCents({ orders: payableSnapshots })
+
+  const payout = await prisma.$transaction(async (tx) => {
+    const created = await tx.payout.create({
+      data: {
+        vendorUserId: store.ownerUserId,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        status: 'PENDING',
+        grossSalesCents: breakdown.grossSalesCents,
+        discountsCents: breakdown.discountsCents,
+        refundsCents: breakdown.refundsCents,
+        tipsCents: breakdown.tipsCents,
+        platformFeesCents: breakdown.platformFeesCents,
+        processorFeesCents: breakdown.processorFeesCents,
+        netPayoutCents: breakdown.netPayoutCents,
+        currency: 'USD',
+        orders: {
+          create: payableSnapshots.map((s) => ({
+            order: { connect: { id: s.orderId } },
+            orderCreatedAt: s.orderCreatedAt,
+            orderStatus: s.orderStatus as never,
+            paymentStatus: s.paymentStatus as never,
+            grossSalesCents: s.grossSalesCents,
+            discountsCents: s.discountsCents,
+            refundsCents: s.refundsCents,
+            tipsCents: s.tipsCents,
+            platformFeesCents: s.platformFeesCents,
+            processorFeesCents: s.processorFeesCents,
+            netContributionCents: s.netContributionCents,
+          })),
+        },
+      },
+      select: { id: true, status: true, currency: true, netPayoutCents: true, orders: { select: { id: true } } },
+    })
+
+    return created
   })
 
   return {
-    transferId: transfer.transferId,
-    amount: transfer.amount,
-    currency: 'usd',
-    status: transfer.status,
-    ordersUpdated: orders.length,
+    payoutId: payout.id,
+    currency: payout.currency,
+    status: payout.status,
+    netPayoutCents: payout.netPayoutCents,
+    orderCount: payout.orders.length,
   }
 }
 
@@ -190,19 +196,14 @@ export async function getStoresReadyForPayout(
   periodStart: Date,
   periodEnd: Date
 ): Promise<VendorPayoutSummary[]> {
-  // Single batch query with aggregations
   const storeData = await prisma.store.findMany({
     where: {
-      stripeAccountId: { not: null },
-      stripeOnboarded: true,
       orders: {
         some: {
+          payoutOrder: { is: null },
           paymentStatus: 'PAID',
-          stripeTransferId: null,
-          createdAt: {
-            gte: periodStart,
-            lte: periodEnd,
-          },
+          status: { in: ['DELIVERED', 'COMPLETED'] },
+          createdAt: { gte: periodStart, lt: periodEnd },
         },
       },
     },
@@ -226,9 +227,10 @@ export async function getStoresReadyForPayout(
       by: ['storeId'],
       where: {
         storeId: { in: storeIds },
+        payoutOrder: { is: null },
         paymentStatus: 'PAID',
-        createdAt: { gte: periodStart, lte: periodEnd },
-        stripeTransferId: null,
+        status: { in: ['DELIVERED', 'COMPLETED'] },
+        createdAt: { gte: periodStart, lt: periodEnd },
       },
       _count: { id: true },
     }),
@@ -236,14 +238,16 @@ export async function getStoresReadyForPayout(
       by: ['storeId'],
       where: {
         storeId: { in: storeIds },
+        payoutOrder: { is: null },
         paymentStatus: 'PAID',
-        createdAt: { gte: periodStart, lte: periodEnd },
-        stripeTransferId: null,
+        status: { in: ['DELIVERED', 'COMPLETED'] },
+        createdAt: { gte: periodStart, lt: periodEnd },
       },
       _sum: {
-        total: true,
+        subtotal: true,
         serviceFeeAmount: true,
         netToVendor: true,
+        tip: true,
       },
     }),
   ])
@@ -260,20 +264,22 @@ export async function getStoresReadyForPayout(
     const aggregates = aggregateMap.get(store.id)
     
     if (orderCount > 0 && aggregates) {
-      const totalRevenue = Number(aggregates.total || 0)
-      const serviceFees = Number(aggregates.serviceFeeAmount || 0)
-      const netPayout = Number(aggregates.netToVendor || 0)
+      const grossSalesCents = decimalToCents(aggregates.subtotal || 0)
+      const platformFeesCents = decimalToCents(aggregates.serviceFeeAmount || 0)
+      const tipsCents = decimalToCents(aggregates.tip || 0)
+      const netPayoutCents = decimalToCents(aggregates.netToVendor || 0) + tipsCents
 
       summaries.push({
         storeId: store.id,
         storeName: store.name,
         stripeAccountId: store.stripeAccountId,
         orderCount,
-        totalRevenue,
-        serviceFees,
-        netPayout,
+        grossSalesCents,
+        platformFeesCents,
+        tipsCents,
+        netPayoutCents,
         isOnboarded: store.stripeOnboarded,
-        canPayout: Boolean(store.stripeAccountId && store.stripeOnboarded && orderCount > 0),
+        canPayout: orderCount > 0,
       })
     }
   }
@@ -327,43 +333,46 @@ export async function getVendorPayoutHistory(
     offset?: number
   }
 ) {
-  const orders = await prisma.order.findMany({
+  const payouts = await prisma.payout.findMany({
     where: {
-      storeId,
-      paymentStatus: 'PAID',
-      stripeTransferId: { not: null },
+      orders: {
+        some: {
+          order: { storeId },
+        },
+      },
     },
     select: {
-      stripeTransferId: true,
-      netToVendor: true,
+      id: true,
+      status: true,
+      currency: true,
+      periodStart: true,
+      periodEnd: true,
+      netPayoutCents: true,
       createdAt: true,
+      completedAt: true,
+      orders: {
+        where: { order: { storeId } },
+        select: { id: true },
+      },
     },
     orderBy: { createdAt: 'desc' },
     take: options?.limit || 100,
     skip: options?.offset || 0,
   })
 
-  // Group by transfer ID
-  const transferGroups = new Map<string, typeof orders>()
-  for (const order of orders) {
-    if (order.stripeTransferId) {
-      if (!transferGroups.has(order.stripeTransferId)) {
-        transferGroups.set(order.stripeTransferId, [])
-      }
-      transferGroups.get(order.stripeTransferId)!.push(order)
-    }
-  }
-
-  const payouts = Array.from(transferGroups.entries()).map(([transferId, transferOrders]) => ({
-    transferId,
-    orderCount: transferOrders.length,
-    totalAmount: transferOrders.reduce((sum, o) => sum + Number(o.netToVendor), 0),
-    date: transferOrders[0].createdAt,
-  }))
-
   return {
-    payouts,
-    total: transferGroups.size,
+    payouts: payouts.map((p) => ({
+      payoutId: p.id,
+      status: p.status,
+      currency: p.currency,
+      periodStart: p.periodStart,
+      periodEnd: p.periodEnd,
+      netPayoutCents: p.netPayoutCents,
+      orderCount: p.orders.length,
+      createdAt: p.createdAt,
+      completedAt: p.completedAt,
+    })),
+    total: payouts.length,
   }
 }
 
@@ -374,14 +383,136 @@ export async function getPendingPayoutAmount(storeId: string): Promise<number> {
   const result = await prisma.order.aggregate({
     where: {
       storeId,
+      payoutOrder: { is: null },
       paymentStatus: 'PAID',
-      stripeTransferId: null,
+      status: { in: ['DELIVERED', 'COMPLETED'] },
     },
     _sum: {
       netToVendor: true,
+      tip: true,
     },
   })
 
-  return Number(result._sum.netToVendor || 0)
+  const netToVendorCents = decimalToCents(result._sum.netToVendor || 0)
+  const tipsCents = decimalToCents(result._sum.tip || 0)
+  return netToVendorCents + tipsCents
+}
+
+export async function updateVendorPayoutStatus(input: {
+  payoutId: string
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+  failureReason?: string
+}) {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.payout.findUnique({
+      where: { id: input.payoutId },
+      select: { id: true, status: true },
+    })
+    if (!current) throw new Error('Payout not found')
+
+    if (current.status === 'COMPLETED') {
+      throw new Error('Completed payouts are immutable')
+    }
+
+    if (input.status === 'FAILED') {
+      // Release orders so they can be included in a future (non-failed) payout.
+      await tx.payoutOrder.deleteMany({ where: { payoutId: input.payoutId } })
+    }
+
+    const now = new Date()
+    return tx.payout.update({
+      where: { id: input.payoutId },
+      data: {
+        status: input.status,
+        completedAt: input.status === 'COMPLETED' ? now : undefined,
+        failedAt: input.status === 'FAILED' ? now : undefined,
+        failureReason: input.status === 'FAILED' ? input.failureReason ?? null : null,
+      },
+    })
+  })
+}
+
+export async function getVendorPayoutDetailForStore(input: {
+  payoutId: string
+  storeId: string
+}) {
+  const payout = await prisma.payout.findFirst({
+    where: {
+      id: input.payoutId,
+      orders: { some: { order: { storeId: input.storeId } } },
+    },
+    select: {
+      id: true,
+      vendorUserId: true,
+      status: true,
+      currency: true,
+      periodStart: true,
+      periodEnd: true,
+      grossSalesCents: true,
+      discountsCents: true,
+      refundsCents: true,
+      tipsCents: true,
+      platformFeesCents: true,
+      processorFeesCents: true,
+      netPayoutCents: true,
+      createdAt: true,
+      completedAt: true,
+      failedAt: true,
+      failureReason: true,
+      orders: {
+        where: { order: { storeId: input.storeId } },
+        select: {
+          orderId: true,
+          orderCreatedAt: true,
+          orderStatus: true,
+          paymentStatus: true,
+          grossSalesCents: true,
+          discountsCents: true,
+          refundsCents: true,
+          tipsCents: true,
+          platformFeesCents: true,
+          processorFeesCents: true,
+          netContributionCents: true,
+        },
+        orderBy: { orderCreatedAt: 'asc' },
+      },
+      adjustments: {
+        select: { id: true, type: true, amountCents: true, reason: true, note: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  })
+
+  if (!payout) throw new Error('Payout not found')
+  return payout
+}
+
+export async function createPayoutAdjustment(input: {
+  payoutId: string
+  type: 'CREDIT' | 'DEBIT'
+  amountCents: number
+  reason: string
+  note?: string
+  createdByUserId?: string
+}) {
+  const payout = await prisma.payout.findUnique({
+    where: { id: input.payoutId },
+    select: { id: true, status: true },
+  })
+  if (!payout) throw new Error('Payout not found')
+  if (payout.status === 'COMPLETED') {
+    throw new Error('Completed payouts are immutable')
+  }
+
+  return prisma.payoutAdjustment.create({
+    data: {
+      payoutId: input.payoutId,
+      type: input.type,
+      amountCents: input.amountCents,
+      reason: input.reason,
+      note: input.note,
+      createdByUserId: input.createdByUserId,
+    },
+  })
 }
 

@@ -102,6 +102,11 @@ enum TipStatus {
   REFUNDED
 }
 
+enum PayoutAdjustmentType {
+  CREDIT
+  DEBIT
+}
+
 enum PromotionType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -151,6 +156,7 @@ model User {
   FavoriteItem         FavoriteItem[]
   assignedOrders       Order[]               @relation("OrderAssignedRider")
   promotionRedemptions PromotionRedemption[]
+  vendorPayouts        Payout[]              @relation("VendorPayouts")
 }
 
 model Store {
@@ -178,6 +184,10 @@ model Store {
   prepTimeMin      Int         @default(15)
   feesJson         Json?
   hoursJson        Json?
+  
+  // Branding
+  brandColor       String?     @db.VarChar(7) // Hex color code #RRGGBB
+  accentColor      String?     @db.VarChar(7) // Hex color code #RRGGBB
 
   // Delivery Settings
   deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
@@ -301,8 +311,10 @@ model MediaAsset {
   id        String    @id @default(uuid()) @db.Char(36)
   storeId   String?   @db.Char(36)
   itemId    String?   @db.Char(36)
+  bundleId  String?   @db.Char(36)
   store     Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  bundle    Bundle?   @relation("BundleMedia", fields: [bundleId], references: [id], onDelete: Cascade)
   kind      MediaKind
   url       String
   altText   String?
@@ -312,6 +324,7 @@ model MediaAsset {
 
   @@index([storeId])
   @@index([itemId])
+  @@index([bundleId])
 }
 
 model Cart {
@@ -337,8 +350,10 @@ model CartItem {
   id            String   @id @default(uuid()) @db.Char(36)
   cartId        String   @db.Char(36)
   cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  itemId        String   @db.Char(36)
-  item          Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  itemId        String?  @db.Char(36)
+  item          Item?    @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  bundleId      String?  @db.Char(36)
+  bundle        Bundle?  @relation("BundleCartItems", fields: [bundleId], references: [id], onDelete: Restrict)
   titleSnapshot String
   unitPrice     Decimal  @db.Decimal(10, 2)
   quantity      Int
@@ -348,6 +363,7 @@ model CartItem {
 
   @@index([cartId])
   @@index([itemId])
+  @@index([bundleId])
 }
 
 model Order {
@@ -398,6 +414,7 @@ model Order {
   events      OrderEvent[]
   tips        Tip[]
   commissions Commission[]
+  payoutOrder PayoutOrder?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -411,18 +428,19 @@ model Order {
 }
 
 model OrderItem {
-  id            String  @id @default(uuid()) @db.Char(36)
-  orderId       String  @db.Char(36)
-  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  itemId        String? @db.Char(36)
-  item          Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
-  bundleId      String? @db.Char(36)
-  bundle        Bundle? @relation("BundleOrderItems", fields: [bundleId], references: [id], onDelete: SetNull)
-  titleSnapshot String
-  unitPrice     Decimal @db.Decimal(10, 2)
-  quantity      Int
-  optionsJson   Json?
-  notes         String?
+  id             String  @id @default(uuid()) @db.Char(36)
+  orderId        String  @db.Char(36)
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId         String? @db.Char(36)
+  item           Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  bundleId       String? @db.Char(36)
+  bundle         Bundle? @relation("BundleOrderItems", fields: [bundleId], references: [id], onDelete: SetNull)
+  titleSnapshot  String
+  unitPrice      Decimal @db.Decimal(10, 2)
+  quantity       Int
+  optionsJson    Json?
+  notes          String?
+  bundleSnapshot Json?
 
   @@index([orderId])
   @@index([itemId])
@@ -481,6 +499,100 @@ model Address {
   archivedAt   DateTime?
 
   @@index([userId, isActive])
+}
+
+model Payout {
+  id String @id @default(uuid()) @db.Char(36)
+
+  /// Payouts are typically per vendor (user). Store breakdown lives on PayoutOrder rows.
+  vendorUserId String @db.Char(36)
+  vendorUser   User   @relation("VendorPayouts", fields: [vendorUserId], references: [id], onDelete: Cascade)
+
+  /// UTC payout period as [periodStart, periodEnd)
+  periodStart DateTime
+  periodEnd   DateTime
+
+  status PayoutStatus @default(PENDING)
+
+  /// All snapshot math uses integer cents (immutable after COMPLETED).
+  grossSalesCents    Int @default(0)
+  discountsCents     Int @default(0)
+  refundsCents       Int @default(0)
+  tipsCents          Int @default(0)
+  platformFeesCents  Int @default(0)
+  processorFeesCents Int @default(0)
+  netPayoutCents     Int @default(0)
+
+  currency String @default("USD") @db.Char(3)
+
+  /// Provider references (optional until automation is implemented)
+  providerPayoutId   String?
+  providerTransferId String?
+  arrivalAt          DateTime?
+
+  /// Audit
+  createdByUserId String?  @db.Char(36)
+  completedAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?  @db.Text
+
+  orders      PayoutOrder[]
+  adjustments PayoutAdjustment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorUserId, periodStart, periodEnd])
+  @@index([status])
+  @@index([providerPayoutId])
+}
+
+model PayoutOrder {
+  id String @id @default(uuid()) @db.Char(36)
+
+  payoutId String @db.Char(36)
+  payout   Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  orderId String @db.Char(36)
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// Guard: an order must not be included in more than one non-failed payout.
+  /// Enforced in service + unique constraint; failed payouts must release orders.
+  @@unique([orderId])
+
+  /// Snapshot fields (integer cents) — do not rely on live joins for completed payouts.
+  orderCreatedAt DateTime
+  orderStatus    OrderStatus
+  paymentStatus  PaymentStatus
+
+  grossSalesCents    Int @default(0)
+  discountsCents     Int @default(0)
+  refundsCents       Int @default(0)
+  tipsCents          Int @default(0)
+  platformFeesCents  Int @default(0)
+  processorFeesCents Int @default(0)
+  netContributionCents Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([payoutId])
+}
+
+model PayoutAdjustment {
+  id String @id @default(uuid()) @db.Char(36)
+
+  payoutId String @db.Char(36)
+  payout   Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  type       PayoutAdjustmentType
+  amountCents Int
+  reason     String
+  note       String? @db.Text
+
+  createdByUserId String? @db.Char(36)
+  createdAt DateTime @default(now())
+
+  @@index([payoutId])
 }
 
 model SystemSetting {
@@ -776,6 +888,7 @@ enum TeamMemberPermission {
   MANAGE_DELIVERIES
   ASSIGN_DELIVERIES
   VIEW_ANALYTICS
+  VIEW_FINANCE
   MANAGE_STORE_SETTINGS
   FULL_ACCESS
 }
@@ -907,24 +1020,21 @@ model Bundle {
   store       Store    @relation("StoreBundles", fields: [storeId], references: [id], onDelete: Cascade)
   name        String
   description String?  @db.Text
-  imageUrl    String?
   isActive    Boolean  @default(true)
   sortIndex   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Bundle items
-  items BundleItem[]
-
-  // Bundle pricing
-  pricing BundlePricing?
-
-  // Orders that include this bundle
-  orderItems OrderItem[] @relation("BundleOrderItems")
+  items      BundleItem[]
+  pricing    BundlePricing?
+  cartItems  CartItem[]   @relation("BundleCartItems")
+  orderItems OrderItem[]  @relation("BundleOrderItems")
+  media      MediaAsset[] @relation("BundleMedia")
 
   @@index([storeId])
   @@index([isActive])
   @@index([sortIndex])
+  @@index([storeId, isActive])
 }
 
 model BundleItem {

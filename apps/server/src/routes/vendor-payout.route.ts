@@ -7,8 +7,12 @@ import {
   processAllVendorPayouts,
   getVendorPayoutHistory,
   getPendingPayoutAmount,
+  getVendorPayoutDetailForStore,
+  updateVendorPayoutStatus,
+  createPayoutAdjustment,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { userHasStoreAccess } from '../middleware/storeAccess'
 
 const ProcessPayoutSchema = z.object({
   storeId: z.string().uuid(),
@@ -27,6 +31,26 @@ const PayoutSummarySchema = z.object({
   periodEnd: z.string().datetime(),
 })
 
+const PayoutIdParamsSchema = z.object({
+  payoutId: z.string().uuid(),
+})
+
+const StoreIdParamsSchema = z.object({
+  storeId: z.string().uuid(),
+})
+
+const UpdatePayoutStatusSchema = z.object({
+  status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED']),
+  failureReason: z.string().optional(),
+})
+
+const CreateAdjustmentSchema = z.object({
+  type: z.enum(['CREDIT', 'DEBIT']),
+  amountCents: z.number().int().positive(),
+  reason: z.string().min(1),
+  note: z.string().optional(),
+})
+
 export const vendorPayoutRoutes = async (app: FastifyInstance) => {
   // GET /vendor-payouts/summary - Get payout summary for a store
   app.get('/vendor-payouts/summary', {
@@ -35,7 +59,14 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
     try {
       const query = PayoutSummarySchema.parse(req.query)
 
-      // TODO: For vendors, verify store ownership
+      const userId = req.user?.id
+      const role = req.user?.role
+      if (!userId || !role) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+      if (!(await userHasStoreAccess(userId, role, query.storeId, 'finance'))) {
+        return reply.code(403).send({ error: 'Forbidden' })
+      }
       
       const summary = await getVendorPayoutSummary(
         query.storeId,
@@ -64,7 +95,14 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
     try {
       const params = req.params as { storeId: string }
 
-      // TODO: For vendors, verify store ownership
+      const userId = req.user?.id
+      const role = req.user?.role
+      if (!userId || !role) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
+        return reply.code(403).send({ error: 'Forbidden' })
+      }
 
       const amount = await getPendingPayoutAmount(params.storeId)
 
@@ -79,10 +117,17 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
     preHandler: [requireRole(['VENDOR', 'ADMIN'])],
   }, async (req, reply) => {
     try {
-      const params = req.params as { storeId: string }
+      const params = StoreIdParamsSchema.parse(req.params)
       const query = req.query as { limit?: string; offset?: string }
 
-      // TODO: For vendors, verify store ownership
+      const userId = req.user?.id
+      const role = req.user?.role
+      if (!userId || !role) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
+        return reply.code(403).send({ error: 'Forbidden' })
+      }
 
       const history = await getVendorPayoutHistory(params.storeId, {
         limit: query.limit ? parseInt(query.limit) : undefined,
@@ -91,6 +136,94 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
       return reply.code(200).send(history)
     } catch (error) {
+      throw error
+    }
+  })
+
+  // GET /vendor-payouts/stores/:storeId/payouts/:payoutId - Get payout detail (finance access)
+  app.get('/vendor-payouts/stores/:storeId/payouts/:payoutId', {
+    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+  }, async (req, reply) => {
+    try {
+      const params = z.object({ storeId: z.string().uuid(), payoutId: z.string().uuid() }).parse(req.params)
+
+      const userId = req.user?.id
+      const role = req.user?.role
+      if (!userId || !role) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
+        return reply.code(403).send({ error: 'Forbidden' })
+      }
+
+      const payout = await getVendorPayoutDetailForStore({ payoutId: params.payoutId, storeId: params.storeId })
+      return reply.code(200).send({ payout })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({ error: 'Validation error', details: error.errors })
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
+        return reply.code(404).send({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  // PATCH /vendor-payouts/:payoutId/status - Update payout status (Admin only)
+  app.patch('/vendor-payouts/:payoutId/status', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    try {
+      const params = PayoutIdParamsSchema.parse(req.params)
+      const body = UpdatePayoutStatusSchema.parse(req.body)
+
+      const payout = await updateVendorPayoutStatus({
+        payoutId: params.payoutId,
+        status: body.status,
+        failureReason: body.failureReason,
+      })
+
+      return reply.code(200).send({ payout })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({ error: 'Validation error', details: error.errors })
+      }
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) return reply.code(404).send({ error: error.message })
+        if (error.message.toLowerCase().includes('immutable')) return reply.code(409).send({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  // POST /vendor-payouts/:payoutId/adjustments - Add adjustment (Admin only)
+  app.post('/vendor-payouts/:payoutId/adjustments', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    try {
+      const params = PayoutIdParamsSchema.parse(req.params)
+      const body = CreateAdjustmentSchema.parse(req.body)
+
+      const userId = req.user?.id ?? undefined
+
+      const adjustment = await createPayoutAdjustment({
+        payoutId: params.payoutId,
+        type: body.type,
+        amountCents: body.amountCents,
+        reason: body.reason,
+        note: body.note,
+        createdByUserId: userId,
+      })
+
+      return reply.code(201).send({ adjustment })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({ error: 'Validation error', details: error.errors })
+      }
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) return reply.code(404).send({ error: error.message })
+        if (error.message.toLowerCase().includes('immutable')) return reply.code(409).send({ error: error.message })
+      }
       throw error
     }
   })
@@ -143,7 +276,7 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
       return reply.code(200).send({
         eligible,
         count: eligible.length,
-        totalAmount: eligible.reduce((sum, s) => sum + s.netPayout, 0),
+        totalAmountCents: eligible.reduce((sum, s) => sum + s.netPayoutCents, 0),
       })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -168,7 +301,7 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
       return reply.code(200).send({
         processed: results.success.length,
         failed: results.failed.length,
-        totalPaidOut: results.success.reduce((sum, r) => sum + r.amount, 0),
+        totalPaidOutCents: results.success.reduce((sum, r) => sum + r.netPayoutCents, 0),
         results,
       })
     } catch (error) {
