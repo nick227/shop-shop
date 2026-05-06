@@ -5,6 +5,12 @@ import type { PrismaClient } from '../src/generated/client/index.js'
  * GeocodingCache is cleared so the geocoding seed phases repopulate it cleanly.
  */
 export async function cleanSeedTables(prisma: PrismaClient): Promise<void> {
+  console.log('🧹 Cleaning old bundle data...')
+  await prisma.bundleItem.deleteMany()
+  await prisma.bundlePricing.deleteMany()
+  await prisma.bundle.deleteMany()
+  console.log('✅ Bundle data cleaned')
+
   await prisma.paymentWebhook.deleteMany()
   await prisma.geocodingCache.deleteMany()
 
@@ -23,10 +29,6 @@ export async function cleanSeedTables(prisma: PrismaClient): Promise<void> {
 
   await prisma.promotionRedemption.deleteMany()
   await prisma.promotion.deleteMany()
-
-  await prisma.bundleItem.deleteMany()
-  await prisma.bundlePricing.deleteMany()
-  await prisma.bundle.deleteMany()
 
   await prisma.mediaAsset.deleteMany()
   await prisma.item.deleteMany()

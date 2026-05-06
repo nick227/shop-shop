@@ -216,7 +216,7 @@ const BUNDLE_COMBINATIONS = {
   COFFEE: [
     {
       name: 'Morning Starter Pack',
-      description: 'Perfect way to start your day',
+      description: 'Perfect way to start your day. Includes: Espresso, Croissant',
       items: ['Espresso', 'Croissant'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 6.50,
@@ -224,7 +224,7 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Coffee Lover\'s Combo',
-      description: 'For the true coffee enthusiast',
+      description: 'For the true coffee enthusiast. Includes: Latte, Muffin, Americano',
       items: ['Latte', 'Muffin', 'Americano'],
       pricingType: 'DISCOUNT_PERCENT' as const,
       discountPercent: 15,
@@ -234,7 +234,7 @@ const BUNDLE_COMBINATIONS = {
   PIZZA: [
     {
       name: 'Classic Pizza Night',
-      description: 'Everything you need for pizza night',
+      description: 'Everything you need for pizza night. Includes: Margherita, Garlic Bread, Caesar Salad',
       items: ['Margherita', 'Garlic Bread', 'Caesar Salad'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 25.99,
@@ -242,7 +242,7 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Family Feast',
-      description: 'Feed the whole family',
+      description: 'Feed the whole family. Includes: Pepperoni, Meat Lovers, Wings',
       items: ['Pepperoni', 'Meat Lovers', 'Wings'],
       pricingType: 'DISCOUNT_AMOUNT' as const,
       discountAmount: 8.00,
@@ -252,7 +252,7 @@ const BUNDLE_COMBINATIONS = {
   BURGER: [
     {
       name: 'Burger & Fries Combo',
-      description: 'Classic American combo',
+      description: 'Classic American combo. Includes: Classic Burger, Regular Fries, Vanilla Shake',
       items: ['Classic Burger', 'Regular Fries', 'Vanilla Shake'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 16.99,
@@ -260,7 +260,7 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Double Burger Deluxe',
-      description: 'Double the burger, double the flavor',
+      description: 'Double the burger, double the flavor. Includes: Cheeseburger, Bacon Burger, Loaded Fries',
       items: ['Cheeseburger', 'Bacon Burger', 'Loaded Fries'],
       pricingType: 'DISCOUNT_PERCENT' as const,
       discountPercent: 20,
@@ -270,7 +270,7 @@ const BUNDLE_COMBINATIONS = {
   SUSHI: [
     {
       name: 'Sushi Sampler',
-      description: 'Perfect introduction to sushi',
+      description: 'Perfect introduction to sushi. Includes: California Roll, Salmon Nigiri, Tuna Nigiri',
       items: ['California Roll', 'Salmon Nigiri', 'Tuna Nigiri'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 22.99,
@@ -278,7 +278,7 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Sushi Master Platter',
-      description: 'For the sushi connoisseur',
+      description: 'For the sushi connoisseur. Includes: Dragon Roll, Rainbow Roll, Salmon Sashimi, Yellowtail Sashimi',
       items: ['Dragon Roll', 'Rainbow Roll', 'Salmon Sashimi', 'Yellowtail Sashimi'],
       pricingType: 'DISCOUNT_AMOUNT' as const,
       discountAmount: 12.00,
@@ -288,7 +288,7 @@ const BUNDLE_COMBINATIONS = {
   TACO: [
     {
       name: 'Taco Trio',
-      description: 'Three tacos, three ways',
+      description: 'Three tacos, three ways. Includes: Carnitas Taco, Chicken Taco, Veggie Taco',
       items: ['Carnitas Taco', 'Chicken Taco', 'Veggie Taco'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 9.99,
@@ -296,17 +296,17 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Taco Feast',
-      description: 'Complete Mexican meal',
+      description: 'Complete Mexican meal. Includes: Carne Asada Taco, Fish Taco, Bean & Cheese Burrito, Cheese Quesadilla',
       items: ['Carne Asada Taco', 'Fish Taco', 'Bean & Cheese Burrito', 'Cheese Quesadilla'],
       pricingType: 'DISCOUNT_PERCENT' as const,
       discountPercent: 18,
-      savingsLabel: 'Save 18%!'
+      savingsLabel: 'Save $6!'
     }
   ],
   THAI: [
     {
       name: 'Thai Favorites',
-      description: 'Best of Thai cuisine',
+      description: 'Best of Thai cuisine. Includes: Pad Thai, Green Curry, Fried Rice',
       items: ['Pad Thai', 'Green Curry', 'Fried Rice'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 32.99,
@@ -314,26 +314,26 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Spicy Thai Experience',
-      description: 'For those who like it hot',
-      items: ['Red Curry', 'Drunken Noodles', 'Basil Fried Rice'],
+      description: 'For those who like it hot. Includes: Tom Yum Soup, Red Curry, Papaya Salad',
+      items: ['Tom Yum Soup', 'Red Curry', 'Papaya Salad'],
       pricingType: 'DISCOUNT_AMOUNT' as const,
-      discountAmount: 7.00,
-      savingsLabel: 'Save $7!'
+      discountAmount: 6.00,
+      savingsLabel: 'Save $6!'
     }
   ],
   BBQ: [
     {
       name: 'BBQ Sampler',
-      description: 'Try all our BBQ favorites',
-      items: ['Sliced Brisket', 'Pulled Pork Sandwich', 'Loaded Fries'],
+      description: 'Try all our BBQ favorites. Includes: Brisket, Pulled Pork Sandwich, Loaded Fries',
+      items: ['Brisket', 'Pulled Pork Sandwich', 'Loaded Fries'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 28.99,
       savingsLabel: 'Save $4.97!'
     },
     {
       name: 'BBQ Feast',
-      description: 'Full BBQ experience',
-      items: ['Chopped Brisket', 'Beef Ribs', 'Pork Ribs'],
+      description: 'Full BBQ experience. Includes: Brisket, Beef Ribs, Pork Ribs',
+      items: ['Brisket', 'Beef Ribs', 'Pork Ribs'],
       pricingType: 'DISCOUNT_PERCENT' as const,
       discountPercent: 12,
       savingsLabel: 'Save 12%!'
@@ -342,7 +342,7 @@ const BUNDLE_COMBINATIONS = {
   BAKERY: [
     {
       name: 'Morning Pastries',
-      description: 'Fresh baked morning treats',
+      description: 'Fresh baked morning treats. Includes: Croissant, Muffin, Danish',
       items: ['Croissant', 'Muffin', 'Danish'],
       pricingType: 'FIXED_PRICE' as const,
       fixedPrice: 9.99,
@@ -350,7 +350,7 @@ const BUNDLE_COMBINATIONS = {
     },
     {
       name: 'Sweet Tooth Special',
-      description: 'For the dessert lover',
+      description: 'For the dessert lover. Includes: Chocolate Cake, Chocolate Chip Cookie, Oatmeal Cookie',
       items: ['Chocolate Cake', 'Chocolate Chip Cookie', 'Oatmeal Cookie'],
       pricingType: 'DISCOUNT_AMOUNT' as const,
       discountAmount: 2.00,
@@ -466,56 +466,83 @@ async function createBundleForStore(
   storeId: string,
   bundleTemplate: any,
   storeItems: any[]
-) {
-  // Find items that match the bundle template
-  const bundleItems = []
-  for (const itemName of bundleTemplate.items) {
-    const item = storeItems.find(i => i.title === itemName)
-    if (item) {
-      bundleItems.push({
-        itemId: item.id,
-        quantity: 1,
-        sortIndex: bundleItems.length
-      })
-    }
+): Promise<boolean> {
+  // Minimum item count guard
+  if (bundleTemplate.items.length < 2) {
+    console.warn(`⚠️ Skipping bundle "${bundleTemplate.name}" - bundles require at least 2 items`)
+    return false
   }
-  
-  if (bundleItems.length === 0) return
-  
-  // Create bundle
-const bundle = await prisma.bundle.create({
-  data: {
-    storeId,
-    name: bundleTemplate.name,
-    description: bundleTemplate.description,
-    isActive: true,
-    sortIndex: 0,
-    media: {
-      create: [
-        {
-          kind: MediaKind.IMAGE,
-          url: `https://picsum.photos/seed/${bundleTemplate.name.replace(/\s+/g, '')}/600/400.jpg`,
-          altText: `${bundleTemplate.name} bundle image`,
-          sortIndex: 0,
-        },
-      ],
+
+  const itemsByTitle = new Map(
+    storeItems.map((item) => [item.title.trim().toLowerCase(), item])
+  )
+
+  const bundleItems = bundleTemplate.items.map((itemName: string, index: number) => {
+    const item = itemsByTitle.get(itemName.trim().toLowerCase())
+
+    if (!item) {
+      return null
+    }
+
+    return {
+      itemId: item.id,
+      quantity: 1,
+      sortIndex: index,
+      title: item.title,
+    }
+  })
+
+  const missingItems = bundleTemplate.items.filter((itemName: string) => {
+    return !itemsByTitle.has(itemName.trim().toLowerCase())
+  })
+
+  if (missingItems.length > 0) {
+    console.warn(
+      `⚠️ Skipping bundle "${bundleTemplate.name}" for store ${storeId}. Missing items: ${missingItems.join(', ')}` 
+    )
+    return false
+  }
+
+  // Filter nulls before creating bundle items
+  const resolvedBundleItems = bundleItems.filter(
+    (item: any): item is NonNullable<typeof item> => item !== null
+  )
+
+  console.log(
+    `🎁 Creating bundle: ${bundleTemplate.name} with ${resolvedBundleItems.length} exact items` 
+  )
+
+  const bundle = await prisma.bundle.create({
+    data: {
+      storeId,
+      name: bundleTemplate.name,
+      description: bundleTemplate.description,
+      isActive: true,
+      sortIndex: 0,
+      media: {
+        create: [
+          {
+            kind: MediaKind.IMAGE,
+            url: `https://picsum.photos/seed/${bundleTemplate.name.replace(/\s+/g, '')}/600/400.jpg`,
+            altText: `${bundleTemplate.name} bundle image`,
+            sortIndex: 0,
+          },
+        ],
+      },
     },
-  },
-})
-  
-  // Create bundle items
-  for (const bundleItem of bundleItems) {
+  })
+
+  for (const bundleItem of resolvedBundleItems) {
     await prisma.bundleItem.create({
       data: {
         bundleId: bundle.id,
         itemId: bundleItem.itemId,
         quantity: bundleItem.quantity,
-        sortIndex: bundleItem.sortIndex
-      }
+        sortIndex: bundleItem.sortIndex,
+      },
     })
   }
-  
-  // Create bundle pricing
+
   await prisma.bundlePricing.create({
     data: {
       bundleId: bundle.id,
@@ -524,9 +551,11 @@ const bundle = await prisma.bundle.create({
       discountPercent: bundleTemplate.discountPercent,
       discountAmount: bundleTemplate.discountAmount,
       showSavings: true,
-      savingsLabel: bundleTemplate.savingsLabel
-    }
+      savingsLabel: bundleTemplate.savingsLabel,
+    },
   })
+
+  return true
 }
 
 // Helper function to create sample favorites for realistic engagement
@@ -600,6 +629,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
   let itemCount = 0
   let postCount = 0
   let mediaCount = 0
+  let bundleCount = 0
 
   // Create stores for each location
   for (const location of AUSTIN_LOCATIONS) {
@@ -789,10 +819,22 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       
       console.log(`   📱 ${numPosts} river posts`)
       
-      // Create bundles for this store type
-      const storeBundles = BUNDLE_COMBINATIONS[storeTypeKey as keyof typeof BUNDLE_COMBINATIONS] || []
-      for (const bundleTemplate of storeBundles) {
-        await createBundleForStore(prisma, store.id, bundleTemplate, storeItems)
+      // BUNDLE CREATION DISABLED FOR TESTING
+      // Create 0-3 bundles for this store (randomized)
+      const availableBundles = BUNDLE_COMBINATIONS[storeTypeKey as keyof typeof BUNDLE_COMBINATIONS] || []
+      const numBundles = 0 // Math.floor(Math.random() * 4) // 0-3 bundles - DISABLED
+      
+      if (numBundles > 0 && availableBundles.length > 0) {
+        // Shuffle and take random bundles
+        const shuffledBundles = [...availableBundles].sort(() => Math.random() - 0.5)
+        const selectedBundles = shuffledBundles.slice(0, Math.min(numBundles, availableBundles.length))
+        
+        console.log(`   🎁 Creating ${selectedBundles.length} bundle(s):`)
+        
+        for (const bundleTemplate of selectedBundles) {
+          const created = await createBundleForStore(prisma, store.id, bundleTemplate, storeItems)
+          if (created) bundleCount++
+        }
       }
     }
   }
@@ -806,7 +848,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
   console.log(`   🍽️  Items created: ${itemCount}`)
   console.log(`   📱 River posts created: ${postCount}`)
   console.log(`   🖼️  Media assets created: ${mediaCount}`)
-  console.log(`   🎁 Bundles created: ${Math.floor(storeCount * 1.5)}`) // Average 1.5 bundles per store
+  console.log(`   🎁 Bundles created: ${bundleCount}`) // Real count of created bundles
   console.log(`   🚚 Delivery zones created: ${storeCount * 3}`) // 3 zones per store
   console.log(`
 📍 Location: Austin, TX (near ZIP 78758)`)

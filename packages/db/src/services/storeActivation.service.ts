@@ -51,15 +51,27 @@ export const checkStoreActivationRequirements = async (storeId: string): Promise
   })
   const hasMedia = mediaCount >= 1
 
-  // Check active products
-  const activeProductsCount = await prisma.item.count({
-    where: { 
-      storeId,
-      isActive: true,
-      isSoldOut: false
-    }
+  const activeItemsCount = await prisma.item.count({
+    where: { storeId, isActive: true, isSoldOut: false },
   })
-  const hasActiveProducts = activeProductsCount >= 1
+
+  // A store with no active items can still qualify via active bundles
+  let hasActiveBundles = false
+  if (activeItemsCount === 0) {
+    const activeBundles = await prisma.bundle.findMany({
+      where: { storeId, isActive: true },
+      include: {
+        items: { include: { item: { select: { isActive: true, isSoldOut: true } } } },
+      },
+    })
+    hasActiveBundles = activeBundles.some(
+      (b) =>
+        b.items.length > 0 &&
+        b.items.every((bi) => bi.item.isActive && !bi.item.isSoldOut),
+    )
+  }
+
+  const hasActiveProducts = activeItemsCount >= 1 || hasActiveBundles
 
   // Check if not disabled
   const isNotDisabled = !store.disabledAt && store.status === 'ACTIVE'
@@ -132,4 +144,52 @@ export const checkProductActivationRequirements = async (productId: string): Pro
     parentStorePublic,
     canAppearPublicly,
   }
+}
+
+// ============================================================================
+// Bundle Activation
+// ============================================================================
+
+export interface BundleActivationRequirements {
+  hasRequiredFields: boolean
+  hasMedia: boolean
+  hasActiveItems: boolean
+  isActive: boolean
+  parentStorePublic: boolean
+  canAppearPublicly: boolean
+}
+
+export const checkBundleActivationRequirements = async (
+  bundleId: string,
+): Promise<BundleActivationRequirements> => {
+  const bundle = await prisma.bundle.findUnique({
+    where: { id: bundleId },
+    include: {
+      items: {
+        include: { item: { select: { isActive: true, isSoldOut: true, storeId: true } } },
+      },
+    },
+  })
+
+  if (!bundle) throw new Error('Bundle not found')
+
+  const hasRequiredFields = !!(bundle.name)
+  const mediaCount = await prisma.mediaAsset.count({ where: { bundleId } })
+  const hasMedia = mediaCount >= 1
+  
+  // Production safety rules: bundle must have at least 2 items, all from same store, all active
+  const hasMinimumItems = bundle.items.length >= 2
+  const allItemsFromSameStore = bundle.items.every((bi) => bi.item.storeId === bundle.storeId)
+  const hasActiveItems =
+    hasMinimumItems &&
+    allItemsFromSameStore &&
+    bundle.items.every((bi) => bi.item.isActive && !bi.item.isSoldOut)
+    
+  const { isActive } = bundle
+  const { canAppearInMarketplace: parentStorePublic } = await checkStoreActivationRequirements(
+    bundle.storeId,
+  )
+  const canAppearPublicly = hasRequiredFields && hasMedia && hasActiveItems && isActive && parentStorePublic
+
+  return { hasRequiredFields, hasMedia, hasActiveItems, isActive, parentStorePublic, canAppearPublicly }
 }

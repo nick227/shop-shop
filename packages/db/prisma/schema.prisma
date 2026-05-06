@@ -3,15 +3,7 @@ generator client {
   output   = "../src/generated/client"
 }
 
-generator zod {
-  provider                  = "zod-prisma-types"
-  output                    = "../src/generated/zod"
-  createInputTypes          = false
-  createRelationValuesTypes = false
-  createPartialTypes        = false
-  addInputTypeValidation    = false
-  useDecimalJs              = true
-}
+
 
 datasource db {
   provider = "mysql"
@@ -75,6 +67,20 @@ enum OrderStatus {
 enum DeliveryType {
   DELIVERY
   PICKUP
+}
+
+enum DeliveryProvider {
+  IN_HOUSE
+  DOORDASH_DRIVE
+  UBER_DIRECT
+}
+
+enum DeliveryJobStatus {
+  REQUESTED
+  DISPATCHED
+  CANCELED
+  FAILED
+  COMPLETED
 }
 
 enum PaymentProvider {
@@ -157,6 +163,7 @@ model User {
   assignedOrders       Order[]               @relation("OrderAssignedRider")
   promotionRedemptions PromotionRedemption[]
   vendorPayouts        Payout[]              @relation("VendorPayouts")
+  DeliveryJob          DeliveryJob[]
 }
 
 model Store {
@@ -184,10 +191,10 @@ model Store {
   prepTimeMin      Int         @default(15)
   feesJson         Json?
   hoursJson        Json?
-  
+
   // Branding
-  brandColor       String?     @db.VarChar(7) // Hex color code #RRGGBB
-  accentColor      String?     @db.VarChar(7) // Hex color code #RRGGBB
+  brandColor  String? @db.VarChar(7) // Hex color code #RRGGBB
+  accentColor String? @db.VarChar(7) // Hex color code #RRGGBB
 
   // Delivery Settings
   deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
@@ -229,6 +236,7 @@ model Store {
   Promotion            Promotion[]
   FavoriteStore        FavoriteStore[]
   affiliateCommissions Commission[]    @relation("CommissionStore")
+  DeliveryJob          DeliveryJob[]
 
   @@index([ownerUserId])
   @@index([latitude, longitude]) // For distance queries
@@ -410,13 +418,14 @@ model Order {
   refundReason String?   @db.Text
   refundedAt   DateTime?
 
-  items       OrderItem[]
-  events      OrderEvent[]
-  tips        Tip[]
-  commissions Commission[]
-  payoutOrder PayoutOrder?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  items        OrderItem[]
+  events       OrderEvent[]
+  tips         Tip[]
+  commissions  Commission[]
+  payoutOrder  PayoutOrder?
+  deliveryJobs DeliveryJob[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@index([userId])
   @@index([storeId])
@@ -425,6 +434,30 @@ model Order {
   @@index([status, canceledAt])
   @@index([assignedToUserId])
   @@index([deliveryLatitude, deliveryLongitude])
+}
+
+model DeliveryJob {
+  id                 String            @id @default(uuid()) @db.Char(36)
+  orderId            String            @db.Char(36)
+  storeId            String            @db.Char(36)
+  order              Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  store              Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  provider           DeliveryProvider
+  status             DeliveryJobStatus @default(REQUESTED)
+  providerExternalId String?
+  trackingUrl        String?
+  providerStatus     String?
+  providerPayload    Json?
+  requestedByUserId  String?           @db.Char(36)
+  requestedBy        User?             @relation(fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  canceledAt         DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([orderId])
+  @@index([storeId])
+  @@index([providerExternalId])
 }
 
 model OrderItem {
@@ -531,10 +564,10 @@ model Payout {
   arrivalAt          DateTime?
 
   /// Audit
-  createdByUserId String?  @db.Char(36)
+  createdByUserId String?   @db.Char(36)
   completedAt     DateTime?
   failedAt        DateTime?
-  failureReason   String?  @db.Text
+  failureReason   String?   @db.Text
 
   orders      PayoutOrder[]
   adjustments PayoutAdjustment[]
@@ -556,25 +589,24 @@ model PayoutOrder {
   orderId String @db.Char(36)
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  /// Guard: an order must not be included in more than one non-failed payout.
-  /// Enforced in service + unique constraint; failed payouts must release orders.
-  @@unique([orderId])
-
   /// Snapshot fields (integer cents) — do not rely on live joins for completed payouts.
   orderCreatedAt DateTime
   orderStatus    OrderStatus
   paymentStatus  PaymentStatus
 
-  grossSalesCents    Int @default(0)
-  discountsCents     Int @default(0)
-  refundsCents       Int @default(0)
-  tipsCents          Int @default(0)
-  platformFeesCents  Int @default(0)
-  processorFeesCents Int @default(0)
+  grossSalesCents      Int @default(0)
+  discountsCents       Int @default(0)
+  refundsCents         Int @default(0)
+  tipsCents            Int @default(0)
+  platformFeesCents    Int @default(0)
+  processorFeesCents   Int @default(0)
   netContributionCents Int @default(0)
 
   createdAt DateTime @default(now())
 
+  /// Guard: an order must not be included in more than one non-failed payout.
+  /// Enforced in service + unique constraint; failed payouts must release orders.
+  @@unique([orderId])
   @@index([payoutId])
 }
 
@@ -584,13 +616,13 @@ model PayoutAdjustment {
   payoutId String @db.Char(36)
   payout   Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
 
-  type       PayoutAdjustmentType
+  type        PayoutAdjustmentType
   amountCents Int
-  reason     String
-  note       String? @db.Text
+  reason      String
+  note        String?              @db.Text
 
-  createdByUserId String? @db.Char(36)
-  createdAt DateTime @default(now())
+  createdByUserId String?  @db.Char(36)
+  createdAt       DateTime @default(now())
 
   @@index([payoutId])
 }
@@ -1027,9 +1059,9 @@ model Bundle {
 
   items      BundleItem[]
   pricing    BundlePricing?
-  cartItems  CartItem[]   @relation("BundleCartItems")
-  orderItems OrderItem[]  @relation("BundleOrderItems")
-  media      MediaAsset[] @relation("BundleMedia")
+  cartItems  CartItem[]     @relation("BundleCartItems")
+  orderItems OrderItem[]    @relation("BundleOrderItems")
+  media      MediaAsset[]   @relation("BundleMedia")
 
   @@index([storeId])
   @@index([isActive])
