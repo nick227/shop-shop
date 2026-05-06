@@ -9,6 +9,7 @@ import {
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
 import { prisma } from '@packages/db'
 import { checkStoreActivationRequirements } from '@packages/db/services'
+import { getStoreReadiness } from '../services/store-readiness.service.js'
 
 // ========================================
 // Store Resource Definition
@@ -16,6 +17,153 @@ import { checkStoreActivationRequirements } from '@packages/db/services'
 // ========================================
 
 const storeDomain = new StoreDomain()
+
+const BROWSE_KEYWORDS: Record<string, string[]> = {
+  'meal-prep': ['meal prep', 'meal', 'catering', 'cater', 'prepared'],
+  bakery: ['bakery', 'baked', 'bread', 'pastry', 'pastries', 'dessert', 'cake'],
+  coffee: ['coffee', 'cafe', 'drink', 'drinks', 'tea'],
+  specialty: ['specialty', 'artisan', 'gift', 'gifts', 'market'],
+}
+
+function textSearchFilter(terms: string[]): Record<string, unknown> | undefined {
+  const cleanTerms = terms.map(term => term.trim()).filter(term => term.length >= 2)
+  if (cleanTerms.length === 0) return undefined
+
+  return {
+    OR: cleanTerms.flatMap(term => [
+      { name: { contains: term } },
+      { description: { contains: term } },
+      { companyName: { contains: term } },
+      { addressCity: { contains: term } },
+      { addressZip: { contains: term } },
+    ]),
+  }
+}
+
+function splitSearchTerms(query: unknown): string[] {
+  if (typeof query !== 'string') return []
+  const trimmed = query.trim()
+  if (!trimmed) return []
+  return [trimmed, ...trimmed.split(/\s+/).filter(term => term.length >= 2)]
+}
+
+function addAndFilter(target: Record<string, unknown>, filter: Record<string, unknown> | undefined) {
+  if (!filter) return
+  const existing = Array.isArray(target.AND) ? target.AND : []
+  target.AND = [...existing, filter]
+}
+
+function dedupeStoresByArea<T extends { addressZip?: unknown; id?: unknown; name?: unknown }>(stores: T[]): T[] {
+  const seen = new Set<string>()
+  const deduped: T[] = []
+  const sortedStores = [...stores].sort((a, b) => {
+    const zipA = typeof a.addressZip === 'string' ? a.addressZip : ''
+    const zipB = typeof b.addressZip === 'string' ? b.addressZip : ''
+    const zipCompare = zipA.localeCompare(zipB)
+    if (zipCompare !== 0) return zipCompare
+    return String(a.name ?? '').localeCompare(String(b.name ?? ''))
+  })
+
+  for (const store of sortedStores) {
+    const zip = typeof store.addressZip === 'string' ? store.addressZip.trim() : ''
+    const key = zip || String(store.id ?? deduped.length)
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(store)
+  }
+
+  return deduped
+}
+
+export type CoordinateSearchStore = {
+  id: string
+  latitude?: unknown
+  longitude?: unknown
+  deliveryDistance?: unknown
+  [key: string]: unknown
+}
+
+export function filterStoresForCoordinateSearch<T extends CoordinateSearchStore>(
+  stores: T[],
+  latitude: number,
+  longitude: number,
+  radiusMiles: number
+): Array<T & { distance: number }> {
+  return stores
+    .map(store => {
+      const storeLatitude = Number(store.latitude)
+      const storeLongitude = Number(store.longitude)
+
+      if (!locationDomain.isValidCoordinates(storeLatitude, storeLongitude)) {
+        return null
+      }
+
+      const distance = locationDomain.calculateDistance(latitude, longitude, storeLatitude, storeLongitude)
+      return { ...store, distance }
+    })
+    .filter((store): store is T & { distance: number } => {
+      if (store === null) return false
+      const withinSearchRadius = store.distance <= radiusMiles
+      const storeDeliveryDistance = store.deliveryDistance ? Number(store.deliveryDistance) : null
+      const withinDeliveryRadius = storeDeliveryDistance === null || store.distance <= storeDeliveryDistance
+      return withinSearchRadius && withinDeliveryRadius
+    })
+    .sort((a, b) => a.distance - b.distance)
+}
+
+async function buildStoreListFilters(filters: Record<string, unknown>): Promise<Record<string, unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { latitude, longitude, radiusMiles, city, state, zip, q, browse, ...rest } = filters
+  const prismaFilters: Record<string, unknown> = { ...rest }
+
+  if (!prismaFilters.ownerUserId && !prismaFilters.status) {
+    prismaFilters.status = 'ACTIVE'
+  }
+  if (!prismaFilters.ownerUserId && prismaFilters.isPublished === undefined) {
+    prismaFilters.isPublished = true
+  }
+  if (typeof prismaFilters.isPublished === 'string') {
+    prismaFilters.isPublished = prismaFilters.isPublished === 'true'
+  }
+
+  if (typeof city === 'string' && city.trim()) {
+    addAndFilter(prismaFilters, { addressCity: { contains: city.trim() } })
+    if (typeof state === 'string' && state.trim()) {
+      addAndFilter(prismaFilters, { addressState: state.trim().toUpperCase() })
+    }
+  } else if (typeof zip === 'string' && zip.trim()) {
+    addAndFilter(prismaFilters, { addressZip: zip.trim() })
+  }
+
+  addAndFilter(prismaFilters, textSearchFilter(splitSearchTerms(q)))
+
+  if (typeof browse === 'string') {
+    addAndFilter(prismaFilters, textSearchFilter(BROWSE_KEYWORDS[browse] ?? [browse]))
+  }
+
+  if (!prismaFilters.ownerUserId) {
+    const storeList = await prisma.store.findMany({
+      where: prismaFilters,
+      select: { id: true },
+    })
+
+    const storeIds = storeList.map(store => store.id)
+    const activationChecks = await Promise.all(
+      storeIds.map(storeId => checkStoreActivationRequirements(storeId))
+    )
+    const eligibleStoreIds = activationChecks
+      .map((check, index) => (check.canAppearInMarketplace ? storeIds[index] : null))
+      .filter((id): id is string => id !== null)
+
+    prismaFilters.id = {
+      in: eligibleStoreIds.length > 0
+        ? eligibleStoreIds
+        : ['00000000-0000-0000-0000-000000000000'],
+    }
+  }
+
+  return prismaFilters
+}
 
 export const storeResource = defineResource({
   name: 'store',
@@ -58,6 +206,13 @@ export const storeResource = defineResource({
       if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
         throw new Error('Only store owner can update store')
       }
+
+      if (data.isPublished === true) {
+        const readiness = await getStoreReadiness(id)
+        if (!readiness?.canPublish) {
+          throw new Error('Store is not ready to publish')
+        }
+      }
       
       return data
     },
@@ -85,45 +240,7 @@ export const storeResource = defineResource({
       await eventBus.emit(DomainEvents.STORE_CREATED, result)
     },
     beforeList: async (filters) => {
-      // Remove location params from Prisma filters (they're used in afterList instead)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { latitude, longitude, radiusMiles, city, state, zip, ...rest } = filters as Record<string, unknown>
-      const prismaFilters: Record<string, unknown> = { ...rest }
-
-      if (!prismaFilters.ownerUserId && !prismaFilters.status) {
-        prismaFilters.status = 'ACTIVE'
-      }
-      if (!prismaFilters.ownerUserId && prismaFilters.isPublished === undefined) {
-        prismaFilters.isPublished = true
-      }
-      if (typeof prismaFilters.isPublished === 'string') {
-        prismaFilters.isPublished = prismaFilters.isPublished === 'true'
-      }
-
-      // Public marketplace: restrict to stores that pass activation checks (by store id, not ownerUserId)
-      if (!prismaFilters.ownerUserId) {
-        const storeList = await prisma.store.findMany({
-          where: prismaFilters,
-          select: { id: true },
-        })
-
-        const storeIds = storeList.map(store => store.id)
-        const activationChecks = await Promise.all(
-          storeIds.map(storeId => checkStoreActivationRequirements(storeId))
-        )
-
-        const eligibleStoreIds = activationChecks
-          .filter(check => check.canAppearInMarketplace)
-          .map((_, index) => storeIds[index])
-
-        if (eligibleStoreIds.length > 0) {
-          prismaFilters.id = { in: eligibleStoreIds }
-        } else {
-          prismaFilters.id = { in: ['00000000-0000-0000-0000-000000000000'] }
-        }
-      }
-
-      return prismaFilters
+      return buildStoreListFilters(filters as Record<string, unknown>)
     },
     afterList: async (result, context) => {
       const listResult = result as { data: Array<{
@@ -135,52 +252,55 @@ export const storeResource = defineResource({
       
       // Extract location filters from query
       const filters = (context as unknown as { filters?: Record<string, unknown> })?.filters || {}
-      const latitude = filters.latitude as number | undefined
-      const longitude = filters.longitude as number | undefined
-      const radiusMiles = (filters.radiusMiles as number) || 25
+      const latitude = Number(filters.latitude)
+      const longitude = Number(filters.longitude)
+      const radiusMiles = Number(filters.radiusMiles) || 25
+      const city = typeof filters.city === 'string' ? filters.city.trim() : ''
+      const state = typeof filters.state === 'string' ? filters.state.trim() : ''
+      const hookContext = context as unknown as {
+        page?: number
+        limit?: number
+        orderBy?: Record<string, unknown>
+      }
       
-      // If no user location provided, return as-is
-      if (!latitude || !longitude) {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude === 0 || longitude === 0) {
+        if (city && state) {
+          const page = Math.max(Number(hookContext.page) || 1, 1)
+          const limit = Math.max(Number(hookContext.limit) || 20, 1)
+          const prismaFilters = await buildStoreListFilters(filters)
+          const cityStores = await prisma.store.findMany({
+            where: prismaFilters,
+            orderBy: hookContext.orderBy || { createdAt: 'desc' },
+          })
+          const dedupedStores = dedupeStoresByArea(cityStores)
+          const start = (page - 1) * limit
+
+          return {
+            data: dedupedStores.slice(start, start + limit),
+            total: dedupedStores.length,
+          }
+        }
+
         return listResult
       }
       
-      // Calculate distance for each store and filter by radius
-      const storesWithDistance = listResult.data
-        .map(store => {
-          // Skip stores without coordinates
-          if (!locationDomain.isValidCoordinates(store.latitude, store.longitude)) {
-            return null
-          }
-          
-          const distance = locationDomain.calculateDistance(
-            latitude,
-            longitude,
-            Number(store.latitude),
-            Number(store.longitude)
-          )
-          
-          return {
-            ...store,
-            distance,
-          } as typeof store & { distance: number; deliveryDistance?: number | null }
-        })
-        .filter((store): store is NonNullable<typeof store> => {
-          if (store === null) return false
-          
-          // Check if store is within user's search radius
-          const withinSearchRadius = store.distance <= radiusMiles
-          
-          // Check if store delivers to user's location (using store's deliveryDistance)
-          const storeDeliveryDistance = store.deliveryDistance ? Number(store.deliveryDistance) : null
-          const withinDeliveryRadius = storeDeliveryDistance === null || store.distance <= storeDeliveryDistance
-          
-          // Store must be within both search radius AND delivery radius
-          return withinSearchRadius && withinDeliveryRadius
-        })
-        .sort((a, b) => a.distance - b.distance)
+      const page = Math.max(Number(hookContext.page) || 1, 1)
+      const limit = Math.max(Number(hookContext.limit) || 20, 1)
+      const prismaFilters = await buildStoreListFilters(filters)
+      const candidateStores = await prisma.store.findMany({
+        where: prismaFilters,
+        orderBy: hookContext.orderBy || { createdAt: 'desc' },
+      })
+      const storesWithDistance = filterStoresForCoordinateSearch(
+        candidateStores,
+        latitude,
+        longitude,
+        radiusMiles
+      )
+      const start = (page - 1) * limit
       
       return {
-        data: storesWithDistance,
+        data: storesWithDistance.slice(start, start + limit),
         total: storesWithDistance.length,
       }
     },
