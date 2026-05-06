@@ -12,6 +12,7 @@ import {
   deleteMedia,
   listMedia,
   updateMediaSort,
+  reorderMedia,
   type UploadFile,
 } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
@@ -214,6 +215,56 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
+        }
+        if (error.message.includes('issues')) {
+          return reply.code(400).send({
+            error: 'Validation error',
+            issues: (error as { issues?: unknown[] }).issues,
+          })
+        }
+      }
+      throw error
+    }
+  })
+
+  // ========================================
+  // PATCH /media/reorder
+  // Bulk reorder media files
+  // ========================================
+  app.patch('/media/reorder', {
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    schema: {
+      tags: ['Media'],
+      summary: 'Reorder media files',
+      description: 'Changes display order of multiple media files at once',
+      body: {
+        type: 'object',
+        properties: {
+          mediaIds: {
+            type: 'array',
+            items: { type: 'string', format: 'uuid' }
+          }
+        },
+        required: ['mediaIds']
+      }
+    },
+  }, async (req: AuthenticatedRequest, reply) => {
+    try {
+      const { mediaIds } = req.body as { mediaIds: string[] }
+
+      await reorderMedia({
+        mediaIds,
+        userId: req.user!.id,
+      })
+
+      return reply.code(200).send({ success: true })
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
+          return reply.code(404).send({ error: error.message })
+        }
+        if (error.message.includes('No media IDs provided')) {
+          return reply.code(400).send({ error: error.message })
         }
         if (error.message.includes('issues')) {
           return reply.code(400).send({

@@ -55,6 +55,10 @@ export const handlers = [
           email: 'test@restaurant.com',
           website: 'https://testrestaurant.com',
           isPublished: true,
+          status: 'ACTIVE',
+          disabledAt: null,
+          disabledByUserId: null,
+          disabledReason: null,
           deliveryEnabled: true,
           pickupEnabled: true,
           prepTimeMin: 30,
@@ -94,4 +98,3 @@ export const handlers = [
       limit: 20})
   }),
 ]
-

@@ -2,6 +2,10 @@
  * Austin Area Store Seeding Script
  * Seeds stores near Austin ZIP 78758 with items and river posts
  * Uses placehold.co for placeholder images
+ *
+ * Marketplace visibility (`checkStoreActivationRequirements` in storeActivation.service.ts):
+ * each store must have required profile fields, ≥1 store media, ≥1 active non–sold-out item,
+ * delivery or pickup enabled, and ACTIVE status with no disabledAt.
  */
 import { fileURLToPath } from 'url'
 import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'
@@ -371,6 +375,20 @@ const POST_TEMPLATES = [
 
 const PASSWORD = 'Test123456!'
 
+// Helper function to generate variety of image URLs
+function generateImageUrls(baseSeed: string, count: number, width: number, height: number): string[] {
+  const urls: string[] = []
+  const variations = ['', '-alt', '-detail', '-wide', '-closeup', '-interior', '-exterior', '-menu', '-food', '-atmosphere']
+  
+  for (let i = 0; i < count; i++) {
+    const variation = variations[i % variations.length]
+    const randomWidth = width + Math.floor(Math.random() * 100) - 50
+    const randomHeight = height + Math.floor(Math.random() * 100) - 50
+    urls.push(`https://picsum.photos/seed/${baseSeed}${variation}/${randomWidth}/${randomHeight}.jpg`)
+  }
+  return urls
+}
+
 // Helper function to create delivery zones
 function createDeliveryZones(storeLat: number, storeLng: number, storeId: string) {
   // Create 3 delivery zones in concentric circles around the store
@@ -520,12 +538,19 @@ async function createSampleFavorites(prisma: PrismaClient) {
   let favoriteStoreCount = 0
   let favoriteItemCount = 0
   
-  // Create favorite stores (random 3-5 stores)
+  // Create favorite stores (random 3-5 stores) using upsert to handle duplicates
   const numFavoriteStores = Math.floor(Math.random() * 3) + 3
   for (let i = 0; i < numFavoriteStores && i < stores.length; i++) {
     const store = stores[i]
-    await prisma.favoriteStore.create({
-      data: {
+    await prisma.favoriteStore.upsert({
+      where: {
+        userId_storeId: {
+          userId: customer.id,
+          storeId: store.id
+        }
+      },
+      update: {},
+      create: {
         userId: customer.id,
         storeId: store.id
       }
@@ -533,12 +558,19 @@ async function createSampleFavorites(prisma: PrismaClient) {
     favoriteStoreCount++
   }
   
-  // Create favorite items (random 5-10 items)
+  // Create favorite items (random 5-10 items) using upsert to handle duplicates
   const numFavoriteItems = Math.floor(Math.random() * 6) + 5
   for (let i = 0; i < numFavoriteItems && i < items.length; i++) {
     const item = items[i]
-    await prisma.favoriteItem.create({
-      data: {
+    await prisma.favoriteItem.upsert({
+      where: {
+        userId_itemId: {
+          userId: customer.id,
+          itemId: item.id
+        }
+      },
+      update: {},
+      create: {
         userId: customer.id,
         itemId: item.id
       }
@@ -617,6 +649,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           slug,
           description,
           isPublished: true,
+          status: 'ACTIVE',
           deliveryEnabled: true,
           pickupEnabled: true,
           prepTimeMin: 15 + Math.floor(Math.random() * 30),
@@ -647,18 +680,22 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       })
       storeCount++
       
-      // Add store cover image using Lorem Picsum
-      const storeCoverUrl = `https://picsum.photos/seed/${storeName.replace(/\s+/g, '')}/1200/400.jpg`
-      await prisma.mediaAsset.create({
-        data: {
-          storeId: store.id,
-          kind: MediaKind.IMAGE,
-          url: storeCoverUrl,
-          altText: `${storeName} cover photo`,
-          sortIndex: 0,
-        },
-      })
-      mediaCount++
+      // Add multiple store media images (3-5) using Lorem Picsum
+      const numStoreMedia = Math.floor(Math.random() * 3) + 3 // 3-5 images
+      const storeMediaUrls = generateImageUrls(storeName.replace(/\s+/g, ''), numStoreMedia, 1200, 400)
+      
+      for (let i = 0; i < storeMediaUrls.length; i++) {
+        await prisma.mediaAsset.create({
+          data: {
+            storeId: store.id,
+            kind: MediaKind.IMAGE,
+            url: storeMediaUrls[i],
+            altText: `${storeName} photo ${i + 1}`,
+            sortIndex: i,
+          },
+        })
+        mediaCount++
+      }
       
       console.log(`✅ Created: ${storeName}`)
       console.log(`   📍 ${street}, ${location.area}, TX ${location.zip}`)
@@ -678,7 +715,8 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
               description: itemTemplate.desc,
               price: itemTemplate.price,
               isActive: true,
-              isSoldOut: Math.random() < 0.05, // 5% chance sold out
+              // Keep ≥1 sellable SKU per store so activation `hasActiveProducts` stays true
+              isSoldOut: false,
               sortIndex: storeItemCount,
               optionsJson: { category },
               stockQty: Math.floor(Math.random() * 50) + 10,
@@ -695,19 +733,22 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           itemCount++
           storeItemCount++
           
-          // Add item image using Lorem Picsum
-          const itemImgSize = 400 + Math.floor(Math.random() * 200)
-          const itemImageUrl = `https://picsum.photos/seed/${itemTemplate.title.replace(/\s+/g, '')}/${itemImgSize}/${itemImgSize}.jpg`
-          await prisma.mediaAsset.create({
-            data: {
-              itemId: item.id,
-              kind: MediaKind.IMAGE,
-              url: itemImageUrl,
-              altText: itemTemplate.title,
-              sortIndex: 0,
-            },
-          })
-          mediaCount++
+          // Add multiple item media images (2-3) using Lorem Picsum
+          const numItemMedia = Math.floor(Math.random() * 2) + 2 // 2-3 images
+          const itemMediaUrls = generateImageUrls(itemTemplate.title.replace(/\s+/g, ''), numItemMedia, 400, 400)
+          
+          for (let i = 0; i < itemMediaUrls.length; i++) {
+            await prisma.mediaAsset.create({
+              data: {
+                itemId: item.id,
+                kind: MediaKind.IMAGE,
+                url: itemMediaUrls[i],
+                altText: `${itemTemplate.title} photo ${i + 1}`,
+                sortIndex: i,
+              },
+            })
+            mediaCount++
+          }
         }
       }
       

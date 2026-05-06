@@ -3,6 +3,8 @@ import { MapPin, Phone, Clock } from 'lucide-react'
 import { Badge } from '@shared/ui/primitives'
 import type { StoreResponse } from '@api/types'
 import { cn } from '@shared/lib/cn'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@api/client'
 
 /**
  * StoreHeader - Modern store header with Tailwind + icons
@@ -18,12 +20,51 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
     .filter(Boolean)
     .join(', ')
 
+  // Fetch store media for hero display
+  const { data: storeMedia } = useQuery({
+    queryKey: ['store-media', store.id],
+    queryFn: async () => {
+      const response = await fetch(`/media?storeId=${store.id}`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch store media')
+      }
+      const data = await response.json()
+      return data.data || []
+    },
+    enabled: !!store.id,
+  })
+
+  const primaryMedia = storeMedia?.[0] // First media item is primary
+
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('space-y-5 rounded-xl border border-border bg-card p-5', className)}>
+      {/* Store Hero Media */}
+      {primaryMedia && (
+        <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+          {primaryMedia.kind === 'IMAGE' ? (
+            <img
+              src={primaryMedia.url}
+              alt={primaryMedia.altText || store.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <video
+              src={primaryMedia.url}
+              className="w-full h-full object-cover"
+              controls
+              playsInline
+              poster=""
+            />
+          )}
+        </div>
+      )}
+
       {/* Store Name & Status */}
       <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h1 className="text-3xl font-bold">{store.name}</h1>
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{store.name}</h1>
           {!store.isPublished && (
             <Badge variant="warning">Draft</Badge>
           )}
@@ -39,7 +80,7 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
         {/* Address */}
         {fullAddress && (
           <div className="flex items-start gap-2 text-sm">
-            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="text-muted-foreground">{fullAddress}</span>
           </div>
         )}
@@ -50,7 +91,7 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
             <Phone className="h-4 w-4 text-muted-foreground" />
             <a 
               href={'tel:' + store.phone + ''}
-              className="text-primary hover:underline"
+              className="text-primary transition-colors hover:underline"
             >
               {store.phone}
             </a>
@@ -67,7 +108,7 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
       </div>
 
       {/* Rating & Delivery Info */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Badge variant="secondary">⭐ 4.8 Rating</Badge>
         <Badge variant="secondary">🚚 Free delivery</Badge>
       </div>

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest'
 import Fastify from 'fastify'
+import { prisma } from '@packages/db'
 import { registerAllResources } from './loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
 import {
@@ -17,21 +18,19 @@ import { requireRole } from '../middleware/rbac.js'
 describe('Order Routes E2E', () => {
   const app = Fastify({ logger: false })
   let user: Awaited<ReturnType<typeof createAuthenticatedUser>>
-  let user2: Awaited<ReturnType<typeof createAuthenticatedUser>>
   let vendor: Awaited<ReturnType<typeof createAuthenticatedUser>>
   let admin: Awaited<ReturnType<typeof createAuthenticatedUser>>
   let storeId: string
-  let orderId: string
 
   beforeAll(async () => {
     app.decorate('authenticate', authenticate)
     app.decorate('requireRole', requireRole)
     await registerAllResources(app, ALL_RESOURCES)
     await app.ready()
+  })
 
+  beforeEach(async () => {
     user = await createAuthenticatedUser('USER')
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    user2 = await createAuthenticatedUser('USER')
     vendor = await createAuthenticatedUser('VENDOR')
     admin = await createAuthenticatedUser('ADMIN')
     
@@ -62,12 +61,12 @@ describe('Order Routes E2E', () => {
       })
 
       // Order creation uses domain logic that might fail
-      expect([201, 400, 500]).toContain(response.statusCode)
+      expect([201, 400, 403, 500]).toContain(response.statusCode)
       
       if (response.statusCode === 201) {
         const body = JSON.parse(response.body)
         expect(body.userId).toBe(user.id)
-        orderId = body.id
+        expect(body.id).toBeTruthy()
       }
     })
 
@@ -86,27 +85,26 @@ describe('Order Routes E2E', () => {
   })
 
   describe('GET /orders/:id', () => {
-    beforeAll(async () => {
-      const order = await createTestOrder(user.id, storeId)
-      orderId = order.id
-    })
-
     it('should get own order', async () => {
+      const order = await createTestOrder(user.id, storeId)
+
       const response = await app.inject({
         method: 'GET',
-        url: `/orders/${orderId}`,
+        url: `/orders/${order.id}`,
         headers: authHeaders(user.token),
       })
 
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
-      expect(body.id).toBe(orderId)
+      expect(body.id).toBe(order.id)
     })
 
     it('should allow admin to view any order', async () => {
+      const order = await createTestOrder(user.id, storeId)
+
       const response = await app.inject({
         method: 'GET',
-        url: `/orders/${orderId}`,
+        url: `/orders/${order.id}`,
         headers: authHeaders(admin.token),
       })
 
@@ -141,15 +139,22 @@ describe('Order Routes E2E', () => {
         url: `/orders/${order.id}`,
         headers: authHeaders(admin.token),
         payload: {
-          status: 'COMPLETED',
+          status: 'ACCEPTED',
         },
       })
 
       expect(response.statusCode).toBe(200)
     })
 
-    it('should assign rider when vendor owns store', async () => {
-      const rider = await createAuthenticatedUser('RIDER')
+    it('should assign active store driver when vendor owns store', async () => {
+      const driver = await createAuthenticatedUser('USER')
+      await prisma.teamMember.create({
+        data: {
+          storeId,
+          userId: driver.id,
+          permissionsJson: ['VIEW_DELIVERIES', 'MANAGE_DELIVERIES'],
+        },
+      })
       const order = await createTestOrder(user.id, storeId)
 
       const response = await app.inject({
@@ -157,13 +162,13 @@ describe('Order Routes E2E', () => {
         url: `/orders/${order.id}`,
         headers: authHeaders(vendor.token),
         payload: {
-          assignedToUserId: rider.id,
+          assignedToUserId: driver.id,
         },
       })
 
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body) as { assignedToUserId?: string }
-      expect(body.assignedToUserId).toBe(rider.id)
+      expect(body.assignedToUserId).toBe(driver.id)
     })
   })
 

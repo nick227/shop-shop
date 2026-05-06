@@ -6,6 +6,7 @@ import { Layout } from './layouts/MainLayout'
 import { VendorLayout } from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { ProtectedRoute, lazyRoute } from './router/utils'
+import { ProtectedRoute as AuthProtectedRoute } from './features/auth/components/ProtectedRoute'
 
 // Lazy load pages for code splitting;
 import { lazy } from 'react'
@@ -24,11 +25,13 @@ const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page
 
 // Vendor pages;
 const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
+const VendorStoreOnboardingPage = lazy(() => import('./pages/vendor/StoreOnboarding.page'))
 const StoreFormPage = lazy(() => import('./pages/vendor/StoreForm.page'))
 const StoreItemsPage = lazy(() => import('./pages/vendor/StoreItems.page'))
 const ItemFormPage = lazy(() => import('./pages/vendor/ItemForm.page'))
 const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
 const VendorStoreRiverPage = lazy(() => import('./pages/vendor/Bundles.page'))
+const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
 
 // Customer account pages;
 const CustomerDashboardPage = lazy(() => import('./pages/customer/Dashboard.page'))
@@ -55,6 +58,13 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: '/signup',
         element: lazyRoute(SignupPage)},
+      // Vendor application routes;
+      {
+        path: '/vendor/apply',
+        element: <Navigate to="/vendor/store/new" replace />},
+      {
+        path: '/vendor/application-status',
+        element: <Navigate to="/vendor/dashboard" replace />},
       // Public shopping routes;
       {
         path: '/',
@@ -87,25 +97,34 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: '/river/:storeId?',
         element: (
-          <ProtectedRoute>
+          <AuthProtectedRoute>
             {lazyRoute(StoreRiverPage)}
-          </ProtectedRoute>
+          </AuthProtectedRoute>
         )},
       // Vendor routes (wrapped in VendorLayout)
-      // Open platform: any authenticated user can access vendor portal;
+      // Open vendor model: any authenticated user can create or manage their stores.
       {
         path: '/vendor',
         element: (
-          <ProtectedRoute>
+          <AuthProtectedRoute>
             <VendorLayout />
-          </ProtectedRoute>
+          </AuthProtectedRoute>
         ),
         children: [
+          {
+            index: true,
+            element: <Navigate to="/vendor/dashboard" replace />},
           {
             path: 'dashboard',
             element: lazyRoute(VendorDashboardPage)},
           {
+            path: 'onboarding/store',
+            element: lazyRoute(VendorStoreOnboardingPage)},
+          {
             path: 'stores/new',
+            element: lazyRoute(StoreFormPage)},
+          {
+            path: 'store/new',
             element: lazyRoute(StoreFormPage)},
           {
             path: 'stores/:storeId/edit',
@@ -125,14 +144,20 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           {
             path: 'orders',
             element: lazyRoute(VendorOrdersPage)},
+          {
+            path: 'team',
+            element: lazyRoute(VendorTeamPage)},
+          {
+            path: 'stores/:storeId/team',
+            element: lazyRoute(VendorTeamPage)},
         ]},
       // Customer account routes (wrapped in CustomerLayout)
       {
         path: '/account',
         element: (
-          <ProtectedRoute>
+          <AuthProtectedRoute>
             <CustomerLayout />
-          </ProtectedRoute>
+          </AuthProtectedRoute>
         ),
         children: [
           {

@@ -11,7 +11,7 @@ import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createItemFormSections } from '@features/auth'
-import { MediaUploader } from '@features/media'
+import { MediaGalleryManager } from '@shared/ui/media'
 
 export default function ItemFormPage() {
   const { storeId, itemId } = useParams<{ storeId: string; itemId?: string }>()
@@ -163,7 +163,7 @@ export default function ItemFormPage() {
           icon: '📷',
           title: 'Item Media',
           description: 'Upload images and videos to showcase your item',
-          content: <MediaUploader itemId={itemId} maxFiles={5} />,
+          content: <MediaGalleryManager itemId={itemId} maxFiles={100} />,
         },
       ]
     : sections

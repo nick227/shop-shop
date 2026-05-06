@@ -10,7 +10,8 @@ import type { OrderStatus } from '@api/types'
 
 export interface UpdateOrderStatusParams {
   orderId: string;
-  status: string;
+  status?: string;
+  assignedToUserId?: string | null;
   note?: string;
 }
 
@@ -22,7 +23,9 @@ export function useUpdateOrderStatus() {
       return await apiClient.orders().updateOrder({
         id: params.orderId,
         updateOrderRequest: {
-          status: params.status as any}})
+          ...(params.status ? { status: params.status as any } : {}),
+          ...(params.assignedToUserId !== undefined ? { assignedToUserId: params.assignedToUserId } : {}),
+        }})
     },
     onSuccess: (data, variables) => {
       // Invalidate queries;
@@ -39,11 +42,10 @@ export function useUpdateOrderStatus() {
         COMPLETED: 'Order delivered!',
         CANCELED: 'Order canceled'}
       
-      toast.success(statusLabels[variables.status] || 'Order status updated')
+      toast.success(variables.status ? statusLabels[variables.status] || 'Order status updated' : 'Driver assignment updated')
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
       toast.error('Failed to update order: ' + appError.message + '')
     }})
 }
-

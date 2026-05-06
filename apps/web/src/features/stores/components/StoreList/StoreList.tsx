@@ -11,6 +11,8 @@ import { Spinner } from '@shared/ui/primitives'
 import type { StoreResponse, StoreWithDistance } from '@api/types'
 import { useNavigate } from 'react-router-dom'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import type { AppError } from '@api/errors'
+import { formatUserFacingApiError } from '@api/readHttpError'
 
 export function StoreList() {
   const { stores, isLoading, error } = useStoreSearchWithTransformers(undefined) // No location constraint
@@ -30,9 +32,16 @@ export function StoreList() {
   }
 
   if (error) {
+    const details = (error as AppError).details as Record<string, unknown> | undefined
+    const { message, hint } = formatUserFacingApiError(error, details)
     return (
-      <div className="text-red-600 p-4 text-center">
-        <p>Failed to load stores: {error.message}</p>
+      <div
+        role="alert"
+        className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center text-destructive"
+      >
+        <p className="text-sm font-semibold">Failed to load stores</p>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+        {hint ? <p className="mt-2 font-mono text-xs text-muted-foreground break-all">{hint}</p> : null}
       </div>
     )
   }

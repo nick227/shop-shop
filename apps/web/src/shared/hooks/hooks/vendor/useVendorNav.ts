@@ -8,7 +8,7 @@ export function useVendorNav() {
 
   return {
     toDashboard: () => navigate('/vendor/dashboard'),
-    toCreateStore: () => navigate('/vendor/stores/new'),
+    toCreateStore: () => navigate('/vendor/store/new'),
     toEditStore: (storeId: string) => navigate('/vendor/stores/' + storeId + '/edit'),
     toStoreItems: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items'),
     toCreateItem: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items/new'),

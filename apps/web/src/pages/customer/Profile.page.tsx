@@ -8,7 +8,8 @@
 import React from 'react'
 import { Button, Spinner } from '@shared/ui/primitives'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
-import { PageContainer, PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { User, BarChart3, MapPin, Settings, Plus } from 'lucide-react'
 import { formatCurrency } from '@shared/lib/format'
@@ -38,10 +39,12 @@ export default function CustomerProfilePage() {
   
   if (isLoading) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
-        <Spinner size="large" />
-        <p className="mt-4 text-muted-foreground text-sm">Loading profile...</p>
-      </PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="mt-4 text-muted-foreground text-sm">Loading profile...</p>
+        </div>
+      </PageShell>
     )
   }
 
@@ -50,7 +53,7 @@ export default function CustomerProfilePage() {
   // ========================================
   
   return (
-    <PageContainer className="max-w-4xl">
+    <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader title="My Profile" description="Manage your account information" />
 
       {/* Personal Information */}
@@ -156,6 +159,6 @@ export default function CustomerProfilePage() {
           </div>
         </CardContent>
       </Card>
-    </PageContainer>
+    </PageShell>
   )
 }

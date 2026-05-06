@@ -7,6 +7,8 @@ import {
   StoreQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
+import { prisma } from '@packages/db'
+import { checkStoreActivationRequirements } from '@packages/db/services'
 
 // ========================================
 // Store Resource Definition
@@ -26,9 +28,9 @@ export const storeResource = defineResource({
     query: StoreQuerySchema,
   },
   access: {
-    create: ['USER', 'VENDOR', 'ADMIN'],  // Open platform: any user can create stores
+    create: ['USER', 'VENDOR', 'ADMIN'],  // Open vendor model: store creation converts USER -> VENDOR
     read: [],  // Public
-    update: ['USER', 'VENDOR', 'ADMIN'],  // Any authenticated user can update their own store
+    update: ['USER', 'VENDOR', 'ADMIN'],  // Ownership hook decides who can update
     delete: ['ADMIN'],  // Only admins can delete
     list: [],  // Public
   },
@@ -38,18 +40,89 @@ export const storeResource = defineResource({
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
-    beforeCreate: async (data, context) => {
+    beforeCreate: async (data: any, context: any) => {
+      if (!['USER', 'VENDOR', 'ADMIN'].includes(context.userRole)) {
+        throw new Error('Authenticated users can create stores')
+      }
+      
       // Use domain service for preparation
-      return storeDomain.prepareForCreation(data, context!.userId!)
+      return storeDomain.prepareForCreation(data, context.userId)
     },
-    afterCreate: async (result) => {
+    beforeUpdate: async (id: string, data: any, context: any) => {
+      // Enforce ownership: only store owner can update
+      const store = await prisma.store.findUnique({
+        where: { id },
+        select: { ownerUserId: true },
+      })
+      
+      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
+        throw new Error('Only store owner can update store')
+      }
+      
+      return data
+    },
+    beforeDelete: async (id: string, context: any) => {
+      // Enforce ownership: only store owner can delete
+      const store = await prisma.store.findUnique({
+        where: { id },
+        select: { ownerUserId: true },
+      })
+      
+      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
+        throw new Error('Only store owner can delete store')
+      }
+      
+    },
+    afterCreate: async (result, context) => {
+      if (context?.userId && context.userRole === 'USER') {
+        await prisma.user.update({
+          where: { id: context.userId },
+          data: { role: 'VENDOR' },
+        })
+      }
+
       // Emit domain event
       await eventBus.emit(DomainEvents.STORE_CREATED, result)
     },
     beforeList: async (filters) => {
       // Remove location params from Prisma filters (they're used in afterList instead)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { latitude, longitude, radiusMiles, city, state, zip, ...prismaFilters } = filters as Record<string, unknown>
+      const { latitude, longitude, radiusMiles, city, state, zip, ...rest } = filters as Record<string, unknown>
+      const prismaFilters: Record<string, unknown> = { ...rest }
+
+      if (!prismaFilters.ownerUserId && !prismaFilters.status) {
+        prismaFilters.status = 'ACTIVE'
+      }
+      if (!prismaFilters.ownerUserId && prismaFilters.isPublished === undefined) {
+        prismaFilters.isPublished = true
+      }
+      if (typeof prismaFilters.isPublished === 'string') {
+        prismaFilters.isPublished = prismaFilters.isPublished === 'true'
+      }
+
+      // Public marketplace: restrict to stores that pass activation checks (by store id, not ownerUserId)
+      if (!prismaFilters.ownerUserId) {
+        const storeList = await prisma.store.findMany({
+          where: prismaFilters,
+          select: { id: true },
+        })
+
+        const storeIds = storeList.map(store => store.id)
+        const activationChecks = await Promise.all(
+          storeIds.map(storeId => checkStoreActivationRequirements(storeId))
+        )
+
+        const eligibleStoreIds = activationChecks
+          .filter(check => check.canAppearInMarketplace)
+          .map((_, index) => storeIds[index])
+
+        if (eligibleStoreIds.length > 0) {
+          prismaFilters.id = { in: eligibleStoreIds }
+        } else {
+          prismaFilters.id = { in: ['00000000-0000-0000-0000-000000000000'] }
+        }
+      }
+
       return prismaFilters
     },
     afterList: async (result, context) => {
@@ -113,4 +186,3 @@ export const storeResource = defineResource({
     },
   },
 })
-

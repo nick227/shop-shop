@@ -2,6 +2,7 @@ import { PrismaClient } from '../src/generated/client/index.js'
 import { cleanSeedTables } from './seed-tables.js'
 import { seedFullDemo } from './seed-demo.js'
 import { seedAustinStores } from '../src/scripts/seed-austin-stores.js'
+import { seedUsers } from '../src/scripts/seed-users.js'
 import { seedGeocodingCache } from '../seed-geocoding-cache.js'
 import { seedCityCache } from '../seed-city-cache.js'
 
@@ -10,26 +11,35 @@ const prisma = new PrismaClient()
 async function main(): Promise<void> {
   console.log('🌱 Seeding database...\n')
 
-  console.log('[1/5] Cleaning tables...')
+  console.log('[1/6] Cleaning tables...')
   await cleanSeedTables(prisma)
 
-  console.log('[2/5] Core demo accounts + schema coverage...')
+  console.log('[2/6] Comprehensive user accounts...')
+  await seedUsers(prisma)
+
+  console.log('[3/6] Core demo accounts + schema coverage...')
   await seedFullDemo(prisma)
 
-  console.log('[3/5] Austin store catalog...')
+  console.log('[4/6] Austin store catalog...')
   await seedAustinStores(prisma)
 
-  console.log('[4/5] Geocoding cache — ZIP codes...')
+  console.log('[5/6] Geocoding cache — ZIP codes...')
   await seedGeocodingCache(prisma)
 
-  console.log('[5/5] Geocoding cache — cities...')
+  console.log('[6/6] Geocoding cache — cities...')
   await seedCityCache(prisma)
 
   console.log('\n✅ Seed complete.\n')
   console.log('Accounts (password: Test123456!)')
-  console.log('  customer@seed.local')
-  console.log('  vendor@seed.local')
-  console.log('  affiliate@seed.local')
+  console.log('  admin@seed.local (God-level admin)')
+  console.log('  admin2@seed.local (Platform admin)')
+  console.log('  staff@seed.local (Support staff)')
+  console.log('  customer@seed.local (Regular customer)')
+  console.log('  vendor@seed.local (Active vendor)')
+  console.log('  vendor-pending@seed.local (Pending vendor)')
+  console.log('  affiliate@seed.local (Active affiliate)')
+  console.log('  affiliate-pending@seed.local (Pending affiliate)')
+  console.log('  rider@seed.local (Delivery rider)')
   console.log('  vendor-{store-slug}@test.com  (Austin stores — one per store)')
 }
 

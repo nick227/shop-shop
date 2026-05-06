@@ -1,64 +1,79 @@
 /**
- * useAvailableLocations - Fetch available cities and zip codes from published stores
+ * Directory of cities with stores + ZIPs observed for each city (for URL + filter context).
  */
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores } from '@api/apiWrapper'
 import type { StoreResponse } from '@api/types'
 
+export interface CityZipInfo {
+  readonly zip: string
+  readonly count: number
+}
+
+export interface CityDirectoryEntry {
+  readonly city: string
+  readonly state: string
+  readonly count: number
+  readonly zips: readonly CityZipInfo[]
+}
+
 interface LocationInfo {
-  cities: { city: string; state: string; count: number }[]
-  zipCodes: { zipCode: string; city: string; state: string; count: number }[]
+  readonly cities: readonly CityDirectoryEntry[]
+  readonly total: number
+}
+
+function buildDirectory(storeList: StoreResponse[]): { cities: CityDirectoryEntry[] } {
+  type Agg = {
+    city: string
+    state: string
+    count: number
+    zipCounts: Map<string, number>
+  }
+  const cityMap = new Map<string, Agg>()
+
+  for (const store of storeList) {
+    if (!store.addressCity || !store.addressState) continue
+    const ck = `${store.addressCity}|${store.addressState}`
+    let agg = cityMap.get(ck)
+    if (!agg) {
+      agg = {
+        city: store.addressCity,
+        state: store.addressState,
+        count: 0,
+        zipCounts: new Map<string, number>(),
+      }
+      cityMap.set(ck, agg)
+    }
+    agg.count++
+    const z = store.addressZip?.trim()
+    if (z) {
+      agg.zipCounts.set(z, (agg.zipCounts.get(z) ?? 0) + 1)
+    }
+  }
+
+  const cities: CityDirectoryEntry[] = [...cityMap.values()]
+    .map((agg) => ({
+      city: agg.city,
+      state: agg.state,
+      count: agg.count,
+      zips: [...agg.zipCounts.entries()]
+        .map(([zip, count]) => ({ zip, count }))
+        .sort((a, b) => b.count - a.count || a.zip.localeCompare(b.zip)),
+    }))
+    .sort((a, b) => a.city.localeCompare(b.city))
+
+  return { cities }
 }
 
 export function useAvailableLocations() {
   return useQuery<LocationInfo>({
     queryKey: ['available-locations'],
     queryFn: async () => {
-      const response = await apiClient.stores().listStores({})
-      const stores = (response?.data || response || []) as unknown as StoreResponse[]
-      
-      // Extract unique cities
-      const cityMap = new Map<string, { city: string; state: string; count: number }>()
-      const zipMap = new Map<string, { zipCode: string; city: string; state: string; count: number }>()
-      
-      for (const store of stores) {
-        // Cities
-        if (store.addressCity && store.addressState) {
-          const key = `${store.addressCity}, ${store.addressState}`
-          const existing = cityMap.get(key)
-          if (existing) {
-            existing.count++
-          } else {
-            cityMap.set(key, {
-              city: store.addressCity,
-              state: store.addressState,
-              count: 1
-            })
-          }
-        }
-        
-        // Zip codes
-        if (store.addressZip && store.addressCity && store.addressState) {
-          const existing = zipMap.get(store.addressZip)
-          if (existing) {
-            existing.count++
-          } else {
-            zipMap.set(store.addressZip, {
-              zipCode: store.addressZip,
-              city: store.addressCity,
-              state: store.addressState,
-              count: 1
-            })
-          }
-        }
-      }
-      
-      return {
-        cities: [...cityMap.values()].sort((a, b) => b.count - a.count),
-        zipCodes: [...zipMap.values()].sort((a, b) => b.count - a.count)
-      }
+      const envelope = await stores.listPage({ limit: '500', page: '1' })
+      const storeList = envelope.data as unknown as StoreResponse[]
+      const { cities } = buildDirectory(storeList)
+      return { cities, total: envelope.total }
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 15 * 60 * 1000,
   })
 }
-

@@ -328,7 +328,7 @@ export type BundlePricingType = 'FIXED_PRICE' | 'DISCOUNT_PERCENT' | 'DISCOUNT_A
 // ============================================
 // OrderStatus and PaymentStatus are already defined above
 export type CartStatus = 'ACTIVE' | 'SUBMITTED' | 'EXPIRED'
-export type StoreStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED'
+export type StoreStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED'
 export type ItemStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED'
 
 // ============================================

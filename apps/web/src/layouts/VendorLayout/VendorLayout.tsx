@@ -86,6 +86,13 @@ export function VendorLayout() {
               <span className={styles.navIcon}>📋</span>
               <span>Orders</span>
             </button>
+            <button
+              className={`${styles.navItem} ${isActive('/vendor/team') || location.pathname.endsWith('/team') ? styles.navItemActive : ''}`}
+              onClick={() => navigate(firstStore ? `${STORE_BASE_PATH}${firstStore.id}/team` : '/vendor/team')}
+            >
+              <span className={styles.navIcon}>T</span>
+              <span>Team & Drivers</span>
+            </button>
           </div>
 
           {hasStores && firstStore && (
@@ -133,7 +140,7 @@ export function VendorLayout() {
             <div className={styles.navLabel}>Quick Actions</div>
             <button
               className={styles.navItem}
-              onClick={() => navigate('/vendor/stores/new')}
+              onClick={() => navigate('/vendor/store/new')}
             >
               <span className={styles.navIcon}>➕</span>
               <span>Create Store</span>
@@ -168,4 +175,3 @@ export function VendorLayout() {
     </div>
   )
 }
-

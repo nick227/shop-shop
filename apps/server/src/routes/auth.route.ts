@@ -140,12 +140,11 @@ export const authRoutes = async (app: FastifyInstance) => {
       return reply.code(200).send({
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        name: user.name,
+        role: user.role,
         isCompany: user.isCompany,
         companyName: user.companyName,
         phone: user.phone,
-        roles: user.roles,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       })

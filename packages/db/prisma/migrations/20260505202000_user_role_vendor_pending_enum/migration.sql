@@ -1,0 +1,10 @@
+-- Align MySQL ENUM with Prisma `Role` (includes VENDOR_PENDING).
+ALTER TABLE `User` MODIFY COLUMN `role` ENUM(
+  'USER',
+  'VENDOR_PENDING',
+  'VENDOR',
+  'ADMIN',
+  'AFFILIATE',
+  'RIDER',
+  'STAFF'
+) NOT NULL DEFAULT 'USER';

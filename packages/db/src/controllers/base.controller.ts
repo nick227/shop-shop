@@ -295,7 +295,12 @@ export class BaseCrudController {
     if (error instanceof Error && error.message === 'Forbidden') {
       return reply.code(403).send({ error: 'Forbidden' })
     }
-    if (error instanceof Error && error.message === 'Assignee must be a rider') {
+    if (
+      error instanceof Error &&
+      (error.message === 'Assignee must be a rider' ||
+        error.message === 'Assignee must be an active store driver' ||
+        error.message === 'You cannot assign deliveries for this store')
+    ) {
       return reply.code(400).send({ error: error.message })
     }
 
@@ -342,4 +347,3 @@ export class BaseCrudController {
     throw error
   }
 }
-

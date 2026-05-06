@@ -7,11 +7,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
+import { useAuthStore } from '@stores/authStore'
 import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
-import { MediaUploader } from '@features/media'
+import { MediaGalleryManager } from '@shared/ui/media'
 import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData } from '@shared/lib/utils/form-utilities'
 
@@ -19,6 +20,7 @@ export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const updateUser = useAuthStore((state) => state.updateUser)
   const isEdit = Boolean(storeId)
 
   // Form state using SDK-derived initialization - no manual field duplication!
@@ -48,8 +50,9 @@ export default function StoreFormPage() {
       })
     },
     onSuccess: () => {
+      updateUser({ role: 'VENDOR' } as any)
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      toast.success('Store created successfully!')
+      toast.success('Store created and live!')
       navigate('/vendor/dashboard')
     },
     onError: async (error) => {
@@ -116,7 +119,7 @@ export default function StoreFormPage() {
           icon: '📸',
           title: 'Store Media',
           description: 'Upload images and videos to showcase your store',
-          content: <MediaUploader storeId={storeId} maxFiles={10} />,
+          content: <MediaGalleryManager storeId={storeId} maxFiles={100} />,
         },
       ]
     : sections
@@ -135,4 +138,3 @@ export default function StoreFormPage() {
     />
   )
 }
-

@@ -81,6 +81,10 @@ export interface StoreFormData {
   email: string
   website: string
   isPublished: boolean
+  status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
+  disabledAt?: string | null
+  disabledByUserId?: string | null
+  disabledReason?: string | null
   deliveryEnabled: boolean
   pickupEnabled: boolean
   prepTimeMin: number

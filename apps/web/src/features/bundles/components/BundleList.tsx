@@ -71,7 +71,7 @@ export function BundleList({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card p-4">
         <Spinner size="medium" />
         <p className="text-sm text-muted-foreground">Loading bundles...</p>
       </div>
@@ -92,7 +92,7 @@ export function BundleList({
   return (
     <div className={`flex flex-col gap-6 ${className}`}>
       {/* Header */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
         <SectionHeader 
           title={`All Bundles (${filteredBundles.length})`}
           action={
@@ -108,7 +108,7 @@ export function BundleList({
         />
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -120,7 +120,7 @@ export function BundleList({
             />
           </div>
           
-          <div className="flex bg-muted/50 p-1 rounded-lg gap-1 self-start sm:self-auto">
+          <div className="flex self-start gap-1 rounded-lg border border-border bg-muted/40 p-1 sm:self-auto">
             {(['all', 'active', 'inactive'] as const).map((status) => (
               <Button
                 key={status}

@@ -33,10 +33,10 @@ export function BundleCard({
   const handleToggleStatus = () => { haptics.light(); onToggleStatus?.(bundle); }
 
   return (
-    <Card className={`flex flex-col h-full hover:border-primary/50 transition-colors tap-scale active:scale-[0.98] ${className}`}>
+    <Card className={`flex h-full flex-col border-border bg-card transition-colors hover:border-primary/50 tap-scale active:scale-[0.98] ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex gap-4 items-start">
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex shrink-0 items-center justify-center">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
             {bundle.imageUrl ? (
               <img 
                 src={bundle.imageUrl} 
@@ -48,9 +48,9 @@ export function BundleCard({
             )}
           </div>
           
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex justify-between items-start gap-2">
-              <CardTitle className="text-lg line-clamp-1">{bundle.name}</CardTitle>
+              <CardTitle className="line-clamp-1 text-lg tracking-tight">{bundle.name}</CardTitle>
               <Badge 
                 variant={bundle.isActive ? 'success' : 'secondary'}
                 className="shrink-0"
@@ -66,16 +66,16 @@ export function BundleCard({
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col gap-4 py-2">
-        <div className="bg-muted/30 p-3 rounded-lg">
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
           <BundlePricing bundle={bundle} />
         </div>
         
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Items ({bundle.totalItems || 0})</h4>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 rounded-lg bg-background p-3">
             {bundle.items?.slice(0, 3).map((bundleItem) => (
-              <div key={bundleItem.itemId || bundleItem.id} className="flex justify-between items-center text-sm">
-                <span className="text-foreground truncate flex-1 mr-2">
+              <div key={bundleItem.itemId || bundleItem.id} className="flex items-center justify-between text-sm">
+                <span className="mr-2 flex-1 truncate text-foreground">
                   {bundleItem.title ?? bundleItem.itemId ?? 'Unknown Item'}
                 </span>
                 <span className="text-muted-foreground font-medium shrink-0">
@@ -93,7 +93,7 @@ export function BundleCard({
       </CardContent>
 
       {showActions && (
-        <CardFooter className="pt-4 border-t border-border mt-auto gap-2">
+        <CardFooter className="mt-auto gap-2 border-t border-border pt-4">
           <Button 
             variant="outline" 
             size="icon"

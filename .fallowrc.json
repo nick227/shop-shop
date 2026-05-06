@@ -21,10 +21,17 @@
     "ignore": [
       "dist",
       "__generated__",
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/__generated__/**",
-      "**/coverage/**"
+      "coverage",
+      "node_modules",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/e2e/**",
+      "**/scripts/**",
+      "**/*.cjs",
+      "**/prisma/seed*.ts",
+      "**/generated/**"
     ]
   },
   "duplicates": {

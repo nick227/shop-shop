@@ -7,7 +7,7 @@
 
 import React from 'react'
 import { Button } from '@shared/ui/primitives'
-import { PageContainer } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { TipPrompt } from '@features/checkout/components/TipPrompt'
 import { OrderDetailsCard } from '@features/orders/components/OrderDetailsCard'
 import { ArrowLeft } from 'lucide-react'
@@ -69,7 +69,7 @@ export default function OrderTrackingPage() {
     : undefined
   
   return (
-    <PageContainer className="max-w-3xl">
+    <PageShell nested className="bg-background" containerClassName="max-w-3xl" contentClassName="space-y-5 py-6 md:py-6">
       {/* Back Navigation */}
       <Button 
         variant="ghost" 
@@ -123,6 +123,6 @@ export default function OrderTrackingPage() {
           isProcessing={isTipLoading}
         />
       )}
-    </PageContainer>
+    </PageShell>
   )
 }

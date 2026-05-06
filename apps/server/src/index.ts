@@ -68,8 +68,8 @@ await app.register(cors, {
       return
     }
 
-    // Always allow localhost dev ports (e.g., Vite auto-port shifts)
-    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+    // Always allow localhost / loopback dev ports (e.g., Vite auto-port shifts)
+    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
       callback(null, true)
       return
     }

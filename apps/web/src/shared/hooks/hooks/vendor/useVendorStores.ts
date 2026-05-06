@@ -12,9 +12,7 @@ export function useVendorStores() {
   return useQuery({
     queryKey: ['vendor-stores', (user as any)?.id],
     queryFn: async () => {
-      // Note: SDK doesn't support ownerUserId filtering yet
-      // This will return all stores, not filtered by owner
-      const response = await apiClient.stores().listStores({})
+      const response = await apiClient.stores().listStores({ ownerUserId: (user as any)?.id } as any)
       return response.data || []
     },
     enabled: !!user,

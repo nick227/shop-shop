@@ -13,9 +13,28 @@ pnpm --filter @packages/db seed
 ```
 
 Creates:
+- **Comprehensive user accounts** for all user types (admin, staff, customer, vendor, affiliate, rider)
 - 4 users (1 customer, 3 vendors)
 - 3 stores (Pizza, Burger, Sushi) in various US cities
 - 20 menu items
+
+### 1.5. User Accounts Only
+
+```bash
+cd packages/db
+pnpm tsx src/scripts/seed-users.ts
+```
+
+Creates test accounts for all user types:
+- **God-level Admin**: admin@seed.local
+- **Platform Admin**: admin2@seed.local
+- **Support Staff**: staff@seed.local
+- **Regular Customer**: customer@seed.local
+- **Active Vendor**: vendor@seed.local
+- **Pending Vendor**: vendor-pending@seed.local
+- **Active Affiliate**: affiliate@seed.local
+- **Pending Affiliate**: affiliate-pending@seed.local
+- **Delivery Rider**: rider@seed.local
 
 ### 2. Austin Area Stores (Enhanced)
 
@@ -28,8 +47,8 @@ Creates comprehensive stores in Austin, TX near ZIP code 78758 with:
 - Multiple vendors (auto-generated)
 - 10-30+ stores across 8 Austin neighborhoods
 - Full menu items for each store type with dietary information
-- Store cover images (from picsum.photos)
-- Item images (from picsum.photos)
+- **Store media galleries** (3-5 images per store from picsum.photos)
+- **Product media galleries** (2-3 images per item from picsum.photos)
 - 2-5 river posts per store with images
 - **Bundle combinations** for each store type
 - **Delivery zones** with realistic polygon areas
@@ -120,13 +139,30 @@ Adds coordinates to existing stores without location data. Uses 20 major US citi
 
 ## Test Credentials
 
-### Default Seed
-- **Customer**: `customer@test.com` / `Test123456!`
-- **Vendor 1**: `vendor1@test.com` / `Test123456!`
-- **Vendor 2**: `vendor2@test.com` / `Test123456!`
-- **Vendor 3**: `vendor3@test.com` / `Test123456!`
+### Comprehensive User Accounts (All accounts use password: `Test123456!`)
 
-### Austin Seed
+**Admin Accounts:**
+- `admin@seed.local` - God-level admin (full system access)
+- `admin2@seed.local` - Platform admin
+
+**Staff Accounts:**
+- `staff@seed.local` - Support staff
+
+**Customer Accounts:**
+- `customer@seed.local` - Regular customer
+
+**Vendor Accounts:**
+- `vendor@seed.local` - Active vendor
+- `vendor-pending@seed.local` - Pending vendor (awaiting approval)
+
+**Affiliate Accounts:**
+- `affiliate@seed.local` - Active affiliate (referral code: AFFILIATE2024)
+- `affiliate-pending@seed.local` - Pending affiliate (referral code: AFFILIATE2025)
+
+**Rider Accounts:**
+- `rider@seed.local` - Delivery rider
+
+### Austin Store Vendors
 - **Password**: `Test123456!` (for all vendors)
 - **Email Format**: `vendor-{store-slug}@test.com`
 - **Example**: `vendor-roast-house-north-central@test.com`
@@ -135,12 +171,15 @@ Adds coordinates to existing stores without location data. Uses 20 major US citi
 
 All seeded data uses realistic images from **picsum.photos**:
 
-- **Store covers**: `https://picsum.photos/seed/{store-name}/1200x400.jpg`
-- **Menu items**: `https://picsum.photos/seed/{item-name}/{size}x{size}.jpg`
+- **Store media galleries**: 3-5 images per store with varied seeds (1200x400)
+  - `https://picsum.photos/seed/{store-name}-{variation}/{width}x{height}.jpg`
+  - Variations: alt, detail, wide, closeup, interior, exterior, menu, food, atmosphere
+- **Product media galleries**: 2-3 images per item with varied seeds (400x400)
+  - `https://picsum.photos/seed/{item-name}-{variation}/{width}x{height}.jpg`
 - **River posts**: `https://picsum.photos/seed/{store-name}-post-{id}/{width}x{height}.jpg`
 - **Bundle images**: `https://picsum.photos/seed/{bundle-name}/600x400.jpg`
 
-Images use consistent seeds for reproducibility.
+Images use consistent seeds for reproducibility with random size variations for realistic UI testing.
 
 **Dietary Information**
 All menu items include:

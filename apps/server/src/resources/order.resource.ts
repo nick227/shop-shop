@@ -36,6 +36,58 @@ type PatchBody = Readonly<{
   assignedToUserId?: string | null
 }>
 
+function parsePermissions(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((p): p is string => typeof p === 'string') : []
+}
+
+async function userHasStorePermission(
+  userId: string,
+  storeId: string,
+  permissions: readonly string[],
+): Promise<boolean> {
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: { ownerUserId: true },
+  })
+  if (store?.ownerUserId === userId) return true
+
+  const member = await prisma.teamMember.findFirst({
+    where: { storeId, userId, isActive: true },
+    select: { permissionsJson: true },
+  })
+  const memberPermissions = parsePermissions(member?.permissionsJson)
+  return memberPermissions.includes('FULL_ACCESS') || permissions.some((p) => memberPermissions.includes(p))
+}
+
+function userHasOrderListAccess(userId: string, storeId: string): Promise<boolean> {
+  return userHasStorePermission(userId, storeId, [
+    'VIEW_ORDERS',
+    'MANAGE_ORDERS',
+    'VIEW_DELIVERIES',
+    'MANAGE_DELIVERIES',
+    'ASSIGN_DELIVERIES',
+  ])
+}
+
+function actorCanAssignDeliveries(userId: string | undefined, storeId: string): Promise<boolean> {
+  if (!userId) return Promise.resolve(false)
+  return userHasStorePermission(userId, storeId, ['ASSIGN_DELIVERIES'])
+}
+
+async function userCanReceiveDelivery(userId: string, storeId: string): Promise<boolean> {
+  const member = await prisma.teamMember.findFirst({
+    where: { storeId, userId, isActive: true },
+    select: { permissionsJson: true },
+  })
+  const memberPermissions = parsePermissions(member?.permissionsJson)
+  return (
+    memberPermissions.includes('FULL_ACCESS') ||
+    memberPermissions.includes('VIEW_DELIVERIES') ||
+    memberPermissions.includes('MANAGE_DELIVERIES') ||
+    memberPermissions.includes('ASSIGN_DELIVERIES')
+  )
+}
+
 export const orderResource = defineResource({
   name: 'order',
   model: 'Order',
@@ -50,9 +102,9 @@ export const orderResource = defineResource({
   access: {
     create: ['USER', 'VENDOR', 'ADMIN'],
     read: [],
-    update: ['VENDOR', 'ADMIN'],
+    update: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
     delete: ['ADMIN'],
-    list: ['USER', 'VENDOR', 'ADMIN', 'RIDER'],
+    list: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
   },
   ownership: {
     enabled: false,
@@ -84,6 +136,10 @@ export const orderResource = defineResource({
       }
 
       if (role === 'USER') {
+        const storeId = f.storeId as string | undefined
+        if (storeId && await userHasOrderListAccess(uid, storeId)) {
+          return { ...f, storeId }
+        }
         return { ...f, userId: uid }
       }
 
@@ -91,16 +147,12 @@ export const orderResource = defineResource({
         return { ...f, assignedToUserId: uid }
       }
 
-      if (role === 'VENDOR') {
+      if (role === 'VENDOR' || role === 'STAFF') {
         const storeId = f.storeId as string | undefined
         if (!storeId) {
           throw new Error('Forbidden')
         }
-        const store = await prisma.store.findUnique({
-          where: { id: storeId },
-          select: { ownerUserId: true },
-        })
-        if (!store || store.ownerUserId !== uid) {
+        if (!(await userHasOrderListAccess(uid, storeId))) {
           throw new Error('Forbidden')
         }
         return { ...f, storeId }
@@ -117,11 +169,11 @@ export const orderResource = defineResource({
       const body = input as PatchBody
 
       if (body.assignedToUserId !== undefined && body.assignedToUserId !== null) {
-        const assignee = await prisma.user.findUnique({
-          where: { id: body.assignedToUserId },
-        })
-        if (!assignee || assignee.role !== 'RIDER') {
-          throw new Error('Assignee must be a rider')
+        if (!(await actorCanAssignDeliveries(context?.userId, existing.storeId))) {
+          throw new Error('You cannot assign deliveries for this store')
+        }
+        if (!(await userCanReceiveDelivery(body.assignedToUserId, existing.storeId))) {
+          throw new Error('Assignee must be an active store driver')
         }
       }
 

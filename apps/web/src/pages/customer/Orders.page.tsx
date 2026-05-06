@@ -11,7 +11,8 @@ import { OrderCard } from '@features/orders/components/OrderCard'
 import { OrderDetailModal } from '@features/orders/components/OrderDetailModal'
 import { Button, Spinner, Pagination } from '@shared/ui/primitives'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { sortOrdersByDateDesc } from '@shared/lib/utils/orderHelpers'
 import { Package, ArrowLeft } from 'lucide-react'
 
@@ -42,17 +43,19 @@ export default function OrderHistoryPage() {
 
   if (isLoading) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
-        <Spinner size="large" />
-        <p className="mt-4 text-muted-foreground text-sm">Loading your orders...</p>
-      </PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="mt-4 text-muted-foreground text-sm">Loading your orders...</p>
+        </div>
+      </PageShell>
     )
   }
 
   const isEmpty = !orders || orders.length === 0
 
   return (
-    <PageContainer>
+    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader
         title="Order History"
         description={!isEmpty ? `${orders.length} ${orders.length === 1 ? 'order' : 'orders'}` : undefined}
@@ -113,6 +116,6 @@ export default function OrderHistoryPage() {
           onClose={handleCloseModal}
         />
       )}
-    </PageContainer>
+    </PageShell>
   )
 }

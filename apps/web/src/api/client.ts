@@ -38,6 +38,24 @@ type ContractRequestInit = Omit<RequestInit, 'method'> & {
   enableAutoRetry?: boolean // Opt-in for automatic retry behavior
 }
 
+type ContractAttemptResult<T> =
+  | { kind: 'success'; data: T }
+  | { kind: 'retry'; error: ApiContractError }
+
+interface PreparedContractRequest {
+  headers: Headers
+  hasIdempotencyKey: boolean
+  method: string
+  requestInit: RequestInit
+  signal?: AbortSignal
+  timeoutMs?: number
+}
+
+interface ContractAttemptSignal {
+  cleanup: () => void
+  signal: AbortSignal
+}
+
 type CreateCheckoutSessionRequest = components['schemas']['CreateCheckoutSessionRequest']
 type CreateCheckoutSessionResponse = components['schemas']['CreateCheckoutSessionResponse']
 type CompleteCheckoutRequest = components['schemas']['CompleteCheckoutRequest']
@@ -287,10 +305,7 @@ class ApiClient {
       : error instanceof Error && error.name === 'AbortError'
   }
 
-  private async requestContract<T>(
-    apiPath: CheckoutPath,
-    init: ContractRequestInit = {},
-  ): Promise<T> {
+  private createContractHeaders(init: ContractRequestInit, method: string): Headers {
     const headers = new Headers(init.headers)
     headers.set('Accept', 'application/json')
 
@@ -302,107 +317,202 @@ class ApiClient {
       headers.set('Authorization', `Bearer ${this.token}`)
     }
 
-    const method = init.method?.toUpperCase() ?? 'GET'
     if (method !== 'GET' && (init.idempotencyKey || init.enableAutoRetry)) {
       const idempotencyKey = init.idempotencyKey ?? this.createIdempotencyKey()
       this.assertValidIdempotencyKey(idempotencyKey)
       headers.set('X-Idempotency-Key', idempotencyKey)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { idempotencyKey: _idempotencyKey, timeoutMs, signal, ...requestInit } = init
-    const hasIdempotencyKey = method !== 'GET' && headers.has('X-Idempotency-Key')
+    return headers
+  }
+
+  private prepareContractRequest(init: ContractRequestInit): PreparedContractRequest {
+    const method = init.method?.toUpperCase() ?? 'GET'
+    const headers = this.createContractHeaders(init, method)
+    const requestInit: RequestInit = { ...init }
+    delete (requestInit as Partial<ContractRequestInit>).enableAutoRetry
+    delete (requestInit as Partial<ContractRequestInit>).idempotencyKey
+    delete requestInit.signal
+    delete (requestInit as Partial<ContractRequestInit>).timeoutMs
+
+    return {
+      headers,
+      hasIdempotencyKey: method !== 'GET' && headers.has('X-Idempotency-Key'),
+      method,
+      requestInit,
+      signal: init.signal ?? undefined,
+      timeoutMs: init.timeoutMs,
+    }
+  }
+
+  private createContractAttemptSignal(input: PreparedContractRequest): ContractAttemptSignal {
+    const timeoutController = new AbortController()
+    const onAbort = () => timeoutController.abort(input.signal?.reason)
+    const timeout = window.setTimeout(
+      () => timeoutController.abort(new DOMException('API request timed out.', 'TimeoutError')),
+      input.timeoutMs ?? CONTRACT_REQUEST_TIMEOUT_MS,
+    )
+
+    if (input.signal?.aborted) {
+      timeoutController.abort(input.signal.reason)
+    } else {
+      input.signal?.addEventListener('abort', onAbort, { once: true })
+    }
+
+    return {
+      cleanup: () => {
+        window.clearTimeout(timeout)
+        input.signal?.removeEventListener('abort', onAbort)
+      },
+      signal: timeoutController.signal,
+    }
+  }
+
+  private recordContractRequestId(response: Response): string | undefined {
+    const requestId = response.headers.get('x-request-id') ?? undefined
+    if (requestId) {
+      lastApiRequestId = requestId
+    }
+    return requestId
+  }
+
+  private handleUnauthorizedContractResponse(response: Response, headers: Headers): void {
+    if (response.status === 401 && headers.has('Authorization')) {
+      this.setToken(undefined)
+      window.dispatchEvent(new CustomEvent('auth:logout'))
+    }
+  }
+
+  private createContractResponseError(response: Response, payload: unknown, requestId?: string): ApiContractError {
+    return this.createContractError({
+      status: response.status,
+      fallbackError: response.statusText || 'API Error',
+      fallbackMessage: `API request failed with status ${response.status}`,
+      payload,
+      requestId,
+    })
+  }
+
+  private createContractNetworkError(error: unknown): ApiContractError {
+    const isAbortError = this.isAbortError(error)
+    let fallbackMessage = 'API request failed before receiving a response.'
+
+    if (isAbortError) {
+      fallbackMessage = 'API request timed out before receiving a response.'
+    } else if (error instanceof Error) {
+      fallbackMessage = error.message
+    }
+
+    return this.createContractError({
+      status: 0,
+      fallbackError: isAbortError ? 'Request Timeout' : 'Network Error',
+      fallbackMessage,
+    })
+  }
+
+  private async handleContractErrorRetry(error: ApiContractError, input: {
+    attempt: number
+    hasIdempotencyKey: boolean
+    method: string
+    status?: number
+  }): Promise<ContractAttemptResult<never>> {
+    if (this.shouldRetryContractRequest(input)) {
+      await this.delay(CONTRACT_RETRY_DELAYS_MS[input.attempt])
+      return { kind: 'retry', error }
+    }
+
+    throw error
+  }
+
+  private async handleContractResponse<T>(
+    response: Response,
+    request: PreparedContractRequest,
+    attempt: number,
+  ): Promise<ContractAttemptResult<T>> {
+    const requestId = this.recordContractRequestId(response)
+    const payload = await this.parseContractResponse(response)
+
+    if (!response.ok) {
+      this.handleUnauthorizedContractResponse(response, request.headers)
+      return this.handleContractErrorRetry(
+        this.createContractResponseError(response, payload, requestId),
+        {
+          attempt,
+          hasIdempotencyKey: request.hasIdempotencyKey,
+          method: request.method,
+          status: response.status,
+        },
+      )
+    }
+
+    if (payload === null) {
+      throw this.createContractError({
+        status: response.status,
+        fallbackError: 'Invalid Response',
+        fallbackMessage: 'Expected JSON response body from API contract endpoint.',
+        requestId,
+      })
+    }
+
+    return { kind: 'success', data: payload as T }
+  }
+
+  private async handleContractThrownError(
+    error: unknown,
+    request: PreparedContractRequest,
+    attempt: number,
+  ): Promise<ContractAttemptResult<never>> {
+    if (error instanceof ApiContractError) {
+      throw error
+    }
+
+    return this.handleContractErrorRetry(
+      this.createContractNetworkError(error),
+      {
+        attempt,
+        hasIdempotencyKey: request.hasIdempotencyKey,
+        method: request.method,
+      },
+    )
+  }
+
+  private async executeContractAttempt<T>(
+    apiPath: CheckoutPath,
+    request: PreparedContractRequest,
+    attempt: number,
+  ): Promise<ContractAttemptResult<T>> {
+    const attemptSignal = this.createContractAttemptSignal(request)
+
+    try {
+      const response = await fetch(this.buildContractUrl(apiPath), {
+        ...request.requestInit,
+        headers: request.headers,
+        signal: attemptSignal.signal,
+      })
+
+      return await this.handleContractResponse<T>(response, request, attempt)
+    } catch (error) {
+      return await this.handleContractThrownError(error, request, attempt)
+    } finally {
+      attemptSignal.cleanup()
+    }
+  }
+
+  private async requestContract<T>(
+    apiPath: CheckoutPath,
+    init: ContractRequestInit = {},
+  ): Promise<T> {
+    const request = this.prepareContractRequest(init)
     let lastError: ApiContractError | undefined
 
     for (let attempt = 0; attempt <= CONTRACT_RETRY_DELAYS_MS.length; attempt += 1) {
-      const timeoutController = new AbortController()
-      const onAbort = () => timeoutController.abort(signal?.reason)
-      const timeout = window.setTimeout(
-        () => timeoutController.abort(new DOMException('API request timed out.', 'TimeoutError')),
-        timeoutMs ?? CONTRACT_REQUEST_TIMEOUT_MS,
-      )
-
-      if (signal) {
-        if (signal.aborted) {
-          timeoutController.abort(signal.reason)
-        } else {
-          signal.addEventListener('abort', onAbort, { once: true })
-        }
+      const result = await this.executeContractAttempt<T>(apiPath, request, attempt)
+      if (result.kind === 'retry') {
+        lastError = result.error
+        continue
       }
 
-      try {
-        const response = await fetch(this.buildContractUrl(apiPath), {
-          ...requestInit,
-          headers,
-          signal: timeoutController.signal,
-        })
-
-        const requestId = response.headers.get('x-request-id') ?? undefined
-        if (requestId) {
-          lastApiRequestId = requestId
-        }
-
-        const payload = await this.parseContractResponse(response)
-
-        if (!response.ok) {
-          if (response.status === 401 && headers.has('Authorization')) {
-            this.setToken(undefined)
-            window.dispatchEvent(new CustomEvent('auth:logout'))
-          }
-
-          lastError = this.createContractError({
-            status: response.status,
-            fallbackError: response.statusText || 'API Error',
-            fallbackMessage: `API request failed with status ${response.status}`,
-            payload,
-            requestId,
-          })
-
-          if (this.shouldRetryContractRequest({ method, hasIdempotencyKey, attempt, status: response.status })) {
-            await this.delay(CONTRACT_RETRY_DELAYS_MS[attempt])
-            continue
-          }
-
-          throw lastError
-        }
-
-        if (payload === null) {
-          throw this.createContractError({
-            status: response.status,
-            fallbackError: 'Invalid Response',
-            fallbackMessage: 'Expected JSON response body from API contract endpoint.',
-            requestId,
-          })
-        }
-
-        // Return typed success response
-        return payload as T
-      } catch (error) {
-        if (error instanceof ApiContractError) {
-          throw error
-        }
-
-        lastError = this.createContractError({
-          status: 0,
-          fallbackError: this.isAbortError(error) ? 'Request Timeout' : 'Network Error',
-          fallbackMessage: this.isAbortError(error)
-            ? 'API request timed out before receiving a response.'
-            : (error instanceof Error
-              ? error.message
-              : 'API request failed before receiving a response.'),
-          payload: null,
-        })
-
-        if (this.shouldRetryContractRequest({ method, hasIdempotencyKey, attempt })) {
-          await this.delay(CONTRACT_RETRY_DELAYS_MS[attempt])
-          continue
-        }
-
-        throw lastError
-      } finally {
-        window.clearTimeout(timeout)
-        signal?.removeEventListener('abort', onAbort)
-      }
+      return result.data
     }
 
     throw lastError ?? this.createContractError({

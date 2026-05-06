@@ -5,7 +5,8 @@
  */
 import type { ReactNode } from 'react'
 import { Button, Spinner } from '@shared/ui/primitives'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { ArrowLeft } from 'lucide-react'
 import { cn } from '@shared/lib/cn'
@@ -58,15 +59,17 @@ export function FormPageTemplate({
   
   if (isLoading) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Spinner size="large" />
-        <p className="text-muted-foreground animate-pulse">{loadingMessage}</p>
-      </PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="animate-pulse text-muted-foreground">{loadingMessage}</p>
+        </div>
+      </PageShell>
     )
   }
 
   return (
-    <PageContainer className="max-w-4xl mx-auto">
+    <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-6 py-6 md:py-6">
       <PageHeader
         title={title}
         description={subtitle}
@@ -82,8 +85,8 @@ export function FormPageTemplate({
         {sections.map((section) => (
           <section key={section.id} className="space-y-4">
             <div className="flex flex-col gap-1 px-1">
-              <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-                <span className="text-2xl">{section.icon}</span>
+              <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted/30 text-lg">{section.icon}</span>
                 {section.title}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -91,8 +94,8 @@ export function FormPageTemplate({
               </p>
             </div>
             
-            <Card className="shadow-sm border-border/50">
-              <CardContent className="p-6">
+            <Card className="border-border bg-card shadow-sm">
+              <CardContent className="p-6 md:p-7">
                 <div className="space-y-6">
                   {section.content}
                 </div>
@@ -102,8 +105,8 @@ export function FormPageTemplate({
         ))}
 
         {/* Actions */}
-        <Card className="bg-muted/30 border-dashed">
-          <CardContent className="p-4 flex gap-3 justify-end">
+        <Card className="border-border bg-card">
+          <CardContent className="flex justify-end gap-3 p-4">
             <Button
               type="button"
               variant="ghost"
@@ -129,7 +132,7 @@ export function FormPageTemplate({
           </CardContent>
         </Card>
       </form>
-    </PageContainer>
+    </PageShell>
   )
 }
 

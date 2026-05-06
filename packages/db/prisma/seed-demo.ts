@@ -55,7 +55,7 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
 
   const affiliateUser = await prisma.user.create({
     data: {
-      email: 'affiliate@seed.local',
+      email: 'affiliate-demo@seed.local',
       name: 'Seed Affiliate',
       phone: '555-2020',
       role: 'AFFILIATE',
@@ -79,7 +79,7 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
 
   const vendor = await prisma.user.create({
     data: {
-      email: 'vendor@seed.local',
+      email: 'vendor-demo@seed.local',
       name: 'Jamie Vendor',
       phone: '555-1010',
       role: 'VENDOR',
@@ -103,15 +103,17 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
     },
   })
 
-  const customer = await prisma.user.create({
-    data: {
-      email: 'customer@seed.local',
-      name: 'Casey Customer',
-      phone: '555-3030',
-      role: 'USER',
-      passwordHash,
-    },
-  })
+  const customer =
+    (await prisma.user.findUnique({ where: { email: 'customer@seed.local' } })) ??
+    (await prisma.user.create({
+      data: {
+        email: 'customer@seed.local',
+        name: 'Casey Customer',
+        phone: '555-3030',
+        role: 'USER',
+        passwordHash,
+      },
+    }))
 
   const address = await prisma.address.create({
     data: {
@@ -195,6 +197,8 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       deliveryEnabled: true,
       pickupEnabled: false,
       prepTimeMin: 18,
+      phone: '555-6061',
+      email: 'south@seed.local',
       latitude: 34.0522,
       longitude: -118.2437,
       addressStreet: '200 Example Blvd',
@@ -207,6 +211,44 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       feesJson: { deliveryFee: 2.5 },
       hoursJson: { default: { open: '10:00', close: '22:00' } },
       stripeOnboarded: false,
+    },
+  })
+
+  await prisma.mediaAsset.create({
+    data: {
+      storeId: storeSouth.id,
+      kind: 'IMAGE',
+      url: 'https://placehold.co/1200x400/2d3436/ffffff?text=Seed+Bistro+South',
+      altText: 'Seed Bistro South banner',
+      sortIndex: 0,
+    },
+  })
+
+  const itemSouth = await prisma.item.create({
+    data: {
+      storeId: storeSouth.id,
+      title: 'LA Garden Bowl',
+      description: 'Seasonal greens, citrus, seeds.',
+      price: 13.25,
+      isActive: true,
+      isSoldOut: false,
+      sortIndex: 1,
+      optionsJson: { bowl: 'garden' },
+      stockQty: 25,
+      isVegan: true,
+      isVegetarian: true,
+      isGlutenFree: true,
+      spicyLevel: 0,
+    },
+  })
+
+  await prisma.mediaAsset.create({
+    data: {
+      itemId: itemSouth.id,
+      kind: 'IMAGE',
+      url: 'https://placehold.co/800x600/636e72/ffffff?text=Garden+Bowl',
+      altText: 'Garden bowl',
+      sortIndex: 0,
     },
   })
 

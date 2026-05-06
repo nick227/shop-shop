@@ -1,13 +1,16 @@
 import type { TeamMemberPermission } from '@packages/db'
 import { prisma } from '@packages/db'
 
-export type StoreAccessScope = 'settings' | 'orders' | 'content' | 'analytics'
+export type StoreAccessScope = 'settings' | 'team' | 'orders' | 'deliveries' | 'dispatch' | 'content' | 'analytics'
 
 const SCOPE_PERMS: Record<StoreAccessScope, readonly TeamMemberPermission[]> = {
-  settings: ['MANAGE_SETTINGS', 'FULL_ACCESS'],
+  settings: ['MANAGE_STORE_SETTINGS', 'FULL_ACCESS'],
+  team: ['MANAGE_STORE_SETTINGS', 'FULL_ACCESS'],
   orders: ['MANAGE_ORDERS', 'FULL_ACCESS'],
+  deliveries: ['VIEW_DELIVERIES', 'MANAGE_DELIVERIES', 'ASSIGN_DELIVERIES', 'FULL_ACCESS'],
+  dispatch: ['ASSIGN_DELIVERIES', 'FULL_ACCESS'],
   content: ['MANAGE_ITEMS', 'FULL_ACCESS'],
-  analytics: ['VIEW_ANALYTICS', 'MANAGE_SETTINGS', 'FULL_ACCESS'],
+  analytics: ['VIEW_ANALYTICS', 'MANAGE_STORE_SETTINGS', 'FULL_ACCESS'],
 }
 
 function parseTeamPermissions(value: unknown): string[] {

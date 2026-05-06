@@ -47,15 +47,15 @@ export function useVendorOrderCard({
   // ========================================
   
   const cardClasses = useMemo(() => {
-    const baseClasses = 'bg-white rounded-lg p-4 border-2 cursor-pointer transition-all duration-200'
+    const baseClasses = 'cursor-pointer rounded-xl border bg-card p-4 transition-all duration-200'
     
     const selectionClasses = isBulkMode && isBulkSelected 
-      ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
+      ? 'border-primary shadow-lg ring-2 ring-primary/20'
       : (isSelected 
-        ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
-        : 'border-gray-200 hover:border-gray-300 hover:shadow-md')
+        ? 'border-primary shadow-lg ring-2 ring-primary/20'
+        : 'border-border hover:border-primary/40 hover:shadow-md')
     
-    const urgencyClasses = isUrgent ? ' border-l-4 border-l-red-500 bg-red-50' : ''
+    const urgencyClasses = isUrgent ? ' border-l-4 border-l-destructive bg-destructive/5' : ''
     
     return `${baseClasses} ${selectionClasses} ${urgencyClasses}`
   }, [isSelected, isBulkMode, isBulkSelected, isUrgent])

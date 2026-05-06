@@ -3,13 +3,14 @@
  */
 
 import { Button } from '@shared/ui/primitives'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { MapPin, Plus } from 'lucide-react'
 
 export default function CustomerAddressesPage() {
   return (
-    <PageContainer className="max-w-4xl">
+    <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader
         title="My Addresses"
         description="Manage your saved delivery addresses"
@@ -32,6 +33,6 @@ export default function CustomerAddressesPage() {
           </Button>
         }
       />
-    </PageContainer>
+    </PageShell>
   )
 }

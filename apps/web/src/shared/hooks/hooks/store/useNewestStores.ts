@@ -1,24 +1,21 @@
 /**
- * useNewestStores - Fetch the newest 6 stores;
+ * useNewestStores — newest stores by createdAt (no geo filter).
  */
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores } from '@api/apiWrapper'
 import type { StoreWithDistance } from '@api/types'
 
 export function useNewestStores(limit = 6) {
   return useQuery<StoreWithDistance[]>({
     queryKey: ['newest-stores', limit],
     queryFn: async () => {
-      console.log('🔍 Fetching newest stores...')
-      const response = await apiClient.stores().listStores({ 
-        limit: limit.toString()
+      const envelope = await stores.listPage({
+        limit: String(limit),
+        page: '1',
       })
-      console.log('📦 Newest stores response:', response)
-      const stores = (response?.data || response || []).slice(0, limit) as unknown as StoreWithDistance[]
-      console.log('✨ Newest stores selected:', stores)
-      return stores;
+      return envelope.data.slice(0, limit) as unknown as StoreWithDistance[]
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes;
+    staleTime: 5 * 60 * 1000,
   })
 }
 

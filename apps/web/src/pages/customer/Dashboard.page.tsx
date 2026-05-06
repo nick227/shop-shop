@@ -13,7 +13,8 @@ import { OrderCard } from '@features/orders/components/OrderCard'
 import { Button, Spinner } from '@shared/ui/primitives'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { PageContainer, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { SectionHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { formatCurrency, formatRelativeTime } from '@shared/lib/format'
 import { isOrderPending, sortOrdersByDateDesc } from '@shared/lib/utils/orderHelpers'
 import { ShoppingBag, MapPin, UserIcon, Truck, Package } from 'lucide-react'
@@ -34,10 +35,12 @@ export default function CustomerDashboardPage() {
 
   if (statsLoading || ordersLoading) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
-        <Spinner size="large" />
-        <p className="mt-4 text-muted-foreground text-sm">Loading dashboard...</p>
-      </PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="mt-4 text-muted-foreground text-sm">Loading dashboard...</p>
+        </div>
+      </PageShell>
     )
   }
 
@@ -45,7 +48,7 @@ export default function CustomerDashboardPage() {
   const recentOrders = [...(orders || [])].sort(sortOrdersByDateDesc).slice(0, 5)
 
   return (
-    <PageContainer>
+    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard value={stats?.totalOrders || 0} label="Total Orders" />
@@ -144,7 +147,7 @@ export default function CustomerDashboardPage() {
           </CardContent>
         </Card>
       )}
-    </PageContainer>
+    </PageShell>
   )
 }
 

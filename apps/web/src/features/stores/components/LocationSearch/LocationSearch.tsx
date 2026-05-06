@@ -1,29 +1,18 @@
 /**
- * LocationSearch - Consolidated location input component
- * Uses the unified LocationService with localStorage persistence
- * Always shows search controls to allow new location searches
+ * LocationSearch — device geolocation only (city/ZIP/radius/history removed).
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useLocation } from '@shared/hooks/hooks/useLocation'
 import type { LocationData } from '@shared/types/types/location.types'
 import { CurrentLocationBadge } from './CurrentLocationBadge'
 import { GeolocationButton } from './GeolocationButton'
-import { ZipCodeInput } from './ZipCodeInput'
-import { CityStateInput } from './CityStateInput'
-import { RadiusControl } from './RadiusControl'
-import { LocationHistory } from './LocationHistory'
 
 interface LocationSearchProps {
   readonly onLocationChange: (location: LocationData | undefined) => void
   readonly initialRadius?: number
-  readonly showHistory?: boolean
 }
 
-export function LocationSearch({ 
-  onLocationChange, 
-  initialRadius = 25,
-  showHistory = true 
-}: LocationSearchProps) {
+export function LocationSearch({ onLocationChange, initialRadius = 25 }: LocationSearchProps) {
   const {
     currentLocation,
     isLoading,
@@ -31,21 +20,17 @@ export function LocationSearch({
     getLocation,
     clearLocation,
     updateRadius,
-    locationHistory,
     preferences,
     updatePreferences,
-    isGeolocationSupported
+    isGeolocationSupported,
   } = useLocation()
 
-  // OPTIMIZED: Simplified state - no object wrapper needed
-  const [activeInput, setActiveInput] = useState<'geolocation' | 'zip' | 'city' | undefined>()
-  
-  // Use ref to store the latest callback to avoid infinite loops
+  const [activeGeo, setActiveGeo] = useState(false)
+
   const onLocationChangeRef = useRef(onLocationChange)
   onLocationChangeRef.current = onLocationChange
   const hasSeenInitialLocation = useRef(false)
 
-  // OPTIMIZED: One-time radius seeding to prevent flicker
   const [radiusInitialized, setRadiusInitialized] = useState(false)
   useEffect(() => {
     if (!radiusInitialized && initialRadius !== preferences.preferredRadius) {
@@ -54,185 +39,68 @@ export function LocationSearch({
     }
   }, [initialRadius, preferences.preferredRadius, updateRadius, radiusInitialized])
 
-  // Notify parent of location changes - only when location actually changes
   useEffect(() => {
     if (!hasSeenInitialLocation.current) {
       hasSeenInitialLocation.current = true
       if (currentLocation === undefined) return
     }
-
     onLocationChangeRef.current(currentLocation)
   }, [currentLocation])
 
-  // OPTIMIZED: Memoized location handler with proper error handling
-  const handleLocationRequest = useCallback(async (
-    type: 'geolocation' | 'zip' | 'city',
-    value: string,
-    state?: string
-  ) => {
-    setActiveInput(type)
+  const handleUseMyLocation = useCallback(async () => {
+    setActiveGeo(true)
     try {
-      if (type === 'city' && !state) {
-        throw new Error('Please provide a state abbreviation (e.g., TX, CA, NY)')
-      }
-      await getLocation({ type, value, ...(state && { state }) })
-    } catch (error: unknown) {
-      // Log error for debugging while hook handles user feedback
-      console.warn('Location request failed:', error)
+      await getLocation({ type: 'geolocation', value: '' })
+    } catch {
+      /* surfaced via hook error */
     } finally {
-      setActiveInput(undefined)
+      setActiveGeo(false)
     }
   }, [getLocation])
 
-  // OPTIMIZED: Memoized handlers to prevent unnecessary re-renders
-  const handleUseMyLocation = useCallback(() => handleLocationRequest('geolocation', ''), [handleLocationRequest])
-  const handleZipSubmit = useCallback((zipCode: string) => handleLocationRequest('zip', zipCode), [handleLocationRequest])
-  const handleCitySubmit = useCallback((city: string, state?: string) => handleLocationRequest('city', city, state), [handleLocationRequest])
-
-  // Handle radius change
-  const handleRadiusChange = useCallback((newRadius: number) => {
-    updateRadius(newRadius)
-  }, [updateRadius])
-
-  // Handle clear location
   const handleClear = useCallback(() => {
     clearLocation()
   }, [clearLocation])
 
-  // OPTIMIZED: Type-safe history selection with information preservation
-  const handleHistorySelect = useCallback(async (location: LocationData) => {
-    try {
-      // Type-safe mapping with validation
-      const getLocationType = (source: string): 'geolocation' | 'zip' | 'city' => {
-        switch (source) {
-          case 'geolocation': {
-            return 'geolocation'
-          }
-          case 'zip': {
-            return 'zip'
-          }
-          case 'city':
-          case 'address':
-          case 'manual':
-          case 'search':
-          default: {
-            return 'city'
-          }
-        }
-      }
+  const handleSetAsDefault = useCallback(
+    (loc: LocationData) => {
+      updatePreferences({ defaultLocation: loc })
+    },
+    [updatePreferences],
+  )
 
-      const inputType = getLocationType(location.source)
-      
-      // Preserve original search data to avoid information loss
-      const searchValue = location.zip ?? location.city ?? location.displayName ?? ''
-      const searchState = location.state ?? undefined
-      
-      // Validate required data for city searches
-      if (inputType === 'city' && !searchValue) {
-        throw new Error('Cannot replay location: missing city information')
-      }
-      
-      await getLocation({
-        type: inputType,
-        value: searchValue,
-        ...(searchState && { state: searchState })
-      })
-    } catch (error: unknown) {
-      console.warn('History selection failed:', error)
-    }
-  }, [getLocation])
-
-  // Handle set as default
-  const handleSetAsDefault = useCallback((location: LocationData) => {
-    updatePreferences({ defaultLocation: location })
-  }, [updatePreferences])
-
-  // OPTIMIZED: Memoized loading state coordination
-  const loadingStates = useMemo(() => ({
-    geolocation: activeInput === 'geolocation' && isLoading,
-    zip: activeInput === 'zip' && isLoading,
-    city: activeInput === 'city' && isLoading,
-    any: isLoading // For general loading state
-  }), [activeInput, isLoading])
+  const geoLoading = useMemo(() => activeGeo && isLoading, [activeGeo, isLoading])
 
   return (
-    <div
-      className="w-full space-y-4"
-      aria-busy={loadingStates.any}
-      aria-live="polite"
-    >
-      {/* Current Location Display */}
-      {currentLocation && (
+    <div className="w-full space-y-4" aria-busy={isLoading} aria-live="polite">
+      {currentLocation ? (
         <CurrentLocationBadge
           locationName={currentLocation.displayName ?? 'Unknown Location'}
-          radiusMiles={currentLocation.radiusMiles}
           onClear={handleClear}
           onSetDefault={() => handleSetAsDefault(currentLocation)}
         />
-      )}
+      ) : null}
 
-      {/* OPTIMIZED: Consolidated search controls with coordinated loading states */}
       <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-        {isGeolocationSupported && (
-          <>
-            <GeolocationButton
-              onGetLocation={() => { void handleUseMyLocation() }}
-              isLoading={loadingStates.geolocation}
-            />
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              <span className="px-2">or</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-          </>
+        {isGeolocationSupported ? (
+          <GeolocationButton onGetLocation={() => void handleUseMyLocation()} isLoading={geoLoading} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Geolocation isn&apos;t available in this browser. Open search from the home page using a city card.
+          </p>
         )}
-
-        <ZipCodeInput 
-          onZipSubmit={(zipCode) => { void handleZipSubmit(zipCode) }}
-          isLoading={loadingStates.zip}
-        />
-
-        <div className="flex items-center text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          <span className="px-2">or</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <CityStateInput 
-          onCitySubmit={(city, state) => { void handleCitySubmit(city, state) }}
-          isLoading={loadingStates.city}
-        />
       </div>
 
-      {/* Location History - Always show when available for quick switching */}
-      {showHistory && locationHistory.length > 0 && (
-        <LocationHistory
-          history={locationHistory}
-          onSelect={(location) => { void handleHistorySelect(location) }}
-          onSetDefault={handleSetAsDefault}
-        />
-      )}
-
-      {/* Radius Control (always visible) */}
-      <RadiusControl
-        radius={preferences.preferredRadius}
-        onRadiusChange={handleRadiusChange}
-      />
-
-      {/* Error Message with Recovery Action */}
-      {error && (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-destructive" role="alert" aria-live="polite">
-          <span className="text-2xl leading-none" aria-hidden="true">⚠️</span>
-          <span>{error}</span>
-          <button 
-            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/15"
-            onClick={() => window.location.reload()}
-            aria-label="Try again"
-          >
-            Try Again
-          </button>
+      {error ? (
+        <div
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-foreground"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="font-medium text-foreground">Location unavailable</p>
+          <p className="mt-1 text-muted-foreground">{error}</p>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

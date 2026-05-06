@@ -7,9 +7,11 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { useAuth } from '@features/auth/hooks/useAuth'
+import { useAuthStore } from '@stores/authStore'
 import { Button, SearchInput, Badge, Spinner } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { Package, Edit, Store as StoreIcon, LogOut, ArrowLeft } from 'lucide-react'
 import type { StoreResponse } from '@api/types'
@@ -18,18 +20,66 @@ import { useHaptics } from '@shared/hooks/useHaptics'
 export default function VendorDashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const persistedUser = useAuthStore((state) => state.user)
+  const currentUser = user ?? persistedUser
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Fetch vendor's stores
+  // Fetch stores owned by the signed-in user. Store creation is the vendor conversion event.
   const { data: storesData, isLoading, error } = useQuery({
-    queryKey: ['vendor-stores', user?.id],
+    queryKey: ['vendor-stores', currentUser?.id],
     queryFn: async () => {
-      return await apiClient.stores().listStores({})
+      return await apiClient.stores().listStores({ ownerUserId: currentUser?.id } as any)
     },
-    enabled: !!user,
+    enabled: !!currentUser?.id,
   })
 
+  if (isLoading) {
+    return (
+      <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
+          <Spinner size="large" />
+          <p className="mt-4 text-muted-foreground">Loading your stores...</p>
+        </div>
+      </PageShell>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
+          <h2 className="mb-2 text-xl font-bold text-destructive">Failed to load stores</h2>
+          <p className="mb-4 text-muted-foreground">Please try refreshing the page</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>Refresh</Button>
+        </div>
+      </PageShell>
+    )
+  }
+
   const stores = (storesData?.data ?? []) as unknown as StoreResponse[]
+
+  // Redirect vendors with no stores to store setup
+  if (stores.length === 0) {
+    return (
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
+          <div className="mb-4">
+            <StoreIcon className="h-12 w-12 text-muted-foreground mx-auto" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Create Your First Store</h2>
+          <p className="text-muted-foreground mb-6">
+            Add the required store details and your profile goes live immediately.
+          </p>
+          <Button
+            onClick={() => navigate('/vendor/store/new')}
+            className="w-full"
+          >
+            Create Store
+          </Button>
+        </div>
+      </PageShell>
+    )
+  }
 
   // Filter stores by search query
   const filteredStores = stores.filter((store) =>
@@ -37,29 +87,8 @@ export default function VendorDashboardPage() {
     store.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (isLoading) {
-    return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
-        <Spinner size="large" />
-        <p className="mt-4 text-muted-foreground">Loading your stores...</p>
-      </PageContainer>
-    )
-  }
-
-  if (error) {
-    return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-destructive mb-2">Failed to load stores</h2>
-          <p className="text-muted-foreground mb-4">Please try refreshing the page</p>
-          <Button variant="outline" onClick={() => window.location.reload()}>Refresh</Button>
-        </div>
-      </PageContainer>
-    )
-  }
-
   return (
-    <PageContainer>
+    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader
         title="My Stores"
         description="Manage your stores and menu items"
@@ -87,7 +116,7 @@ export default function VendorDashboardPage() {
         />
         <Button
           variant="primary"
-          onClick={() => navigate('/vendor/stores/new')}
+          onClick={() => navigate('/vendor/store/new')}
         >
           <StoreIcon className="w-4 h-4 mr-2" />
           Create Store
@@ -127,7 +156,7 @@ export default function VendorDashboardPage() {
           description={searchQuery ? "No stores match your search criteria" : "Create your first store to start selling!"}
           action={
             !searchQuery && (
-              <Button variant="primary" onClick={() => navigate('/vendor/stores/new')}>
+              <Button variant="primary" onClick={() => navigate('/vendor/store/new')}>
                 <StoreIcon className="w-4 h-4 mr-2" />
                 Create Your First Store
               </Button>
@@ -146,7 +175,7 @@ export default function VendorDashboardPage() {
           ))}
         </div>
       )}
-    </PageContainer>
+    </PageShell>
   )
 }
 

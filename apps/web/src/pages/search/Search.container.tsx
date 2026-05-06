@@ -10,7 +10,7 @@ import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
 import { PageShell } from '@shared/ui/layout/PageShell'
-import { UrlParamError } from '@features/home/components'
+import { LocationUrlNotice } from '@features/home/components'
 import { useSetHeaderAddressExtras } from '@components/header/HeaderAddressExtrasContext'
 import { SearchControlsSection } from './sections/SearchControlsSection'
 import { SearchStateSection } from './sections/SearchStateSection'
@@ -28,7 +28,7 @@ function clampRadius(radius: number) {
 
 export function SearchContainer() {
   const navigate = useNavigate()
-  const { location, urlParamError, setLocation, setUrlParamError, clearLocation } = useUrlLocation()
+  const { location, urlLocationNotice, setLocation, setUrlLocationNotice, clearLocation } = useUrlLocation()
   const { stores, isLoading, error, refetch, handleLocationChange: syncLocationParams } = useStoreSearch(location)
   const { geocodeLocation, clearError } = useGeocoding()
   const { locationDisplayName, citiesContextResult } = useLocationDisplay(location, stores)
@@ -111,13 +111,9 @@ export function SearchContainer() {
       containerClassName="max-w-6xl"
       contentClassName="space-y-4 py-6 md:space-y-5"
     >
-      <UrlParamError error={urlParamError} onDismiss={() => setUrlParamError(undefined)} />
+      <LocationUrlNotice notice={urlLocationNotice} onDismiss={() => setUrlLocationNotice(undefined)} />
 
-      <SearchControlsSection
-        location={location}
-        radiusMiles={currentRadius}
-        onLocationChange={handleLocationChange}
-      />
+      <SearchControlsSection location={location} onLocationChange={handleLocationChange} />
 
       {searchStatus === 'results' && location && stores?.length ? (
         <KitchenResultsSection

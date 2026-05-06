@@ -1,110 +1,164 @@
 /**
- * useUrlLocation - Refactored URL parameter parsing and validation
- * 
- * Simplified and extracted utilities for better separation of concerns
- * CRAP score reduced from 506 to manageable levels
+ * useUrlLocation — URL parameter parsing, validation, and ZIP deep-links via geocoding API.
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocationParams } from './useLocationParams'
-import { 
-  isSameLocation, 
+import {
+  isSameLocation,
   processUrlParams,
   detectUrlParamType,
-  type LocationData 
+  type LocationData,
 } from './utils/urlLocationUtils'
+import { locationValidator } from '@shared/lib/utils/validation/unified'
+import { geocodeZip } from '../../../services/geocoding'
+import type { UrlLocationNoticePayload } from '@features/home/components'
 
 interface UseUrlLocationResult {
-  location: LocationData | undefined
-  urlParamError: string | undefined
-  setLocation: (location: LocationData | undefined) => void
-  setUrlParamError: (error: string | undefined) => void
-  clearLocation: () => void
+  readonly location: LocationData | undefined
+  readonly urlLocationNotice: UrlLocationNoticePayload | undefined
+  readonly setLocation: (location: LocationData | undefined) => void
+  readonly setUrlLocationNotice: (notice: UrlLocationNoticePayload | undefined) => void
+  readonly clearLocation: () => void
+}
+
+function classifySyncMessage(message: string): UrlLocationNoticePayload['variant'] {
+  if (/coordinates required|city and state required/i.test(message)) return 'warning'
+  if (/invalid/i.test(message)) return 'warning'
+  return 'error'
 }
 
 export function useUrlLocation(): UseUrlLocationResult {
   const { params: urlParams, clearParams } = useLocationParams()
   const [location, setLocation] = useState<LocationData | undefined>()
-  const [urlParamError, setUrlParamError] = useState<string | undefined>()
-  const isInitialMount = useRef(true)
-  
-  // Memoize URL params to prevent unnecessary re-renders
+  const [urlLocationNotice, setUrlLocationNotice] = useState<UrlLocationNoticePayload | undefined>()
+
   const memoizedUrlParams = useMemo(() => urlParams, [
-    urlParams.latitude, 
-    urlParams.longitude, 
-    urlParams.radiusMiles, 
-    urlParams.city, 
-    urlParams.state, 
-    urlParams.zip
+    urlParams.latitude,
+    urlParams.longitude,
+    urlParams.radiusMiles,
+    urlParams.city,
+    urlParams.state,
+    urlParams.zip,
   ])
 
-  // ========================================
-  // Main Effect - Process URL Parameters
-  // ========================================
-  
+  const zipKey = `${memoizedUrlParams.zip ?? ''}|${memoizedUrlParams.radiusMiles ?? ''}`
+
+  // ZIP query params → coordinates via server geocoding
   useEffect(() => {
-    if (import.meta.env.DEV && window.localStorage.getItem('__debugUrlLocation') === 'true') {
-      console.log('🔍 [useUrlLocation] URL params changed:', memoizedUrlParams)
+    const paramType = detectUrlParamType(memoizedUrlParams)
+    if (paramType !== 'zip' || !memoizedUrlParams.zip) return
+
+    const zipCheck = locationValidator.validateZipCode(memoizedUrlParams.zip)
+    if (!zipCheck.valid) {
+      setUrlLocationNotice({
+        message: 'That ZIP doesn’t look valid. Pick a city below or adjust the link.',
+        variant: 'warning',
+      })
+      setLocation(undefined)
+      return
     }
 
-    // Process URL parameters using extracted utilities
-    const result = processUrlParams(memoizedUrlParams)
-    const paramType = detectUrlParamType(memoizedUrlParams)
-    
-    if (result.valid && result.location) {
-      // Only update if location actually changed
-      if (!isSameLocation(location, result.location)) {
-        setLocation(result.location)
-        setUrlParamError(undefined)
-      }
-    } else {
-      // Handle error cases (only after initial mount)
-      if (!isInitialMount.current) {
-        setUrlParamError(result.error)
-      }
-      
-      // Clear location if we had one before
-      if (location !== undefined) {
+    let cancelled = false
+    setUrlLocationNotice(undefined)
+
+    void (async () => {
+      const geo = await geocodeZip(memoizedUrlParams.zip!)
+      if (cancelled) return
+      if (geo) {
+        const radiusRaw = memoizedUrlParams.radiusMiles
+          ? Number.parseFloat(memoizedUrlParams.radiusMiles)
+          : 25
+        const radiusMiles = Number.isFinite(radiusRaw) ? radiusRaw : 25
+        const next: LocationData = {
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+          radiusMiles,
+          displayName: geo.displayName,
+          source: 'search',
+          city: geo.city,
+          state: geo.state,
+          zip: geo.zip ?? memoizedUrlParams.zip,
+        }
+        setLocation((prev) => (isSameLocation(prev, next) ? prev : next))
+        setUrlLocationNotice(undefined)
+      } else {
+        setUrlLocationNotice({
+          message:
+            'We couldn’t look up that ZIP. Choose a city below or try another area.',
+          variant: 'warning',
+        })
         setLocation(undefined)
       }
-    }
-    
-    // Clear location if no valid params (only after initial mount)
-    if (!isInitialMount.current && paramType === 'none' && location !== undefined) {
-      setLocation(undefined)
-    }
-    
-    isInitialMount.current = false
-  }, [memoizedUrlParams, location])
+    })()
 
-  // ========================================
-  // Location Management Functions
-  // ========================================
-  
-  // Custom setLocation with equality guard to prevent unnecessary re-renders
-  const setLocationWithEquality = useCallback((newLocation: LocationData | undefined) => {
-    if (!isSameLocation(location, newLocation)) {
-      setLocation(newLocation)
-      
-      // Clear URL parameters when location is set to undefined
+    return () => {
+      cancelled = true
+    }
+  // zipKey bundles zip + radius; effect body reads latest memoizedUrlParams when zipKey changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- zipKey is the intentional dependency surface
+  }, [zipKey])
+
+  // Coordinates and city/state deep-links (sync)
+  useEffect(() => {
+    const paramType = detectUrlParamType(memoizedUrlParams)
+    if (paramType === 'zip' && memoizedUrlParams.zip) {
+      return
+    }
+
+    if (paramType === 'none') {
+      setLocation(undefined)
+      setUrlLocationNotice(undefined)
+      return
+    }
+
+    const result = processUrlParams(memoizedUrlParams)
+
+    if (result.valid && result.location) {
+      setLocation((prev) => {
+        if (isSameLocation(prev, result.location)) return prev
+        return result.location!
+      })
+      setUrlLocationNotice(undefined)
+      return
+    }
+
+    if (result.error) {
+      setUrlLocationNotice({
+        message: result.error,
+        variant: classifySyncMessage(result.error),
+      })
+      setLocation(undefined)
+      return
+    }
+
+    setUrlLocationNotice(undefined)
+  }, [memoizedUrlParams])
+
+  const setLocationWithEquality = useCallback(
+    (newLocation: LocationData | undefined) => {
+      setLocation((prev) => {
+        if (isSameLocation(prev, newLocation)) return prev
+        return newLocation
+      })
       if (newLocation === undefined) {
         clearParams()
       }
-    }
-  }, [location, clearParams])
+    },
+    [clearParams],
+  )
 
-  // Dedicated clearLocation method that resets state and URL params
   const clearLocation = useCallback(() => {
     setLocation(undefined)
     clearParams()
-    setUrlParamError(undefined)
+    setUrlLocationNotice(undefined)
   }, [clearParams])
 
   return {
     location,
-    urlParamError,
+    urlLocationNotice,
     setLocation: setLocationWithEquality,
-    setUrlParamError,
+    setUrlLocationNotice,
     clearLocation,
   }
 }

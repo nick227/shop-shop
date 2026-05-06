@@ -212,10 +212,11 @@ export function processUrlParams(params: {
       return processCityStateParams(params)
     }
     case 'zip': {
-      return processZipParams(params)
+      // ZIP-in-URL is resolved asynchronously via geocoding in useUrlLocation
+      return { valid: false, error: undefined }
     }
     default: {
-      return { valid: false, error: 'No valid location parameters found' }
+      return { valid: false, error: undefined }
     }
   }
 }

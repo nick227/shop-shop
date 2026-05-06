@@ -6,8 +6,11 @@ export type TeamMemberPermission =
   | 'MANAGE_ORDERS'
   | 'VIEW_ITEMS'
   | 'MANAGE_ITEMS'
+  | 'VIEW_DELIVERIES'
+  | 'MANAGE_DELIVERIES'
+  | 'ASSIGN_DELIVERIES'
   | 'VIEW_ANALYTICS'
-  | 'MANAGE_SETTINGS'
+  | 'MANAGE_STORE_SETTINGS'
   | 'FULL_ACCESS'
 
 export interface CreateInvitationInput {
@@ -17,6 +20,7 @@ export interface CreateInvitationInput {
   permissions: TeamMemberPermission[]
   message?: string
   expiryDays?: number
+  actorRole?: string
 }
 
 export interface AcceptInvitationInput {
@@ -27,6 +31,12 @@ export interface AcceptInvitationInput {
 export interface UpdateTeamMemberInput {
   permissions?: TeamMemberPermission[]
   isActive?: boolean
+  actorRole?: string
+}
+
+async function canManageStoreMembers(userId: string, storeId: string, actorRole?: string): Promise<boolean> {
+  if (actorRole === 'ADMIN') return true
+  return hasStorePermission(userId, storeId, 'MANAGE_STORE_SETTINGS')
 }
 
 /**
@@ -43,8 +53,8 @@ export async function createInvitation(input: CreateInvitationInput) {
     throw new Error('Store not found')
   }
 
-  if (store.ownerUserId !== input.senderUserId) {
-    throw new Error('Only store owner can send invitations')
+  if (!(await canManageStoreMembers(input.senderUserId, input.storeId, input.actorRole))) {
+    throw new Error('Only store managers can send invitations')
   }
 
   // Check if user is already a team member
@@ -244,7 +254,7 @@ export async function declineInvitation(token: string) {
 /**
  * Revoke invitation (by sender)
  */
-export async function revokeInvitation(invitationId: string, userId: string) {
+export async function revokeInvitation(invitationId: string, userId: string, actorRole?: string) {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: {
@@ -256,8 +266,8 @@ export async function revokeInvitation(invitationId: string, userId: string) {
     throw new Error('Invitation not found')
   }
 
-  if (invitation.store.ownerUserId !== userId) {
-    throw new Error('Only store owner can revoke invitations')
+  if (!(await canManageStoreMembers(userId, invitation.storeId, actorRole))) {
+    throw new Error('Only store managers can revoke invitations')
   }
 
   if (invitation.status !== 'PENDING') {
@@ -290,6 +300,38 @@ export async function getStoreTeamMembers(storeId: string) {
       },
     },
     orderBy: { addedAt: 'desc' },
+  })
+}
+
+/**
+ * Get active team members who can receive delivery assignments for a store.
+ */
+export async function getStoreDeliveryDrivers(storeId: string) {
+  const members = await prisma.teamMember.findMany({
+    where: { storeId, isActive: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+    orderBy: { addedAt: 'desc' },
+  })
+
+  return members.filter((member) => {
+    const permissions = Array.isArray(member.permissionsJson)
+      ? member.permissionsJson.filter((permission): permission is string => typeof permission === 'string')
+      : []
+    return (
+      permissions.includes('FULL_ACCESS') ||
+      permissions.includes('VIEW_DELIVERIES') ||
+      permissions.includes('MANAGE_DELIVERIES') ||
+      permissions.includes('ASSIGN_DELIVERIES')
+    )
   })
 }
 
@@ -338,8 +380,8 @@ export async function updateTeamMember(
     throw new Error('Team member not found')
   }
 
-  if (member.store.ownerUserId !== userId) {
-    throw new Error('Only store owner can update team members')
+  if (!(await canManageStoreMembers(userId, member.storeId, input.actorRole))) {
+    throw new Error('Only store managers can update team members')
   }
 
   const data: Record<string, unknown> = {}
@@ -357,7 +399,8 @@ export async function updateTeamMember(
  */
 export async function removeTeamMember(
   memberId: string,
-  userId: string
+  userId: string,
+  actorRole?: string
 ): Promise<void> {
   const member = await prisma.teamMember.findUnique({
     where: { id: memberId },
@@ -370,8 +413,8 @@ export async function removeTeamMember(
     throw new Error('Team member not found')
   }
 
-  if (member.store.ownerUserId !== userId) {
-    throw new Error('Only store owner can remove team members')
+  if (!(await canManageStoreMembers(userId, member.storeId, actorRole))) {
+    throw new Error('Only store managers can remove team members')
   }
 
   await prisma.teamMember.update({
@@ -468,4 +511,3 @@ export async function hasStorePermission(
 
   return permissions.includes('FULL_ACCESS') || permissions.includes(requiredPermission)
 }
-

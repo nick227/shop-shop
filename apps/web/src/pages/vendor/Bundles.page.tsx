@@ -4,7 +4,8 @@
  */
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { PageContainer, PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { Button } from '@shared/ui/primitives'
 import { BundleList } from '@features/bundles/components/BundleList'
 import { BundleFormModal } from '@features/bundles/components/BundleFormModal'
@@ -21,15 +22,15 @@ export default function VendorBundlesPage() {
 
   if (!storeId) {
     return (
-      <PageContainer className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-destructive mb-2">Store Not Found</h2>
-          <p className="text-muted-foreground mb-4">Please select a valid store to manage bundles.</p>
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
+          <h2 className="mb-2 text-xl font-bold text-destructive">Store Not Found</h2>
+          <p className="mb-4 text-muted-foreground">Please select a valid store to manage bundles.</p>
           <Button onClick={() => navigate('/vendor/dashboard')}>
             Back to Dashboard
           </Button>
         </div>
-      </PageContainer>
+      </PageShell>
     )
   }
 
@@ -51,7 +52,7 @@ export default function VendorBundlesPage() {
   }
 
   return (
-    <PageContainer>
+    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader
         title="Bundle Management"
         description="Create and manage product bundles for your store"
@@ -96,7 +97,7 @@ export default function VendorBundlesPage() {
           onClose={handleCloseModal}
         />
       )}
-    </PageContainer>
+    </PageShell>
   )
 }
 

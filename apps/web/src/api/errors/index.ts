@@ -1,6 +1,7 @@
 /**
  * Error Handling - Simplified with handler map pattern
  */
+import { APIError } from '../apiWrapper'
 import { AppError } from './types'
 import { httpErrorHandlers } from './handlers'
 
@@ -59,6 +60,19 @@ function handleUnknownError(error: unknown): AppError {
  * Main error handler - Routes to appropriate handler
  */
 export async function handleApiError(error: unknown): Promise<AppError> {
+  if (error instanceof APIError) {
+    const status = error.status ?? 500
+    const details =
+      error.details && typeof error.details === 'object' && !Array.isArray(error.details)
+        ? (error.details as Record<string, unknown>)
+        : undefined
+    const handler = httpErrorHandlers[status] ?? httpErrorHandlers[500]
+    const mapped = handler(details)
+    const message =
+      (typeof error.message === 'string' && error.message.trim() !== '' ? error.message : '') ||
+      mapped.message
+    return new AppError(message, mapped.code, status, details)
+  }
   if (error && typeof error === 'object' && 'response' in (error as any)) {
     return await handleResponseError(error as { response: Response })
   }

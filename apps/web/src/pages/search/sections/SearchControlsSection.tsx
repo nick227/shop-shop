@@ -3,25 +3,25 @@ import type { LocationData } from '@shared/types'
 
 interface SearchControlsSectionProps {
   readonly location: LocationData | undefined
-  readonly radiusMiles: number
   readonly onLocationChange: (location: LocationData | undefined) => void
 }
 
 export function SearchControlsSection({
   location,
-  radiusMiles,
   onLocationChange,
 }: SearchControlsSectionProps) {
   return (
-    <section className="rounded-2xl border border-white/25 bg-white/95 shadow-xl">
+    <section className="rounded-2xl border border-border bg-card shadow-sm">
       <div className="px-4 py-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Search kitchens near you
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Near you
         </p>
-        <p className="mb-3 text-sm text-gray-600">
-          {location ? `Current radius: ${radiusMiles} miles` : 'Set your location to start searching.'}
+        <p className="mb-3 text-sm text-muted-foreground">
+          {location
+            ? 'Optional: refine using your device location (URL params still drive city/ZIP filters).'
+            : 'Optional: use your device location — or rely on the city/ZIP you opened from the home page.'}
         </p>
-        <LocationSearch onLocationChange={onLocationChange} showHistory={true} />
+        <LocationSearch onLocationChange={onLocationChange} />
       </div>
     </section>
   )

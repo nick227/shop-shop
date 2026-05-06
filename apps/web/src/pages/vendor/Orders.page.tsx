@@ -5,15 +5,18 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { OrderStatus, OrderResponse, StoreResponse } from '@api/types'
 import { useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor/useVendorRealtimeOrders'
 import { useAuth } from '@features/auth/hooks/useAuth'
+import { useAuthStore } from '@stores/authStore'
 import { useVendorOrders, usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
 import { useVendorStores } from '@shared/hooks/hooks/vendor/useVendorStores'
 import { useUpdateOrderStatus } from '@shared/hooks/hooks/vendor/useUpdateOrderStatus'
 import { usePagination } from '@shared/hooks/hooks/usePagination'
 import { Button, Badge, Spinner, Pagination } from '@shared/ui/primitives'
-import { PageContainer, PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { VendorOrderCard } from '@features/orders/components/vendor'
 import { formatPriceCurrency } from '@shared/lib/utils/format'
@@ -35,6 +38,35 @@ import { cn } from '@shared/lib/cn'
 import { Activity, Bell, BellOff, Layers, MousePointer2 } from 'lucide-react'
 import { VendorOrdersEmptyState } from './components/VendorOrdersEmptyState'
 
+type DeliveryDriver = {
+  id: string
+  userId: string
+  user?: {
+    id: string
+    name?: string | null
+    email?: string | null
+  }
+}
+
+function getApiBaseUrl() {
+  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+}
+
+async function fetchStoreDrivers(storeId: string, token: string | undefined): Promise<DeliveryDriver[]> {
+  const response = await fetch(`${getApiBaseUrl()}/team/stores/${storeId}/drivers`, {
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data.error || data.message || 'Could not load drivers')
+  }
+  const data = await response.json()
+  return data.drivers || []
+}
+
 const STATUS_FILTERS: { value: OrderStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All Orders' },
   { value: 'PLACED', label: ORDER_STATUS_CONFIG.PLACED.label },
@@ -52,10 +84,23 @@ export default function VendorOrdersPage() {
   const [bulkMode, setBulkMode] = useState(false)
   const [autoAccept, setAutoAccept] = useState(false)
   const { user } = useAuth()
+  const token = useAuthStore((state) => state.token)
   const haptics = useHaptics()
 
   const { data: vendorStores = [] } = useVendorStores()
   const vendorStoreIds = useMemo(() => vendorStores.map((s: any) => s.id).filter(Boolean), [vendorStores])
+  const driverQueryKey = useMemo(() => vendorStoreIds.join('|'), [vendorStoreIds])
+
+  const { data: driversByStore = {} } = useQuery({
+    queryKey: ['store-delivery-drivers', driverQueryKey],
+    enabled: !!token && vendorStoreIds.length > 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        vendorStoreIds.map(async (storeId) => [storeId, await fetchStoreDrivers(storeId, token)] as const),
+      )
+      return Object.fromEntries(entries)
+    },
+  })
 
   // Fetch orders
   const {
@@ -100,6 +145,11 @@ export default function VendorOrdersPage() {
 
   const handleStatusUpdateString = (orderId: string, newStatus: string) => {
     handleStatusUpdate(orderId, newStatus as OrderStatus)
+  }
+
+  const handleDriverAssign = (orderId: string, driverUserId: string | null) => {
+    haptics.medium()
+    updateStatusMutation.mutate({ orderId, assignedToUserId: driverUserId })
   }
 
   const handleBulkStatusUpdate = (status: OrderStatus) => {
@@ -192,28 +242,30 @@ export default function VendorOrdersPage() {
 
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
         <VendorOrdersEmptyState isLoading={true} />
-      </PageContainer>
+      </PageShell>
     )
   }
 
   if (ordersError) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <h2 className="text-xl font-semibold">Failed to load orders</h2>
-        <p className="text-muted-foreground text-sm max-w-md text-center">
-          {(ordersError as any)?.message ?? 'Network error'}
-        </p>
-        <Button variant="outline" onClick={() => void refetchOrders()}>
-          Try Again
-        </Button>
-      </PageContainer>
+      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-4">
+          <h2 className="text-xl font-semibold">Failed to load orders</h2>
+          <p className="max-w-md text-center text-sm text-muted-foreground">
+            {(ordersError as any)?.message ?? 'Network error'}
+          </p>
+          <Button variant="outline" onClick={() => void refetchOrders()}>
+            Try Again
+          </Button>
+        </div>
+      </PageShell>
     )
   }
 
   return (
-    <PageContainer>
+    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
       <PageHeader
         title="Orders"
         description={`${pendingCount} pending orders • Real-time processing`}
@@ -308,6 +360,12 @@ export default function VendorOrdersPage() {
                     order={order}
                     onSelect={() => handleOrderSelection(order.id)}
                     onStatusUpdate={handleStatusUpdateString}
+                    onDriverAssign={handleDriverAssign}
+                    drivers={(driversByStore[(order as any).storeId] || []).map((member) => ({
+                      id: member.userId,
+                      name: member.user?.name,
+                      email: member.user?.email,
+                    }))}
                     isSelected={selectedOrder === order.id}
                     isBulkMode={bulkMode}
                     isBulkSelected={selectedOrders.includes(order.id)}
@@ -329,6 +387,12 @@ export default function VendorOrdersPage() {
                   order={order}
                   onSelect={() => handleOrderSelection(order.id)}
                   onStatusUpdate={handleStatusUpdateString}
+                  onDriverAssign={handleDriverAssign}
+                  drivers={(driversByStore[(order as any).storeId] || []).map((member) => ({
+                    id: member.userId,
+                    name: member.user?.name,
+                    email: member.user?.email,
+                  }))}
                   isSelected={selectedOrder === order.id}
                   isBulkMode={bulkMode}
                   isBulkSelected={selectedOrders.includes(order.id)}
@@ -356,7 +420,7 @@ export default function VendorOrdersPage() {
           onClose={() => setSelectedOrder(undefined)}
         />
       )}
-    </PageContainer>
+    </PageShell>
   )
 }
 

@@ -7,6 +7,7 @@
  */
 
 import { apiClient } from './client'
+import { readHttpErrorFromResponse } from './readHttpError'
 import type { 
   StoreResponse as Store,
   ItemResponse as Item,
@@ -333,10 +334,64 @@ export const carts = {
   },
 }
 
+export interface ItemListPageResult {
+  readonly data: Item[]
+  readonly total: number
+  readonly page: number
+  readonly limit: number
+}
+
 // ============================================
 // Items API
 // ============================================
 export const items = {
+  /**
+   * List items with pagination envelope.
+   */
+  listPage: async (params?: { page?: string; limit?: string; storeId?: string }): Promise<ItemListPageResult> => {
+    const payload = await handleRequest(async () => {
+      const searchParams = new URLSearchParams()
+      setQueryParam(searchParams, 'page', params?.page)
+      setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'storeId', params?.storeId)
+
+      const query = searchParams.toString()
+      const url = `${getApiBaseUrl()}/items${query ? `?${query}` : ''}`
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] -> GET ' + url)
+      }
+
+      const result = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] <- ' + result.status + ' ' + url)
+      }
+
+      if (!result.ok) {
+        const { message, body } = await readHttpErrorFromResponse(result)
+        throw new APIError(message, result.status, 'HTTP_ERROR', body)
+      }
+
+      return await result.json() as {
+        data: Item[]
+        total: number
+        page: number
+        limit: number
+      }
+    })
+
+    return {
+      data: params?.storeId ? payload.data.filter((item) => item.storeId === params.storeId) : payload.data,
+      total: payload.total,
+      page: payload.page,
+      limit: payload.limit,
+    }
+  },
+
   /**
    * List items
    */
@@ -364,7 +419,8 @@ export const items = {
       }
 
       if (!result.ok) {
-        throw new APIError(result.statusText || 'Request failed', result.status, 'HTTP_ERROR')
+        const { message, body } = await readHttpErrorFromResponse(result)
+        throw new APIError(message, result.status, 'HTTP_ERROR', body)
       }
 
       return await result.json()
@@ -536,10 +592,78 @@ export const promotions = {
   },
 }
 
+export interface StoreListPageResult {
+  readonly data: Store[]
+  readonly total: number
+  readonly page: number
+  readonly limit: number
+}
+
 // ============================================
 // Stores API
 // ============================================
 export const stores = {
+  /**
+   * List stores with pagination envelope (total, page, limit).
+   */
+  listPage: async (params?: {
+    page?: string
+    limit?: string
+    latitude?: number
+    longitude?: number
+    radiusMiles?: number
+    isPublished?: string
+    sortBy?: string
+    order?: string
+  }): Promise<StoreListPageResult> => {
+    const envelope = await handleRequest(async () => {
+      const searchParams = new URLSearchParams()
+      setQueryParam(searchParams, 'page', params?.page)
+      setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'latitude', params?.latitude)
+      setQueryParam(searchParams, 'longitude', params?.longitude)
+      setQueryParam(searchParams, 'radiusMiles', params?.radiusMiles)
+      setQueryParam(searchParams, 'isPublished', params?.isPublished)
+      setQueryParam(searchParams, 'sortBy', params?.sortBy)
+      setQueryParam(searchParams, 'order', params?.order)
+
+      const query = searchParams.toString()
+      const url = `${getApiBaseUrl()}/stores${query ? `?${query}` : ''}`
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] -> GET ' + url)
+      }
+
+      const result = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('[API] <- ' + result.status + ' ' + url)
+      }
+
+      if (!result.ok) {
+        const { message, body } = await readHttpErrorFromResponse(result)
+        throw new APIError(message, result.status, 'HTTP_ERROR', body)
+      }
+
+      return await result.json() as {
+        data: Store[]
+        total: number
+        page: number
+        limit: number
+      }
+    })
+
+    return {
+      data: envelope.data,
+      total: envelope.total,
+      page: envelope.page,
+      limit: envelope.limit,
+    }
+  },
+
   /**
    * List stores
    */
@@ -572,7 +696,8 @@ export const stores = {
       }
 
       if (!result.ok) {
-        throw new APIError(result.statusText || 'Request failed', result.status, 'HTTP_ERROR')
+        const { message, body } = await readHttpErrorFromResponse(result)
+        throw new APIError(message, result.status, 'HTTP_ERROR', body)
       }
 
       return await result.json()

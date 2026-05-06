@@ -27,14 +27,14 @@ export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
   
   const breakdown = getPricingBreakdown(pricing)
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Order Summary</h2>
+    <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+      <h2 className="text-lg font-semibold tracking-tight text-foreground">Order Summary</h2>
 
-      <div className="space-y-2">
+      <div className="space-y-2 rounded-lg bg-muted/30 p-3">
         {/* Render pricing breakdown */}
         {breakdown.map((item: PricingLineItem, index: number) => (
           <div key={index} className="flex items-center justify-between text-sm">
-            <span className={item.isTotal ? 'text-lg font-bold' : (item.isSubtotal ? 'text-muted-foreground' : 'text-muted-foreground')}>
+            <span className={item.isTotal ? 'text-lg font-bold text-foreground' : (item.isSubtotal ? 'text-muted-foreground' : 'text-muted-foreground')}>
               {item.label}
               {item.isSubtotal && ` (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`}
             </span>
@@ -51,6 +51,7 @@ export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
         size="large"
         fullWidth
         onClick={onCheckout}
+        className="shadow-sm"
       >
         <CreditCard className="h-4 w-4" />
         Continue to Payment

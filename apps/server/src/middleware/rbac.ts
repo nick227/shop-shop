@@ -4,7 +4,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 // Role-Based Access Control (RBAC) Middleware
 // ========================================
 
-export type Role = 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
+export type Role = 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
 
 /**
  * Middleware factory to require specific roles

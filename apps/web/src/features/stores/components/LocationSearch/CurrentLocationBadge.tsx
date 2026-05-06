@@ -4,14 +4,12 @@
 
 interface CurrentLocationBadgeProps {
   readonly locationName: string;
-  readonly radiusMiles: number;
   readonly onClear: () => void;
   readonly onSetDefault?: () => void;
 }
 
 export function CurrentLocationBadge({ 
   locationName, 
-  radiusMiles, 
   onClear,
   onSetDefault
 }: CurrentLocationBadgeProps) {
@@ -21,9 +19,7 @@ export function CurrentLocationBadge({
         <span className="text-base leading-none">📍</span>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold text-foreground">{locationName}</div>
-          <div className="text-xs text-muted-foreground">
-            Within {radiusMiles} miles
-          </div>
+          <div className="text-xs text-muted-foreground">Applied when you browse search results</div>
         </div>
       </div>
       <div className="flex items-center gap-2">

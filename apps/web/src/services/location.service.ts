@@ -109,11 +109,13 @@ export class LocationService {
               break
             }
             case error.POSITION_UNAVAILABLE: {
-              errorMessage = 'Location information is unavailable. Please try again.'
+              errorMessage =
+                'Your device couldn’t determine a precise position. Choose a city from the list or check that location is enabled.'
               break
             }
             case error.TIMEOUT: {
-              errorMessage = 'Location request timed out. Please try again.'
+              errorMessage =
+                'Location request timed out. You can still pick a city on the home page or enter an area manually.'
               break
             }
             default: {

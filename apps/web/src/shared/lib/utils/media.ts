@@ -31,33 +31,3 @@ export function formatCount(count: number): string {
   return (count / 1_000_000).toFixed(1) + 'M'
 }
 
-/**
- * Get media type from URL;
- */
-export function getMediaType(url: string): 'image' | 'video' | 'youtube' | 'unknown' {
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    return 'youtube'
-  }
-  
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.avi', '.mov']
-  
-  const lowerUrl = url.toLowerCase()
-  
-  if (imageExtensions.some(ext => lowerUrl.includes(ext))) {
-    return 'image'
-  }
-  
-  if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
-    return 'video'
-  }
-  
-  return 'unknown'
-}
-
-/**
- * Get media URL with fallback;
- */
-export function getMediaUrl(url: string, fallback?: string): string {
-  return url || fallback || ''
-}

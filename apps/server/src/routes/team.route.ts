@@ -11,18 +11,23 @@ import {
   updateTeamMember,
   removeTeamMember,
   getStorePendingInvitations,
+  getStoreDeliveryDrivers,
   getUserInvitations,
   hasStorePermission,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { userHasStoreAccess } from '../middleware/storeAccess'
 
 const PermissionSchema = z.enum([
   'VIEW_ORDERS',
   'MANAGE_ORDERS',
   'VIEW_ITEMS',
   'MANAGE_ITEMS',
+  'VIEW_DELIVERIES',
+  'MANAGE_DELIVERIES',
+  'ASSIGN_DELIVERIES',
   'VIEW_ANALYTICS',
-  'MANAGE_SETTINGS',
+  'MANAGE_STORE_SETTINGS',
   'FULL_ACCESS',
 ])
 
@@ -44,9 +49,17 @@ const UpdateTeamMemberSchema = z.object({
 })
 
 export const teamRoutes = async (app: FastifyInstance) => {
+  async function canManageTeam(userId: string, userRole: string, storeId: string) {
+    return userHasStoreAccess(userId, userRole, storeId, 'team')
+  }
+
+  async function canAssignDeliveries(userId: string, userRole: string, storeId: string) {
+    return userHasStoreAccess(userId, userRole, storeId, 'dispatch')
+  }
+
   // POST /team/invitations - Send team invitation
   app.post('/team/invitations', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -55,10 +68,14 @@ export const teamRoutes = async (app: FastifyInstance) => {
       }
 
       const input = CreateInvitationSchema.parse(req.body)
+      if (!(await canManageTeam(userId, req.user!.role, input.storeId))) {
+        return reply.code(403).send({ error: 'You cannot manage access for this store' })
+      }
 
       const invitation = await createInvitation({
         ...input,
         senderUserId: userId,
+        actorRole: req.user!.role,
       })
 
       // TODO: Send email notification to recipient
@@ -161,7 +178,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/invitations/:id - Revoke invitation
   app.delete('/team/invitations/:id', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -171,7 +188,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
       const params = req.params as { id: string }
 
-      await revokeInvitation(params.id, userId)
+      await revokeInvitation(params.id, userId, req.user!.role)
 
       return reply.code(204).send()
     } catch (error) {
@@ -186,12 +203,13 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/members - Get store team members
   app.get('/team/stores/:storeId/members', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
-
-      // TODO: Verify user has access to this store
+      if (!req.user || !(await canManageTeam(req.user.id, req.user.role, params.storeId))) {
+        return reply.code(403).send({ error: 'You cannot manage access for this store' })
+      }
 
       const members = await getStoreTeamMembers(params.storeId)
 
@@ -203,16 +221,35 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/invitations - Get pending invitations for store
   app.get('/team/stores/:storeId/invitations', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
-
-      // TODO: Verify user owns store
+      if (!req.user || !(await canManageTeam(req.user.id, req.user.role, params.storeId))) {
+        return reply.code(403).send({ error: 'You cannot manage access for this store' })
+      }
 
       const invitations = await getStorePendingInvitations(params.storeId)
 
       return reply.code(200).send({ invitations })
+    } catch (error) {
+      throw error
+    }
+  })
+
+  // GET /team/stores/:storeId/drivers - Get active delivery assignment targets
+  app.get('/team/stores/:storeId/drivers', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+  }, async (req, reply) => {
+    try {
+      const params = req.params as { storeId: string }
+      if (!req.user || !(await canAssignDeliveries(req.user.id, req.user.role, params.storeId))) {
+        return reply.code(403).send({ error: 'You cannot assign deliveries for this store' })
+      }
+
+      const drivers = await getStoreDeliveryDrivers(params.storeId)
+
+      return reply.code(200).send({ drivers })
     } catch (error) {
       throw error
     }
@@ -256,7 +293,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // PATCH /team/members/:id - Update team member
   app.patch('/team/members/:id', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -267,7 +304,10 @@ export const teamRoutes = async (app: FastifyInstance) => {
       const params = req.params as { id: string }
       const input = UpdateTeamMemberSchema.parse(req.body)
 
-      const member = await updateTeamMember(params.id, userId, input)
+      const member = await updateTeamMember(params.id, userId, {
+        ...input,
+        actorRole: req.user!.role,
+      })
 
       return reply.code(200).send({ member })
     } catch (error) {
@@ -285,7 +325,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/members/:id - Remove team member
   app.delete('/team/members/:id', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -295,7 +335,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
       const params = req.params as { id: string }
 
-      await removeTeamMember(params.id, userId)
+      await removeTeamMember(params.id, userId, req.user!.role)
 
       return reply.code(204).send()
     } catch (error) {
@@ -308,4 +348,3 @@ export const teamRoutes = async (app: FastifyInstance) => {
     }
   })
 }
-

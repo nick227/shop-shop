@@ -2,6 +2,16 @@ import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
 import type { SearchStatus } from '@shared/hooks/hooks/useSearchOrchestration'
 import type { LocationData } from '@shared/types'
 import type { StoreWithDistance } from '@api/types'
+import type { AppError } from '@api/errors'
+import { formatUserFacingApiError } from '@api/readHttpError'
+
+function searchErrorUi(error: Error | undefined): { message: string; hint?: string } {
+  if (!error) {
+    return { message: 'Unable to load kitchens right now.' }
+  }
+  const details = (error as AppError).details as Record<string, unknown> | undefined
+  return formatUserFacingApiError(error, details)
+}
 
 interface SearchStateSectionProps {
   readonly status: SearchStatus
@@ -33,8 +43,8 @@ export function SearchStateSection({
   if (status === 'no-location') {
     return (
       <StateBlock
-        title="Choose a location"
-        message="Set your location to see kitchens near you."
+        title="No area selected"
+        message="Open the home page and tap a city, or use optional device location above. Search uses your URL (city / ZIP) to prefer nearby kitchens."
       />
     )
   }
@@ -49,10 +59,13 @@ export function SearchStateSection({
   }
 
   if (status === 'error') {
+    const { message, hint } = searchErrorUi(error)
     return (
       <StateBlock
+        variant="destructive"
         title="Search failed"
-        message={error?.message ?? 'Unable to load kitchens right now.'}
+        message={message}
+        hint={hint}
         actionLabel="Retry"
         onAction={onRetry}
       />

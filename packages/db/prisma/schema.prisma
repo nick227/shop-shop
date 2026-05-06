@@ -20,6 +20,7 @@ datasource db {
 
 enum Role {
   USER
+  VENDOR_PENDING
   VENDOR
   ADMIN
   AFFILIATE
@@ -88,6 +89,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum StoreStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
 enum TipStatus {
   PENDING
   PAID
@@ -117,31 +124,31 @@ enum PostSource {
 }
 
 model User {
-  id                  String              @id @default(uuid())
-  role                Role                @default(USER)
-  email               String              @unique
-  passwordHash        String
-  name                String?
-  phone               String?
-  isCompany           Boolean             @default(false)
-  companyName         String?
-  addresses           Address[]
-  carts               Cart[]
-  orders              Order[]
-  storesOwned         Store[]             @relation("StoreOwner")
-  paymentMethods      PaymentMethod[]
-  promotionsCreated   Promotion[]         @relation("PromotionCreator")
-  postLikes           PostLike[]
-  comments            Comment[]
-  affiliate           Affiliate?
-  vendorVerification  VendorVerification?
-  teamMemberships     TeamMember[]
-  invitationsSent     Invitation[]        @relation("InvitationSender")
-  invitationsReceived Invitation[]        @relation("InvitationRecipient")
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  FavoriteStore       FavoriteStore[]
-  FavoriteItem        FavoriteItem[]
+  id                   String                @id @default(uuid())
+  role                 Role                  @default(USER)
+  email                String                @unique
+  passwordHash         String
+  name                 String?
+  phone                String?
+  isCompany            Boolean               @default(false)
+  companyName          String?
+  addresses            Address[]
+  carts                Cart[]
+  orders               Order[]
+  storesOwned          Store[]               @relation("StoreOwner")
+  paymentMethods       PaymentMethod[]
+  promotionsCreated    Promotion[]           @relation("PromotionCreator")
+  postLikes            PostLike[]
+  comments             Comment[]
+  affiliate            Affiliate?
+  vendorVerification   VendorVerification?
+  teamMemberships      TeamMember[]
+  invitationsSent      Invitation[]          @relation("InvitationSender")
+  invitationsReceived  Invitation[]          @relation("InvitationRecipient")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  FavoriteStore        FavoriteStore[]
+  FavoriteItem         FavoriteItem[]
   assignedOrders       Order[]               @relation("OrderAssignedRider")
   promotionRedemptions PromotionRedemption[]
 }
@@ -161,12 +168,16 @@ model Store {
   email       String?
   website     String?
 
-  isPublished     Boolean @default(false)
-  deliveryEnabled Boolean @default(true)
-  pickupEnabled   Boolean @default(true)
-  prepTimeMin     Int     @default(15)
-  feesJson        Json?
-  hoursJson       Json?
+  isPublished      Boolean     @default(false)
+  status           StoreStatus @default(ACTIVE)
+  disabledAt       DateTime?
+  disabledByUserId String?     @db.Char(36)
+  disabledReason   String?     @db.Text
+  deliveryEnabled  Boolean     @default(true)
+  pickupEnabled    Boolean     @default(true)
+  prepTimeMin      Int         @default(15)
+  feesJson         Json?
+  hoursJson        Json?
 
   // Delivery Settings
   deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
@@ -192,22 +203,22 @@ model Store {
   referredByAffiliateId String?    @db.Char(36)
   referredByAffiliate   Affiliate? @relation("AffiliateReferrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
 
-  stripeAccountId String?
-  stripeOnboarded Boolean         @default(false)
-  commissionRate  Decimal?        @db.Decimal(5, 2)
-  media           MediaAsset[]
-  items           Item[]
-  orders          Order[]
-  carts           Cart[]
-  posts           Post[]
-  bundles         Bundle[]        @relation("StoreBundles")
-  teamMembers     TeamMember[]
-  invitations     Invitation[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  Promotion       Promotion[]
-  FavoriteStore      FavoriteStore[]
-  affiliateCommissions Commission[] @relation("CommissionStore")
+  stripeAccountId      String?
+  stripeOnboarded      Boolean         @default(false)
+  commissionRate       Decimal?        @db.Decimal(5, 2)
+  media                MediaAsset[]
+  items                Item[]
+  orders               Order[]
+  carts                Cart[]
+  posts                Post[]
+  bundles              Bundle[]        @relation("StoreBundles")
+  teamMembers          TeamMember[]
+  invitations          Invitation[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  Promotion            Promotion[]
+  FavoriteStore        FavoriteStore[]
+  affiliateCommissions Commission[]    @relation("CommissionStore")
 
   @@index([ownerUserId])
   @@index([latitude, longitude]) // For distance queries
@@ -371,10 +382,10 @@ model Order {
   addressSnapshot        Json?
 
   /// Canonical delivery pin (copied at checkout). Maps / realtime read these — not Address joins.
-  deliveryLatitude       Decimal?      @db.Decimal(10, 8)
-  deliveryLongitude      Decimal?      @db.Decimal(11, 8)
-  deliveryDistanceMiles  Decimal?      @db.Decimal(6, 2)
-  estimatedDeliveryAt    DateTime?
+  deliveryLatitude      Decimal?  @db.Decimal(10, 8)
+  deliveryLongitude     Decimal?  @db.Decimal(11, 8)
+  deliveryDistanceMiles Decimal?  @db.Decimal(6, 2)
+  estimatedDeliveryAt   DateTime?
 
   // Cancellation & Refund tracking
   cancelReason String?   @db.Text
@@ -561,29 +572,29 @@ model PromotionRedemption {
 }
 
 model Post {
-  id             String      @id @default(uuid()) @db.Char(36)
-  storeId        String      @db.Char(36)
-  store          Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  content        String?     @db.Text
-  mediaUrls      Json // MediaItem[] - { type, url, thumbnail, title?, provider?, width?, height? }
-  likesCount     Int         @default(0)
-  commentsCount  Int         @default(0)
-  sharesCount    Int         @default(0)
+  id            String     @id @default(uuid()) @db.Char(36)
+  storeId       String     @db.Char(36)
+  store         Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  content       String?    @db.Text
+  mediaUrls     Json // MediaItem[] - { type, url, thumbnail, title?, provider?, width?, height? }
+  likesCount    Int        @default(0)
+  commentsCount Int        @default(0)
+  sharesCount   Int        @default(0)
   /// Higher sorts first; default 0 for chronological-within-priority
-  priority       Int         @default(0)
+  priority      Int        @default(0)
   /// Presentation key (e.g. default_layout)
-  layout         String      @default("default_layout") @db.VarChar(64)
-  source         PostSource  @default(MANUAL)
+  layout        String     @default("default_layout") @db.VarChar(64)
+  source        PostSource @default(MANUAL)
   /// Idempotency for automation: e.g. welcome:storeId, item:itemId
-  automationKey  String?     @unique @db.VarChar(128)
-  linkedItemId   String?     @db.Char(36)
-  linkedItem     Item?       @relation(fields: [linkedItemId], references: [id], onDelete: SetNull)
+  automationKey String?    @unique @db.VarChar(128)
+  linkedItemId  String?    @db.Char(36)
+  linkedItem    Item?      @relation(fields: [linkedItemId], references: [id], onDelete: SetNull)
   /// If set, post is hidden from public feed / list until this time (UTC). Null = visible immediately.
-  publishAt      DateTime?
-  likes          PostLike[]
-  comments       Comment[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  publishAt     DateTime?
+  likes         PostLike[]
+  comments      Comment[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([storeId])
   @@index([createdAt])
@@ -761,8 +772,11 @@ enum TeamMemberPermission {
   MANAGE_ORDERS
   VIEW_ITEMS
   MANAGE_ITEMS
+  VIEW_DELIVERIES
+  MANAGE_DELIVERIES
+  ASSIGN_DELIVERIES
   VIEW_ANALYTICS
-  MANAGE_SETTINGS
+  MANAGE_STORE_SETTINGS
   FULL_ACCESS
 }
 
@@ -888,70 +902,70 @@ model FavoriteItem {
 // ============================================================================
 
 model Bundle {
-  id          String      @id @default(uuid()) @db.Char(36)
-  storeId     String      @db.Char(36)
-  store       Store       @relation("StoreBundles", fields: [storeId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid()) @db.Char(36)
+  storeId     String   @db.Char(36)
+  store       Store    @relation("StoreBundles", fields: [storeId], references: [id], onDelete: Cascade)
   name        String
-  description String?     @db.Text
+  description String?  @db.Text
   imageUrl    String?
-  isActive    Boolean     @default(true)
-  sortIndex   Int         @default(0)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
+  isActive    Boolean  @default(true)
+  sortIndex   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   // Bundle items
-  items       BundleItem[]
-  
+  items BundleItem[]
+
   // Bundle pricing
-  pricing     BundlePricing?
-  
+  pricing BundlePricing?
+
   // Orders that include this bundle
-  orderItems  OrderItem[] @relation("BundleOrderItems")
-  
+  orderItems OrderItem[] @relation("BundleOrderItems")
+
   @@index([storeId])
   @@index([isActive])
   @@index([sortIndex])
 }
 
 model BundleItem {
-  id        String  @id @default(uuid()) @db.Char(36)
-  bundleId  String  @db.Char(36)
-  bundle    Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  itemId    String  @db.Char(36)
-  item      Item    @relation("ItemBundles", fields: [itemId], references: [id], onDelete: Cascade)
-  quantity  Int     @default(1)
-  sortIndex Int     @default(0)
-  
+  id        String @id @default(uuid()) @db.Char(36)
+  bundleId  String @db.Char(36)
+  bundle    Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  itemId    String @db.Char(36)
+  item      Item   @relation("ItemBundles", fields: [itemId], references: [id], onDelete: Cascade)
+  quantity  Int    @default(1)
+  sortIndex Int    @default(0)
+
   @@unique([bundleId, itemId])
   @@index([bundleId])
   @@index([itemId])
 }
 
 model BundlePricing {
-  id              String  @id @default(uuid()) @db.Char(36)
-  bundleId        String  @unique @db.Char(36)
-  bundle          Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  
+  id       String @id @default(uuid()) @db.Char(36)
+  bundleId String @unique @db.Char(36)
+  bundle   Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
   // Pricing strategy
   pricingType     BundlePricingType @default(FIXED_PRICE)
   fixedPrice      Decimal?          @db.Decimal(10, 2)
   discountPercent Decimal?          @db.Decimal(5, 2) // e.g., 10.00 for 10%
   discountAmount  Decimal?          @db.Decimal(10, 2)
-  
+
   // Minimum savings guarantee
-  minSavings      Decimal?          @db.Decimal(10, 2)
-  
+  minSavings Decimal? @db.Decimal(10, 2)
+
   // Display settings
-  showSavings     Boolean           @default(true)
-  savingsLabel    String?           // e.g., "Save $5!"
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  showSavings  Boolean @default(true)
+  savingsLabel String? // e.g., "Save $5!"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum BundlePricingType {
-  FIXED_PRICE      // Bundle has a fixed price
+  FIXED_PRICE // Bundle has a fixed price
   DISCOUNT_PERCENT // Bundle gets X% off total
-  DISCOUNT_AMOUNT  // Bundle gets $X off total
-  BEST_DEAL        // Show best available discount
+  DISCOUNT_AMOUNT // Bundle gets $X off total
+  BEST_DEAL // Show best available discount
 }

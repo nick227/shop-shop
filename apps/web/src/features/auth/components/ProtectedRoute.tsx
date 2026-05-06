@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: 'customer' | 'vendor' | 'admin'
+  requiredRole?: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN'
   fallback?: React.ReactNode
 }
 
@@ -20,6 +20,7 @@ export function ProtectedRoute({
   fallback 
 }: ProtectedRouteProps) {
   const { isAuthenticated, loading, user } = useAuth()
+  const normalizedRole = user?.role?.toUpperCase()
 
   // Show loading state while checking authentication
   if (loading) {
@@ -54,13 +55,14 @@ export function ProtectedRoute({
   }
 
   // Check if user has required role
-  if (requiredRole && user?.role !== requiredRole) {
+  const hasRequiredRole = requiredRole ? normalizedRole === requiredRole : true
+  if (!hasRequiredRole) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-6">
-            You don't have permission to access this page.
+            You don't have permission to access this page. Required role: {requiredRole}
           </p>
           <button 
             onClick={() => window.history.back()}

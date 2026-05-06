@@ -38,7 +38,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
   const folder = input.storeId ? 'stores' : input.itemId ? 'items' : 'media'
   input.file.folder = folder
 
-  // Verify ownership
+  // Verify ownership and check limits
   if (input.storeId) {
     const store = await prisma.store.findUnique({
       where: { id: input.storeId },
@@ -50,6 +50,15 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
 
     if (store.ownerUserId !== input.userId) {
       throw new Error('Unauthorized: Store does not belong to user')
+    }
+
+    // Check store media limit
+    const existingStoreMedia = await prisma.mediaAsset.count({
+      where: { storeId: input.storeId }
+    })
+
+    if (existingStoreMedia >= 100) {
+      throw new Error('Store media limit reached (100 maximum)')
     }
   }
 
@@ -66,6 +75,33 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
     if (item.store.ownerUserId !== input.userId) {
       throw new Error('Unauthorized: Item does not belong to user')
     }
+
+    // Check product media limit
+    const existingItemMedia = await prisma.mediaAsset.count({
+      where: { itemId: input.itemId }
+    })
+
+    if (existingItemMedia >= 100) {
+      throw new Error('Product media limit reached (100 maximum)')
+    }
+  }
+
+  // Determine sort index - append to end if not specified
+  let sortIndex = input.sortIndex || 0
+  if (!input.sortIndex) {
+    if (input.storeId) {
+      const maxSortIndex = await prisma.mediaAsset.findFirst({
+        where: { storeId: input.storeId },
+        orderBy: { sortIndex: 'desc' }
+      })
+      sortIndex = (maxSortIndex?.sortIndex || -1) + 1
+    } else if (input.itemId) {
+      const maxSortIndex = await prisma.mediaAsset.findFirst({
+        where: { itemId: input.itemId },
+        orderBy: { sortIndex: 'desc' }
+      })
+      sortIndex = (maxSortIndex?.sortIndex || -1) + 1
+    }
   }
 
   // Upload to storage
@@ -78,7 +114,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
       kind,
       url: uploadResult.url,
       altText: input.altText || null,
-      sortIndex: input.sortIndex || 0,
+      sortIndex,
       metadata: {
         key: uploadResult.key,
         size: uploadResult.size,
@@ -140,10 +176,32 @@ export const deleteMedia = async (input: DeleteMediaInput): Promise<void> => {
     // Continue with database deletion even if storage delete fails
   }
 
+  // Get context for normalization
+  const storeId = media.storeId
+  const itemId = media.itemId
+
   // Delete from database
   await prisma.mediaAsset.delete({
     where: { id: input.mediaId },
   })
+
+  // Normalize sort order for remaining media
+  if (storeId || itemId) {
+    const remainingMedia = await prisma.mediaAsset.findMany({
+      where: { storeId: storeId || null, itemId: itemId || null },
+      orderBy: { sortIndex: 'asc' }
+    })
+
+    // Update sort indices to be sequential (0, 1, 2...)
+    await prisma.$transaction(
+      remainingMedia.map((asset, index) =>
+        prisma.mediaAsset.update({
+          where: { id: asset.id },
+          data: { sortIndex: index }
+        })
+      )
+    )
+  }
 }
 
 export interface ListMediaInput {
@@ -209,5 +267,49 @@ export const updateMediaSort = async (input: UpdateMediaSortInput): Promise<void
     where: { id: input.mediaId },
     data: { sortIndex: input.sortIndex },
   })
+}
+
+export interface ReorderMediaInput {
+  mediaIds: string[]
+  userId: string
+}
+
+export const reorderMedia = async (input: ReorderMediaInput): Promise<void> => {
+  if (input.mediaIds.length === 0) {
+    throw new Error('No media IDs provided')
+  }
+
+  // Get all media assets to verify ownership
+  const mediaAssets = await prisma.mediaAsset.findMany({
+    where: { id: { in: input.mediaIds } },
+    include: {
+      store: true,
+      item: {
+        include: { store: true },
+      },
+    },
+  })
+
+  if (mediaAssets.length !== input.mediaIds.length) {
+    throw new Error('One or more media assets not found')
+  }
+
+  // Verify ownership for all assets
+  for (const asset of mediaAssets) {
+    const ownerId = asset.store?.ownerUserId || asset.item?.store.ownerUserId
+    if (!ownerId || ownerId !== input.userId) {
+      throw new Error('Unauthorized: You do not own all media assets')
+    }
+  }
+
+  // Update sort indices in order
+  await prisma.$transaction(
+    input.mediaIds.map((mediaId, index) =>
+      prisma.mediaAsset.update({
+        where: { id: mediaId },
+        data: { sortIndex: index }
+      })
+    )
+  )
 }
 

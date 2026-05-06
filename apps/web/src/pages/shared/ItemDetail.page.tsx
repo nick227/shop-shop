@@ -16,6 +16,8 @@ import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import { useHaptics } from '@shared/hooks/useHaptics'
+import { CustomerMediaGallery } from '@shared/ui/media'
+import { useQuery } from '@tanstack/react-query'
 
 export default function ItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>()
@@ -26,6 +28,23 @@ export default function ItemDetailPage() {
   const targetStoreId = item?.storeId
   const { data: store } = useStore(targetStoreId || '', { enabled: !!targetStoreId } as any)
   const addToCart = useAddToCart()
+
+  // Fetch item media for gallery
+  const { data: itemMedia } = useQuery({
+    queryKey: ['item-media', itemId],
+    queryFn: async () => {
+      if (!itemId) return []
+      const response = await fetch(`/media?itemId=${itemId}`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch item media')
+      }
+      const data = await response.json()
+      return data.data || []
+    },
+    enabled: !!itemId,
+  })
 
   const handleBack = () => {
     if (store) {
@@ -91,6 +110,16 @@ export default function ItemDetailPage() {
           </div>
           <div className="text-2xl font-bold text-primary shrink-0">{formatCurrency(price)}</div>
         </div>
+
+        {/* Media Gallery */}
+        {itemMedia && itemMedia.length > 0 && (
+          <Card>
+            <CardContent className="pt-5">
+              <SectionHeader title="Photos & Videos" className="mb-3" />
+              <CustomerMediaGallery media={itemMedia} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Description */}
         {item.description && (

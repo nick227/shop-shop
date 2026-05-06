@@ -25,23 +25,61 @@ export class StoreDomain {
     const data = input as {
       name: string
       slug?: string
+      description?: string
+      phone?: string
+      email?: string
+      addressStreet?: string
+      addressCity?: string
+      addressState?: string
+      addressZip?: string
+      deliveryEnabled?: boolean
+      pickupEnabled?: boolean
       [key: string]: unknown
     }
+
+    const hasAddress =
+      Boolean(data.addressStreet?.trim()) ||
+      Boolean(data.addressCity?.trim()) ||
+      Boolean(data.addressState?.trim()) ||
+      Boolean(data.addressZip?.trim())
+    const hasFulfillment = data.deliveryEnabled === true || data.pickupEnabled === true
+    const hasContact = Boolean(data.phone?.trim()) || Boolean(data.email?.trim())
+    const canActivateStore =
+      Boolean(data.name?.trim()) &&
+      Boolean(data.description?.trim()) &&
+      hasAddress &&
+      hasFulfillment &&
+      hasContact
     
     return {
       ...data,
       slug: data.slug || this.generateSlug(data.name),
       ownerUserId: userId,
+      status: canActivateStore ? 'ACTIVE' : 'PAUSED',
+      isPublished: canActivateStore,
     }
   }
   
   /**
    * Validate store is accepting orders
    */
-  canAcceptOrders(store: { isPublished: boolean; deliveryEnabled: boolean; pickupEnabled: boolean }): {
+  canAcceptOrders(store: {
+    isPublished: boolean
+    deliveryEnabled: boolean
+    pickupEnabled: boolean
+    status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
+  }): {
     valid: boolean
     reason?: string
   } {
+    if (store.status === 'DISABLED') {
+      return { valid: false, reason: 'Store has been disabled' }
+    }
+
+    if (store.status === 'PAUSED') {
+      return { valid: false, reason: 'Store is paused' }
+    }
+
     if (!store.isPublished) {
       return { valid: false, reason: 'Store is not published' }
     }
@@ -53,4 +91,3 @@ export class StoreDomain {
     return { valid: true }
   }
 }
-

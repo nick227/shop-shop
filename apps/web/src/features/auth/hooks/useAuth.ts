@@ -182,9 +182,10 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
   // Computed Values
   // ========================================
   
-  const isCustomer = user?.role === 'customer'
-  const isVendor = user?.role === 'vendor'
-  const isAdmin = user?.role === 'admin'
+  const normalizedRole = user?.role?.toUpperCase()
+  const isCustomer = normalizedRole === 'USER' || normalizedRole === 'CUSTOMER'
+  const isVendor = normalizedRole === 'VENDOR'
+  const isAdmin = normalizedRole === 'ADMIN'
 
   return {
     // State
