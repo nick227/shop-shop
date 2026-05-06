@@ -6,6 +6,9 @@ import { prisma, generateJWT, Decimal } from '@packages/db'
 import type { Prisma } from '@packages/db/generated/client'
 import type { Role } from '@packages/db/generated/client'
 
+/** Prefix for slugs/emails so cleanupTestData can delete rows owned by this Vitest worker */
+export const TEST_NAMESPACE = `vitest-${process.env.VITEST_WORKER_ID ?? process.pid}`
+
 // ========================================
 // Test Server Creation
 // ========================================
@@ -59,7 +62,7 @@ export const createAuthenticatedUser = async (
 ): Promise<TestUser> => {
   const { randomUUID } = await import('crypto')
   const uniqueId = randomUUID()
-  const email = overrides?.email || `test-${role.toLowerCase()}-${uniqueId}@test.com`
+  const email = overrides?.email || `${TEST_NAMESPACE}-user-${role.toLowerCase()}-${uniqueId}@test.com`
   const password = overrides?.password || 'TestPassword123!'
 
   // Use bcrypt to hash password (same as production)
@@ -122,12 +125,17 @@ export const createTestStore = async (vendorId: string, overrides?: {
 }) => {
   const { randomUUID } = await import('crypto')
   const uniqueId = randomUUID()
+
+  const owner = await prisma.user.findUnique({ where: { id: vendorId }, select: { id: true } })
+  if (!owner) {
+    throw new Error(`createTestStore: vendorId not found: ${vendorId}`)
+  }
   
   return prisma.store.create({
     data: {
       name: overrides?.name || `Test Store ${uniqueId}`,
-      slug: overrides?.slug || `test-store-${uniqueId}`,
-      ownerUserId: vendorId,
+      slug: overrides?.slug || `${TEST_NAMESPACE}-store-${uniqueId}`,
+      ownerUserId: owner.id,
       isPublished: overrides?.isPublished ?? true,
     },
   })
@@ -236,50 +244,41 @@ export const createTestAddress = async (userId: string, overrides?: {
  * Delete all test users
  */
 export const cleanupTestUsers = async () => {
-  await prisma.user.deleteMany({
-    where: {
-      email: {
-        endsWith: '@test.com',
-      },
-    },
-  })
+  // Intentionally avoid deleting users in shared DB test runs.
+  // Deleting broad email ranges can race with other test files running in parallel.
 }
 
 /**
  * Delete all test data
  */
 export const cleanupTestData = async () => {
-  // Delete in correct order (foreign keys)
-  await prisma.mediaAsset.deleteMany({
-    where: {
-      store: {
-        slug: {
-          startsWith: 'test-',
-        },
-      },
-    },
+  const stores = await prisma.store.findMany({
+    where: { slug: { startsWith: TEST_NAMESPACE } },
+    select: { id: true },
   })
-  await prisma.orderItem.deleteMany({})
-  await prisma.orderEvent.deleteMany({})
-  await prisma.cartItem.deleteMany({})
-  await prisma.order.deleteMany({})
-  await prisma.cart.deleteMany({})
-  await prisma.address.deleteMany({})
-  await prisma.item.deleteMany({})
-  await prisma.store.deleteMany({
-    where: {
-      slug: {
-        startsWith: 'test-',
-      },
-    },
+  const storeIds = stores.map((store) => store.id)
+
+  const users = await prisma.user.findMany({
+    where: { email: { startsWith: TEST_NAMESPACE } },
+    select: { id: true },
   })
-  await prisma.user.deleteMany({
-    where: {
-      email: {
-        endsWith: '@test.com',
-      },
-    },
-  })
+  const userIds = users.map((user) => user.id)
+
+  // Delete in correct order (foreign keys) and only for this test namespace.
+  await prisma.mediaAsset.deleteMany({ where: { storeId: { in: storeIds } } })
+  await prisma.orderItem.deleteMany({ where: { order: { storeId: { in: storeIds } } } })
+  await prisma.orderEvent.deleteMany({ where: { order: { storeId: { in: storeIds } } } })
+  try {
+    await prisma.deliveryJob.deleteMany({ where: { storeId: { in: storeIds } } })
+  } catch {
+    // In case migrations haven't been applied in the test DB yet.
+  }
+  await prisma.cartItem.deleteMany({ where: { cart: { storeId: { in: storeIds } } } })
+  await prisma.order.deleteMany({ where: { storeId: { in: storeIds } } })
+  await prisma.cart.deleteMany({ where: { storeId: { in: storeIds } } })
+  await prisma.address.deleteMany({ where: { userId: { in: userIds } } })
+  await prisma.item.deleteMany({ where: { storeId: { in: storeIds } } })
+  await prisma.store.deleteMany({ where: { id: { in: storeIds } } })
 }
 
 // ========================================

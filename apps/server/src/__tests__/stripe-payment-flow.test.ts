@@ -4,15 +4,13 @@
  * Also verifies idempotency and payment failure handling.
  */
 
+import { randomUUID } from 'crypto'
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   prisma,
   handlePaymentIntentSucceeded,
   handlePaymentIntentFailed,
 } from '@packages/db'
-
-const FAKE_PI_ID = `pi_test_flow_${Date.now()}`
-const FAKE_PI_ID_2 = `pi_test_flow2_${Date.now()}`
 
 describe('Stripe Payment Flow', () => {
   let testUserId: string
@@ -66,9 +64,10 @@ describe('Stripe Payment Flow', () => {
   // ── payment_intent.succeeded ─────────────────────────────────────────────
 
   it('should mark order PAID and transition PENDING_PAYMENT → PLACED on payment success', async () => {
-    await createPendingOrder(FAKE_PI_ID)
+    const piId = `pi_test_flow_${randomUUID()}`
+    await createPendingOrder(piId)
 
-    await handlePaymentIntentSucceeded(FAKE_PI_ID)
+    await handlePaymentIntentSucceeded(piId)
 
     const order = await prisma.order.findUnique({ where: { id: testOrderId } })
     expect(order?.paymentStatus).toBe('PAID')
@@ -76,9 +75,10 @@ describe('Stripe Payment Flow', () => {
   })
 
   it('should create OrderEvent audit entry for PLACED transition on payment success', async () => {
-    await createPendingOrder(FAKE_PI_ID)
+    const piId = `pi_test_flow_${randomUUID()}`
+    await createPendingOrder(piId)
 
-    await handlePaymentIntentSucceeded(FAKE_PI_ID)
+    await handlePaymentIntentSucceeded(piId)
 
     const events = await prisma.orderEvent.findMany({
       where: { orderId: testOrderId },
@@ -92,6 +92,7 @@ describe('Stripe Payment Flow', () => {
   })
 
   it('should not double-transition an already PLACED order on duplicate webhook', async () => {
+    const piId = `pi_test_flow2_${randomUUID()}`
     const order = await prisma.order.create({
       data: {
         userId: testUserId,
@@ -107,13 +108,13 @@ describe('Stripe Payment Flow', () => {
         serviceFeePercent: 3.0,
         serviceFeeAmount: 0.3,
         netToVendor: 10.5,
-        stripePaymentIntentId: FAKE_PI_ID_2,
+        stripePaymentIntentId: piId,
       },
     })
     testOrderId = order.id
 
     // Second webhook delivery — should not throw or re-transition
-    await expect(handlePaymentIntentSucceeded(FAKE_PI_ID_2)).resolves.not.toThrow()
+    await expect(handlePaymentIntentSucceeded(piId)).resolves.not.toThrow()
 
     const after = await prisma.order.findUnique({ where: { id: testOrderId } })
     expect(after?.status).toBe('PLACED')
@@ -127,9 +128,10 @@ describe('Stripe Payment Flow', () => {
   // ── payment_intent.payment_failed ────────────────────────────────────────
 
   it('should leave order PENDING_PAYMENT and record OrderEvent on payment failure', async () => {
-    await createPendingOrder(FAKE_PI_ID)
+    const piId = `pi_test_flow_${randomUUID()}`
+    await createPendingOrder(piId)
 
-    await handlePaymentIntentFailed(FAKE_PI_ID)
+    await handlePaymentIntentFailed(piId)
 
     const order = await prisma.order.findUnique({ where: { id: testOrderId } })
     expect(order?.paymentStatus).toBe('UNPAID')

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import Fastify, { FastifyInstance } from 'fastify'
 import { registerAllResources } from '../routes/loader.js'
@@ -30,7 +31,24 @@ describe('Open Platform - Vendor Functionality', () => {
   let regularUser: TestUser
   let vendorUser: TestUser
   let adminUser: TestUser
-  
+
+  function newStorePayload(name: string, slug: string, description: string) {
+    return {
+      name,
+      slug,
+      description,
+      phone: '5550100',
+      email: 'store-open@test.com',
+      website: 'https://example.test',
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      addressStreet: '100 Congress Ave',
+      addressCity: 'Austin',
+      addressState: 'TX',
+      addressZip: '78701',
+    }
+  }
+
   beforeAll(async () => {
     // Create isolated Fastify instance
     app = Fastify({ logger: false })
@@ -60,11 +78,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'POST',
         url: '/stores',
         headers: authHeaders(regularUser.token),
-        payload: {
-          name: 'User Restaurant',
-          slug: `user-Store-${Date.now()}`,
-          description: 'Created by regular user',
-        },
+        payload: newStorePayload('User Restaurant', `user-store-${Date.now()}`, 'Created by regular user'),
       })
 
       expect(response.statusCode).toBe(201)
@@ -78,11 +92,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'POST',
         url: '/stores',
         headers: authHeaders(vendorUser.token),
-        payload: {
-          name: 'Vendor Restaurant',
-          slug: `vendor-Store-${Date.now()}`,
-          description: 'Created by vendor user',
-        },
+        payload: newStorePayload('Vendor Restaurant', `vendor-store-${Date.now()}`, 'Created by vendor user'),
       })
 
       expect(response.statusCode).toBe(201)
@@ -96,11 +106,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'POST',
         url: '/stores',
         headers: authHeaders(adminUser.token),
-        payload: {
-          name: 'Admin Restaurant',
-          slug: `admin-Store-${Date.now()}`,
-          description: 'Created by admin',
-        },
+        payload: newStorePayload('Admin Restaurant', `admin-store-${Date.now()}`, 'Created by admin'),
       })
 
       expect(response.statusCode).toBe(201)
@@ -110,17 +116,14 @@ describe('Open Platform - Vendor Functionality', () => {
     })
 
     it('should enforce unique slug constraints', async () => {
-      const slug = `duplicate-slug-${Date.now()}`
+      const slug = `duplicate-slug-${Date.now()}-${randomUUID().slice(0, 8)}`
       
       // First creation succeeds
       const first = await app.inject({
         method: 'POST',
         url: '/stores',
         headers: authHeaders(regularUser.token),
-        payload: {
-          name: 'First Store',
-          slug,
-        },
+        payload: newStorePayload('First Store', slug, 'First'),
       })
       expect(first.statusCode).toBe(201)
 
@@ -129,10 +132,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'POST',
         url: '/stores',
         headers: authHeaders(regularUser.token),
-        payload: {
-          name: 'Second Store',
-          slug,
-        },
+        payload: newStorePayload('Second Store', slug, 'Second'),
       })
       expect(second.statusCode).toBe(409)
     })
@@ -251,10 +251,7 @@ describe('Open Platform - Vendor Functionality', () => {
         },
       })
 
-      // Note: Item creation doesn't enforce ownership at API level
-      // Ownership is enforced at update/delete level
-      // This is expected behavior - store owners manage items via UI
-      expect(response.statusCode).toBe(201)
+      expect(response.statusCode).toBe(403)
     })
 
     it('should allow owner to update their items', async () => {

@@ -6,10 +6,10 @@ import { registerAllResources } from './loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
 import { deliveryZoneRoutes } from './delivery-zone.route.js'
 import { storeReadinessRoutes } from './store-readiness.route.js'
-import { authHeaders, cleanupTestData, createAuthenticatedUser } from '../__tests__/helpers.js'
+import { authHeaders, cleanupTestData, createAuthenticatedUser, TEST_NAMESPACE } from '../__tests__/helpers.js'
 
 function testSlug(label: string) {
-  return `test-${label}-${randomUUID().slice(0, 8)}`
+  return `${TEST_NAMESPACE}-${label}-${randomUUID().slice(0, 8)}`
 }
 
 async function createMarketplaceStore(input: {
@@ -127,18 +127,25 @@ describe('Store readiness and coordinate marketplace behavior', () => {
   })
 
   it('returns page 2 coordinate results with filtered totals and public/live eligibility applied', async () => {
-    // Mid-Atlantic pocket with no seeded marketplace stores so totals stay deterministic.
+    // Wide random latitude band so repeated suite runs do not share the same bbox with old rows.
+    const rng = BigInt(`0x${randomUUID().replace(/-/g, '').slice(0, 14)}`)
+    const latBase = 15 + Number(rng % 45n)
+    const micro = Number(rng % 1_000_000n) / 1e10
+    const anchor = latBase + micro
     const lon = '-42.00000000'
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-nearest'), name: 'Test Coordinate Nearest', latitude: '27.00000000', longitude: lon, deliveryDistance: null })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-second'), name: 'Test Coordinate Second', latitude: '27.01000000', longitude: lon })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-third'), name: 'Test Coordinate Third', latitude: '27.03000000', longitude: lon })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-missing-coordinates'), name: 'Test Missing Coordinates' })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-draft'), name: 'Test Coordinate Draft', latitude: '27.00200000', longitude: lon, isPublished: false })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-paused'), name: 'Test Coordinate Paused', latitude: '27.00300000', longitude: lon, status: 'PAUSED' })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-incomplete'), name: 'Test Coordinate Incomplete', latitude: '27.00400000', longitude: lon, status: 'DISABLED', withMedia: false, withProduct: false })
-    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-delivery-excluded'), name: 'Test Delivery Distance Excluded', latitude: '27.10000000', longitude: lon, deliveryDistance: '2.00' })
+    const lat = (delta: number) => (anchor + delta).toFixed(8)
 
-    const response = await app.inject({ method: 'GET', url: '/stores?latitude=26.99900000&longitude=-42.00000000&radiusMiles=25&page=2&limit=2' })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-nearest'), name: 'Test Coordinate Nearest', latitude: lat(0), longitude: lon, deliveryDistance: null })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-second'), name: 'Test Coordinate Second', latitude: lat(0.01), longitude: lon })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-third'), name: 'Test Coordinate Third', latitude: lat(0.03), longitude: lon })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-missing-coordinates'), name: 'Test Missing Coordinates' })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-draft'), name: 'Test Coordinate Draft', latitude: lat(0.002), longitude: lon, isPublished: false })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-paused'), name: 'Test Coordinate Paused', latitude: lat(0.003), longitude: lon, status: 'PAUSED' })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-incomplete'), name: 'Test Coordinate Incomplete', latitude: lat(0.004), longitude: lon, status: 'DISABLED', withMedia: false, withProduct: false })
+    await createMarketplaceStore({ ownerUserId: vendor.id, slug: testSlug('coord-delivery-excluded'), name: 'Test Delivery Distance Excluded', latitude: lat(0.1), longitude: lon, deliveryDistance: '2.00' })
+
+    const searchLat = (anchor - 0.001).toFixed(8)
+    const response = await app.inject({ method: 'GET', url: `/stores?latitude=${searchLat}&longitude=${lon}&radiusMiles=25&page=2&limit=2` })
 
     expect(response.statusCode).toBe(200)
     const body = JSON.parse(response.body) as { data: Array<{ name: string; distance: number }>; total: number; page: number; limit: number }
