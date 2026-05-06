@@ -483,16 +483,25 @@ async function createBundleForStore(
   if (bundleItems.length === 0) return
   
   // Create bundle
-  const bundle = await prisma.bundle.create({
-    data: {
-      storeId,
-      name: bundleTemplate.name,
-      description: bundleTemplate.description,
-      imageUrl: `https://picsum.photos/seed/${bundleTemplate.name.replace(/\s+/g, '')}/600/400.jpg`,
-      isActive: true,
-      sortIndex: 0
-    }
-  })
+const bundle = await prisma.bundle.create({
+  data: {
+    storeId,
+    name: bundleTemplate.name,
+    description: bundleTemplate.description,
+    isActive: true,
+    sortIndex: 0,
+    media: {
+      create: [
+        {
+          kind: MediaKind.IMAGE,
+          url: `https://picsum.photos/seed/${bundleTemplate.name.replace(/\s+/g, '')}/600/400.jpg`,
+          altText: `${bundleTemplate.name} bundle image`,
+          sortIndex: 0,
+        },
+      ],
+    },
+  },
+})
   
   // Create bundle items
   for (const bundleItem of bundleItems) {

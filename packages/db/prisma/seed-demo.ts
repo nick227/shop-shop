@@ -336,16 +336,25 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
     ],
   })
 
-  const bundle = await prisma.bundle.create({
-    data: {
-      storeId: storeNorth.id,
-      name: 'Seed Duo',
-      description: 'Bowl + salmon for sharing.',
-      imageUrl: 'https://placehold.co/600x400/e94560/ffffff?text=Bundle',
-      isActive: true,
-      sortIndex: 0,
+const bundle = await prisma.bundle.create({
+  data: {
+    storeId: storeNorth.id,
+    name: "Seed Duo",
+    description: "Bowl + salmon for sharing.",
+    isActive: true,
+    sortIndex: 0,
+    media: {
+      create: [
+        {
+          kind: "IMAGE",
+          url: "https://placehold.co/600x400/e94560/ffffff?text=Bundle",
+          altText: "Seed Duo bundle image",
+          sortIndex: 0,
+        },
+      ],
     },
-  })
+  },
+})
 
   await prisma.bundleItem.createMany({
     data: [

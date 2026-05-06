@@ -184,6 +184,9 @@ export class BaseCrudController {
         const hookContext = {
           ...this.getHookContext(req),
           filters: originalFilters, // Pass original filters with location params
+          page,
+          limit,
+          orderBy: orderBy || { createdAt: 'desc' },
         }
         const modifiedResult = await this.resource.customHooks.afterList(result, hookContext as never)
         if (modifiedResult) {
@@ -299,7 +302,8 @@ export class BaseCrudController {
       error instanceof Error &&
       (error.message === 'Assignee must be a rider' ||
         error.message === 'Assignee must be an active store driver' ||
-        error.message === 'You cannot assign deliveries for this store')
+        error.message === 'You cannot assign deliveries for this store' ||
+        error.message === 'Store is not ready to publish')
     ) {
       return reply.code(400).send({ error: error.message })
     }
