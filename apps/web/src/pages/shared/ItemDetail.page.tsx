@@ -88,7 +88,7 @@ export default function ItemDetailPage() {
     <PageContainer className="max-w-[640px] mx-auto rounded-xl shadow-lg">
 
     {/* Store title */}
-    <StoreHeader showMap={false} store={store} />
+    {store ? <StoreHeader showMap={false} store={store} fullSize={false} /> : null}
     
       <Button
         variant="ghost"

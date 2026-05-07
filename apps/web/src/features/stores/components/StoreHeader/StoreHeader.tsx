@@ -1,10 +1,9 @@
 import { MapPin, Phone, Clock } from 'lucide-react'
 import { Badge } from '@shared/ui/primitives'
-import type { StoreResponse, StoreWithRating } from '@api/types'
+import type { MediaApiResponse, StoreResponse, StoreWithRating } from '@api/types'
 import { cn } from '@shared/lib/cn'
-import { useQuery } from '@tanstack/react-query'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
-import { authGet } from '@shared/lib/auth/authFetch'
+import { useMediaList } from '@shared/hooks/hooks/vendor/useMediaList'
 
 /**
  * StoreHeader - Modern store header with two-column layout and map
@@ -13,9 +12,11 @@ import { authGet } from '@shared/lib/auth/authFetch'
 export interface StoreHeaderProps {
   readonly store: StoreResponse & StoreWithRating
   readonly className?: string
+  readonly showMap?: boolean
+  readonly fullSize?: boolean
 }
 
-export function StoreHeader({ store, className, showMap = true }: StoreHeaderProps) {
+export function StoreHeader({ store, className, showMap = true, fullSize = true }: StoreHeaderProps) {
   const fullAddress = [
     store.addressStreet, 
     store.addressCity, 
@@ -23,21 +24,8 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
     store.addressZip
   ].filter(Boolean).join(', ')
 
-  // Fetch store media for hero display
-  const { data: storeMedia } = useQuery({
-    queryKey: ['store-media', store.id],
-    queryFn: async () => {
-      const response = await authGet(`/api/media?storeId=${store.id}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch store media')
-      }
-      const data = await response.json()
-      return data.data || []
-    },
-    enabled: !!store.id,
-  })
-
-  const primaryMedia = storeMedia?.[0]
+  const { data: storeMedia } = useMediaList({ storeId: fullSize ? store.id : undefined })
+  const primaryMedia: MediaApiResponse | undefined = storeMedia?.[0]
 
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card', className)}>
@@ -45,12 +33,12 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
         {/* Store Info Section */}
         <div className="flex-1 p-6 space-y-5">
           {/* Store Hero Media */}
-          {primaryMedia && (
+          {fullSize && primaryMedia && (
             <div className="overflow-hidden relative mb-4 bg-gray-100 rounded-lg aspect-video">
               {primaryMedia.kind === 'IMAGE' ? (
                 <img
                   src={primaryMedia.url}
-                  alt={primaryMedia.altText || store.name}
+                  alt={primaryMedia.altText ?? store.name}
                   className="object-cover w-full h-full"
                 />
               ) : (
@@ -59,7 +47,9 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
                   className="object-cover w-full h-full"
                   controls
                   playsInline
-                />
+                >
+                  <track kind="captions" />
+                </video>
               )}
             </div>
           )}
@@ -67,7 +57,14 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
           {/* Store Name & Status */}
           <div>
             <div className="flex gap-2 justify-between items-start mb-2">
-              <h1 className="text-6xl font-bold tracking-tight text-foreground">{store.name}</h1>
+              <h1
+                className={cn(
+                  'font-bold tracking-tight text-foreground',
+                  fullSize ? 'text-6xl' : 'text-3xl',
+                )}
+              >
+                {store.name}
+              </h1>
               {!store.isPublished && (
                 <Badge variant="warning">Draft</Badge>
               )}
@@ -114,7 +111,7 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
           <div className="flex flex-wrap gap-2">
             {typeof store.averageRating === 'number' ? (
               <Badge variant="secondary">{store.averageRating} Rating</Badge>
-            ) : null}
+            ) : undefined}
           </div>
         </div>
 
