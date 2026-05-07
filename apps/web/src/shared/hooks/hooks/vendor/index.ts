@@ -3,6 +3,10 @@
  */
 export { useSearchFilter } from './useSearchFilter'
 export { useVendorStores } from './useVendorStores'
+export { useVendorStoreScope } from './useVendorStoreScope'
+export type { VendorStorePick } from './useVendorStoreScope'
+export { fetchTeamMeStores, getVendorApiBase } from './vendorTeamApi'
+export { useVendorTeamRequest } from './useVendorTeamRequest'
 export { useStoreItems } from './useStoreItems'
 export { useDeleteConfirm } from './useDeleteConfirm'
 export type { UseDeleteConfirmOptions } from './useDeleteConfirm'

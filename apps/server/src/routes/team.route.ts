@@ -14,6 +14,7 @@ import {
   getStoreDeliveryDrivers,
   getUserInvitations,
   hasStorePermission,
+  prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
 import { userHasStoreAccess } from '../middleware/storeAccess'
@@ -256,14 +257,29 @@ export const teamRoutes = async (app: FastifyInstance) => {
     }
   })
 
-  // GET /team/me/stores - Get stores user is a member of
+  // GET /team/me/stores - Owned stores + stores where user is an active team member (admin: all stores)
   app.get('/team/me/stores', {
-    preHandler: [requireRole(['USER', 'STAFF', 'VENDOR'])],
+    preHandler: [requireRole(['USER', 'STAFF', 'VENDOR', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
       if (!userId) {
         return reply.code(401).send({ error: 'Unauthorized' })
+      }
+
+      if (req.user!.role === 'ADMIN') {
+        const allStores = await prisma.store.findMany({
+          select: { id: true, name: true, slug: true, isPublished: true },
+          orderBy: { name: 'asc' },
+          take: 500,
+        })
+        const stores = allStores.map((store) => ({
+          storeId: store.id,
+          store,
+          permissions: ['FULL_ACCESS'] as const,
+          addedAt: new Date(),
+        }))
+        return reply.code(200).send({ stores })
       }
 
       const stores = await getUserStoreAccess(userId)

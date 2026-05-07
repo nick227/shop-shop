@@ -108,19 +108,32 @@ export interface StoreUpdateFormData {
 
 // Item Form Types
 export interface ItemFormData {
-  name: string
+  title: string
   description: string
   price: string
   category: string
-  isAvailable: boolean
-  isFeatured: boolean
-  prepTimeMin: number
-  imageUrl?: string
+  type: string
+  isActive: boolean
+  isSoldOut: boolean
+  stockQty: string
+  sortIndex: number
   tags: string[]
-  allergens: string[]
+  // Dietary attributes
+  isVegan: boolean
+  isVegetarian: boolean
+  isGlutenFree: boolean
+  isDairyFree: boolean
+  isKeto: boolean
+  isPaleo: boolean
+  // Legacy fields for backward compatibility
+  name?: string
+  isAvailable?: boolean
+  isFeatured?: boolean
+  prepTimeMin?: number
+  imageUrl?: string
+  allergens?: string[]
   nutritionInfo?: string
   ingredients?: string
-  storeId: string
 }
 
 export interface ItemUpdateFormData {

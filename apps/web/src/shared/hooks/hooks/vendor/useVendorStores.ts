@@ -1,22 +1,21 @@
 /**
- * useVendorStores - Fetch vendor's stores;
+ * useVendorStores — stores the signed-in user can manage (owned + team memberships).
+ * Source: GET /team/me/stores
  */
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
-import { useAuth } from '@features/auth/hooks/useAuth'
+import { useAuthStore } from '@stores/authStore'
 import type { StoreResponse } from '@api/types'
+import { fetchTeamMeStores } from './vendorTeamApi'
 
 export function useVendorStores() {
-  const { user } = useAuth()
+  const user = useAuthStore((s) => s.user)
+  const token = useAuthStore((s) => s.token)
 
   return useQuery({
-    queryKey: ['vendor-stores', (user as any)?.id],
-    queryFn: async () => {
-      const response = await apiClient.stores().listStores({ ownerUserId: (user as any)?.id } as any)
-      return response.data || []
-    },
-    enabled: !!user,
-    select: (data) => data || []
+    queryKey: ['vendor-managed-stores', user?.id],
+    queryFn: async () => fetchTeamMeStores(token!),
+    enabled: Boolean(user?.id && token),
+    select: (data: StoreResponse[]) => data ?? [],
   })
 }
 

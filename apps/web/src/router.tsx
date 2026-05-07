@@ -34,6 +34,8 @@ const StoreBundleEditorPage = lazy(() => import('./pages/vendor/StoreBundleEdito
 const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
 const VendorStoreRiverPage = lazy(() => import('./pages/vendor/Bundles.page'))
 const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
+const VendorDriversPage = lazy(() => import('./pages/vendor/Drivers.page'))
+import VendorTeamStoreRedirectPage from './pages/vendor/VendorTeamStoreRedirect.page'
 
 // Customer account pages;
 const CustomerDashboardPage = lazy(() => import('./pages/customer/Dashboard.page'))
@@ -210,8 +212,13 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               handle: { title: 'Team' },
             },
             {
+              path: 'drivers',
+              element: lazyRoute(VendorDriversPage),
+              handle: { title: 'Drivers' },
+            },
+            {
               path: 'stores/:storeId/team',
-              element: lazyRoute(VendorTeamPage),
+              element: <VendorTeamStoreRedirectPage />,
               handle: { title: 'Team' },
             },
           ],

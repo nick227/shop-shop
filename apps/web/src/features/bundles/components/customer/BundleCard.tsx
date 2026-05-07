@@ -51,7 +51,7 @@ export function BundleCard({
   return (
     <Card className="item-card">
             <Image
-        src={bundle.imageUrl ?? '/placeholder-bundle-' + bundle.id + '.jpg'}    
+        src={bundle.media?.[0]?.url ?? '/placeholder-bundle-' + bundle.id + '.jpg'}    
         alt={bundle.name}
         fallbackSeed={bundle.id}
         aspectRatio="4/3"

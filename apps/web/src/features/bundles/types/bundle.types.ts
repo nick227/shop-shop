@@ -57,7 +57,7 @@ export function bundleToFormData(bundle: Bundle): BundleFormData {
   return {
     name: bundle.name,
     description: bundle.description ?? '',
-    imageUrl: bundle.imageUrl ?? '',
+    imageUrl: bundle.media?.[0]?.url ?? '',
     isActive: bundle.isActive ?? true,
     sortIndex: bundle.sortIndex ?? 0,
     items: bundle.items?.map(item => ({

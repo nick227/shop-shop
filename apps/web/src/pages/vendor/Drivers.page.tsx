@@ -11,61 +11,22 @@ import {
   useVendorStoreScope,
   useVendorTeamRequest,
 } from '@shared/hooks/hooks/vendor'
-import { ShieldCheck, Mail, Users, X } from 'lucide-react'
+import { Mail, Truck, Users, X } from 'lucide-react'
 
-type TeamRolePreset =
-  | 'MANAGER'
-  | 'STAFF'
-  | 'MENU_EDITOR'
-  | 'ORDER_HANDLER'
-  | 'FINANCE'
-
-const TEAM_ROLE_PRESETS: Record<
-  TeamRolePreset,
-  { readonly label: string; readonly description: string; readonly permissions: readonly string[] }
-> = {
-  MANAGER: {
-    label: 'Manager',
-    description: 'Full access to operate the store, team, orders, menu, and settings.',
-    permissions: ['FULL_ACCESS'],
-  },
-  STAFF: {
-    label: 'Staff',
-    description: 'Orders and menu work without changing store settings.',
-    permissions: ['VIEW_ORDERS', 'MANAGE_ORDERS', 'VIEW_ITEMS', 'MANAGE_ITEMS'],
-  },
-  MENU_EDITOR: {
-    label: 'Menu editor',
-    description: 'Create and update menu items.',
-    permissions: ['VIEW_ITEMS', 'MANAGE_ITEMS'],
-  },
-  ORDER_HANDLER: {
-    label: 'Order handler',
-    description: 'View and update orders.',
-    permissions: ['VIEW_ORDERS', 'MANAGE_ORDERS'],
-  },
-  FINANCE: {
-    label: 'Finance',
-    description: 'View orders and payout-related finance data.',
-    permissions: ['VIEW_ORDERS', 'VIEW_FINANCE'],
-  },
+const DRIVER_INVITE_PRESET = {
+  label: 'Driver',
+  description: 'Can view and update deliveries for this store (assignments from your dispatch flow).',
+  permissions: ['VIEW_DELIVERIES', 'MANAGE_DELIVERIES'] as const,
 }
 
-function summarizeTeamRole(permissions: unknown): string {
-  const list = Array.isArray(permissions) ? permissions : []
-  if (list.includes('FULL_ACCESS')) return 'Manager'
-  if (list.includes('VIEW_FINANCE')) return 'Finance'
-  if (list.includes('MANAGE_ITEMS') || list.includes('VIEW_ITEMS')) {
-    if (!list.includes('MANAGE_ORDERS')) return 'Menu editor'
-  }
-  if (list.includes('MANAGE_ORDERS') || list.includes('VIEW_ORDERS')) return 'Order handler'
-  return 'Staff'
-}
-
-interface TeamMemberRow {
+interface DeliveryDriverRow {
   readonly id: string
   readonly permissionsJson?: unknown
-  readonly user?: { readonly name?: string | null; readonly email?: string | null }
+  readonly user?: {
+    readonly name?: string | null
+    readonly email?: string | null
+    readonly phone?: string | null
+  }
 }
 
 interface InvitationRow {
@@ -75,7 +36,12 @@ interface InvitationRow {
   readonly permissionsJson?: unknown
 }
 
-export default function VendorTeamPage() {
+function isDriverInvitation(permissions: unknown): boolean {
+  const list = Array.isArray(permissions) ? permissions : []
+  return list.some((p) => String(p).includes('DELIVER'))
+}
+
+export default function VendorDriversPage() {
   const queryClient = useQueryClient()
   const teamRequest = useVendorTeamRequest()
   const { data: stores = [], isLoading: storesLoading } = useVendorStores()
@@ -84,7 +50,6 @@ export default function VendorTeamPage() {
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
-  const [rolePreset, setRolePreset] = useState<TeamRolePreset>('STAFF')
 
   const inviteMessage = useMemo(() => {
     const storeName = selectedStore && 'name' in selectedStore ? String(selectedStore.name) : 'the store'
@@ -92,67 +57,70 @@ export default function VendorTeamPage() {
       [displayName.trim() && `Name: ${displayName.trim()}`, phone.trim() && `Phone: ${phone.trim()}`]
         .filter(Boolean)
         .join(' · ') || undefined
-    const base = `You have been invited as ${TEAM_ROLE_PRESETS[rolePreset].label.toLowerCase()} for ${storeName}.`
+    const base = `You have been invited as a delivery driver for ${storeName}.`
     return contact ? `${base} (${contact})` : base
-  }, [displayName, phone, rolePreset, selectedStore])
+  }, [displayName, phone, selectedStore])
 
-  const membersQuery = useQuery({
-    queryKey: ['team-members', selectedStoreId],
+  const driversQuery = useQuery({
+    queryKey: ['store-drivers', selectedStoreId],
     queryFn: async () => {
-      const json = await teamRequest<{ members?: TeamMemberRow[] }>(`/team/stores/${selectedStoreId}/members`)
-      return json.members ?? []
+      const json = await teamRequest<{ drivers?: DeliveryDriverRow[] }>(
+        `/team/stores/${selectedStoreId}/drivers`
+      )
+      return json.drivers ?? []
     },
     enabled: Boolean(selectedStoreId),
   })
 
   const invitationsQuery = useQuery({
-    queryKey: ['team-invitations', selectedStoreId],
+    queryKey: ['team-invitations-drivers', selectedStoreId],
     queryFn: async () => {
       const json = await teamRequest<{ invitations?: InvitationRow[] }>(
         `/team/stores/${selectedStoreId}/invitations`
       )
-      return json.invitations ?? []
+      return (json.invitations ?? []).filter((inv) => isDriverInvitation(inv.permissionsJson))
     },
     enabled: Boolean(selectedStoreId),
   })
 
   const inviteMutation = useMutation({
-    mutationFn: async () => {
-      const preset = TEAM_ROLE_PRESETS[rolePreset]
-      return teamRequest('/team/invitations', {
+    mutationFn: async () =>
+      teamRequest('/team/invitations', {
         method: 'POST',
         body: JSON.stringify({
           storeId: selectedStoreId,
           recipientEmail: email.trim(),
-          permissions: [...preset.permissions],
+          permissions: [...DRIVER_INVITE_PRESET.permissions],
           message: inviteMessage,
         }),
-      })
-    },
+      }),
     onSuccess: () => {
       setEmail('')
       setDisplayName('')
       setPhone('')
-      void queryClient.invalidateQueries({ queryKey: ['team-invitations', selectedStoreId] })
-      toast.success('Invitation created')
+      void queryClient.invalidateQueries({ queryKey: ['team-invitations-drivers', selectedStoreId] })
+      toast.success('Driver invitation sent')
     },
     onError: (error: unknown) =>
-      toast.error(error instanceof Error ? error.message : 'Could not create invitation'),
+      toast.error(error instanceof Error ? error.message : 'Could not send invitation'),
   })
 
   const revokeInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) =>
       teamRequest(`/team/invitations/${invitationId}`, { method: 'DELETE' }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['team-invitations', selectedStoreId] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['team-invitations-drivers', selectedStoreId] }),
     onError: (error: unknown) =>
       toast.error(error instanceof Error ? error.message : 'Could not revoke invitation'),
   })
 
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => teamRequest(`/team/members/${memberId}`, { method: 'DELETE' }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['team-members', selectedStoreId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['store-drivers', selectedStoreId] })
+      void queryClient.invalidateQueries({ queryKey: ['team-members', selectedStoreId] })
+    },
     onError: (error: unknown) =>
-      toast.error(error instanceof Error ? error.message : 'Could not remove member'),
+      toast.error(error instanceof Error ? error.message : 'Could not remove driver'),
   })
 
   if (storesLoading) {
@@ -168,28 +136,28 @@ export default function VendorTeamPage() {
   if (!stores.length) {
     return (
       <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6">
-        <EmptyState icon={Users} title="Create a store first" description="Team access is managed per store." />
+        <EmptyState icon={Users} title="Create a store first" description="Drivers are managed per store." />
       </PageShell>
     )
   }
 
-  const members = membersQuery.data ?? []
-  const invitations = invitationsQuery.data ?? []
-  const selectedPreset = TEAM_ROLE_PRESETS[rolePreset]
+  const drivers = driversQuery.data ?? []
+  const driverInvitations = invitationsQuery.data ?? []
+  const driversError = driversQuery.error
 
   return (
     <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6">
       <PageHeader
-        title="Team"
-        description="Invite people who can access and operate this store. Use Drivers for delivery assignments."
+        title="Drivers"
+        description="People who can fulfill or update deliveries for this store. Third-party provider linking can be added later."
       />
 
       <div className="flex flex-col gap-2 sm:max-w-sm">
-        <label className="text-sm font-medium" htmlFor="team-store">
+        <label className="text-sm font-medium" htmlFor="drivers-store">
           Store
         </label>
         <select
-          id="team-store"
+          id="drivers-store"
           value={selectedStoreId}
           onChange={(event) => setSelectedStoreId(event.target.value)}
           className="h-10 rounded-md border border-border bg-background px-3 text-sm"
@@ -202,11 +170,17 @@ export default function VendorTeamPage() {
         </select>
       </div>
 
+      {driversError ? (
+        <p className="text-sm text-destructive">
+          {driversError instanceof Error ? driversError.message : 'Could not load drivers for this store.'}
+        </p>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5" />
-            Invite team member
+            Invite driver by email
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -216,25 +190,8 @@ export default function VendorTeamPage() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="teammate@example.com"
+              placeholder="driver@example.com"
             />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" htmlFor="team-role">
-                Role
-              </label>
-              <select
-                id="team-role"
-                value={rolePreset}
-                onChange={(event) => setRolePreset(event.target.value as TeamRolePreset)}
-                className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-              >
-                {(Object.keys(TEAM_ROLE_PRESETS) as TeamRolePreset[]).map((key) => (
-                  <option key={key} value={key}>
-                    {TEAM_ROLE_PRESETS[key].label}
-                  </option>
-                ))}
-              </select>
-            </div>
             <Input
               label="Name (optional)"
               type="text"
@@ -256,14 +213,14 @@ export default function VendorTeamPage() {
             disabled={!email.trim() || inviteMutation.isPending}
             onClick={() => inviteMutation.mutate()}
           >
-            Send invite
+            Send driver invite
           </Button>
           <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             <div className="mb-1 flex items-center gap-2 font-medium text-foreground">
-              <ShieldCheck className="h-4 w-4" />
-              {selectedPreset.label}
+              <Truck className="h-4 w-4" />
+              {DRIVER_INVITE_PRESET.label}
             </div>
-            {selectedPreset.description}
+            {DRIVER_INVITE_PRESET.description}
           </div>
         </CardContent>
       </Card>
@@ -272,17 +229,17 @@ export default function VendorTeamPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5" />
-              Active members
+              <Truck className="h-5 w-5" />
+              Active drivers
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {membersQuery.isLoading ? (
+            {driversQuery.isLoading ? (
               <Spinner />
-            ) : members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No team members yet.</p>
+            ) : drivers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No drivers with delivery permissions yet.</p>
             ) : (
-              members.map((member) => (
+              drivers.map((member) => (
                 <div
                   key={member.id}
                   className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
@@ -290,9 +247,12 @@ export default function VendorTeamPage() {
                   <div className="min-w-0">
                     <div className="truncate font-medium">{member.user?.name || member.user?.email}</div>
                     <div className="truncate text-sm text-muted-foreground">{member.user?.email}</div>
+                    {member.user?.phone ? (
+                      <div className="truncate text-xs text-muted-foreground">{member.user.phone}</div>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="default">{summarizeTeamRole(member.permissionsJson)}</Badge>
+                    <Badge variant="warning">Driver</Badge>
                     <Button variant="ghost" size="icon" onClick={() => removeMemberMutation.mutate(member.id)}>
                       <X className="h-4 w-4" />
                     </Button>
@@ -307,16 +267,16 @@ export default function VendorTeamPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Mail className="h-5 w-5" />
-              Pending invitations
+              Pending driver invitations
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {invitationsQuery.isLoading ? (
               <Spinner />
-            ) : invitations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending invitations.</p>
+            ) : driverInvitations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pending driver invitations.</p>
             ) : (
-              invitations.map((invitation) => (
+              driverInvitations.map((invitation) => (
                 <div
                   key={invitation.id}
                   className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
@@ -328,7 +288,7 @@ export default function VendorTeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{summarizeTeamRole(invitation.permissionsJson)}</Badge>
+                    <Badge variant="outline">Driver</Badge>
                     <Button variant="ghost" size="icon" onClick={() => revokeInvitationMutation.mutate(invitation.id)}>
                       <X className="h-4 w-4" />
                     </Button>

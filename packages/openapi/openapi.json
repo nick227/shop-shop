@@ -1106,6 +1106,27 @@
           "isPublished": {
             "type": "boolean"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "DISABLED"
+            ]
+          },
+          "disabledAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "disabledByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "disabledReason": {
+            "type": "string",
+            "nullable": true
+          },
           "deliveryEnabled": {
             "type": "boolean"
           },
@@ -1137,11 +1158,11 @@
           },
           "latitude": {
             "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "longitude": {
             "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "addressStreet": {
             "type": "string"
@@ -1218,6 +1239,27 @@
           "isPublished": {
             "type": "boolean"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "DISABLED"
+            ]
+          },
+          "disabledAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "disabledByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "disabledReason": {
+            "type": "string",
+            "nullable": true
+          },
           "deliveryEnabled": {
             "type": "boolean"
           },
@@ -1249,11 +1291,11 @@
           },
           "latitude": {
             "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "longitude": {
             "type": "string",
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "addressStreet": {
             "type": "string"
@@ -1336,6 +1378,28 @@
             "type": "boolean",
             "nullable": true
           },
+          "status": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "DISABLED"
+            ]
+          },
+          "disabledAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "disabledByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "disabledReason": {
+            "type": "string",
+            "nullable": true
+          },
           "deliveryEnabled": {
             "type": "boolean",
             "nullable": true
@@ -1378,12 +1442,12 @@
           "latitude": {
             "type": "string",
             "nullable": true,
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "longitude": {
             "type": "string",
             "nullable": true,
-            "pattern": "^\\d+(\\.\\d{1,2})?$"
+            "pattern": "^-?\\d+(\\.\\d+)?$"
           },
           "addressStreet": {
             "type": "string",
@@ -1477,6 +1541,10 @@
           "email",
           "website",
           "isPublished",
+          "status",
+          "disabledAt",
+          "disabledByUserId",
+          "disabledReason",
           "deliveryEnabled",
           "pickupEnabled",
           "prepTimeMin",
@@ -1552,6 +1620,28 @@
                   "type": "boolean",
                   "nullable": true
                 },
+                "status": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    "ACTIVE",
+                    "PAUSED",
+                    "DISABLED"
+                  ]
+                },
+                "disabledAt": {
+                  "type": "string",
+                  "nullable": true,
+                  "format": "date-time"
+                },
+                "disabledByUserId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "disabledReason": {
+                  "type": "string",
+                  "nullable": true
+                },
                 "deliveryEnabled": {
                   "type": "boolean",
                   "nullable": true
@@ -1594,12 +1684,12 @@
                 "latitude": {
                   "type": "string",
                   "nullable": true,
-                  "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  "pattern": "^-?\\d+(\\.\\d+)?$"
                 },
                 "longitude": {
                   "type": "string",
                   "nullable": true,
-                  "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  "pattern": "^-?\\d+(\\.\\d+)?$"
                 },
                 "addressStreet": {
                   "type": "string",
@@ -1693,6 +1783,10 @@
                 "email",
                 "website",
                 "isPublished",
+                "status",
+                "disabledAt",
+                "disabledByUserId",
+                "disabledReason",
                 "deliveryEnabled",
                 "pickupEnabled",
                 "prepTimeMin",
@@ -1951,6 +2045,50 @@
           },
           "FavoriteItem": {
             "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slug": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "slug",
+                "label",
+                "category"
+              ]
+            }
+          },
+          "mediaAssets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "sortIndex": {
+                  "type": "number",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "url",
+                "kind"
+              ]
+            }
           }
         },
         "required": [
@@ -2063,6 +2201,50 @@
                 },
                 "FavoriteItem": {
                   "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slug": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "category": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "label",
+                      "category"
+                    ]
+                  }
+                },
+                "mediaAssets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string"
+                      },
+                      "sortIndex": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "url",
+                      "kind"
+                    ]
+                  }
                 }
               },
               "required": [
@@ -2637,6 +2819,9 @@
           "itemId": {
             "type": "string"
           },
+          "bundleId": {
+            "type": "string"
+          },
           "quantity": {
             "type": "integer",
             "minimum": 1
@@ -2650,11 +2835,7 @@
           "notes": {
             "type": "string"
           }
-        },
-        "required": [
-          "itemId",
-          "quantity"
-        ]
+        }
       },
       "UpdateCartInput": {
         "type": "object",
@@ -3136,9 +3317,6 @@
           "description": {
             "type": "string"
           },
-          "imageUrl": {
-            "type": "string"
-          },
           "isActive": {
             "type": "boolean"
           },
@@ -3219,9 +3397,6 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
-          },
-          "imageUrl": {
             "type": "string"
           },
           "isActive": {
@@ -3310,9 +3485,6 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
-          },
-          "imageUrl": {
             "type": "string"
           },
           "isActive": {
@@ -3460,9 +3632,6 @@
                   "type": "string"
                 },
                 "description": {
-                  "type": "string"
-                },
-                "imageUrl": {
                   "type": "string"
                 },
                 "isActive": {
@@ -5754,6 +5923,27 @@
                   "isPublished": {
                     "type": "boolean"
                   },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "PAUSED",
+                      "DISABLED"
+                    ]
+                  },
+                  "disabledAt": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  },
+                  "disabledByUserId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "disabledReason": {
+                    "type": "string",
+                    "nullable": true
+                  },
                   "deliveryEnabled": {
                     "type": "boolean"
                   },
@@ -5785,11 +5975,11 @@
                   },
                   "latitude": {
                     "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    "pattern": "^-?\\d+(\\.\\d+)?$"
                   },
                   "longitude": {
                     "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    "pattern": "^-?\\d+(\\.\\d+)?$"
                   },
                   "addressStreet": {
                     "type": "string"
@@ -5880,6 +6070,28 @@
                       "type": "boolean",
                       "nullable": true
                     },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "ACTIVE",
+                        "PAUSED",
+                        "DISABLED"
+                      ]
+                    },
+                    "disabledAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    },
+                    "disabledByUserId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabledReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "deliveryEnabled": {
                       "type": "boolean",
                       "nullable": true
@@ -5922,12 +6134,12 @@
                     "latitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "longitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "addressStreet": {
                       "type": "string",
@@ -6021,6 +6233,10 @@
                     "email",
                     "website",
                     "isPublished",
+                    "status",
+                    "disabledAt",
+                    "disabledByUserId",
+                    "disabledReason",
                     "deliveryEnabled",
                     "pickupEnabled",
                     "prepTimeMin",
@@ -6142,6 +6358,28 @@
                             "type": "boolean",
                             "nullable": true
                           },
+                          "status": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "ACTIVE",
+                              "PAUSED",
+                              "DISABLED"
+                            ]
+                          },
+                          "disabledAt": {
+                            "type": "string",
+                            "nullable": true,
+                            "format": "date-time"
+                          },
+                          "disabledByUserId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "disabledReason": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "deliveryEnabled": {
                             "type": "boolean",
                             "nullable": true
@@ -6184,12 +6422,12 @@
                           "latitude": {
                             "type": "string",
                             "nullable": true,
-                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            "pattern": "^-?\\d+(\\.\\d+)?$"
                           },
                           "longitude": {
                             "type": "string",
                             "nullable": true,
-                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            "pattern": "^-?\\d+(\\.\\d+)?$"
                           },
                           "addressStreet": {
                             "type": "string",
@@ -6283,6 +6521,10 @@
                           "email",
                           "website",
                           "isPublished",
+                          "status",
+                          "disabledAt",
+                          "disabledByUserId",
+                          "disabledReason",
                           "deliveryEnabled",
                           "pickupEnabled",
                           "prepTimeMin",
@@ -6400,6 +6642,28 @@
                       "type": "boolean",
                       "nullable": true
                     },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "ACTIVE",
+                        "PAUSED",
+                        "DISABLED"
+                      ]
+                    },
+                    "disabledAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    },
+                    "disabledByUserId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabledReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "deliveryEnabled": {
                       "type": "boolean",
                       "nullable": true
@@ -6442,12 +6706,12 @@
                     "latitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "longitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "addressStreet": {
                       "type": "string",
@@ -6541,6 +6805,10 @@
                     "email",
                     "website",
                     "isPublished",
+                    "status",
+                    "disabledAt",
+                    "disabledByUserId",
+                    "disabledReason",
                     "deliveryEnabled",
                     "pickupEnabled",
                     "prepTimeMin",
@@ -6640,6 +6908,27 @@
                   "isPublished": {
                     "type": "boolean"
                   },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "PAUSED",
+                      "DISABLED"
+                    ]
+                  },
+                  "disabledAt": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  },
+                  "disabledByUserId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "disabledReason": {
+                    "type": "string",
+                    "nullable": true
+                  },
                   "deliveryEnabled": {
                     "type": "boolean"
                   },
@@ -6671,11 +6960,11 @@
                   },
                   "latitude": {
                     "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    "pattern": "^-?\\d+(\\.\\d+)?$"
                   },
                   "longitude": {
                     "type": "string",
-                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    "pattern": "^-?\\d+(\\.\\d+)?$"
                   },
                   "addressStreet": {
                     "type": "string"
@@ -6766,6 +7055,28 @@
                       "type": "boolean",
                       "nullable": true
                     },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "ACTIVE",
+                        "PAUSED",
+                        "DISABLED"
+                      ]
+                    },
+                    "disabledAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    },
+                    "disabledByUserId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabledReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "deliveryEnabled": {
                       "type": "boolean",
                       "nullable": true
@@ -6808,12 +7119,12 @@
                     "latitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "longitude": {
                       "type": "string",
                       "nullable": true,
-                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      "pattern": "^-?\\d+(\\.\\d+)?$"
                     },
                     "addressStreet": {
                       "type": "string",
@@ -6907,6 +7218,10 @@
                     "email",
                     "website",
                     "isPublished",
+                    "status",
+                    "disabledAt",
+                    "disabledByUserId",
+                    "disabledReason",
                     "deliveryEnabled",
                     "pickupEnabled",
                     "prepTimeMin",
@@ -7152,6 +7467,50 @@
                     },
                     "FavoriteItem": {
                       "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "slug",
+                          "label",
+                          "category"
+                        ]
+                      }
+                    },
+                    "mediaAssets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "sortIndex": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "kind"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -7310,6 +7669,50 @@
                           },
                           "FavoriteItem": {
                             "type": "string"
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "category": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "slug",
+                                "label",
+                                "category"
+                              ]
+                            }
+                          },
+                          "mediaAssets": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string"
+                                },
+                                "sortIndex": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "url",
+                                "kind"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -7464,6 +7867,50 @@
                     },
                     "FavoriteItem": {
                       "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "slug",
+                          "label",
+                          "category"
+                        ]
+                      }
+                    },
+                    "mediaAssets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "sortIndex": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "kind"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -7676,6 +8123,50 @@
                     },
                     "FavoriteItem": {
                       "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "slug",
+                          "label",
+                          "category"
+                        ]
+                      }
+                    },
+                    "mediaAssets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "sortIndex": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "kind"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -8906,6 +9397,9 @@
                   "itemId": {
                     "type": "string"
                   },
+                  "bundleId": {
+                    "type": "string"
+                  },
                   "quantity": {
                     "type": "integer",
                     "minimum": 1
@@ -8919,11 +9413,7 @@
                   "notes": {
                     "type": "string"
                   }
-                },
-                "required": [
-                  "itemId",
-                  "quantity"
-                ]
+                }
               }
             }
           }
@@ -9890,9 +10380,6 @@
                   "description": {
                     "type": "string"
                   },
-                  "imageUrl": {
-                    "type": "string"
-                  },
                   "isActive": {
                     "type": "boolean"
                   },
@@ -9993,9 +10480,6 @@
                       "type": "string"
                     },
                     "description": {
-                      "type": "string"
-                    },
-                    "imageUrl": {
                       "type": "string"
                     },
                     "isActive": {
@@ -10155,6 +10639,22 @@
             "required": false,
             "name": "limit",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "storeId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "isActive",
+            "in": "query"
           }
         ],
         "responses": {
@@ -10189,9 +10689,6 @@
                             "type": "string"
                           },
                           "description": {
-                            "type": "string"
-                          },
-                          "imageUrl": {
                             "type": "string"
                           },
                           "isActive": {
@@ -10383,9 +10880,6 @@
                     "description": {
                       "type": "string"
                     },
-                    "imageUrl": {
-                      "type": "string"
-                    },
                     "isActive": {
                       "type": "boolean"
                     },
@@ -10551,9 +11045,6 @@
                   "description": {
                     "type": "string"
                   },
-                  "imageUrl": {
-                    "type": "string"
-                  },
                   "isActive": {
                     "type": "boolean"
                   },
@@ -10648,9 +11139,6 @@
                       "type": "string"
                     },
                     "description": {
-                      "type": "string"
-                    },
-                    "imageUrl": {
                       "type": "string"
                     },
                     "isActive": {

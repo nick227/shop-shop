@@ -24,10 +24,20 @@ export default function ItemFormPage() {
     title: '',
     description: '',
     price: '',
+    category: '',
+    type: '',
     isActive: true,
     isSoldOut: false,
     stockQty: '',
     sortIndex: 0,
+    tags: [],
+    // Dietary attributes
+    isVegan: false,
+    isVegetarian: false,
+    isGlutenFree: false,
+    isDairyFree: false,
+    isKeto: false,
+    isPaleo: false,
   })
 
   // Fetch store for context
@@ -55,10 +65,20 @@ export default function ItemFormPage() {
         title: item.title || '',
         description: item.description || '',
         price: item.price?.toString() || '',
+        category: item.category || '',
+        type: item.type || '',
         isActive: item.isActive ?? true,
         isSoldOut: item.isSoldOut ?? false,
         stockQty: item.stockQty?.toString() || '',
         sortIndex: item.sortIndex ?? 0,
+        tags: item.tags || [],
+        // Dietary attributes
+        isVegan: item.isVegan ?? false,
+        isVegetarian: item.isVegetarian ?? false,
+        isGlutenFree: item.isGlutenFree ?? false,
+        isDairyFree: item.isDairyFree ?? false,
+        isKeto: item.isKeto ?? false,
+        isPaleo: item.isPaleo ?? false,
       })
     }
   }, [item])
@@ -72,10 +92,20 @@ export default function ItemFormPage() {
           title: data.title,
           description: data.description || '',
           price: data.price,
+          category: data.category,
+          type: data.type,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
+          tags: data.tags,
+          // Dietary attributes
+          isVegan: data.isVegan,
+          isVegetarian: data.isVegetarian,
+          isGlutenFree: data.isGlutenFree,
+          isDairyFree: data.isDairyFree,
+          isKeto: data.isKeto,
+          isPaleo: data.isPaleo,
         },
       })
     },
@@ -99,10 +129,20 @@ export default function ItemFormPage() {
           title: data.title,
           description: data.description || '',
           price: data.price,
+          category: data.category,
+          type: data.type,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
+          tags: data.tags,
+          // Dietary attributes
+          isVegan: data.isVegan,
+          isVegetarian: data.isVegetarian,
+          isGlutenFree: data.isGlutenFree,
+          isDairyFree: data.isDairyFree,
+          isKeto: data.isKeto,
+          isPaleo: data.isPaleo,
         },
       })
     },
@@ -147,26 +187,21 @@ export default function ItemFormPage() {
   }
 
   const isSubmitting = createItemMutation.isPending || updateItemMutation.isPending
-  const sections = createItemFormSections({ 
-    ...formData, 
-    storeId: storeId!,
-    price: Number.parseFloat(formData.price) || 0,
-    stockQty: Number.parseInt(formData.stockQty) || 0
-  }, handleChange)
+  const sections = createItemFormSections(
+    { 
+      ...formData, 
+      price: Number.parseFloat(formData.price) || 0,
+      stockQty: Number.parseInt(formData.stockQty) || 0
+    }, 
+    handleChange,
+    {
+      storeId: storeId!,
+      itemId: itemId
+    }
+  )
 
-  // Add media section if editing (can't upload media until item is created)
-  const sectionsWithMedia: FormSection[] = isEdit && itemId
-    ? [
-        ...sections,
-        {
-          id: 'media',
-          icon: '📷',
-          title: 'Item Media',
-          description: 'Upload images and videos to showcase your item',
-          content: <MediaGalleryManager itemId={itemId} maxFiles={100} />,
-        },
-      ]
-    : sections
+  // Media section is now included in the form sections
+  const sectionsWithMedia: FormSection[] = sections
 
   return (
     <FormPageTemplate

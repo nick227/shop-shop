@@ -337,29 +337,58 @@ export async function getStoreDeliveryDrivers(storeId: string) {
 }
 
 /**
- * Get stores for a team member
+ * Stores the user can act on: owned stores plus stores where they are an active team member.
+ * Owners often have no TeamMember row; include owned stores so vendor dashboards resolve stores.
  */
 export async function getUserStoreAccess(userId: string) {
-  const memberships = await prisma.teamMember.findMany({
-    where: { userId, isActive: true },
-    include: {
-      store: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          isPublished: true,
-        },
-      },
-    },
-  })
+  const storeSelect = {
+    id: true,
+    name: true,
+    slug: true,
+    isPublished: true,
+  } as const
 
-  return memberships.map((m) => ({
-    storeId: m.storeId,
-    store: m.store,
-    permissions: m.permissionsJson as TeamMemberPermission[],
-    addedAt: m.addedAt,
-  }))
+  const [memberships, ownedStores] = await Promise.all([
+    prisma.teamMember.findMany({
+      where: { userId, isActive: true },
+      include: {
+        store: { select: storeSelect },
+      },
+    }),
+    prisma.store.findMany({
+      where: { ownerUserId: userId },
+      select: storeSelect,
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
+  const byStoreId = new Map<
+    string,
+    { storeId: string; store: (typeof memberships)[0]['store']; permissions: TeamMemberPermission[]; addedAt: Date }
+  >()
+
+  for (const store of ownedStores) {
+    byStoreId.set(store.id, {
+      storeId: store.id,
+      store,
+      permissions: ['FULL_ACCESS'],
+      addedAt: new Date(0),
+    })
+  }
+
+  for (const m of memberships) {
+    if (byStoreId.has(m.storeId)) continue
+    byStoreId.set(m.storeId, {
+      storeId: m.storeId,
+      store: m.store,
+      permissions: m.permissionsJson as TeamMemberPermission[],
+      addedAt: m.addedAt,
+    })
+  }
+
+  return [...byStoreId.values()].sort((a, b) =>
+    String(a.store.name ?? '').localeCompare(String(b.store.name ?? ''))
+  )
 }
 
 /**

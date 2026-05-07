@@ -9,7 +9,7 @@
  * - Mobile responsive
  */
 
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@features/auth/hooks/useAuth'
 import { Button } from '@shared/ui/primitives'
 import { OrderCountWidget } from '@features/orders/components/OrderCountWidget'
@@ -20,12 +20,21 @@ import styles from './VendorLayout.module.css'
 export function VendorLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { user, logout } = useAuth()
   const { data: stores } = useVendorStores()
 
   // Enable real-time for first store (if any stores exist)
   const firstStore = (stores?.[0] as unknown as StoreResponse) ?? undefined
   const hasStores = stores && stores.length > 0
+
+  const peopleStoreId = (() => {
+    const q = searchParams.get('storeId')
+    if (q && stores?.some((s) => s.id === q)) return q
+    return firstStore?.id
+  })()
+  const teamPath = peopleStoreId ? `/vendor/team?storeId=${peopleStoreId}` : '/vendor/team'
+  const driversPath = peopleStoreId ? `/vendor/drivers?storeId=${peopleStoreId}` : '/vendor/drivers'
   
   useVendorRealtimeOrders({
     storeId: firstStore?.id ?? '',
@@ -87,11 +96,18 @@ export function VendorLayout() {
               <span>Orders</span>
             </button>
             <button
-              className={`${styles.navItem} ${isActive('/vendor/team') || location.pathname.endsWith('/team') ? styles.navItemActive : ''}`}
-              onClick={() => navigate(firstStore ? `${STORE_BASE_PATH}${firstStore.id}/team` : '/vendor/team')}
+              className={`${styles.navItem} ${location.pathname === '/vendor/team' ? styles.navItemActive : ''}`}
+              onClick={() => navigate(teamPath)}
             >
               <span className={styles.navIcon}>T</span>
-              <span>Team & Drivers</span>
+              <span>Team</span>
+            </button>
+            <button
+              className={`${styles.navItem} ${location.pathname === '/vendor/drivers' ? styles.navItemActive : ''}`}
+              onClick={() => navigate(driversPath)}
+            >
+              <span className={styles.navIcon}>D</span>
+              <span>Drivers</span>
             </button>
           </div>
 

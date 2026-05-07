@@ -56,7 +56,7 @@ export function BundleFormModal({
       setFormData({
         name: bundle.name,
         description: bundle.description || '',
-        imageUrl: bundle.imageUrl || '',
+        imageUrl: bundle.media?.[0]?.url ?? '',
         isActive: bundle.isActive,
         sortIndex: bundle.sortIndex,
         items: bundle.items?.map(item => ({
