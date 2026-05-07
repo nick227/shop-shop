@@ -59,6 +59,18 @@ export async function processApiError(error: unknown): Promise<CategorizedError>
   }
 }
 
+function isTokenInvalidationMessage(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('invalid token') ||
+    lower.includes('token invalid') ||
+    lower.includes('expired token') ||
+    lower.includes('token expired') ||
+    lower.includes('jwt expired') ||
+    lower.includes('jwt malformed')
+  )
+}
+
 /**
  * Categorize error based on status code and content
  */
@@ -72,7 +84,7 @@ function categorizeError(error: AppError): ErrorCategory {
   }
 
   // Authentication errors
-  if (status === 401 || message.includes('unauthorized') || message.includes('token')) {
+  if (status === 401 || isTokenInvalidationMessage(message)) {
     return ErrorCategory.AUTHENTICATION
   }
 
@@ -213,8 +225,10 @@ export function useErrorHandler() {
     // Handle specific error categories
     switch (error.category) {
       case ErrorCategory.AUTHENTICATION: {
-        // Trigger logout flow
-        window.dispatchEvent(new CustomEvent('auth:logout'))
+        // Only logout for clear token invalidation signals; do not logout for generic 401s.
+        if (isTokenInvalidationMessage(error.message ?? '')) {
+          window.dispatchEvent(new CustomEvent('auth:logout'))
+        }
         break
       }
       

@@ -16,6 +16,7 @@ import {
   hasStorePermission,
   prisma,
 } from '@packages/db'
+import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac'
 import { userHasStoreAccess } from '../middleware/storeAccess'
 
@@ -61,7 +62,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // POST /team/invitations - Send team invitation
   app.post('/team/invitations', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -126,7 +127,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // POST /team/invitations/accept - Accept invitation
   app.post('/team/invitations/accept', {
-    preHandler: [requireRole(['USER', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -180,7 +181,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/invitations/:id - Revoke invitation
   app.delete('/team/invitations/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -205,7 +206,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/members - Get store team members
   app.get('/team/stores/:storeId/members', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -223,7 +224,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/invitations - Get pending invitations for store
   app.get('/team/stores/:storeId/invitations', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -241,7 +242,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/drivers - Get active delivery assignment targets
   app.get('/team/stores/:storeId/drivers', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -259,7 +260,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/me/stores - Owned stores + stores where user is an active team member (admin: all stores)
   app.get('/team/me/stores', {
-    preHandler: [requireRole(['USER', 'STAFF', 'VENDOR', 'ADMIN'])],
+    preHandler: [authenticate, requireRole(['USER', 'STAFF', 'VENDOR', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -292,7 +293,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/me/invitations - Get invitations for current user
   app.get('/team/me/invitations', {
-    preHandler: [requireRole(['USER', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const email = req.user?.email
@@ -310,7 +311,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // PATCH /team/members/:id - Update team member
   app.patch('/team/members/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -342,7 +343,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/members/:id - Remove team member
   app.delete('/team/members/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id

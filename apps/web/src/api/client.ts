@@ -179,21 +179,8 @@ class ApiClient {
               const errorData = await responseClone.json().catch(() => ({}))
               const errorMessage = errorData.error || errorData.message || ''
               
-              // Only logout for specific token invalidation errors
-              const lower = errorMessage.toLowerCase()
-              const isTokenInvalid = lower.includes('invalid token') ||
-                                 lower.includes('token invalid') ||
-                                 lower.includes('expired token') ||
-                                 lower.includes('token expired') ||
-                                 lower.includes('jwt expired') ||
-                                 lower.includes('jwt malformed')
-              
-              if (isTokenInvalid) {
-                this.setToken(undefined)
-                useAuthStore.getState().clearAuth()
-                window.dispatchEvent(new CustomEvent('auth:logout'))
-              }
-            } catch {
+                          } catch {
+              console.log('[ApiClient] Error parsing 401 response')
               // If we can't parse error, be conservative and don't logout
             }
           }
@@ -425,7 +412,11 @@ class ApiClient {
                              lower.includes('jwt expired') ||
                              lower.includes('jwt malformed')
           
-          if (isTokenInvalid) {
+          // Be more conservative - only logout for clear token invalidation
+          // Also check if error message is not just a generic "Unauthorized"
+          const isGenericUnauthorized = lower === 'unauthorized' || lower === 'authentication required'
+          
+          if (isTokenInvalid && !isGenericUnauthorized) {
             this.setToken(undefined)
             useAuthStore.getState().clearAuth()
             window.dispatchEvent(new CustomEvent('auth:logout'))

@@ -42,6 +42,13 @@ export async function authFetch<T = unknown>(
 ): Promise<AuthFetchResponse<T>> {
   const { token } = useAuthStore.getState()
   
+  // Debug logging to check token state
+  console.log('[AuthFetch] Request:', {
+    url,
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none'
+  })
+  
   // Build full URL if it's a relative path
   const fullUrl = url.startsWith('http') ? url : apiPath(url)
   
@@ -66,9 +73,42 @@ export async function authFetch<T = unknown>(
   
   // Handle 401 Unauthorized responses
   if (response.status === 401 && token && /^Bearer\s+\S+$/i.test((headers.get('Authorization') ?? '').trim())) {
-    // Clear auth state and dispatch logout event
-    useAuthStore.getState().clearAuth()
-    window.dispatchEvent(new CustomEvent('auth:logout'))
+    try {
+      const errorResponse = await response.clone().json();
+      const errorMessage = errorResponse.error || errorResponse.message || ''
+      
+      // Debug logging to understand the issue
+      console.log('[AuthFetch] 401 Response:', {
+        url: fullUrl,
+        errorMessage,
+        errorResponse
+      })
+      
+      // Only logout for specific token invalidation errors
+      const lower = errorMessage.toLowerCase()
+      const isTokenInvalid = lower.includes('invalid token') ||
+                         lower.includes('token invalid') ||
+                         lower.includes('expired token') ||
+                         lower.includes('token expired') ||
+                         lower.includes('jwt expired') ||
+                         lower.includes('jwt malformed')
+      
+      // Be more conservative - only logout for clear token invalidation
+      // Also check if error message is not just a generic "Unauthorized"
+      const isGenericUnauthorized = lower === 'unauthorized' || lower === 'authentication required'
+      
+      if (isTokenInvalid && !isGenericUnauthorized) {
+        console.log('[AuthFetch] Logging out due to token invalidation:', errorMessage)
+        // Clear auth state and dispatch logout event
+        useAuthStore.getState().clearAuth()
+        window.dispatchEvent(new CustomEvent('auth:logout'))
+      } else {
+        console.log('[AuthFetch] Not logging out - generic unauthorized or missing token invalidation pattern')
+      }
+    } catch (error) {
+      console.log('[AuthFetch] Error parsing 401 response:', error)
+      // Ignore error and continue
+    }
   }
   
   // Return response with typed json method

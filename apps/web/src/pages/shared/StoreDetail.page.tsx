@@ -6,13 +6,13 @@ import { useItems } from '@shared/hooks/generated'
 import { useCart } from '@shared/hooks/hooks/useCart'
 import { parseStoreSlug } from '@shared/lib/utils/slugify'
 import { StoreHeader } from '@features/stores/components/StoreHeader'
-import { ItemCard, BundleCard } from '@features/products/components'
 import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { CartBadge } from '@components/CartBadge'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { bundles as bundlesApi } from '@api/apiWrapper'
-import type { Bundle, BundleItem, ItemResponse } from '@api/backend-types'
+import type { Bundle, ItemResponse } from '@api/backend-types'
+import { ItemCard } from '@features/products/components/ItemCard'
 
 // Canonical display order for ITEM_TYPE tag sections
 const ITEM_TYPE_ORDER = [
@@ -21,7 +21,7 @@ const ITEM_TYPE_ORDER = [
   'tray', 'family-meal', 'box', 'bundle-item',
 ]
 
-function groupItemsByType(items: ItemResponse[]): Array<{ label: string; items: ItemResponse[] }> {
+function groupItemsByType(items: ItemResponse[]): { label: string; items: ItemResponse[] }[] {
   const ungrouped: ItemResponse[] = []
   const grouped = new Map<string, { label: string; items: ItemResponse[] }>()
 
@@ -152,61 +152,6 @@ function KitchenContainer() {
           </div>
         </section>
       ))}
-      
-      {bundles.length > 0 && (
-        <section>
-          <div className="flex gap-3 items-baseline mb-4">
-            <h2 className="text-xl font-bold text-foreground">Bundles & Combos</h2>
-            <span className="text-sm text-muted-foreground">
-              {bundles.length} bundle{bundles.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {bundles.map((bundle: Bundle) => {
-              const bundleItems: BundleItem[] = bundle.items ?? []
-              const itemSum = bundleItems.reduce(
-                (sum, bi) => sum + Number(bi.item?.price ?? bi.price ?? 0) * (bi.quantity ?? 1),
-                0,
-              )
-              const p = bundle.pricing
-              let resolvedPrice = itemSum
-              if (p) {
-                if (p.pricingType === 'FIXED_PRICE' && p.fixedPrice != null)
-                  resolvedPrice = Number(p.fixedPrice)
-                else if (p.pricingType === 'DISCOUNT_PERCENT' && p.discountPercent != null)
-                  resolvedPrice = itemSum * (1 - Number(p.discountPercent) / 100)
-                else if (p.pricingType === 'DISCOUNT_AMOUNT' && p.discountAmount != null)
-                  resolvedPrice = itemSum - Number(p.discountAmount)
-              }
-              resolvedPrice = Math.max(0, resolvedPrice)
-
-              return (
-                <BundleCard
-                  key={bundle.id}
-                  bundle={{
-                    id: bundle.id,
-                    name: bundle.name,
-                    description: bundle.description,
-                    isActive: bundle.isActive,
-                    imageUrl: bundle.media?.[0]?.url ?? null,
-                    items: bundleItems.map((bi) => ({
-                      itemId: bi.itemId ?? bi.item?.id,
-                      title: bi.item?.title ?? bi.title ?? '',
-                      price: Number(bi.item?.price ?? bi.price ?? 0),
-                      quantity: bi.quantity ?? 1,
-                    })),
-                    pricing: p,
-                    resolvedPrice,
-                    itemSum,
-                    savings: itemSum - resolvedPrice,
-                  }}
-                  store={{ id: store.id, name: store.name }}
-                />
-              )
-            })}
-          </div>
-        </section>
-      )}
 
       <aside className="sticky bottom-4 z-20 p-4 rounded-xl border shadow-lg backdrop-blur border-border bg-background/95">
         <div className="flex gap-3 justify-between items-center">

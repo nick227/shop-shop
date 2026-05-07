@@ -208,7 +208,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'LOGIN_START' })
     
     try {
-      await storeTokens(accessToken, refreshToken)
+      // Store tokens in useAuthStore for consistency
+      useAuthStore.getState().setAuth(
+        { 
+          id: user.id,
+          email: user.email,
+          name: user.name || '',
+          role: user.role,
+          phone: user.phone || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          // Add required fields for UserResponse type
+          isCompany: false,
+          companyName: '',
+          addresses: [],
+          carts: [],
+          orders: [],
+          reviews: [],
+          wishlists: [],
+          subscriptions: [],
+          notifications: [],
+          preferences: {},
+          metadata: {}
+        } as any,
+        accessToken
+      )
       
       dispatch({
         type: 'LOGIN_SUCCESS',
@@ -221,7 +245,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
       throw error
     }
-  }, [storeTokens])
+  }, [])
 
   // ========================================
   // Logout Function
