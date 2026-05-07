@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop-Shop - Local Food Delivery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-primary: #1a1a2e;
+        --color-secondary: #16213e;
+        --color-accent: #e94560;
+        --color-accent-light: #ff6b6b;
+        --color-cream: #faf3e8;
+        --color-cream-dark: #f0e6d3;
+        --color-text: #2d2d2d;
+        --color-text-light: #666;
+        --color-success: #4ade80;
+        --font-display: 'Playfair Display', Georgia, serif;
+        --font-body: 'DM Sans', sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-snap-type: y mandatory;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--color-cream);
+        color: var(--color-text);
+        line-height: 1.5;
+      }
+
+      section {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+        position: relative;
+      }
+
+      .slide-content {
+        max-width: 1000px;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .nav-dots {
+        position: fixed;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        z-index: 100;
+      }
+
+      .nav-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-secondary);
+        opacity: 0.3;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+      }
+
+      .nav-dot:hover,
+      .nav-dot.active {
+        opacity: 1;
+        background: var(--color-accent);
+        transform: scale(1.5);
+      }
+
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 7vw, 4.5rem);
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--color-primary);
+        margin-bottom: 1.5rem;
+      }
+
+      h2 {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 600;
+        color: var(--color-primary);
+        margin-bottom: 1rem;
+      }
+
+      p {
+        font-size: 1.25rem;
+        color: var(--color-text-light);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.7;
+      }
+
+      .slide-hero {
+        background: linear-gradient(
+          160deg,
+          var(--color-cream) 0%,
+          #fff 40%,
+          var(--color-cream-dark) 100%
+        );
+      }
+
+      .hero-badge {
+        display: inline-block;
+        background: var(--color-accent);
+        color: white;
+        padding: 0.6rem 1.5rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-cta {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2.5rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 1rem 2.5rem;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 0.2s;
+      }
+
+      .btn-primary {
+        background: var(--color-accent);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+      }
+
+      .btn-secondary {
+        background: white;
+        color: var(--color-primary);
+        border: 2px solid var(--color-primary);
+      }
+
+      .section-label {
+        display: inline-block;
+        background: var(--color-accent);
+        color: white;
+        padding: 0.5rem 1.2rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+
+      .slide-customers {
+        background: white;
+      }
+
+      .slide-vendors {
+        background: var(--color-primary);
+        color: white;
+      }
+
+      .slide-vendors h2,
+      .slide-vendors p {
+        color: white;
+      }
+
+      .slide-vendors p {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .slide-vendors .section-label {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+      }
+
+      .slide-affiliates {
+        background: linear-gradient(180deg, #f0fdf4 0%, white 100%);
+      }
+
+      .slide-affiliates .section-label {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+      }
+
+      .slide-visual {
+        background: var(--color-secondary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .slide-visual h2 {
+        color: white;
+        font-size: clamp(2rem, 6vw, 4rem);
+      }
+
+      .phone-mockup {
+        width: 280px;
+        height: 560px;
+        background: var(--color-primary);
+        border-radius: 40px;
+        padding: 12px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+        margin: 2rem auto;
+      }
+
+      .phone-screen {
+        width: 100%;
+        height: 100%;
+        background: white;
+        border-radius: 30px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .phone-header {
+        background: var(--color-secondary);
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .phone-content {
+        flex: 1;
+        padding: 1rem;
+        overflow: hidden;
+      }
+
+      .vendor-card {
+        background: var(--color-cream);
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .vendor-img {
+        height: 80px;
+        background: linear-gradient(135deg, var(--color-accent-light), var(--color-accent));
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+
+      .vendor-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--color-primary);
+        text-align: left;
+      }
+
+      .vendor-meta {
+        font-size: 0.75rem;
+        color: var(--color-text-light);
+        text-align: left;
+      }
+
+      .order-steps {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+      }
+
+      .step {
+        width: 140px;
+        text-align: center;
+      }
+
+      .step-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--color-cream);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1rem;
+      }
+
+      .slide-vendors .step-icon {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .step-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+
+      .slide-vendors .step-label {
+        color: white;
+      }
+
+      .money-flow {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 2rem auto;
+        max-width: 900px;
+      }
+
+      .flow-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        text-align: left;
+      }
+
+      .flow-card h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--color-primary);
+      }
+
+      .flow-card p {
+        font-size: 1rem;
+        text-align: left;
+        max-width: none;
+      }
+
+      .flow-card .rate {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-success);
+        margin: 0.5rem 0;
+      }
+
+      .slide-cta {
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+      }
+
+      .slide-cta h2 {
+        color: white;
+      }
+
+      .slide-cta p {
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 700px;
+      }
+
+      .icon-row {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        margin: 2rem 0;
+      }
+
+      .icon-item {
+        text-align: center;
+      }
+
+      .icon-emoji {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .icon-label {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      @media (max-width: 768px) {
+        section {
+          padding: 2rem 1rem;
+        }
+        .nav-dots {
+          right: 0.75rem;
+        }
+        .money-flow {
+          grid-template-columns: 1fr;
+        }
+        .cta-grid {
+          grid-template-columns: 1fr;
+        }
+        .order-steps {
+          gap: 0.5rem;
+        }
+        .step {
+          width: 70px;
+        }
+        .step-icon {
+          width: 50px;
+          height: 50px;
+          font-size: 1.25rem;
+        }
+        .step-label {
+          font-size: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav-dots">
+      <button class="nav-dot active" onclick="scrollToSlide(0)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(1)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(2)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(3)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(4)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(5)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(6)"></button>
+    </nav>
+
+    <!-- Slide 1: Intro -->
+    <section class="slide-hero" id="slide-0">
+      <div class="slide-content">
+        <span class="hero-badge">Local Food, Delivered</span>
+        <h1>Eat Best Food in Your <span style="color: var(--color-accent)">Neighborhood</span></h1>
+        <p>
+          Shop-shop connects you with local bakeries, kitchens, and caterers. Order fresh, support
+          local, get it delivered.
+        </p>
+        <div class="hero-cta">
+          <a href="/search" class="btn btn-primary">Start Ordering</a>
+          <a href="/signup" class="btn btn-secondary">Create Account</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2: Visual - Phone Mockup -->
+    <section class="slide-visual" id="slide-1">
+      <div class="slide-content">
+        <h2>Find Your Food</h2>
+        <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 2rem">
+          Search, browse, and order from local kitchens — all in one app.
+        </p>
+        <div class="phone-mockup">
+          <div class="phone-screen">
+            <div class="phone-header">Shop-Shop</div>
+            <div class="phone-content">
+              <div class="vendor-card">
+                <div class="vendor-img"></div>
+                <div class="vendor-name">Golden Crust Bakery</div>
+                <div class="vendor-meta">⭐ 4.8 • 15 min • 0.8 mi</div>
+              </div>
+              <div class="vendor-card">
+                <div class="vendor-img"></div>
+                <div class="vendor-name">Mama's Kitchen</div>
+                <div class="vendor-meta">⭐ 4.6 • 25 min • 1.2 mi</div>
+              </div>
+              <div class="vendor-card">
+                <div class="vendor-img"></div>
+                <div class="vendor-name">Taco Brothers</div>
+                <div class="vendor-meta">⭐ 4.9 • 20 min • 0.5 mi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: For Customers -->
+    <section class="slide-customers" id="slide-2">
+      <div class="slide-content">
+        <span class="section-label">For Food Lovers</span>
+        <h2>One App. Everything You Need.</h2>
+        <p>
+          Search for what you want. Browse real menus with real photos. Order, pay, and track your
+          delivery — all in one place.
+        </p>
+        <div class="icon-row">
+          <div class="icon-item">
+            <div class="icon-emoji">🔍</div>
+            <div class="icon-label">Search</div>
+          </div>
+          <div class="icon-item">
+            <div class="icon-emoji">🛒</div>
+            <div class="icon-label">Order</div>
+          </div>
+          <div class="icon-item">
+            <div class="icon-emoji">🚚</div>
+            <div class="icon-label">Track</div>
+          </div>
+          <div class="icon-item">
+            <div class="icon-emoji">❤️</div>
+            <div class="icon-label">Save</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: For Vendors -->
+    <section class="slide-vendors" id="slide-3">
+      <div class="slide-content">
+        <span class="section-label">For Businesses</span>
+        <h2>Put Your Kitchen Online</h2>
+        <p>
+          Get discovered by new customers every day. Manage orders in one place. Get paid clearly
+          every week.
+        </p>
+        <div class="order-steps">
+          <div class="step">
+            <div class="step-icon">👥</div>
+            <div class="step-label">New Customers</div>
+          </div>
+          <div class="step">
+            <div class="step-icon">📦</div>
+            <div class="step-label">Manage Orders</div>
+          </div>
+          <div class="step">
+            <div class="step-icon">💰</div>
+            <div class="step-label">Get Paid</div>
+          </div>
+        </div>
+        <p style="font-size: 1rem; color: rgba(255, 255, 255, 0.6)">
+          No upfront cost. Just list your menu and start selling.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 5: Order Flow Visual -->
+    <section class="slide-visual" id="slide-4" style="background: var(--color-cream)">
+      <div class="slide-content">
+        <h2 style="color: var(--color-primary)">From Order to Door</h2>
+        <div class="order-steps">
+          <div class="step">
+            <div class="step-icon" style="background: white">🛒</div>
+            <div class="step-label" style="color: var(--color-primary)">Order</div>
+          </div>
+          <div class="step">
+            <div class="step-icon" style="background: white">👨‍🍳</div>
+            <div class="step-label" style="color: var(--color-primary)">Prepare</div>
+          </div>
+          <div class="step">
+            <div class="step-icon" style="background: white">🚗</div>
+            <div class="step-label" style="color: var(--color-primary)">Deliver</div>
+          </div>
+          <div class="step">
+            <div class="step-icon" style="background: white">🍽️</div>
+            <div class="step-label" style="color: var(--color-primary)">Eat</div>
+          </div>
+        </div>
+        <p style="color: var(--color-text-light)">
+          Track everything in real-time. Know exactly when your food arrives.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 6: Affiliate -->
+    <section class="slide-affiliates" id="slide-5">
+      <div class="slide-content">
+        <span class="section-label">Earn Money</span>
+        <h2>Two Ways to Get Paid</h2>
+        <p>Refer customers or add vendors to the platform. Get paid when they use the platform.</p>
+
+        <div class="money-flow">
+          <div class="flow-card">
+            <h4>Refer Customers</h4>
+            <p>Share your code. When they place an order, you get paid.</p>
+            <div class="rate">5%</div>
+            <p style="font-size: 0.85rem">on each order they place</p>
+          </div>
+          <div class="flow-card">
+            <h4>Add Vendors</h4>
+            <p>Onboard local kitchens to the platform. You get a small cut.</p>
+            <div class="rate">~2%</div>
+            <p style="font-size: 0.85rem">on each order they fulfill</p>
+          </div>
+          <div
+            class="flow-card"
+            style="background: linear-gradient(135deg, #4ade80, #22c55e); color: white"
+          >
+            <h4 style="color: white">The Double Dip</h4>
+            <p style="color: rgba(255, 255, 255, 0.95)">
+              Refer a customer AND add their vendor? You earn from both on every order. It stacks.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: CTA -->
+    <section class="slide-cta" id="slide-6">
+      <div class="slide-content">
+        <h2>Shop-Shop</h2>
+        <p>
+          We connect people with local kitchens — bakeries, restaurants, caterers, and food shops in
+          your neighborhood. Customers find great food. Vendors grow their business. Affiliates earn
+          along the way.
+        </p>
+        <p style="margin-top: 1.5rem; font-size: 1rem">Local food, delivered.</p>
+      </div>
+    </section>
+
+    <script>
+      const dots = document.querySelectorAll('.nav-dot')
+      const sections = document.querySelectorAll('section')
+
+      function scrollToSlide(index) {
+        sections[index].scrollIntoView({ behavior: 'smooth' })
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const index = Array.from(sections).indexOf(entry.target)
+              dots.forEach((dot, i) => dot.classList.toggle('active', i === index))
+            }
+          })
+        },
+        { threshold: 0.5 }
+      )
+
+      sections.forEach((section) => observer.observe(section))
+
+      document.addEventListener('keydown', (e) => {
+        const currentIndex = Array.from(dots).findIndex((dot) => dot.classList.contains('active'))
+        if ((e.key === 'ArrowDown' || e.key === 'PageDown') && currentIndex < sections.length - 1) {
+          e.preventDefault()
+          scrollToSlide(currentIndex + 1)
+        } else if ((e.key === 'ArrowUp' || e.key === 'PageUp') && currentIndex > 0) {
+          e.preventDefault()
+          scrollToSlide(currentIndex - 1)
+        }
+      })
+    </script>
+  </body>
+</html>

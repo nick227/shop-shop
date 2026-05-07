@@ -51,6 +51,9 @@
           "phone": {
             "type": "string",
             "maxLength": 20
+          },
+          "affiliateReferralCode": {
+            "type": "string"
           }
         },
         "required": [
@@ -94,8 +97,12 @@
             "type": "string",
             "enum": [
               "USER",
+              "VENDOR_PENDING",
               "VENDOR",
-              "ADMIN"
+              "ADMIN",
+              "AFFILIATE",
+              "RIDER",
+              "STAFF"
             ]
           },
           "phone": {
@@ -147,8 +154,12 @@
                 "type": "string",
                 "enum": [
                   "USER",
+                  "VENDOR_PENDING",
                   "VENDOR",
-                  "ADMIN"
+                  "ADMIN",
+                  "AFFILIATE",
+                  "RIDER",
+                  "STAFF"
                 ]
               },
               "phone": {
@@ -3803,6 +3814,9 @@
                   "phone": {
                     "type": "string",
                     "maxLength": 20
+                  },
+                  "affiliateReferralCode": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -3840,8 +3854,12 @@
                           "type": "string",
                           "enum": [
                             "USER",
+                            "VENDOR_PENDING",
                             "VENDOR",
-                            "ADMIN"
+                            "ADMIN",
+                            "AFFILIATE",
+                            "RIDER",
+                            "STAFF"
                           ]
                         },
                         "phone": {
@@ -3953,8 +3971,12 @@
                           "type": "string",
                           "enum": [
                             "USER",
+                            "VENDOR_PENDING",
                             "VENDOR",
-                            "ADMIN"
+                            "ADMIN",
+                            "AFFILIATE",
+                            "RIDER",
+                            "STAFF"
                           ]
                         },
                         "phone": {

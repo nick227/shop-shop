@@ -19,6 +19,8 @@ const DRIVER_INVITE_PRESET = {
   permissions: ['VIEW_DELIVERIES', 'MANAGE_DELIVERIES'] as const,
 }
 
+const DELIVERY_PERMISSIONS = new Set(['VIEW_DELIVERIES', 'MANAGE_DELIVERIES', 'ASSIGN_DELIVERIES'])
+
 interface DeliveryDriverRow {
   readonly id: string
   readonly permissionsJson?: unknown
@@ -39,6 +41,10 @@ interface InvitationRow {
 function isDriverInvitation(permissions: unknown): boolean {
   const list = Array.isArray(permissions) ? permissions : []
   return list.some((p) => String(p).includes('DELIVER'))
+}
+
+function parsePermissions(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((p): p is string => typeof p === 'string') : []
 }
 
 export default function VendorDriversPage() {
@@ -113,14 +119,34 @@ export default function VendorDriversPage() {
       toast.error(error instanceof Error ? error.message : 'Could not revoke invitation'),
   })
 
-  const removeMemberMutation = useMutation({
-    mutationFn: async (memberId: string) => teamRequest(`/team/members/${memberId}`, { method: 'DELETE' }),
+  const removeDriverAccessMutation = useMutation({
+    mutationFn: async (member: DeliveryDriverRow) => {
+      const perms = parsePermissions(member.permissionsJson)
+
+      // FULL_ACCESS implies delivery access; require a team role change instead.
+      if (perms.includes('FULL_ACCESS')) {
+        throw new Error('This user is a manager (FULL_ACCESS). Remove driver access from the Team page by changing their role.')
+      }
+
+      const nextPerms = perms.filter((p) => !DELIVERY_PERMISSIONS.has(p))
+
+      // If they’d have no permissions left, remove the membership entirely.
+      if (nextPerms.length === 0) {
+        return teamRequest(`/team/members/${member.id}`, { method: 'DELETE' })
+      }
+
+      return teamRequest(`/team/members/${member.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ permissions: nextPerms }),
+      })
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['store-drivers', selectedStoreId] })
       void queryClient.invalidateQueries({ queryKey: ['team-members', selectedStoreId] })
+      toast.success('Driver access updated')
     },
     onError: (error: unknown) =>
-      toast.error(error instanceof Error ? error.message : 'Could not remove driver'),
+      toast.error(error instanceof Error ? error.message : 'Could not update driver access'),
   })
 
   if (storesLoading) {
@@ -253,7 +279,13 @@ export default function VendorDriversPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="warning">Driver</Badge>
-                    <Button variant="ghost" size="icon" onClick={() => removeMemberMutation.mutate(member.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeDriverAccessMutation.mutate(member)}
+                      aria-busy={removeDriverAccessMutation.isPending}
+                      disabled={removeDriverAccessMutation.isPending}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>

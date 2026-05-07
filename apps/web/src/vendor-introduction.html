@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop-Shop - Sell on Shop-Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-primary: #1a1a2e;
+        --color-secondary: #16213e;
+        --color-accent: #e94560;
+        --color-accent-light: #ff6b6b;
+        --color-cream: #faf3e8;
+        --color-cream-dark: #f0e6d3;
+        --color-text: #2d2d2d;
+        --color-text-light: #666;
+        --color-success: #4ade80;
+        --font-display: 'Playfair Display', Georgia, serif;
+        --font-body: 'DM Sans', sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-snap-type: y mandatory;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--color-cream);
+        color: var(--color-text);
+        line-height: 1.5;
+      }
+
+      section {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+      }
+
+      .slide-content {
+        max-width: 900px;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .nav-dots {
+        position: fixed;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        z-index: 100;
+      }
+
+      .nav-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-secondary);
+        opacity: 0.3;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+      }
+
+      .nav-dot:hover,
+      .nav-dot.active {
+        opacity: 1;
+        background: var(--color-accent);
+        transform: scale(1.5);
+      }
+
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 7vw, 4rem);
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--color-primary);
+        margin-bottom: 1.5rem;
+      }
+
+      h2 {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        font-weight: 600;
+        color: var(--color-primary);
+        margin-bottom: 1rem;
+      }
+
+      h3 {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-primary);
+        margin-bottom: 0.75rem;
+      }
+
+      p {
+        font-size: 1.15rem;
+        color: var(--color-text-light);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.7;
+      }
+
+      .slide-hero {
+        background: linear-gradient(
+          160deg,
+          var(--color-cream) 0%,
+          #fff 40%,
+          var(--color-cream-dark) 100%
+        );
+      }
+
+      .hero-badge {
+        display: inline-block;
+        background: var(--color-accent);
+        color: white;
+        padding: 0.6rem 1.5rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        color: var(--color-text-light);
+      }
+
+      .slide-dark {
+        background: var(--color-primary);
+      }
+
+      .slide-dark h2,
+      .slide-dark h3,
+      .slide-dark p {
+        color: white;
+      }
+
+      .slide-dark p {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .slide-light {
+        background: white;
+      }
+
+      .section-label {
+        display: inline-block;
+        background: var(--color-accent);
+        color: white;
+        padding: 0.5rem 1.2rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+
+      .slide-dark .section-label {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+      }
+
+      .highlight {
+        color: var(--color-accent);
+      }
+
+      .slide-dark .highlight {
+        color: #4ade80;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+        text-align: left;
+      }
+
+      .card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      }
+
+      .slide-dark .card {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .card h3 {
+        margin-bottom: 0.5rem;
+      }
+
+      .slide-dark .card h3 {
+        color: white;
+      }
+
+      .card p {
+        font-size: 1rem;
+        text-align: left;
+        max-width: none;
+      }
+
+      .icon-emoji {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-number {
+        font-family: var(--font-display);
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--color-accent);
+      }
+
+      .slide-dark .stat-number {
+        color: #4ade80;
+      }
+
+      .stat-label {
+        font-size: 0.95rem;
+        color: var(--color-text-light);
+        margin-top: 0.25rem;
+      }
+
+      .slide-dark .stat-label {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .feature-list {
+        list-style: none;
+        text-align: left;
+      }
+
+      .feature-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+      }
+
+      .feature-list li::before {
+        content: '✓';
+        color: var(--color-success);
+        font-weight: bold;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+
+      .slide-dark .feature-list li::before {
+        color: #4ade80;
+      }
+
+      .money-card {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+        color: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: left;
+        margin-top: 2rem;
+      }
+
+      .money-card h3 {
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .money-card p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        text-align: left;
+        max-width: none;
+      }
+
+      .driver-flow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+      }
+
+      .driver-step {
+        text-align: center;
+        width: 120px;
+      }
+
+      .driver-icon {
+        width: 70px;
+        height: 70px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin: 0 auto 0.75rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .driver-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--color-primary);
+      }
+
+      .arrow {
+        font-size: 1.5rem;
+        color: var(--color-accent);
+      }
+
+      .affiliate-note {
+        border-left: 4px solid var(--color-accent);
+        padding: 1.5rem;
+        border-radius: 0 12px 12px 0;
+        margin-top: 1.5rem;
+        text-align: left;
+      }
+
+      .affiliate-note p {
+        font-size: 1rem;
+        max-width: none;
+      }
+
+      .final-cta {
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+        color: white;
+      }
+
+      .final-cta h2 {
+        color: white;
+      }
+
+      .final-cta p {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      @media (max-width: 768px) {
+        section {
+          padding: 2rem 1rem;
+        }
+        .nav-dots {
+          right: 0.75rem;
+        }
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+        .stat-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .driver-flow {
+          gap: 0.5rem;
+        }
+        .driver-step {
+          width: 80px;
+        }
+        .driver-icon {
+          width: 50px;
+          height: 50px;
+          font-size: 1.25rem;
+        }
+        .driver-label {
+          font-size: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav-dots">
+      <button class="nav-dot active" onclick="scrollToSlide(0)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(1)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(2)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(3)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(4)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(5)"></button>
+      <button class="nav-dot" onclick="scrollToSlide(6)"></button>
+    </nav>
+
+    <!-- Slide 1: Intro -->
+    <section class="slide-hero" id="slide-0">
+      <div class="slide-content">
+        <span class="hero-badge">Sell on Shop-Shop</span>
+        <h1>More Customers.<span class="highlight"> Less Friction.</span></h1>
+        <p class="hero-subtitle">
+          The local food platform that puts your kitchen first. Get discovered, manage orders, get
+          paid — all in one place.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 2: Get Customers -->
+    <section class="slide-light" id="slide-1">
+      <div class="slide-content">
+        <span class="section-label">Your Customers</span>
+        <h2>Get Found by Hungry People</h2>
+        <p>
+          Every person in your delivery zone can find you. No marketing required — they come to you.
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="icon-emoji">🔍</div>
+            <h3>Search Visibility</h3>
+            <p>
+              Appear when people search for food in your area. Your menu is always on, always
+              visible.
+            </p>
+          </div>
+          <div class="card">
+            <div class="icon-emoji">📸</div>
+            <h3>Real Photos</h3>
+            <p>We photograph your food the right way. Your menu looks like your actual dishes.</p>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-number">∞</div>
+            <div class="stat-label">Potential customers<br />in your zone</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Upfront cost<br />to list</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Your menu<br />always online</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Stripe Payments -->
+    <section class="slide-dark" id="slide-2">
+      <div class="slide-content">
+        <span class="section-label">Get Paid</span>
+        <h2>Stripe Integration</h2>
+        <p>
+          We integrate directly with Stripe so you get paid reliably, every week, with full
+          transparency.
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="icon-emoji">🏦</div>
+            <h3>Direct Deposits</h3>
+            <p>Money goes straight to your bank account. No chasing payments, no waiting.</p>
+          </div>
+          <div class="card">
+            <div class="icon-emoji">📊</div>
+            <h3>Clear Reports</h3>
+            <p>See every order, every fee, every adjustment. Export reports for your accountant.</p>
+          </div>
+        </div>
+
+        <div class="money-card">
+          <h3>How It Works</h3>
+          <p>
+            Customer pays → Order fulfills → We take a small transparent fee → You get the rest
+            deposited to your account. Fee is clearly labeled. Always.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Order Management -->
+    <section class="slide-light" id="slide-3">
+      <div class="slide-content">
+        <span class="section-label">Your Operations</span>
+        <h2>Manage Orders in One Place</h2>
+        <p>From notification to delivery — handle everything from your dashboard.</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Order Queue</h3>
+            <p>
+              See incoming orders instantly. Accept or decline with one tap. No phone calls, no
+              confusion.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Status Updates</h3>
+            <p>Mark orders as preparing → ready → picked up. Customer and driver stay informed.</p>
+          </div>
+          <div class="card">
+            <h3>Special Instructions</h3>
+            <p>See custom requests, dietary notes, and delivery details at a glance.</p>
+          </div>
+          <div class="card">
+            <h3>Team Access</h3>
+            <p>
+              Add as many staff as you need. Owners, managers, and cashiers can all manage orders.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Drivers -->
+    <section class="slide-dark" id="slide-4">
+      <div class="slide-content">
+        <span class="section-label">Delivery</span>
+        <h2>Built-in Driver Network</h2>
+        <p>We have drivers ready to pick up and deliver. You don't need to hire your own.</p>
+
+        <div class="driver-flow">
+          <div class="driver-step">
+            <div class="driver-icon">📦</div>
+            <div class="driver-label">Order Ready</div>
+          </div>
+          <span class="arrow">→</span>
+          <div class="driver-step">
+            <div class="driver-icon">🚗</div>
+            <div class="driver-label">Driver Picks Up</div>
+          </div>
+          <span class="arrow">→</span>
+          <div class="driver-step">
+            <div class="driver-icon">🏠</div>
+            <div class="driver-label">Delivered</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 2rem">
+          <div class="card">
+            <h3>No Recruiting</h3>
+            <p>
+              Drivers are already on the platform. Just mark orders ready and a driver shows up.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Real-time Tracking</h3>
+            <p>See when driver arrives. Customer tracks the whole delivery on their end.</p>
+          </div>
+        </div>
+
+        <div class="affiliate-note">
+          <p>
+            <strong>Drivers are contractors on our platform.</strong> You don't employ them, you
+            don't manage them. They pick up when you mark orders ready.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Affiliate Program -->
+    <section class="slide-light" id="slide-5">
+      <div class="slide-content">
+        <span class="section-label">Grow Together</span>
+        <h2>Affiliate Partners Bring More Orders</h2>
+        <p>
+          Our affiliate partners actively refer customers and can even help onboard other local
+          kitchens.
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="icon-emoji">🤝</div>
+            <h3>Referral Network</h3>
+            <p>Affiliates share your kitchen with their audience. More people discover you.</p>
+          </div>
+          <div class="card">
+            <div class="icon-emoji">📈</div>
+            <h3>Compounding Effect</h3>
+            <p>More affiliates = more promotion = more orders. They benefit when you succeed.</p>
+          </div>
+        </div>
+
+        <div class="money-card" style="background: var(--color-secondary)">
+          <h3>You Benefit</h3>
+          <p>
+            Affiliates drive new customers to your kitchen. You get orders you wouldn't have
+            otherwise. The platform handles the affiliate payments — you just get the orders.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: Final CTA -->
+    <section class="final-cta" id="slide-6">
+      <div class="slide-content">
+        <h2>Start Selling Today</h2>
+        <p>
+          List your kitchen, start getting orders, grow your business. No upfront cost, clear fees,
+          reliable payouts.
+        </p>
+        <p style="margin-top: 2rem; font-size: 1rem; opacity: 0.9">Local food, delivered.</p>
+      </div>
+    </section>
+
+    <script>
+      const dots = document.querySelectorAll('.nav-dot')
+      const sections = document.querySelectorAll('section')
+
+      function scrollToSlide(index) {
+        sections[index].scrollIntoView({ behavior: 'smooth' })
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const index = Array.from(sections).indexOf(entry.target)
+              dots.forEach((dot, i) => dot.classList.toggle('active', i === index))
+            }
+          })
+        },
+        { threshold: 0.5 }
+      )
+
+      sections.forEach((section) => observer.observe(section))
+
+      document.addEventListener('keydown', (e) => {
+        const currentIndex = Array.from(dots).findIndex((dot) => dot.classList.contains('active'))
+        if ((e.key === 'ArrowDown' || e.key === 'PageDown') && currentIndex < sections.length - 1) {
+          e.preventDefault()
+          scrollToSlide(currentIndex + 1)
+        } else if ((e.key === 'ArrowUp' || e.key === 'PageUp') && currentIndex > 0) {
+          e.preventDefault()
+          scrollToSlide(currentIndex - 1)
+        }
+      })
+    </script>
+  </body>
+</html>

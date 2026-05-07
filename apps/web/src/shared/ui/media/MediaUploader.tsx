@@ -27,16 +27,20 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     if (acceptedFiles.length === 0) return
 
     try {
+      const token = localStorage.getItem('token')
       const uploadPromises = acceptedFiles.map(async (file) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('storeId', storeId || '')
         formData.append('itemId', itemId || '')
 
-        const response = await fetch('/media/upload', {
+        const response = await fetch('/api/media/upload', {
           method: 'POST',
           body: formData,
           credentials: 'include',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         })
 
         if (!response.ok) {

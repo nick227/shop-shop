@@ -18,7 +18,7 @@ import { parsePrice } from '@api/types'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import { useHaptics } from '@shared/hooks/useHaptics'
 import { CustomerMediaGallery } from '@shared/ui/media'
-import { getImageUrl } from '@shared/lib/utils/image'
+import { StoreHeader } from '@features/stores/components/StoreHeader'
 
 export default function ItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>()
@@ -86,6 +86,10 @@ export default function ItemDetailPage() {
 
   return (
     <PageContainer className="max-w-[640px] mx-auto rounded-xl shadow-lg">
+
+    {/* Store title */}
+    <StoreHeader showMap={false} store={store} />
+    
       <Button
         variant="ghost"
         size="small"
@@ -129,18 +133,6 @@ export default function ItemDetailPage() {
           </Card>
         )}
 
-        {/* Availability */}
-        {typeof item.stockQty === 'number' && (
-          <Card>
-            <CardContent className="pt-5">
-              <SectionHeader title="Availability" className="mb-3" />
-              <p className="text-sm text-muted-foreground">
-                {item.stockQty > 0 ? `${String(item.stockQty)} items in stock` : 'Out of stock'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Add to Cart */}
         <Button
           variant="primary"
@@ -150,7 +142,7 @@ export default function ItemDetailPage() {
           disabled={item.isSoldOut || !item.isActive || addToCart.isPending}
         >
           <ShoppingCart className="mr-2 w-5 h-5" />
-          {addToCart.isPending ? 'Adding...' : 'Add7 to Cart'}
+          {addToCart.isPending ? 'Adding...' : ''}
         </Button>
       </div>
     </PageContainer>

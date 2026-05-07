@@ -1,20 +1,14 @@
 import type { StoreResponse } from '@api/types'
 
-export function getVendorApiBase(): string {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-}
-
 type TeamMeStoreRow = {
   readonly storeId: string
   readonly store: Pick<StoreResponse, 'id' | 'name' | 'slug' | 'isPublished'>
 }
 
-export async function fetchTeamMeStores(token: string): Promise<StoreResponse[]> {
-  const response = await fetch(`${getVendorApiBase()}/team/me/stores`, {
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+export async function fetchTeamMeStores(): Promise<StoreResponse[]> {
+  const response = await fetch('/api/team/me/stores', {
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
   })
   if (!response.ok) {
     const data: { error?: string; message?: string } = await response.json().catch(() => ({}))

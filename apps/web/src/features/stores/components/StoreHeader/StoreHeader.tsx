@@ -14,7 +14,7 @@ export interface StoreHeaderProps {
   readonly className?: string
 }
 
-export function StoreHeader({ store, className }: StoreHeaderProps) {
+export function StoreHeader({ store, className, showMap = true }: StoreHeaderProps) {
   const fullAddress = [
     store.addressStreet, 
     store.addressCity, 
@@ -120,7 +120,7 @@ export function StoreHeader({ store, className }: StoreHeaderProps) {
         </div>
 
         {/* Map Column (Wide) */}
-        {!!(store.latitude && store.longitude) && (
+        {!!(store.latitude && store.longitude && showMap) && (
           <div className="w-full md:w-[650px] border-t md:border-t-0 md:border-l border-border bg-muted">
             <StorePreviewMap 
               latitude={store.latitude} 

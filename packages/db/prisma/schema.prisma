@@ -34,6 +34,13 @@ enum CommissionStatus {
   REVERSED
 }
 
+enum AffiliateAttributionSource {
+  CUSTOMER_REFERRAL
+  STORE_REFERRAL
+  CHECKOUT_CODE
+  REFERRAL_LINK
+}
+
 enum PayoutStatus {
   PENDING
   PROCESSING
@@ -109,11 +116,13 @@ enum StoreStatus {
 }
 
 enum StoreType {
-  MEAL_PREP
+  RESTAURANT
+  CONVENIENCE
+  GROCERY
+  HOME_KITCHEN
   BAKERY
-  COFFEE
-  SPECIALTY
-  GENERAL
+  RETAIL
+  OTHER
 }
 
 enum PriceRange {
@@ -190,6 +199,10 @@ model User {
   postLikes            PostLike[]
   comments             Comment[]
   affiliate            Affiliate?
+  /// Customer-level affiliate referral attribution (for analytics).
+  referredByAffiliateId  String?    @db.Char(36)
+  referredByAffiliate    Affiliate? @relation("AffiliateCustomerReferrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
+  referredByReferralCode String?
   vendorVerification   VendorVerification?
   teamMemberships      TeamMember[]
   invitationsSent      Invitation[]          @relation("InvitationSender")
@@ -202,6 +215,8 @@ model User {
   promotionRedemptions PromotionRedemption[]
   vendorPayouts        Payout[]              @relation("VendorPayouts")
   DeliveryJob          DeliveryJob[]
+
+  @@index([referredByAffiliateId])
 }
 
 model Store {
@@ -335,12 +350,8 @@ model Item {
   optionsJson Json?
   stockQty    Int?
 
-  // Dietary & Allergen Information
+  // Allergen Information
   allergensJson Json? // Array of allergen strings
-  isVegan       Boolean @default(false)
-  isVegetarian  Boolean @default(false)
-  isGlutenFree  Boolean @default(false)
-  isDairyFree   Boolean @default(false)
   spicyLevel    Int? // 0-5 scale
 
   tags         ItemTag[]
@@ -354,7 +365,6 @@ model Item {
   FavoriteItem FavoriteItem[]
 
   @@index([storeId, sortIndex])
-  @@index([isVegan, isVegetarian, isGlutenFree])
 }
 
 model MediaAsset {
@@ -424,6 +434,11 @@ model Order {
   user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   store                  Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
   cart                   Cart?         @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  /// Affiliate attribution snapshot for vendor analytics (not payout/accounting).
+  referredByAffiliateId  String?       @db.Char(36)
+  referredByAffiliate    Affiliate?    @relation("AffiliateOrderAttribution", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
+  referredByReferralCode String?
+  affiliateAttributionSource AffiliateAttributionSource?
   assignedToUserId       String?       @db.Char(36)
   assignedTo             User?         @relation("OrderAssignedRider", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   /// Initial checkout state; transitions to PLACED after Stripe payment_intent.succeeded. Invariant: status === PLACED ⇒ paymentStatus === PAID (enforced in OrderService + PATCH).
@@ -477,6 +492,7 @@ model Order {
   @@index([status, canceledAt])
   @@index([assignedToUserId])
   @@index([deliveryLatitude, deliveryLongitude])
+  @@index([referredByAffiliateId])
 }
 
 model DeliveryJob {
@@ -838,6 +854,8 @@ model Affiliate {
 
   // Relationships
   referredStores Store[]           @relation("AffiliateReferrals")
+  referredUsers  User[]            @relation("AffiliateCustomerReferrals")
+  attributedOrders Order[]         @relation("AffiliateOrderAttribution")
   commissions    Commission[]
   payouts        AffiliatePayout[]
 

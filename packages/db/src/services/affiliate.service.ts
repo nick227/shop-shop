@@ -1,12 +1,12 @@
 import { nanoid } from 'nanoid'
 import { prisma } from '../client'
-import type { 
-  Affiliate, 
-  Commission, 
+import type {
+  Affiliate,
+  Commission,
   AffiliatePayout,
   AffiliateStatus,
   CommissionStatus,
-  PayoutStatus 
+  PayoutStatus,
 } from '../generated/client'
 
 export interface CreateAffiliateInput {
@@ -43,17 +43,28 @@ export interface ProcessPayoutInput {
 
 export async function createAffiliate(input: CreateAffiliateInput): Promise<Affiliate> {
   const referralCode = `${nanoid(8).toUpperCase()}`
-  
-  return prisma.affiliate.create({
-    data: {
-      userId: input.userId,
-      referralCode,
-      bio: input.bio,
-      website: input.website,
-      paypalEmail: input.paypalEmail,
-      taxId: input.taxId,
-      status: 'PENDING',
-    },
+
+  return prisma.$transaction(async (tx) => {
+    const affiliate = await tx.affiliate.create({
+      data: {
+        userId: input.userId,
+        referralCode,
+        bio: input.bio,
+        website: input.website,
+        paypalEmail: input.paypalEmail,
+        taxId: input.taxId,
+        status: 'ACTIVE',
+      },
+    })
+
+    // Role is a single enum today. Only promote USER -> AFFILIATE to avoid clobbering
+    // other roles (e.g. VENDOR) while still supporting instant activation.
+    await tx.user.updateMany({
+      where: { id: input.userId, role: 'USER' },
+      data: { role: 'AFFILIATE' },
+    })
+
+    return affiliate
   })
 }
 
@@ -98,10 +109,21 @@ export async function updateAffiliateStatus(
   affiliateId: string,
   status: AffiliateStatus
 ): Promise<Affiliate> {
-  return prisma.affiliate.update({
+  const affiliate = await prisma.affiliate.update({
     where: { id: affiliateId },
     data: { status },
   })
+
+  // Legacy behavior: activating an affiliate can optionally promote USER -> AFFILIATE.
+  // Avoid clobbering other roles (e.g. VENDOR).
+  if (status === 'ACTIVE') {
+    await prisma.user.updateMany({
+      where: { id: affiliate.userId, role: 'USER' },
+      data: { role: 'AFFILIATE' },
+    })
+  }
+
+  return affiliate
 }
 
 export async function getAffiliateStats(affiliateId: string) {
@@ -208,7 +230,7 @@ export async function processPayout(input: ProcessPayoutInput): Promise<Affiliat
       status: 'APPROVED',
       createdAt: {
         gte: input.periodStart,
-        lte: input.periodEnd,
+        lt: input.periodEnd,
       },
     },
   })
@@ -248,7 +270,7 @@ export async function updatePayoutStatus(
 
   if (status === 'COMPLETED') {
     data.paidAt = new Date()
-    
+
     await prisma.commission.updateMany({
       where: { payoutId },
       data: {
@@ -303,20 +325,24 @@ export async function getAffiliatePayouts(
 export async function calculateCommissionForOrder(orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: {
-      store: {
-        include: {
-          referredByAffiliate: true,
-        },
-      },
+    select: {
+      id: true,
+      storeId: true,
+      serviceFeeAmount: true,
+      referredByAffiliateId: true,
     },
   })
 
-  if (!order || !order.store.referredByAffiliate) {
+  if (!order || !order.referredByAffiliateId) {
     return
   }
 
-  const affiliate = order.store.referredByAffiliate
+  const affiliate = await prisma.affiliate.findUnique({
+    where: { id: order.referredByAffiliateId },
+    select: { id: true, commissionRate: true, status: true },
+  })
+  if (!affiliate || affiliate.status !== 'ACTIVE') return
+
   const serviceFee = Number(order.serviceFeeAmount)
   const commissionAmount = serviceFee * Number(affiliate.commissionRate)
 
@@ -364,4 +390,3 @@ export async function listAffiliates(options?: {
 
   return { affiliates, total }
 }
-

@@ -29,7 +29,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} name="login" autoComplete="on">
       {loginError && (
         <Alert variant="error">{loginError}</Alert>
       )}
@@ -38,6 +38,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <Input
           type="email"
           label="Email"
+          name="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -49,6 +50,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <Input
           type="password"
           label="Password"
+          name="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}

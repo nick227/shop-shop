@@ -23,6 +23,7 @@ import { vendorVerificationRoutes } from './routes/vendor-verification.route.js'
 import { exportRoutes } from './routes/export.route.js'
 import { vendorPayoutRoutes } from './routes/vendor-payout.route.js'
 import { teamRoutes } from './routes/team.route.js'
+import { vendorAffiliateSalesRoutes } from './routes/vendor-affiliate-sales.route.js'
 import { promotionEnhancedRoutes } from './routes/promotion-enhanced.route.js'
 import { orderCancellationRoutes } from './routes/order-cancellation.route.js'
 import { favoritesRoutes } from './routes/favorites.route.js'
@@ -133,17 +134,22 @@ await app.register(orderDispatchRoutes, { prefix: '/api/v1/orders' })
 await app.register(driverRoutes, { prefix: '/api/v1' })
 await app.register(stripeWebhookRoutes) 
 await app.register(paymentRoutes)  
-await app.register(mediaRoutes)    
+// Media routes are consumed by the web app via Vite proxy at `/api/*`,
+// but are also used directly in some places without the `/api` prefix.
+// Register both to avoid dev/prod path mismatches.
+await app.register(mediaRoutes)
+await app.register(mediaRoutes, { prefix: '/api' })
 await app.register(realtimeRoutes) 
 await app.register(riverRoutes)    
 await app.register(geocodingRoutes) 
 await app.register(tipRoutes)      
-await app.register(affiliateRoutes) 
+await app.register(affiliateRoutes, { prefix: '/api' }) 
 await app.register(deliveryZoneRoutes) 
 await app.register(storeReadinessRoutes) 
 await app.register(vendorVerificationRoutes) 
 await app.register(exportRoutes) 
 await app.register(vendorPayoutRoutes) 
+await app.register(vendorAffiliateSalesRoutes)
 await app.register(teamRoutes) 
 await app.register(promotionEnhancedRoutes) 
 await app.register(orderCancellationRoutes) 

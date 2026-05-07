@@ -135,6 +135,10 @@ export interface ItemFormData {
   title: string
   description: string
   price: number
+  category: string
+  type: string
+  subtype: string
+  tags: string[]
   isActive: boolean
   isSoldOut: boolean
   stockQty: number

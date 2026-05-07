@@ -7,6 +7,7 @@ export function createInitialStoreFormData(): StoreFormData {
     name: '',
     slug: '',
     description: '',
+    storeType: 'RESTAURANT',
     companyName: '',
     taxId: '',
     phone: '',
@@ -38,6 +39,7 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     name: store.name ?? '',
     slug: store.slug ?? '',
     description: store.description ?? '',
+    storeType: (store as any).storeType ?? 'RESTAURANT',
     companyName: store.companyName ?? '',
     taxId: store.taxId ?? '',
     phone: store.phone ?? '',
@@ -100,7 +102,7 @@ function cleanFormData<T extends Record<string, any>>(
 export function cleanStoreFormData(formData: StoreFormData): StoreFormData {
   return cleanFormData(
     formData,
-    ['name', 'slug', 'description', 'companyName', 'taxId', 'phone', 'email', 'website', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
+    ['name', 'slug', 'description', 'storeType', 'companyName', 'taxId', 'phone', 'email', 'website', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
     ['prepTimeMin'],
     ['isPublished', 'deliveryEnabled', 'pickupEnabled']
   )

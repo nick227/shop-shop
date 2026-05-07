@@ -15,6 +15,8 @@ export interface CreateUserInput {
   password: string
   name?: string
   phone?: string
+  referredByAffiliateId?: string
+  referredByReferralCode?: string
 }
 
 export interface UserPublic {
@@ -37,6 +39,12 @@ export const createUser = async (input: CreateUserInput): Promise<User> => {
       passwordHash,
       name: input.name,
       phone: input.phone,
+      ...(input.referredByAffiliateId
+        ? {
+            referredByAffiliateId: input.referredByAffiliateId,
+            referredByReferralCode: input.referredByReferralCode,
+          }
+        : {}),
     }
   })
 }

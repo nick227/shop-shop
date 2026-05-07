@@ -2,7 +2,7 @@
  * Store Form Sections Builder
  * Extracts section definitions from StoreFormPage for cleaner code
  */
-import { Input, TextArea, Checkbox } from '@shared/ui/primitives'
+import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import type { FormSection } from '@shared/ui/templates'
 import type { StoreFormData } from '@api/types'
@@ -28,15 +28,24 @@ export function createStoreFormSections(
             required
           />
 
-          <Input
-            label="Slug (URL) *"
-            value={formData.slug}
-            onChange={(e) => onChange('slug', e.target.value)}
-            placeholder="my-amazing-store"
-            helperText="Used in store URL. Lowercase letters, numbers, and hyphens only."
-            required
-            disabled={isEdit}
-          />
+          <Select
+            value={formData.storeType || ''}
+            onValueChange={(value) => onChange('storeType', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select store type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RESTAURANT">Restaurant</SelectItem>
+              <SelectItem value="CONVENIENCE">Convenience Store</SelectItem>
+              <SelectItem value="GROCERY">Grocery Store</SelectItem>
+              <SelectItem value="HOME_KITCHEN">Home Kitchen</SelectItem>
+              <SelectItem value="BAKERY">Bakery</SelectItem>
+              <SelectItem value="RETAIL">Retail Store</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
+            </SelectContent>
+          </Select>
+
 
           <div>
             <TextArea
@@ -66,22 +75,13 @@ export function createStoreFormSections(
             placeholder="ACME Corporation"
           />
 
-          <FormRow>
-            <Input
-              label="Tax ID / EIN"
-              value={formData.taxId}
-              onChange={(e) => onChange('taxId', e.target.value)}
-              placeholder="12-3456789"
-            />
-
-            <Input
-              label="Phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => onChange('phone', e.target.value)}
-              placeholder="+1 (555) 123-4567"
-            />
-          </FormRow>
+          <Input
+            label="Phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => onChange('phone', e.target.value)}
+            placeholder="+1 (555) 123-4567"
+          />
 
           <FormRow>
             <Input
@@ -137,9 +137,7 @@ export function createStoreFormSections(
               required
               helperText="2-letter state code"
             />
-          </FormRow>
 
-          <FormRow>
             <Input
               label="ZIP Code *"
               value={formData.addressZip}
@@ -179,6 +177,35 @@ export function createStoreFormSections(
               step="0.00000001"
               helperText="Auto-geocoded from address"
             />
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (navigator.geolocation) {
+                    try {
+                      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                          enableHighAccuracy: true,
+                          timeout: 10000,
+                          maximumAge: 0
+                        })
+                      })
+                      onChange('latitude', position.coords.latitude.toString())
+                      onChange('longitude', position.coords.longitude.toString())
+                    } catch (error) {
+                      console.error('Error getting location:', error)
+                      alert('Unable to get your location. Please enter coordinates manually.')
+                    }
+                  } else {
+                    alert('Geolocation is not supported by your browser.')
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+              >
+                📍 Allow Location
+              </button>
+            </div>
           </FormRow>
         </>
       ),

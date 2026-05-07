@@ -96,6 +96,13 @@ export function VendorLayout() {
               <span>Orders</span>
             </button>
             <button
+              className={`${styles.navItem} ${location.pathname === '/vendor/affiliates' ? styles.navItemActive : ''}`}
+              onClick={() => navigate(peopleStoreId ? `/vendor/affiliates?storeId=${peopleStoreId}` : '/vendor/affiliates')}
+            >
+              <span className={styles.navIcon}>A</span>
+              <span>Affiliates</span>
+            </button>
+            <button
               className={`${styles.navItem} ${location.pathname === '/vendor/team' ? styles.navItemActive : ''}`}
               onClick={() => navigate(teamPath)}
             >
@@ -140,20 +147,7 @@ export function VendorLayout() {
             </div>
           )}
 
-          {!hasStores && (
-            <div className={styles.navSection}>
-              <div className={styles.navLabel}>
-                Getting Started
-              </div>
-              <div className={styles.emptyState}>
-                <p>👋 Welcome to the Vendor Portal!</p>
-                <p>Create your first store to get started.</p>
-              </div>
-            </div>
-          )}
-
           <div className={styles.navSection}>
-            <div className={styles.navLabel}>Quick Actions</div>
             <button
               className={styles.navItem}
               onClick={() => navigate('/vendor/store/new')}

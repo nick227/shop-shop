@@ -9,12 +9,11 @@ import { fetchTeamMeStores } from './vendorTeamApi'
 
 export function useVendorStores() {
   const user = useAuthStore((s) => s.user)
-  const token = useAuthStore((s) => s.token)
 
   return useQuery({
     queryKey: ['vendor-managed-stores', user?.id],
-    queryFn: async () => fetchTeamMeStores(token!),
-    enabled: Boolean(user?.id && token),
+    queryFn: async () => fetchTeamMeStores(),
+    enabled: Boolean(user?.id),
     select: (data: StoreResponse[]) => data ?? [],
   })
 }

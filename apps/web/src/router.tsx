@@ -5,6 +5,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Layout } from './layouts/MainLayout'
 import { VendorLayout } from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
+import { AffiliateLayout } from './layouts/AffiliateLayout'
 import { ProtectedRoute, lazyRoute } from './router/utils'
 
 // Lazy load pages for code splitting;
@@ -23,6 +24,21 @@ const CheckoutPage = lazy(() => import('./pages/shared/Checkout.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 
+// Affiliate pages;
+const BecomeAffiliatePage = lazy(() => import('./pages/public/BecomeAffiliate.page'))
+const AffiliatePendingPage = lazy(() => import('./pages/affiliate/PendingApproval.page'))
+const AffiliateDashboardPage = lazy(() => import('./pages/affiliate/Dashboard.page'))
+const AffiliateCommissionsPage = lazy(() => import('./pages/affiliate/Commissions.page'))
+const AffiliatePayoutsPage = lazy(() => import('./pages/affiliate/Payouts.page'))
+const AffiliateSettingsPage = lazy(() => import('./pages/affiliate/Settings.page'))
+const ReferralRedirectPage = lazy(() => import('./pages/public/ReferralRedirect.page'))
+const AffiliateStatusPage = lazy(() => import('./pages/affiliate/Status.page'))
+
+// Admin pages;
+const AdminAffiliatesPage = lazy(() => import('./pages/admin/Affiliates.page'))
+const AdminAffiliateDetailPage = lazy(() => import('./pages/admin/AffiliateDetail.page'))
+const AdminAffiliatePayoutsPage = lazy(() => import('./pages/admin/AffiliatePayouts.page'))
+
 // Vendor pages;
 const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
 const VendorStoreOnboardingPage = lazy(() => import('./pages/vendor/StoreOnboarding.page'))
@@ -35,6 +51,7 @@ const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
 const VendorStoreRiverPage = lazy(() => import('./pages/vendor/Bundles.page'))
 const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
 const VendorDriversPage = lazy(() => import('./pages/vendor/Drivers.page'))
+const VendorAffiliatesPage = lazy(() => import('./pages/vendor/Affiliates.page'))
 import VendorTeamStoreRedirectPage from './pages/vendor/VendorTeamStoreRedirect.page'
 
 // Customer account pages;
@@ -127,6 +144,94 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           element: <ProtectedRoute>{lazyRoute(StoreRiverPage)}</ProtectedRoute>,
           handle: { title: 'River' },
         },
+        // Become an affiliate (public, no auth required — form handles login check);
+        {
+          path: '/become-affiliate',
+          element: lazyRoute(BecomeAffiliatePage),
+          handle: { title: 'Become an Affiliate' },
+        },
+        // Affiliate referral redirect (public);
+        {
+          path: '/r/:referralCode',
+          element: lazyRoute(ReferralRedirectPage),
+        },
+        // Affiliate pending route (outside layout — no sidebar needed for pending state)
+        {
+          path: '/affiliate/pending',
+          element: <ProtectedRoute>{lazyRoute(AffiliatePendingPage)}</ProtectedRoute>,
+          handle: { title: 'Affiliate Pending' },
+        },
+        {
+          path: '/affiliate/suspended',
+          element: <ProtectedRoute>{lazyRoute(AffiliateStatusPage)}</ProtectedRoute>,
+          handle: { title: 'Affiliate Suspended' },
+        },
+        {
+          path: '/affiliate/unavailable',
+          element: <ProtectedRoute>{lazyRoute(AffiliateStatusPage)}</ProtectedRoute>,
+          handle: { title: 'Affiliate Unavailable' },
+        },
+        // Affiliate portal routes (wrapped in AffiliateLayout)
+        {
+          path: '/affiliate',
+          element: (
+            <ProtectedRoute>
+              <AffiliateLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              index: true,
+              element: <Navigate to="/affiliate/dashboard" replace />,
+            },
+            {
+              path: 'dashboard',
+              element: lazyRoute(AffiliateDashboardPage),
+              handle: { title: 'Affiliate Dashboard' },
+            },
+            {
+              path: 'commissions',
+              element: lazyRoute(AffiliateCommissionsPage),
+              handle: { title: 'Affiliate Commissions' },
+            },
+            {
+              path: 'payouts',
+              element: lazyRoute(AffiliatePayoutsPage),
+              handle: { title: 'Affiliate Payouts' },
+            },
+            {
+              path: 'settings',
+              element: lazyRoute(AffiliateSettingsPage),
+              handle: { title: 'Affiliate Settings' },
+            },
+          ],
+        },
+        // Admin affiliate management routes (ADMIN role required)
+        {
+          path: '/admin/affiliates',
+          element: (
+            <ProtectedRoute requiredRole="ADMIN">{lazyRoute(AdminAffiliatesPage)}</ProtectedRoute>
+          ),
+          handle: { title: 'Admin - Affiliates' },
+        },
+        {
+          path: '/admin/affiliates/:affiliateId',
+          element: (
+            <ProtectedRoute requiredRole="ADMIN">
+              {lazyRoute(AdminAffiliateDetailPage)}
+            </ProtectedRoute>
+          ),
+          handle: { title: 'Admin - Affiliate Detail' },
+        },
+        {
+          path: '/admin/affiliate-payouts',
+          element: (
+            <ProtectedRoute requiredRole="ADMIN">
+              {lazyRoute(AdminAffiliatePayoutsPage)}
+            </ProtectedRoute>
+          ),
+          handle: { title: 'Admin - Affiliate Payouts' },
+        },
         // Vendor routes (wrapped in VendorLayout)
         // Open vendor model: any authenticated user can create or manage their stores.
         {
@@ -205,6 +310,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               path: 'orders',
               element: lazyRoute(VendorOrdersPage),
               handle: { title: 'Vendor Orders' },
+            },
+            {
+              path: 'affiliates',
+              element: lazyRoute(VendorAffiliatesPage),
+              handle: { title: 'Affiliate Sales' },
             },
             {
               path: 'team',

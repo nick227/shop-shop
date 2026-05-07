@@ -4,6 +4,9 @@ import { defineConfig, devices } from '@playwright/test'
  * Playwright E2E Test Configuration
  * Comprehensive testing for all user roles and critical paths
  */
+process.env.VITE_PORT ||= '5187'
+process.env.VITE_API_URL ||= 'http://localhost:3015'
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -13,7 +16,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'html',
   
   use: {
-    baseURL: `http://localhost:${process.env.VITE_PORT || 5177}`,
+    baseURL: `http://localhost:${process.env.VITE_PORT || 5187}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -43,12 +46,23 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'pnpm dev',
-    url: `http://localhost:${process.env.VITE_PORT || 5177}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      // Backend API (required for true E2E)
+      command: 'cmd /c "set PORT=3015&& pnpm -C apps/server dev"',
+      url: 'http://localhost:3015/healthz',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    {
+      // Vite dev server (explicit port for deterministic baseURL)
+      command:
+        'cmd /c "set VITE_API_URL=http://localhost:3015&& pnpm -C apps/web exec vite --port 5187 --strictPort"',
+      url: 'http://localhost:5187',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  ],
 })
 
 

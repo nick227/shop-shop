@@ -42,7 +42,7 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
       if (storeId) params.append('storeId', storeId)
       if (itemId) params.append('itemId', itemId)
 
-      const response = await fetch(`/media?${params.toString()}`, {
+      const response = await fetch(`/api/media?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -69,7 +69,7 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
 
   const handleDelete = async (mediaId: string) => {
     try {
-      const response = await fetch(`/media/${mediaId}`, {
+      const response = await fetch(`/api/media/${mediaId}`, {
         method: 'DELETE',
         credentials: 'include',
       })
@@ -88,7 +88,7 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
 
   const handleReorder = async (mediaIds: string[]) => {
     try {
-      const response = await fetch('/media/reorder', {
+      const response = await fetch('/api/media/reorder', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

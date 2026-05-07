@@ -8,6 +8,7 @@ import {
 import {
   createUser,
   getUserByEmail,
+  getAffiliateByReferralCode,
   verifyPassword,
   generateJWT,
   toPublicUser,
@@ -32,9 +33,27 @@ export const authRoutes = async (app: FastifyInstance) => {
           error: 'Email already exists'
         })
       }
+
+      let referredByAffiliateId: string | undefined
+      let referredByReferralCode: string | undefined
+      if (input.affiliateReferralCode) {
+        const affiliate = await getAffiliateByReferralCode(input.affiliateReferralCode)
+        if (!affiliate || affiliate.status !== 'ACTIVE') {
+          return reply.code(400).send({ error: 'Invalid affiliate referral code' })
+        }
+        referredByAffiliateId = affiliate.id
+        referredByReferralCode = affiliate.referralCode
+      }
       
       // Create user
-      const user = await createUser(input)
+      const user = await createUser({
+        email: input.email,
+        password: input.password,
+        name: input.name,
+        phone: input.phone,
+        referredByAffiliateId,
+        referredByReferralCode,
+      })
       
       // Log successful signup
       req.log.info({

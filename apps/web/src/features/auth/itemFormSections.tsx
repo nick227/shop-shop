@@ -1,79 +1,56 @@
-// @ts-nocheck
 /**
  * Item Form Sections Builder;
  * Extracts section definitions from ItemFormPage for cleaner code;
  */
-import { Input, TextArea, Checkbox, Select } from '@shared/ui/primitives'
+import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
-import { MediaGalleryManager } from '@shared/ui/media'
+import { EnhancedMediaGalleryManager } from '@shared/ui/media'
 import type { FormSection } from '@shared/ui/templates'
 import type { ItemFormData } from '@api/types'
+import {
+  CATEGORIES,
+  getCategoriesForStoreType,
+  getAvailableItemTypes,
+  isTypeValidForCategory,
+  getAvailableSubTypes,
+  isSubTypeValidForCategoryType
+} from './itemClassificationData'
 
-// Category options for menu items
-const CATEGORIES = [
-  { value: 'appetizers', label: '🥗 Appetizers' },
-  { value: 'entrees', label: '🍽️ Entrees' },
-  { value: 'sandwiches', label: '🥪 Sandwiches' },
-  { value: 'salads', label: '🥗 Salads' },
-  { value: 'soups', label: '🍲 Soups' },
-  { value: 'sides', label: '🍟 Sides' },
-  { value: 'desserts', label: '🍰 Desserts' },
-  { value: 'beverages', label: '🥤 Beverages' },
-  { value: 'breakfast', label: '🍳 Breakfast' },
-  { value: 'specials', label: '⭐ Specials' },
-]
 
-// Item type options
-const ITEM_TYPES = [
-  { value: 'entree', label: '🍽️ Main Entree' },
-  { value: 'side', label: '🍟 Side Dish' },
-  { value: 'drink', label: '🥤 Beverage' },
-  { value: 'dessert', label: '🍰 Dessert' },
-  { value: 'appetizer', label: '🥗 Appetizer' },
-  { value: 'salad', label: '🥗 Salad' },
-  { value: 'sandwich', label: '🥪 Sandwich' },
-  { value: 'soup', label: '🍲 Soup' },
-  { value: 'breakfast', label: '🍳 Breakfast' },
-  { value: 'bundle', label: '📦 Bundle/Combo' },
-]
-
-// Dietary attribute options
-const DIETARY_ATTRIBUTES = [
-  { key: 'isVegan', label: '🌱 Vegan', description: 'No animal products' },
-  { key: 'isVegetarian', label: '🥬 Vegetarian', description: 'No meat or fish' },
-  { key: 'isGlutenFree', label: '🌾 Gluten-Free', description: 'No gluten ingredients' },
-  { key: 'isDairyFree', label: '🥛 Dairy-Free', description: 'No dairy products' },
-  { key: 'isKeto', label: '🥑 Keto-Friendly', description: 'Low carb, high fat' },
-  { key: 'isPaleo', label: '🦕 Paleo-Friendly', description: 'Whole foods, no processed' },
-]
 
 // Common tag suggestions
 const TAG_SUGGESTIONS = [
+  // Flavor & Texture
   'spicy', 'mild', 'sweet', 'savory', 'crispy', 'creamy',
+  // Quality & Source
   'fresh', 'homemade', 'signature', 'popular', 'healthy',
   'organic', 'local', 'seasonal', 'limited-time', 'comfort-food',
-  'kid-friendly', 'shareable', 'gluten-free', 'dairy-free', 'vegan',
-  'vegetarian', 'low-carb', 'high-protein', 'low-calorie', 'organic',
-  'farm-to-table', 'artisan', 'handcrafted', 'traditional', 'modern',
-  'fusion', 'authentic', 'regional', 'imported', 'premium', 'budget-friendly'
+  // Dietary Preferences (now tags instead of separate fields)
+  'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'keto-friendly', 'paleo-friendly',
+  // Nutritional
+  'low-carb', 'high-protein', 'low-calorie', 'low-sugar', 'low-sodium',
+  // Style & Origin
+  'kid-friendly', 'shareable', 'farm-to-table', 'artisan', 'handcrafted',
+  'traditional', 'modern', 'fusion', 'authentic', 'regional', 'imported',
+  // Price & Value
+  'premium', 'budget-friendly', 'value', 'gourmet'
 ]
 
-// Stock quantity suggestions
-const STOCK_SUGGESTIONS = [
-  { label: '🔢 Limited Stock', value: '10', description: 'For special or premium items' },
-  { label: '📊 Standard Stock', value: '50', description: 'Regular menu items' },
-  { label: '📦 High Stock', value: '100', description: 'Popular items' },
-  { label: '♾️ Unlimited', value: '', description: 'Made-to-order or always available' },
-]
 
 export function createItemFormSections(
   formData: ItemFormData,
-  onChange: (field: keyof ItemFormData, value: string | number | boolean) => void,
+  onChange: (field: keyof ItemFormData, value: string | number | boolean | string[]) => void,
   options?: {
     storeId?: string
     itemId?: string
+    storeType?: string
   }
 ): FormSection[] {
+  // Get categories based on store type, fallback to legacy categories
+  const categories = options?.storeType 
+    ? getCategoriesForStoreType(options.storeType)
+    : CATEGORIES
+
   return [
     {
       id: 'basic',
@@ -94,15 +71,67 @@ export function createItemFormSections(
               
               <Select
                 value={formData.category || ''}
-                onValueChange={(value) => onChange('category', value)}
-                placeholder="Select category"
+                onValueChange={(value) => {
+                  onChange('category', value)
+                  // Reset type if it's not valid for new category
+                  if (formData.type && !isTypeValidForCategory(formData.type, value)) {
+                    onChange('type', '')
+                  }
+                  // Reset subtype if it's not valid for new category/type combination
+                  if (formData.subtype && !isSubTypeValidForCategoryType(formData.subtype, value, formData.type || '')) {
+                    onChange('subtype', '')
+                  }
+                }}
               >
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+            <Select
+              value={formData.type || ''}
+              onValueChange={(value) => {
+                onChange('type', value)
+                // Reset subtype if it's not valid for the new category/type combination
+                if (formData.subtype && !isSubTypeValidForCategoryType(formData.subtype, formData.category || '', value)) {
+                  onChange('subtype', '')
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select item type" />
+              </SelectTrigger>
+              <SelectContent>
+                {getAvailableItemTypes(formData.category || '').map((itemType) => (
+                  <SelectItem key={itemType.value} value={itemType.value}>
+                    {itemType.label}
                   </SelectItem>
                 ))}
-              </Select>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={formData.subtype || ''}
+              onValueChange={(value) => onChange('subtype', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select item subtype" />
+              </SelectTrigger>
+              <SelectContent>
+                {getAvailableSubTypes(formData.category || '', formData.type || '').map((subType) => (
+                  <SelectItem key={subType.value} value={subType.value}>
+                    {subType.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             </div>
             
             <div className="space-y-2">
@@ -119,96 +148,32 @@ export function createItemFormSections(
           </FormRow>
 
           <FormRow>
-            <Input
-              label="Price *"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.price}
-              onChange={(e) => onChange('price', e.target.value)}
-              placeholder="9.99"
-              helperText="💲 Price in USD (customers will see this)"
-              required
-            />
-
-            <Select
-              value={formData.type || ''}
-              onValueChange={(value) => onChange('type', value)}
-              placeholder="Select item type"
-            >
-              {ITEM_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
-            </Select>
-          </FormRow>
-
-          <FormRow>
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📦 Stock Quantity Suggestions
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Price *
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {STOCK_SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion.value}
-                    type="button"
-                    onClick={() => onChange('stockQty', suggestion.value)}
-                    className={`p-3 border rounded-lg text-left transition-colors ${
-                      formData.stockQty === suggestion.value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="font-medium">{suggestion.label}</div>
-                    <div className="text-xs text-gray-500">{suggestion.description}</div>
-                  </button>
-                ))}
-              </div>
-              
-              <Input
-                label="Custom Stock Quantity"
-                type="number"
-                min="0"
-                value={formData.stockQty}
-                onChange={(e) => onChange('stockQty', e.target.value)}
-                placeholder="Or enter custom quantity"
-                helperText="� Leave empty for unlimited stock"
-              />
-            </div>
-
-            <Input
-              label="Sort Order"
-              type="number"
-              min="0"
-              value={formData.sortIndex.toString()}
-              onChange={(e) => onChange('sortIndex', Number.parseInt(e.target.value) || 0)}
-              helperText="📌 Lower numbers appear first on your menu (0 = top)"
-            />
-          </FormRow>
-        </>
-      )},
-    {
-      id: 'attributes',
-      icon: '🌱',
-      title: 'Dietary Attributes',
-      description: 'Help customers find items that match their dietary preferences and restrictions',
-      content: (
-        <CheckboxGroup>
-          {DIETARY_ATTRIBUTES.map((attr) => (
-            <div key={attr.key} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg mb-2">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  label={attr.label}
-                  checked={formData[attr.key] || false}
-                  onChange={(e) => onChange(attr.key, e.target.checked)}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => onChange('price', e.target.value)}
+                  placeholder="9.99"
+                  className="flex h-10 w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  required
                 />
-                <span className="text-sm text-gray-500">{attr.description}</span>
               </div>
+              <p className="text-xs text-gray-500">
+                💲 Price in USD (customers will see this)
+              </p>
             </div>
-          ))}
-        </CheckboxGroup>
+          </FormRow>
+
+        </>
       )},
     {
       id: 'availability',
@@ -234,7 +199,7 @@ export function createItemFormSections(
       id: 'tags',
       icon: '🏷️',
       title: 'Tags & Keywords',
-      description: 'Add tags to help customers discover your item. Use keywords that describe flavors, style, and special qualities.',
+      description: 'Add tags to help customers discover your item. Use keywords that describe flavors, style, and dietary preferences.',
       content: (
         <div className="space-y-4">
           <div>
@@ -286,22 +251,14 @@ export function createItemFormSections(
     {
       id: 'media',
       icon: '📸',
-      title: 'Product Images & Videos',
+      title: 'Product Media',
       description: 'Upload high-quality photos and videos to showcase your item. The first image will be the primary display image.',
-      content: options?.itemId ? (
-        <MediaGalleryManager
+      content: (
+        <EnhancedMediaGalleryManager
           storeId={options?.storeId}
           itemId={options?.itemId}
-          maxFiles={10}
+          maxFiles={100}
         />
-      ) : (
-        <div className="text-center py-8 px-4 border-2 border-dashed border-gray-300 rounded-lg">
-          <div className="text-gray-500">
-            <div className="text-2xl mb-2">📸</div>
-            <p className="font-medium mb-1">Media Upload Available After Item Creation</p>
-            <p className="text-sm">Create the item first, then you can upload product images and videos.</p>
-          </div>
-        </div>
       )},
   ]
 }

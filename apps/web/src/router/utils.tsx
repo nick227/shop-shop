@@ -9,24 +9,21 @@ import { useAuthStore } from '@stores/authStore'
 /**
  * Protected Route - Requires authentication;
  */
-export function ProtectedRoute({ children, requiredRole }: { 
+export function ProtectedRoute({
+  children,
+  requiredRole,
+}: {
   readonly children: React.ReactNode
-  requiredRole?: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN'
+  requiredRole?: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE'
 }) {
-  const { isAuthenticated, user } = useAuthStore((state) => ({ 
-    isAuthenticated: state.isAuthenticated, 
-    user: state.user 
+  const { isAuthenticated, user } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    user: state.user,
   }))
   const location = useLocation()
 
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location.pathname + location.search }}
-      />
-    )
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
 
   // Check if user has required role
@@ -39,7 +36,7 @@ export function ProtectedRoute({ children, requiredRole }: {
           <p className="text-gray-600 mb-6">
             You don't have permission to access this page. Required role: {requiredRole}
           </p>
-          <button 
+          <button
             onClick={() => window.history.back()}
             className="bg-secondary text-secondary-foreground px-6 py-2 rounded-md hover:bg-secondary/90"
           >
@@ -59,7 +56,16 @@ export function ProtectedRoute({ children, requiredRole }: {
 export function PageLoader() {
   return (
     <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
-      <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid #e5e7eb', borderTopColor: '#ff4d00', borderRadius: '50%' }} />
+      <div
+        className="animate-spin"
+        style={{
+          width: 40,
+          height: 40,
+          border: '4px solid #e5e7eb',
+          borderTopColor: '#ff4d00',
+          borderRadius: '50%',
+        }}
+      />
     </div>
   )
 }
@@ -74,4 +80,3 @@ export function lazyRoute(Component: LazyExoticComponent<() => JSX.Element>) {
     </Suspense>
   )
 }
-

@@ -31,13 +31,6 @@ export default function ItemFormPage() {
     stockQty: '',
     sortIndex: 0,
     tags: [],
-    // Dietary attributes
-    isVegan: false,
-    isVegetarian: false,
-    isGlutenFree: false,
-    isDairyFree: false,
-    isKeto: false,
-    isPaleo: false,
   })
 
   // Fetch store for context
@@ -72,13 +65,6 @@ export default function ItemFormPage() {
         stockQty: item.stockQty?.toString() || '',
         sortIndex: item.sortIndex ?? 0,
         tags: item.tags || [],
-        // Dietary attributes
-        isVegan: item.isVegan ?? false,
-        isVegetarian: item.isVegetarian ?? false,
-        isGlutenFree: item.isGlutenFree ?? false,
-        isDairyFree: item.isDairyFree ?? false,
-        isKeto: item.isKeto ?? false,
-        isPaleo: item.isPaleo ?? false,
       })
     }
   }, [item])
@@ -99,13 +85,6 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
-          // Dietary attributes
-          isVegan: data.isVegan,
-          isVegetarian: data.isVegetarian,
-          isGlutenFree: data.isGlutenFree,
-          isDairyFree: data.isDairyFree,
-          isKeto: data.isKeto,
-          isPaleo: data.isPaleo,
         },
       })
     },
@@ -136,13 +115,6 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
-          // Dietary attributes
-          isVegan: data.isVegan,
-          isVegetarian: data.isVegetarian,
-          isGlutenFree: data.isGlutenFree,
-          isDairyFree: data.isDairyFree,
-          isKeto: data.isKeto,
-          isPaleo: data.isPaleo,
         },
       })
     },

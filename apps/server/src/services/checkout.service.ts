@@ -160,6 +160,36 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   // Phase 1 — atomic: order row + cart state change together.
   // Cart is SUBMITTED only when the order record exists, preventing double-orders.
   const order = await prisma.$transaction(async (tx) => {
+    const customerReferral = await tx.user.findUnique({
+      where: { id: checkoutUserId },
+      select: {
+        referredByAffiliateId: true,
+        referredByReferralCode: true,
+      },
+    })
+    const storeAffiliate = await tx.store.findUnique({
+      where: { id: cart.storeId },
+      select: {
+        referredByAffiliateId: true,
+        referredByAffiliate: { select: { referralCode: true } },
+      },
+    })
+
+    const attribution =
+      customerReferral?.referredByAffiliateId != null
+        ? {
+            referredByAffiliateId: customerReferral.referredByAffiliateId,
+            referredByReferralCode: customerReferral.referredByReferralCode,
+            affiliateAttributionSource: 'CUSTOMER_REFERRAL' as const,
+          }
+        : storeAffiliate?.referredByAffiliateId != null
+          ? {
+              referredByAffiliateId: storeAffiliate.referredByAffiliateId,
+              referredByReferralCode: storeAffiliate.referredByAffiliate?.referralCode,
+              affiliateAttributionSource: 'STORE_REFERRAL' as const,
+            }
+          : null
+
     const created = await tx.order.create({
       data: {
         userId: checkoutUserId,
@@ -168,6 +198,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         status: 'PENDING_PAYMENT',
         deliveryType,
         deliveryMode,
+        ...(attribution ?? {}),
         subtotal: decimalToPrisma(totals.subtotal),
         fees: decimalToPrisma(totals.fees),
         tax: decimalToPrisma(totals.tax),

@@ -90,7 +90,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
 
         {/* Login Form */}
         {mode === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" name="login" autoComplete="on">
             <div className="text-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Welcome Back</h2>
               <p className="text-sm text-gray-600 mt-1">Sign in to your account</p>
@@ -99,6 +99,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
             <Input
               type="email"
               label="Email Address"
+              name="email"
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
               error={loginValidate.errors.email}
@@ -111,6 +112,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
             <Input
               type="password"
               label="Password"
+              name="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
               error={loginValidate.errors.password}
@@ -133,7 +135,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
 
         {/* Register Form */}
         {mode === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4" name="register" autoComplete="on">
             <div className="text-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Create Account</h2>
               <p className="text-sm text-gray-600 mt-1">Join us today</p>
@@ -142,6 +144,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
             <Input
               type="text"
               label="Full Name"
+              name="name"
               value={registerName}
               onChange={(e) => setRegisterName(e.target.value)}
               error={registerValidate.errors.name}
@@ -154,6 +157,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
             <Input
               type="email"
               label="Email Address"
+              name="email"
               value={registerEmail}
               onChange={(e) => setRegisterEmail(e.target.value)}
               error={registerValidate.errors.email}
@@ -166,6 +170,7 @@ export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWid
             <Input
               type="password"
               label="Password"
+              name="password"
               value={registerPassword}
               onChange={(e) => setRegisterPassword(e.target.value)}
               error={registerValidate.errors.password}

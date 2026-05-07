@@ -29,7 +29,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} name="register" autoComplete="on">
       {signupError && (
         <Alert variant="error">{signupError}</Alert>
       )}
@@ -38,6 +38,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         <Input
           type="text"
           label="Name"
+          name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
@@ -48,6 +49,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         <Input
           type="email"
           label="Email"
+          name="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -59,6 +61,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         <Input
           type="password"
           label="Password"
+          name="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}

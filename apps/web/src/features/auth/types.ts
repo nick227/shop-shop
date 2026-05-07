@@ -8,7 +8,7 @@
 export interface User {
   id: string
   email: string
-  role: 'customer' | 'vendor' | 'admin'
+  role: 'customer' | 'vendor' | 'admin' | 'affiliate'
   name?: string
   phone?: string
 }
@@ -17,4 +17,3 @@ export interface LoginCredentials {
   email: string
   password: string
 }
-

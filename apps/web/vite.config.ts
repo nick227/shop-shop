@@ -13,6 +13,22 @@ export default defineConfig({
       'Cache-Control': 'no-store',
     },
     proxy: {
+      // Media routes on the backend are registered at `/media/*` (not `/api/media/*`).
+      // The web app calls `/api/media/*` so it is safely proxied (and doesn't hit Vite HTML fallback).
+      // Rewrite `/api/media/*` -> `/media/*` at the proxy layer to match the server.
+      '/api/media': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/media/, '/media'),
+      },
+      // Team routes are registered at `/team/*` (not under `/api/*`)
+      '/api/team': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/team/, '/team'),
+      },
       '/api': {
         target: 'http://localhost:3005',
         changeOrigin: true,

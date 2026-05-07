@@ -52,6 +52,7 @@ export interface StoreFormData {
   name: string
   slug: string
   description: string
+  storeType: 'RESTAURANT' | 'CONVENIENCE' | 'GROCERY' | 'HOME_KITCHEN' | 'BAKERY' | 'RETAIL' | 'OTHER'
   companyName: string
   taxId: string
   phone: string
@@ -81,6 +82,7 @@ export interface StoreUpdateFormData {
   name: string
   slug: string
   description: string
+  storeType: 'RESTAURANT' | 'CONVENIENCE' | 'GROCERY' | 'HOME_KITCHEN' | 'BAKERY' | 'RETAIL' | 'OTHER'
   companyName: string
   taxId: string
   phone: string
@@ -113,6 +115,7 @@ export interface ItemFormData {
   price: string
   category: string
   type: string
+  subtype: string
   isActive: boolean
   isSoldOut: boolean
   stockQty: string

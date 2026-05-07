@@ -157,7 +157,7 @@ export function CharCount({ current, max }: { current: number; max: number }) {
  * Helper component for two-column input rows;
  */
 export function FormRow({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
+  return <div className="grid gap-6">{children}</div>
 }
 
 /**
