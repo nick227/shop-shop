@@ -5,30 +5,38 @@ import styles from './VendorLayout.module.css'
 export function VendorSideNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { selectedStoreId, stores } = useVendorActiveStore()
+  const { selectedStoreId, selectedStore } = useVendorActiveStore()
 
-  const hasStores = stores.length > 0
+  const storeScoped = Boolean(selectedStoreId)
   const isActive = (path: string) => location.pathname.startsWith(path)
 
   const STORE_BASE_PATH = '/vendor/stores/'
-  const STORE_ITEMS_NEW_PATH = '/items/new'
 
   const getStoreEditPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/edit`
   const getStoreItemsPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/items`
   const getStoreRiverPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/river`
 
-  const storeSegment =
-    hasStores && selectedStoreId
-      ? {
-          affiliates: `/vendor/affiliates?storeId=${selectedStoreId}`,
-          team: `/vendor/team?storeId=${selectedStoreId}`,
-          drivers: `/vendor/drivers?storeId=${selectedStoreId}`,
-        }
-      : {
-          affiliates: '/vendor/affiliates',
-          team: '/vendor/team',
-          drivers: '/vendor/drivers',
-        }
+  const activeStoreTitle =
+    selectedStoreId && selectedStore?.name?.trim() ? selectedStore.name.trim() : 'Store'
+
+  const peoplePaths = selectedStoreId
+    ? {
+        affiliates: `/vendor/affiliates?storeId=${selectedStoreId}`,
+        team: `/vendor/team?storeId=${selectedStoreId}`,
+        drivers: `/vendor/drivers?storeId=${selectedStoreId}`,
+      }
+    : {
+        affiliates: '/vendor/affiliates',
+        team: '/vendor/team',
+        drivers: '/vendor/drivers',
+      }
+
+  const navigateScoped = (to: string) => {
+    if (!selectedStoreId) return
+    navigate(to)
+  }
+
+  const navClass = (active: boolean) => `${styles.navItem} ${active ? styles.navItemActive : ''}`
 
   return (
     <nav className={styles.sideNav}>
@@ -40,93 +48,89 @@ export function VendorSideNav() {
           onClick={() => navigate('/vendor/dashboard')}
         >
           <span className={styles.navIcon}>🏪</span>
-          <span>My Stores</span>
+          <span className={styles.navItemText}>My Stores</span>
         </button>
+
         <button
           type="button"
-          className={`${styles.navItem} ${isActive('/vendor/orders') ? styles.navItemActive : ''}`}
-          onClick={() => navigate('/vendor/orders')}
+          disabled={!storeScoped}
+          className={navClass(
+            Boolean(selectedStoreId && isActive(getStoreEditPath(selectedStoreId))),
+          )}
+          onClick={() => {
+            if (!selectedStoreId) return
+            navigate(getStoreEditPath(selectedStoreId))
+          }}
+        >
+          <span className={styles.navIcon}>✏️</span>
+          <span className={styles.navItemText} title={activeStoreTitle}>
+            {activeStoreTitle}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(isActive('/vendor/orders'))}
+          onClick={() => navigateScoped('/vendor/orders')}
         >
           <span className={styles.navIcon}>📋</span>
-          <span>Orders</span>
+          <span className={styles.navItemText}>Orders</span>
         </button>
         <button
           type="button"
-          className={`${styles.navItem} ${location.pathname === '/vendor/affiliates' ? styles.navItemActive : ''}`}
-          onClick={() => navigate(storeSegment.affiliates)}
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/affiliates')}
+          onClick={() => navigateScoped(peoplePaths.affiliates)}
         >
           <span className={styles.navIcon}>A</span>
-          <span>Affiliates</span>
+          <span className={styles.navItemText}>Affiliates</span>
         </button>
         <button
           type="button"
-          className={`${styles.navItem} ${location.pathname === '/vendor/team' ? styles.navItemActive : ''}`}
-          onClick={() => navigate(storeSegment.team)}
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/team')}
+          onClick={() => navigateScoped(peoplePaths.team)}
         >
           <span className={styles.navIcon}>T</span>
-          <span>Team</span>
+          <span className={styles.navItemText}>Team</span>
         </button>
         <button
           type="button"
-          className={`${styles.navItem} ${location.pathname === '/vendor/drivers' ? styles.navItemActive : ''}`}
-          onClick={() => navigate(storeSegment.drivers)}
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/drivers')}
+          onClick={() => navigateScoped(peoplePaths.drivers)}
         >
           <span className={styles.navIcon}>D</span>
-          <span>Drivers</span>
+          <span className={styles.navItemText}>Drivers</span>
         </button>
-      </div>
-
-      {hasStores && selectedStoreId && (
-        <div className={styles.navSection}>
-          <div className={styles.navLabel}>Active store</div>
-          <button
-            type="button"
-            className={`${styles.navItem} ${isActive(getStoreEditPath(selectedStoreId)) ? styles.navItemActive : ''}`}
-            onClick={() => navigate(getStoreEditPath(selectedStoreId))}
-          >
-            <span className={styles.navIcon}>✏️</span>
-            <span>Store Details</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.navItem} ${isActive(getStoreItemsPath(selectedStoreId)) ? styles.navItemActive : ''}`}
-            onClick={() => navigate(getStoreItemsPath(selectedStoreId))}
-          >
-            <span className={styles.navIcon}>🍽️</span>
-            <span>Menu Items</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.navItem} ${isActive(getStoreRiverPath(selectedStoreId)) ? styles.navItemActive : ''}`}
-            onClick={() => navigate(getStoreRiverPath(selectedStoreId))}
-          >
-            <span className={styles.navIcon}>📱</span>
-            <span>Store River</span>
-          </button>
-        </div>
-      )}
-
-      <div className={styles.navSection}>
-        <button type="button" className={styles.navItem} onClick={() => navigate('/vendor/store/new')}>
-          <span className={styles.navIcon}>➕</span>
-          <span>Create Store</span>
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(
+            Boolean(selectedStoreId && isActive(getStoreItemsPath(selectedStoreId))),
+          )}
+          onClick={() => {
+            if (!selectedStoreId) return
+            navigate(getStoreItemsPath(selectedStoreId))
+          }}
+        >
+          <span className={styles.navIcon}>🍽️</span>
+          <span className={styles.navItemText}>Menu Items</span>
         </button>
-        {hasStores && selectedStoreId && (
-          <button
-            type="button"
-            className={styles.navItem}
-            onClick={() => navigate(`${STORE_BASE_PATH}${selectedStoreId}${STORE_ITEMS_NEW_PATH}`)}
-          >
-            <span className={styles.navIcon}>🍕</span>
-            <span>Add Menu Item</span>
-          </button>
-        )}
-      </div>
-
-      <div className={styles.navSection}>
-        <button type="button" className={styles.navItem} onClick={() => navigate('/')}>
-          <span className={styles.navIcon}>🏠</span>
-          <span>Customer View</span>
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(
+            Boolean(selectedStoreId && isActive(getStoreRiverPath(selectedStoreId))),
+          )}
+          onClick={() => {
+            if (!selectedStoreId) return
+            navigate(getStoreRiverPath(selectedStoreId))
+          }}
+        >
+          <span className={styles.navIcon}>📱</span>
+          <span className={styles.navItemText}>Store River</span>
         </button>
       </div>
     </nav>

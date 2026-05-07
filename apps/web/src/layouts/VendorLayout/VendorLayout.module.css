@@ -154,6 +154,23 @@
   font-weight: var(--font-semibold);
 }
 
+.navItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.navItem:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+.navItemText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .navIcon {
   font-size: var(--text-lg);
   line-height: 1;

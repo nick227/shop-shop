@@ -40,6 +40,9 @@ function VendorLayoutShell() {
         </div>
 
         <div className={styles.topRight}>
+          <Button variant="outline" size="small" type="button" onClick={() => navigate('/vendor/store/new')}>
+            Create Store
+          </Button>
           <VendorStoreSwitcher />
           <OrderCountWidget />
           <span className={styles.userName}>{user?.name}</span>
