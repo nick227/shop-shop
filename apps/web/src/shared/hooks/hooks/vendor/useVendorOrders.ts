@@ -30,7 +30,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
         return []
       }
 
-      const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      const storeIds = new Set(vendorStores.map((s) => s.id).filter(Boolean))
       if (options.storeId && !storeIds.has(options.storeId)) {
         return []
       }
@@ -43,7 +43,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
 
       // Filter to vendor stores + optional status.
       const filtered = allOrders.filter((order) => {
-        if (!scopeIds.has((order as any).storeId)) return false
+        if (!scopeIds.has(order.storeId)) return false
         if (options.status && order.status !== options.status) return false
         return true
       })
@@ -80,12 +80,12 @@ export function usePendingOrderCount(storeId?: string) {
       
       if (vendorStores.length === 0) return 0
 
-      const vendorStoreIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      const vendorStoreIds = new Set(vendorStores.map((s) => s.id).filter(Boolean))
       if (storeId && !vendorStoreIds.has(storeId)) return 0
       const scopeIds = storeId ? new Set<string>([storeId]) : vendorStoreIds
 
       const allOrders = (await orders.list()) as unknown as OrderResponse[]
-      const filtered = allOrders.filter((order) => scopeIds.has((order as any).storeId))
+      const filtered = allOrders.filter((order) => scopeIds.has(order.storeId))
       
       // Count pending orders (using consolidated helper)
       const byId = new Set<string>()

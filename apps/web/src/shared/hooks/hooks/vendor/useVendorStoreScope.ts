@@ -54,7 +54,7 @@ export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
       const pathMatch = VENDOR_STORE_PATH.exec(location.pathname)
       let pathname = location.pathname
       if (pathMatch) {
-        const [, , pathRest] = pathMatch
+        const pathRest = pathMatch[2]
         pathname = `/vendor/stores/${storeId}${pathRest ?? ''}`
       }
       const next = new URLSearchParams(searchParams)
