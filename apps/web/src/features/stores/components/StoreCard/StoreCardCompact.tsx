@@ -39,7 +39,7 @@ function StoreCardCompactComponent({
 }: StoreCardCompactProps) {
   const handleClick = useCallback(() => onClick?.(store), [onClick, store])
 
-  const imageUrl = getImageUrl((store as { imageUrl?: string }).imageUrl, store.id, 'store')
+  const imageUrl = getImageUrl((store as { imageUrl?: string }).imageUrl, store.id, 'store', (store as any).mediaAssets)
   const fallback = variant === 'fallback'
   const imgSize = fallback ? 'h-14 w-14' : 'h-20 w-20'
 

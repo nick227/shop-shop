@@ -1,6 +1,6 @@
 import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
 import { registry, registerAllResourcesInOpenAPI, ErrorResponseSchema } from './index.js'
-import { MediaAssetResponseSchema, UploadMediaInputSchema } from './dtos/index.js'
+import { MediaAssetResponseSchema, UploadMediaInputSchema } from './dtos/index.js' // eslint-disable-line @typescript-eslint/no-unused-vars
 import { z } from 'zod'
 import fs from 'node:fs'
 import path from 'node:path'

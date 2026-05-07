@@ -40,6 +40,12 @@ export const UpdateItemInputSchema = z.object({
   spicyLevel: z.number().int().optional()
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
 
+const ItemTagSchema = z.object({
+  slug: z.string(),
+  label: z.string(),
+  category: z.string(),
+})
+
 export const ItemResponseSchema = z.object({
   storeId: z.string(),
   store: z.string(),
@@ -61,7 +67,9 @@ export const ItemResponseSchema = z.object({
   cartItems: z.string(),
   orderItems: z.string(),
   bundleItems: z.string(),
-  FavoriteItem: z.string()
+  FavoriteItem: z.string(),
+  tags: z.array(ItemTagSchema).optional(),
+  mediaAssets: z.array(z.object({ url: z.string(), kind: z.string(), sortIndex: z.number().nullable().optional() })).optional(),
 })
 
 export const ItemListResponseSchema = z.object({

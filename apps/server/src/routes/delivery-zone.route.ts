@@ -10,7 +10,7 @@ import {
   bulkUpdateZonePriorities,
   prisma,
 } from '@packages/db'
-import { optionalAuthenticate } from '../middleware/auth.js'
+import { authenticate, optionalAuthenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
@@ -56,7 +56,7 @@ const BulkUpdatePrioritiesSchema = z.object({
 export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   // POST /delivery-zones - Create delivery zone
   app.post('/delivery-zones', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [authenticate, requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const input = CreateDeliveryZoneSchema.parse(req.body)
@@ -110,7 +110,7 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // PATCH /delivery-zones/:id - Update delivery zone
   app.patch('/delivery-zones/:id', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [authenticate, requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
@@ -136,7 +136,7 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // DELETE /delivery-zones/:id - Delete delivery zone
   app.delete('/delivery-zones/:id', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [authenticate, requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
@@ -201,7 +201,7 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
 
   // POST /delivery-zones/bulk-update-priorities - Bulk update zone priorities
   app.post('/delivery-zones/bulk-update-priorities', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [authenticate, requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
   }, async (req, reply) => {
     try {
       const input = BulkUpdatePrioritiesSchema.parse(req.body)

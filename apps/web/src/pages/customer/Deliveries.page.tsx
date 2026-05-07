@@ -28,6 +28,10 @@ function getStatusBadge(status: string) {
     }
     case 'READY': { return { label: 'Ready', variant: 'success' as const }
     }
+    case 'OUT_FOR_DELIVERY': { return { label: 'Out for delivery', variant: 'default' as const }
+    }
+    case 'DELIVERED': { return { label: 'Delivered', variant: 'success' as const }
+    }
     default: { return { label: status, variant: 'secondary' as const }
     }
   }
@@ -57,10 +61,10 @@ export default function CustomerDeliveriesPage() {
 
   const deliveryOrders = orders?.filter(o => o.deliveryType === 'DELIVERY') || []
   const activeDeliveries = deliveryOrders.filter(o =>
-    ['PLACED', 'ACCEPTED', 'PREPARING', 'READY'].includes(o?.status)
+    ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(o?.status)
   )
   const deliveryHistory = deliveryOrders.filter(o =>
-    ['COMPLETED', 'CANCELED'].includes(o?.status)
+    ['DELIVERED', 'COMPLETED', 'CANCELED'].includes(o?.status)
   )
 
   return (

@@ -12,6 +12,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/e2e/**',  // Exclude Playwright E2E tests from Vitest
+      'tests/**', // Exclude Playwright specs under apps/web/tests
       '**/.{idea,git,cache,output,temp}/**',
     ],
     coverage: {
@@ -41,6 +42,7 @@ export default defineConfig({
       '@packages/realtime': path.resolve(__dirname, '../../packages/realtime/src'),
       '@packages/schemas': path.resolve(__dirname, '../../packages/schemas/src'),
       '@packages/sdk': path.resolve(__dirname, '../../packages/sdk/dist'),
+      '@packages/shared': path.resolve(__dirname, '../../packages/shared/dist'),
     },
   },
 })

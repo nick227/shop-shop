@@ -16,6 +16,10 @@ export interface IconOptions {
 }
 
 export class IconService {
+  static clearCache() {
+    ICON_CACHE.clear()
+  }
+
   static getIcon(key: string, options: IconOptions): L.DivIcon {
     if (!ICON_CACHE.has(key)) {
       ICON_CACHE.set(key, L.divIcon({

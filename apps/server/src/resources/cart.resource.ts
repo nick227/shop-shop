@@ -8,10 +8,6 @@ import {
 import { cartDomain } from '@packages/domain'
 import { prisma } from '@packages/db'
 
-/**
- * Cart Resource Definition
- * Manages shopping cart operations
- */
 export const cartResource = defineResource({
   name: 'cart',
   model: 'cart',
@@ -22,7 +18,7 @@ export const cartResource = defineResource({
     list: CartListResponseSchema,
   },
   access: {
-    create: ['USER', 'VENDOR', 'ADMIN'], // Anyone can add to cart
+    create: ['USER', 'VENDOR', 'ADMIN'],
     read: ['USER', 'VENDOR', 'ADMIN'],
     update: ['USER', 'VENDOR', 'ADMIN'],
     delete: ['USER', 'VENDOR', 'ADMIN'],
@@ -30,207 +26,144 @@ export const cartResource = defineResource({
   },
   ownership: {
     enabled: true,
-    relationPath: 'userId', // Users can only access their own carts
+    relationPath: 'userId',
   },
-  operations: ['create', 'read', 'list', 'delete'], // No generic update
+  operations: ['create', 'read', 'list', 'delete'],
   customHooks: {
-    // Add item to cart (CREATE)
+    // Add item or bundle to cart (CREATE)
     beforeCreate: async (data, context) => {
       const input = data as {
-        storeId: string
-        itemId: string
-        quantity: number
+        itemId?: string
+        bundleId?: string
+        quantity?: number
         optionsJson?: Record<string, unknown>
         notes?: string
       }
 
-      // Call domain service which handles cart creation and item addition
-      const result = await cartDomain.addItemToCart(
-        context!.userId!,
-        input.itemId,
-        input.quantity,
-        input.optionsJson,
-        input.notes
-      )
+      if (!input.itemId && !input.bundleId) throw new Error('Either itemId or bundleId is required')
+      if (input.itemId && input.bundleId) throw new Error('Provide either itemId or bundleId, not both')
 
-      // Fetch and return the created cart (bypassing the base service create)
-      const cart = await prisma.cart.findUnique({
-        where: { id: result.cartId },
-        include: {
-          items: {
-            include: { item: true },
-          },
-        },
-      })
+      let result: { cartId: string; cartItemId: string }
 
-      if (!cart) {
-        throw new Error('Cart creation failed')
+      if (input.bundleId) {
+        result = await cartDomain.addBundleToCart(context!.userId!, input.bundleId, input.notes)
+      } else {
+        result = await cartDomain.addItemToCart(
+          context!.userId!,
+          input.itemId!,
+          input.quantity ?? 1,
+          input.optionsJson,
+          input.notes,
+        )
       }
 
-      // Calculate totals
-      const totals = await cartDomain.calculateCartTotals(cart.id)
-
-      // Return full cart response, marking it to skip base service creation
-      return {
-        _skipCreate: true,
-        _result: {
-          id: cart.id,
-          userId: cart.userId,
-          storeId: cart.storeId,
-          status: cart.status,
-          note: cart.note,
-          createdAt: cart.createdAt,
-          updatedAt: cart.updatedAt,
-          items: cart.items.map((cartItem) => ({
-            id: cartItem.id,
-            cartId: cartItem.cartId,
-            itemId: cartItem.itemId,
-            titleSnapshot: cartItem.titleSnapshot,
-            unitPrice: cartItem.unitPrice,
-            quantity: cartItem.quantity,
-            optionsJson: cartItem.optionsJson,
-            notes: cartItem.notes,
-            createdAt: cartItem.createdAt,
-            currentItem: {
-              id: cartItem.item.id,
-              title: cartItem.item.title,
-              price: cartItem.item.price,
-              isActive: cartItem.item.isActive,
-              isSoldOut: cartItem.item.isSoldOut,
-              stockQty: cartItem.item.stockQty,
-            },
-          })),
-          itemCount: totals.itemCount,
-          subtotal: totals.subtotal,
-        },
-      }
+      const cart = await fetchCartWithTotals(result.cartId)
+      return { _skipCreate: true, _result: cart }
     },
 
-    // Get cart with items (READ)
     afterRead: async (result) => {
-      // Fetch full cart with items
-      const cart = await prisma.cart.findUnique({
-        where: { id: (result as { id: string }).id },
-        include: {
-          items: {
-            include: {
-              item: true, // Include current item details
-            },
-          },
-        },
-      })
-
-      if (!cart) {
-        throw new Error('Cart not found')
-      }
-
-      // Calculate totals
-      const totals = await cartDomain.calculateCartTotals(cart.id)
-
-      return {
-        id: cart.id,
-        userId: cart.userId,
-        storeId: cart.storeId,
-        status: cart.status,
-        note: cart.note,
-        createdAt: cart.createdAt,
-        updatedAt: cart.updatedAt,
-        items: cart.items.map((cartItem) => ({
-          id: cartItem.id,
-          cartId: cartItem.cartId,
-          itemId: cartItem.itemId,
-          titleSnapshot: cartItem.titleSnapshot,
-          unitPrice: cartItem.unitPrice,
-          quantity: cartItem.quantity,
-          optionsJson: cartItem.optionsJson,
-          notes: cartItem.notes,
-          createdAt: cartItem.createdAt,
-          currentItem: {
-            id: cartItem.item.id,
-            title: cartItem.item.title,
-            price: cartItem.item.price,
-            isActive: cartItem.item.isActive,
-            isSoldOut: cartItem.item.isSoldOut,
-            stockQty: cartItem.item.stockQty,
-          },
-        })),
-        itemCount: totals.itemCount,
-        subtotal: totals.subtotal,
-      }
+      return fetchCartWithTotals((result as { id: string }).id)
     },
 
-    // List user's carts (LIST)
     beforeList: async (_filters, context) => {
-      // Only return user's own carts
-      return {
-        userId: context!.userId!,
-        status: 'ACTIVE', // Only show active carts
-      }
+      return { userId: context!.userId!, status: 'ACTIVE' }
     },
 
-    afterList: async (result, context) => {
-      // Fetch carts with full relations directly from Prisma
+    afterList: async (_result, context) => {
       const carts = await prisma.cart.findMany({
-        where: {
-          userId: context!.userId!,
-          status: 'ACTIVE',
-        },
-        include: {
-          items: {
-            include: { item: true },
-          },
-        },
+        where: { userId: context!.userId!, status: 'ACTIVE' },
+        select: { id: true },
         orderBy: { createdAt: 'desc' },
       })
 
-      // Transform carts with totals
-      const cartsWithTotals = await Promise.all(
-        carts.map(async (cart) => {
-          const totals = await cartDomain.calculateCartTotals(cart.id)
-
-          return {
-            id: cart.id,
-            userId: cart.userId,
-            storeId: cart.storeId,
-            status: cart.status,
-            note: cart.note,
-            createdAt: cart.createdAt,
-            updatedAt: cart.updatedAt,
-            items: cart.items.map((cartItem) => ({
-              id: cartItem.id,
-              cartId: cartItem.cartId,
-              itemId: cartItem.itemId,
-              titleSnapshot: cartItem.titleSnapshot,
-              unitPrice: cartItem.unitPrice,
-              quantity: cartItem.quantity,
-              optionsJson: cartItem.optionsJson,
-              notes: cartItem.notes,
-              createdAt: cartItem.createdAt,
-              currentItem: {
-                id: cartItem.item.id,
-                title: cartItem.item.title,
-                price: cartItem.item.price,
-                isActive: cartItem.item.isActive,
-                isSoldOut: cartItem.item.isSoldOut,
-                stockQty: cartItem.item.stockQty,
-              },
-            })),
-            itemCount: totals.itemCount,
-            subtotal: totals.subtotal,
-          }
-        })
-      )
-
-      return {
-        data: cartsWithTotals,
-        total: cartsWithTotals.length,
-      }
+      const cartsWithTotals = await Promise.all(carts.map((c) => fetchCartWithTotals(c.id)))
+      return { data: cartsWithTotals, total: cartsWithTotals.length }
     },
 
-    // Clear cart (DELETE)
     beforeDelete: async (id, context) => {
       await cartDomain.clearCart(id as string, context!.userId!)
     },
   },
 })
 
+// ---------------------------------------------------------------------------
+// Internal helper — loads a cart with bundle/item relations + totals
+// ---------------------------------------------------------------------------
+
+const BUNDLE_INCLUDE = {
+  media: { take: 1, orderBy: { sortIndex: 'asc' as const } },
+  items: {
+    include: {
+      item: { select: { id: true, title: true, price: true } },
+    },
+    orderBy: { sortIndex: 'asc' as const },
+  },
+  pricing: true,
+} as const
+
+async function fetchCartWithTotals(cartId: string) {
+  const cart = await prisma.cart.findUnique({
+    where: { id: cartId },
+    include: {
+      items: {
+        include: {
+          item: true,
+          bundle: { include: BUNDLE_INCLUDE },
+        },
+      },
+    },
+  })
+
+  if (!cart) throw new Error('Cart not found')
+
+  const totals = await cartDomain.calculateCartTotals(cart.id)
+
+  return {
+    id: cart.id,
+    userId: cart.userId,
+    storeId: cart.storeId,
+    status: cart.status,
+    note: cart.note,
+    createdAt: cart.createdAt,
+    updatedAt: cart.updatedAt,
+    items: cart.items.map((ci) => ({
+      id: ci.id,
+      cartId: ci.cartId,
+      itemId: ci.itemId ?? null,
+      bundleId: ci.bundleId ?? null,
+      titleSnapshot: ci.titleSnapshot,
+      unitPrice: ci.unitPrice,
+      quantity: ci.quantity,
+      optionsJson: ci.optionsJson,
+      notes: ci.notes,
+      createdAt: ci.createdAt,
+      currentItem: ci.item
+        ? {
+            id: ci.item.id,
+            title: ci.item.title,
+            price: ci.item.price,
+            isActive: ci.item.isActive,
+            isSoldOut: ci.item.isSoldOut,
+            stockQty: ci.item.stockQty,
+          }
+        : null,
+      currentBundle: ci.bundle
+        ? {
+            id: ci.bundle.id,
+            name: ci.bundle.name,
+            description: ci.bundle.description,
+            isActive: ci.bundle.isActive,
+            imageUrl: (ci.bundle as any).media?.[0]?.url ?? null,
+            items: (ci.bundle as any).items.map((bi: any) => ({
+              itemId: bi.item.id,
+              title: bi.item.title,
+              price: Number(bi.item.price),
+              quantity: bi.quantity,
+            })),
+          }
+        : null,
+    })),
+    itemCount: totals.itemCount,
+    subtotal: totals.subtotal,
+  }
+}

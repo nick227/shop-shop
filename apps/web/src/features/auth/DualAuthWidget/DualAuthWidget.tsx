@@ -11,13 +11,14 @@ import { loginFormSchema, signupFormSchema, type LoginFormData, type SignupFormD
 
 export interface DualAuthWidgetProps {
   onSuccess?: () => void;
+  initialMode?: AuthMode;
 }
 
 type AuthMode = 'login' | 'register'
 
-export function DualAuthWidget({ onSuccess }: DualAuthWidgetProps) {
+export function DualAuthWidget({ onSuccess, initialMode = 'login' }: DualAuthWidgetProps) {
   const { login, signup, isLoggingIn, isSigningUp, loginError, signupError } = useAuth({ onSuccess })
-  const [mode, setMode] = useState<AuthMode>('login')
+  const [mode, setMode] = useState<AuthMode>(initialMode)
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('')

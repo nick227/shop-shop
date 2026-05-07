@@ -215,9 +215,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     try {
       // Call logout endpoint to invalidate session
+      const authBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
       const { accessToken } = getStoredTokens()
       if (accessToken) {
-        await fetch('/auth/v1/logout', {
+        await fetch(`${authBaseUrl}/auth/v1/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -238,6 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ========================================
 
   const refreshToken = useCallback(async () => {
+    const authBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
     const { refreshToken: storedRefreshToken } = getStoredTokens()
     
     if (!storedRefreshToken) {
@@ -245,7 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      const response = await fetch('/auth/v1/refresh', {
+      const response = await fetch(`${authBaseUrl}/auth/v1/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -289,6 +291,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initializeAuth = async () => {
       let authResolved = false
+      const authBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
       const { accessToken, refreshToken: storedRefreshToken } = getStoredTokens()
       
       if (!accessToken || !storedRefreshToken) {
@@ -299,7 +302,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
         // Validate current access token by getting current user info
-        const response = await fetch('/auth/v1/me', {
+        const response = await fetch(`${authBaseUrl}/auth/v1/me`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'

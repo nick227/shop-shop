@@ -6,24 +6,13 @@ import { useCartStore } from '@stores/cartStore'
 import { useAddToCart } from './useAddToCart'
 
 const mocks = vi.hoisted(() => ({
-  createCartMock: vi.fn(),
-  toastSuccessMock: vi.fn(),
-  toastErrorMock: vi.fn(),
+  showItemAddedMock: vi.fn(),
 }))
 
-vi.mock('@api/client', () => ({
-  apiClient: {
-    carts: () => ({
-      createCart: mocks.createCartMock,
-    }),
-  },
-}))
-
-vi.mock('sonner', () => ({
-  toast: {
-    success: mocks.toastSuccessMock,
-    error: mocks.toastErrorMock,
-  },
+vi.mock('@features/cart/components/CartToaster', () => ({
+  useCartToaster: () => ({
+    showItemAdded: mocks.showItemAddedMock,
+  }),
 }))
 
 vi.mock('@api/errors', () => ({
@@ -47,21 +36,11 @@ function createWrapper() {
 
 describe('useAddToCart', () => {
   beforeEach(() => {
-    mocks.createCartMock.mockReset()
-    mocks.toastSuccessMock.mockReset()
-    mocks.toastErrorMock.mockReset()
+    mocks.showItemAddedMock.mockReset()
     useCartStore.setState({ cart: undefined, hasHydrated: true })
   })
 
-  it('updates cart state immediately before API resolution', async () => {
-    let resolveRequest: (() => void) | undefined
-    mocks.createCartMock.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveRequest = resolve
-        }),
-    )
-
+  it('updates cart state immediately and shows a cart toaster', async () => {
     const { result } = renderHook(() => useAddToCart(), { wrapper: createWrapper() })
 
     result.current.mutate({
@@ -76,17 +55,16 @@ describe('useAddToCart', () => {
     await waitFor(() => {
       expect(useCartStore.getState().cart?.itemCount).toBe(1)
     })
-    expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
-
-    resolveRequest?.()
-
-    await waitFor(() => {
-      expect(mocks.toastSuccessMock).toHaveBeenCalledWith('Item added to cart!')
-    })
+    expect(mocks.showItemAddedMock).toHaveBeenCalledTimes(1)
   })
 
-  it('rolls back cart and shows feedback when API sync fails', async () => {
-    mocks.createCartMock.mockRejectedValue(new Error('Sync failed'))
+  it('propagates errors from the cart store', async () => {
+    const originalAddItem = useCartStore.getState().addItem
+    useCartStore.setState({
+      addItem: () => {
+        throw new Error('Sync failed')
+      },
+    })
 
     const { result } = renderHook(() => useAddToCart(), { wrapper: createWrapper() })
 
@@ -102,35 +80,12 @@ describe('useAddToCart', () => {
     ).rejects.toThrow('Sync failed')
 
     expect(useCartStore.getState().cart).toBeUndefined()
-    expect(mocks.toastErrorMock).toHaveBeenCalledWith('Sync failed')
-    expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
+    expect(mocks.showItemAddedMock).not.toHaveBeenCalled()
+
+    useCartStore.setState({ addItem: originalAddItem })
   })
 
-  it('does not rollback newer optimistic adds when an earlier request fails', async () => {
-    let firstReject: ((error: unknown) => void) | undefined
-    let secondResolve: (() => void) | undefined
-    let thirdResolve: (() => void) | undefined
-
-    mocks.createCartMock
-      .mockImplementationOnce(
-        () =>
-          new Promise<void>((_, reject) => {
-            firstReject = reject
-          }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<void>((resolve) => {
-            secondResolve = resolve
-          }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<void>((resolve) => {
-            thirdResolve = resolve
-          }),
-      )
-
+  it('does not rollback previous adds when a later add fails', async () => {
     const { result } = renderHook(() => useAddToCart(), { wrapper: createWrapper() })
 
     result.current.mutate({
@@ -149,26 +104,32 @@ describe('useAddToCart', () => {
       unitPrice: '10.00',
       item: { id: 'item_1', title: 'Burger', price: '10.00' },
     })
-    result.current.mutate({
-      storeId: 'store_1',
-      itemId: 'item_1',
-      quantity: 1,
-      title: 'Burger',
-      unitPrice: '10.00',
-      item: { id: 'item_1', title: 'Burger', price: '10.00' },
-    })
 
     await waitFor(() => {
-      expect(useCartStore.getState().cart?.itemCount).toBe(3)
+      expect(useCartStore.getState().cart?.itemCount).toBe(2)
     })
 
-    firstReject?.(new Error('First call failed'))
-    secondResolve?.()
-    thirdResolve?.()
+    const originalAddItem = useCartStore.getState().addItem
+    useCartStore.setState({
+      addItem: () => {
+        throw new Error('Third call failed')
+      },
+    })
+
+    await expect(
+      result.current.mutateAsync({
+        storeId: 'store_1',
+        itemId: 'item_1',
+        quantity: 1,
+        title: 'Burger',
+        unitPrice: '10.00',
+        item: { id: 'item_1', title: 'Burger', price: '10.00' },
+      }),
+    ).rejects.toThrow('Third call failed')
 
     await waitFor(() => {
-      expect(useCartStore.getState().cart?.itemCount).toBe(3)
+      expect(useCartStore.getState().cart?.itemCount).toBe(2)
     })
-    expect(mocks.toastErrorMock).toHaveBeenCalledWith('First call failed')
+    useCartStore.setState({ addItem: originalAddItem })
   })
 })

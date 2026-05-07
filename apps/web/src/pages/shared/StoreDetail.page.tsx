@@ -1,15 +1,65 @@
 import { useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useStore } from '@shared/hooks/hooks/useStores'
 import { useItems } from '@shared/hooks/generated'
 import { useCart } from '@shared/hooks/hooks/useCart'
 import { parseStoreSlug } from '@shared/lib/utils/slugify'
 import { StoreHeader } from '@features/stores/components/StoreHeader'
-import { ItemCard } from '@features/products/components'
-import { Button } from '@shared/ui/primitives'
+import { ItemCard, BundleCard } from '@features/products/components'
 import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { CartBadge } from '@components/CartBadge'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { bundles as bundlesApi } from '@api/apiWrapper'
+import type { Bundle, BundleItem, ItemResponse } from '@api/backend-types'
+
+// Canonical display order for ITEM_TYPE tag sections
+const ITEM_TYPE_ORDER = [
+  'entree', 'sandwich', 'salad', 'side', 'bread',
+  'pastry', 'cake', 'dessert', 'drink',
+  'tray', 'family-meal', 'box', 'bundle-item',
+]
+
+function groupItemsByType(items: ItemResponse[]): Array<{ label: string; items: ItemResponse[] }> {
+  const ungrouped: ItemResponse[] = []
+  const grouped = new Map<string, { label: string; items: ItemResponse[] }>()
+
+  for (const item of items) {
+    const typeTag = item.tags?.find((t) => t.category === 'ITEM_TYPE')
+    if (!typeTag) {
+      ungrouped.push(item)
+      continue
+    }
+    const existing = grouped.get(typeTag.slug)
+    if (existing) {
+      existing.items.push(item)
+    } else {
+      grouped.set(typeTag.slug, { label: typeTag.label, items: [item] })
+    }
+  }
+
+  // Sort groups by canonical menu order, then alphabetically for unknown types
+  const sections = [...grouped.entries()]
+    .sort(([a], [b]) => {
+      const ai = ITEM_TYPE_ORDER.indexOf(a)
+      const bi = ITEM_TYPE_ORDER.indexOf(b)
+      if (ai === -1 && bi === -1) return a.localeCompare(b)
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+    .map(([, section]) => section)
+
+  // Ungrouped items go first if they're the majority, last otherwise
+  if (ungrouped.length > 0) {
+    const label = sections.length === 0 ? 'Menu' : 'Other'
+    if (sections.length === 0) return [{ label, items: ungrouped }]
+    sections.push({ label, items: ungrouped })
+  }
+
+  return sections
+}
 
 function KitchenContainer() {
   const navigate = useNavigate()
@@ -22,21 +72,31 @@ function KitchenContainer() {
   const { data: store, isLoading: isStoreLoading, error: storeError } = useStore(storeId ?? '')
   const { data: items, isLoading: isItemsLoading, error: itemsError } = useItems(
     storeId ? { storeId } : undefined,
-    { enabled: Boolean(storeId) }
+    { enabled: Boolean(storeId) },
   )
+
+  const { data: bundlesData, isLoading: isBundlesLoading } = useQuery({
+    queryKey: ['bundles', storeId, 'public'],
+    queryFn: () => bundlesApi.list({ storeId, isActive: true }),
+    enabled: Boolean(storeId),
+  })
+
+  const bundles: Bundle[] = bundlesData ?? []
+
+  usePageTitle(store?.name, 'ShopShop')
 
   const cartCount = useMemo(() => {
     if (!cart?.items || !Array.isArray(cart.items)) return 0
     return cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
   }, [cart?.items])
 
+  const menuSections = useMemo(
+    () => groupItemsByType(items ?? []),
+    [items],
+  )
+
   if (isStoreLoading) {
-    return (
-      <StateBlock
-        title="Loading kitchen"
-        message="Please wait while we load this kitchen."
-      />
-    )
+    return <StateBlock title="Loading kitchen" message="Please wait while we load this kitchen." />
   }
 
   if (storeError || !store) {
@@ -50,13 +110,8 @@ function KitchenContainer() {
     )
   }
 
-  if (isItemsLoading) {
-    return (
-      <StateBlock
-        title="Loading menu"
-        message="Please wait while we load menu items."
-      />
-    )
+  if (isItemsLoading || isBundlesLoading) {
+    return <StateBlock title="Loading menu" message="Please wait while we load menu items." />
   }
 
   if (itemsError) {
@@ -70,7 +125,9 @@ function KitchenContainer() {
     )
   }
 
-  if (!items || items.length === 0) {
+  const hasContent = (items?.length ?? 0) > 0 || bundles.length > 0
+
+  if (!hasContent) {
     return (
       <StateBlock
         title="No items yet"
@@ -82,32 +139,87 @@ function KitchenContainer() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <StoreHeader store={store} />
 
-      <section>
-        <h2 className="mb-4 text-xl font-bold text-foreground">Menu</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
-          ))}
-        </div>
-      </section>
+      {menuSections.length > 0 && menuSections.map((section) => (
+        <section key={section.label}>
+          <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {section.items.map((item) => (
+              <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
+            ))}
+          </div>
+        </section>
+      ))}
+      
+      {bundles.length > 0 && (
+        <section>
+          <div className="flex gap-3 items-baseline mb-4">
+            <h2 className="text-xl font-bold text-foreground">Bundles & Combos</h2>
+            <span className="text-sm text-muted-foreground">
+              {bundles.length} bundle{bundles.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {bundles.map((bundle: Bundle) => {
+              const bundleItems: BundleItem[] = bundle.items ?? []
+              const itemSum = bundleItems.reduce(
+                (sum, bi) => sum + Number(bi.item?.price ?? bi.price ?? 0) * (bi.quantity ?? 1),
+                0,
+              )
+              const p = bundle.pricing
+              let resolvedPrice = itemSum
+              if (p) {
+                if (p.pricingType === 'FIXED_PRICE' && p.fixedPrice != null)
+                  resolvedPrice = Number(p.fixedPrice)
+                else if (p.pricingType === 'DISCOUNT_PERCENT' && p.discountPercent != null)
+                  resolvedPrice = itemSum * (1 - Number(p.discountPercent) / 100)
+                else if (p.pricingType === 'DISCOUNT_AMOUNT' && p.discountAmount != null)
+                  resolvedPrice = itemSum - Number(p.discountAmount)
+              }
+              resolvedPrice = Math.max(0, resolvedPrice)
 
-      <aside className="sticky bottom-4 z-20 rounded-xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+              return (
+                <BundleCard
+                  key={bundle.id}
+                  bundle={{
+                    id: bundle.id,
+                    name: bundle.name,
+                    description: bundle.description,
+                    isActive: bundle.isActive,
+                    imageUrl: bundle.media?.[0]?.url ?? null,
+                    items: bundleItems.map((bi) => ({
+                      itemId: bi.itemId ?? bi.item?.id,
+                      title: bi.item?.title ?? bi.title ?? '',
+                      price: Number(bi.item?.price ?? bi.price ?? 0),
+                      quantity: bi.quantity ?? 1,
+                    })),
+                    pricing: p,
+                    resolvedPrice,
+                    itemSum,
+                    savings: itemSum - resolvedPrice,
+                  }}
+                  store={{ id: store.id, name: store.name }}
+                />
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      <aside className="sticky bottom-4 z-20 p-4 rounded-xl border shadow-lg backdrop-blur border-border bg-background/95">
+        <div className="flex gap-3 justify-between items-center">
+          <div className="flex gap-2 items-center">
             <CartBadge count={cartCount} />
             <div>
-            <p className="text-sm text-muted-foreground">Cart</p>
-            <p className="font-semibold">
-              {cartCount} {cartCount === 1 ? 'item' : 'items'}
-            </p>
+              <p className="text-sm text-muted-foreground">Cart</p>
+              <p className="font-semibold">{cartCount} {cartCount === 1 ? 'item' : 'items'}</p>
             </div>
           </div>
           <Link
             to="/cart"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+            className="inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-md transition bg-primary text-primary-foreground hover:opacity-90"
           >
             View cart
           </Link>

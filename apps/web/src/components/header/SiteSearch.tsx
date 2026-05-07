@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface SiteSearchProps {
   className?: string
@@ -7,13 +8,17 @@ interface SiteSearchProps {
 
 export function SiteSearch({ className = '', onSearch }: SiteSearchProps) {
   const [query, setQuery] = useState('')
+  const navigate = useNavigate()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim()) {
-      onSearch?.(query.trim())
-      // TODO: Navigate to search results
-      console.log('Search query:', query)
+      if (onSearch) {
+        onSearch(query.trim())
+      } else {
+        // Navigate to search page with raw query
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+      }
     }
   }
 

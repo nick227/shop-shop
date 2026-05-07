@@ -2,33 +2,26 @@
 /**
  * MapController Component Unit Tests;
  */
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
-import { MapContainer } from 'react-leaflet'
+
+const mockUseMap = vi.fn()
+
+vi.mock('react-leaflet', () => ({
+  useMap: () => mockUseMap(),
+}))
+
 import { MapController } from '../MapController'
-
-// Mock react-leaflet;
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="map-container">{children}</div>
-  ),
-  useMap: jest.fn()
-}))
-
-const mockUseMap = jest.fn()
-jest.doMock('react-leaflet', () => ({
-  ...jest.requireActual('react-leaflet'),
-  useMap: mockUseMap
-}))
 
 describe('MapController', () => {
   const mockMap = {
-    getCenter: jest.fn(),
-    getZoom: jest.fn(),
-    setView: jest.fn()
+    getCenter: vi.fn(),
+    getZoom: vi.fn(),
+    setView: vi.fn()
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockUseMap.mockReturnValue(mockMap)
   })
 
@@ -37,16 +30,12 @@ describe('MapController', () => {
     mockMap.getZoom.mockReturnValue(12)
 
     const { rerender } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // Change center;
     rerender(
-      <MapContainer center={[40.7589, -73.9851]} zoom={12}>
-        <MapController center={[40.7589, -73.9851]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7589, -73.9851]} zoom={12} />
     )
 
     expect(mockMap.setView).toHaveBeenCalledWith([40.7589, -73.9851], 12)
@@ -57,16 +46,12 @@ describe('MapController', () => {
     mockMap.getZoom.mockReturnValue(12)
 
     const { rerender } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // Change zoom;
     rerender(
-      <MapContainer center={[40.7505, -73.9934]} zoom={15}>
-        <MapController center={[40.7505, -73.9934]} zoom={15} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={15} />
     )
 
     expect(mockMap.setView).toHaveBeenCalledWith([40.7505, -73.9934], 15)
@@ -77,16 +62,12 @@ describe('MapController', () => {
     mockMap.getZoom.mockReturnValue(12)
 
     const { rerender } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // Rerender with same props;
     rerender(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     expect(mockMap.setView).not.toHaveBeenCalled()
@@ -97,16 +78,12 @@ describe('MapController', () => {
     mockMap.getZoom.mockReturnValue(12)
 
     const { rerender } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // Small change within tolerance (0.0001)
     rerender(
-      <MapContainer center={[40.750_500_05, -73.993_400_05]} zoom={12}>
-        <MapController center={[40.750_500_05, -73.993_400_05]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.750_500_05, -73.993_400_05]} zoom={12} />
     )
 
     expect(mockMap.setView).not.toHaveBeenCalled()
@@ -117,16 +94,12 @@ describe('MapController', () => {
     mockMap.getZoom.mockReturnValue(12)
 
     const { rerender } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // Change that exceeds tolerance;
     rerender(
-      <MapContainer center={[40.7506, -73.9935]} zoom={12}>
-        <MapController center={[40.7506, -73.9935]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7506, -73.9935]} zoom={12} />
     )
 
     expect(mockMap.setView).toHaveBeenCalledWith([40.7506, -73.9935], 12)
@@ -134,9 +107,7 @@ describe('MapController', () => {
 
   it('should return undefined (no visual output)', () => {
     const { container } = render(
-      <MapContainer center={[40.7505, -73.9934]} zoom={12}>
-        <MapController center={[40.7505, -73.9934]} zoom={12} />
-      </MapContainer>
+      <MapController center={[40.7505, -73.9934]} zoom={12} />
     )
 
     // MapController should not render any DOM elements;

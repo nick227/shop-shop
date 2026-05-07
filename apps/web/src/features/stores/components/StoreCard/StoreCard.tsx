@@ -1,5 +1,5 @@
 /**
- * StoreCard — scannable: name, distance, one hook, one image.
+ * StoreCard — scannable: name, description, distance, delivery mode.
  */
 import { memo, useMemo } from 'react'
 import { Card, CardContent, Badge } from '@shared/ui/primitives'
@@ -24,9 +24,16 @@ function storeHookLabel(store: StoreWithDistance): string {
   return 'Local vendor'
 }
 
+function locationLabel(store: StoreWithDistance): string {
+  if (store.distance !== undefined) return formatDistance(store.distance)
+  if (store.addressCity && store.addressState) return `${store.addressCity}, ${store.addressState}`
+  return 'Near you'
+}
+
 function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
   const handleClick = useMemo(() => (onClick ? () => onClick(store) : undefined), [onClick, store])
   const hook = useMemo(() => storeHookLabel(store), [store])
+  const location = useMemo(() => locationLabel(store), [store])
 
   return (
     <Card
@@ -52,10 +59,13 @@ function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
 
       <CardContent className="p-3">
         <h3 className="line-clamp-1 text-base font-semibold leading-tight">{store.name}</h3>
+        {store.description && (
+          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{store.description}</p>
+        )}
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
-            {store.distance !== undefined ? formatDistance(store.distance) : 'Near you'}
+            {location}
           </span>
           <Badge variant="secondary" className="shrink-0 text-xs font-normal">
             {hook}
@@ -66,7 +76,4 @@ function StoreCardComponent({ store, onClick, className }: StoreCardProps) {
   )
 }
 
-// Memoize to prevent unnecessary re-renders
-// Using default comparator to ensure UI updates when any prop changes
 export const StoreCard = memo(StoreCardComponent)
-

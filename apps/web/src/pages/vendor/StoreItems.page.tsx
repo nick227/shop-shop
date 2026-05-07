@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * StoreItemsPage - Manage items for a specific store
  */
@@ -24,6 +23,7 @@ export default function StoreItemsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
 
   // Fetch store details
   const { data: store, isLoading: isLoadingStore } = useQuery({
@@ -36,7 +36,7 @@ export default function StoreItemsPage() {
 
   // Fetch store items
   const { data: itemsData, isLoading: isLoadingItems } = useQuery({
-    queryKey: ['items', storeId],
+    queryKey: ['store-items', storeId],
     queryFn: async () => {
       return await apiClient.items().listItems({})
     },
@@ -49,7 +49,7 @@ export default function StoreItemsPage() {
       return await apiClient.items().deleteItem({ id: itemId })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items', storeId] })
+      void queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
       toast.success('Item deleted successfully!')
     },
     onError: async (error) => {
@@ -58,7 +58,7 @@ export default function StoreItemsPage() {
     },
   })
 
-  const items = (itemsData?.data ?? []).filter(item => item.storeId === storeId) as ItemResponse[]
+  const items = (itemsData?.data ?? []) as ItemResponse[]
 
   const paginatedList = usePaginatedList({
     items: items,
@@ -69,7 +69,10 @@ export default function StoreItemsPage() {
 
   const handleDeleteItem = useCallback((itemId: string, itemTitle: string) => {
     if (confirm('Are you sure you want to delete "' + itemTitle + '"?')) {
-      deleteItemMutation.mutate(itemId)
+      setDeletingItemId(itemId)
+      deleteItemMutation.mutate(itemId, {
+        onSettled: () => setDeletingItemId(null),
+      })
     }
   }, [deleteItemMutation])
 
@@ -90,7 +93,7 @@ export default function StoreItemsPage() {
         <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
           <h2 className="mb-2 text-xl font-bold text-destructive">Store not found</h2>
           <Button variant="primary" onClick={() => navigate('/vendor/dashboard')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 w-4 h-4" />
             Back to Dashboard
           </Button>
         </div>
@@ -103,16 +106,16 @@ export default function StoreItemsPage() {
       <PageHeader
         title={`${store.name} - Menu Items`}
         description="Manage your menu items"
-        breadcrumbs={
+        backButton={
           <Button variant="ghost" size="small" onClick={() => navigate('/vendor/dashboard')} className="-ml-2 text-muted-foreground hover:bg-transparent">
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <ArrowLeft className="mr-1 w-4 h-4" />
             Dashboard
           </Button>
         }
       />
 
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
+      <div className="flex flex-col gap-3 items-center sm:flex-row">
         <SearchInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -124,21 +127,21 @@ export default function StoreItemsPage() {
           onClick={() => navigate('/vendor/stores/' + storeId + '/items/new')}
           className="w-full sm:w-auto"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="mr-2 w-4 h-4" />
           Add Item
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
+          <CardContent className="flex flex-col items-center p-4 text-center">
             <div className="text-2xl font-bold tracking-tight mb-0.5">{items.length}</div>
             <div className="text-label">Total</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
+          <CardContent className="flex flex-col items-center p-4 text-center">
             <div className="text-2xl font-bold tracking-tight mb-0.5">
               {items.filter(i => i.isActive && !i.isSoldOut).length}
             </div>
@@ -146,7 +149,7 @@ export default function StoreItemsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
+          <CardContent className="flex flex-col items-center p-4 text-center">
             <div className="text-2xl font-bold tracking-tight text-destructive mb-0.5">
               {items.filter(i => i.isSoldOut).length}
             </div>
@@ -154,7 +157,7 @@ export default function StoreItemsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
+          <CardContent className="flex flex-col items-center p-4 text-center">
             <div className="text-2xl font-bold tracking-tight mb-0.5">
               {items.filter(i => !i.isActive).length}
             </div>
@@ -172,7 +175,7 @@ export default function StoreItemsPage() {
           action={
             !searchQuery && (
               <Button variant="primary" onClick={() => navigate('/vendor/stores/' + storeId + '/items/new')}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="mr-2 w-4 h-4" />
                 Add Your First Item
               </Button>
             )
@@ -180,14 +183,14 @@ export default function StoreItemsPage() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-3">
             {paginatedList.items.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
                 onEdit={() => navigate(`/vendor/stores/${storeId}/items/${item.id}/edit`)}
                 onDelete={() => handleDeleteItem(item.id, item.title)}
-                isDeleting={deleteItemMutation.isPending}
+                isDeleting={deleteItemMutation.isPending && deletingItemId === item.id}
               />
             ))}
           </div>
@@ -210,12 +213,12 @@ export default function StoreItemsPage() {
 }
 
 // Item management card
-interface ItemCardProps {
+type ItemCardProps = Readonly<{
   item: ItemResponse
   onEdit: () => void
   onDelete: () => void
   isDeleting: boolean
-}
+}>
 
 function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
   const price = parsePrice(item.price)
@@ -224,9 +227,9 @@ function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
   return (
     <Card className="flex flex-col h-full hover:border-primary/50 transition-colors tap-scale active:scale-[0.98]">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-4">
+        <div className="flex gap-4 justify-between items-start">
           <div className="flex-1">
-            <CardTitle className="text-lg line-clamp-1 mb-1">{item.title}</CardTitle>
+            <CardTitle className="mb-1 text-lg line-clamp-1">{item.title}</CardTitle>
             <span className="text-xl font-bold text-success">{formatCurrency(price)}</span>
           </div>
           <div className="flex flex-col gap-1 items-end shrink-0">
@@ -236,7 +239,7 @@ function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
           </div>
         </div>
         {item.description && (
-          <p className="text-muted-foreground text-sm line-clamp-2 mt-2">{item.description}</p>
+          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{item.description}</p>
         )}
       </CardHeader>
 
@@ -244,7 +247,7 @@ function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
         {/* Placeholder for future item details (e.g., categories, options) */}
       </CardContent>
 
-      <CardFooter className="pt-4 border-t border-border mt-auto gap-2">
+      <CardFooter className="gap-2 pt-4 mt-auto border-t border-border">
         <Button
           variant="outline"
           size="icon"
@@ -259,7 +262,7 @@ function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
           className="flex-1" 
           onClick={() => { haptics.light(); onEdit(); }}
         >
-          <Edit className="w-4 h-4 mr-2" />
+          <Edit className="mr-2 w-4 h-4" />
           Edit Item
         </Button>
       </CardFooter>

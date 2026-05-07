@@ -45,7 +45,7 @@ export function VendorStoreManager({ onNavigateToVendor, className = '' }: Vendo
     <div className={className}>
       <Link
         to={buttonConfig.destination}
-        className="px-4 py-2 rounded-lg border-0 cursor-pointer text-sm font-medium transition-all bg-gray-100 text-gray-800 hover:bg-gray-200 hover:-translate-y-px inline-block"
+        className="inline-block px-4 py-2 text-sm font-medium text-gray-800 bg-gray-100 rounded-lg border-0 transition-all cursor-pointer hover:bg-gray-200 hover:-translate-y-px"
         aria-label="Vendor Portal"
       >
         🏪 {buttonConfig.text}

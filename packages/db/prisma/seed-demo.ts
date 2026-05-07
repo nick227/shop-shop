@@ -1,5 +1,6 @@
 import { type Prisma, type PrismaClient } from '../src/generated/client/index.js'
 import { hash } from 'bcrypt'
+import { seedCanonicalTags } from '../src/scripts/seed-tags.js'
 
 const now = new Date()
 const validFrom = new Date(now)
@@ -25,6 +26,8 @@ const demoPolygon = {
 } satisfies Prisma.InputJsonValue
 
 export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
+  await seedCanonicalTags(prisma)
+
   await prisma.geocodingCache.create({
     data: {
       queryType: 'zip',
@@ -239,6 +242,11 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       isVegetarian: true,
       isGlutenFree: true,
       spicyLevel: 0,
+      tags: {
+        create: ['salad', 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'lunch', 'dinner'].map((slug) => ({
+          tag: { connect: { slug } },
+        })),
+      },
     },
   })
 
@@ -295,6 +303,11 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       isGlutenFree: false,
       isDairyFree: true,
       spicyLevel: 1,
+      tags: {
+        create: ['entree', 'vegan', 'vegetarian', 'dairy-free', 'contains-gluten', 'contains-nuts', 'lunch', 'dinner'].map((slug) => ({
+          tag: { connect: { slug } },
+        })),
+      },
     },
   })
 
@@ -314,6 +327,11 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       isGlutenFree: true,
       isDairyFree: false,
       spicyLevel: 0,
+      tags: {
+        create: ['entree', 'gluten-free', 'contains-dairy', 'lunch', 'dinner'].map((slug) => ({
+          tag: { connect: { slug } },
+        })),
+      },
     },
   })
 

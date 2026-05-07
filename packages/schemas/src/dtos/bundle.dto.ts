@@ -8,7 +8,6 @@ export const CreateBundleInputSchema = z.object({
   storeId: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   sortIndex: z.number().int().optional(),
   items: z.array(z.object({
@@ -31,7 +30,6 @@ export const UpdateBundleInputSchema = z.object({
   storeId: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   sortIndex: z.number().int().optional(),
   items: z.array(z.object({
@@ -58,7 +56,6 @@ export const BundleResponseSchema = z.object({
   store: z.string().optional(),
   name: z.string(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   sortIndex: z.number().int().optional(),
   items: z.array(z.object({
@@ -100,13 +97,19 @@ export const BundleListResponseSchema = z.object({
 export const BundleQuerySchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
-}).transform(data => ({
+  storeId: z.string().optional(),
+  isActive: z
+    .string()
+    .optional()
+    .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
+}).transform((data) => ({
   page: data.page,
   limit: data.limit,
-  filters: Object.keys(data)
-    .filter(k => k !== 'page' && k !== 'limit' && (data as any)[k] !== undefined)
-    .reduce((acc, k) => ({ ...acc, [k]: (data as any)[k] }), {}),
-  orderBy: { createdAt: 'desc' },
+  filters: {
+    ...(data.storeId !== undefined && { storeId: data.storeId }),
+    ...(data.isActive !== undefined && { isActive: data.isActive }),
+  },
+  orderBy: { sortIndex: 'asc' },
 }))
 
 

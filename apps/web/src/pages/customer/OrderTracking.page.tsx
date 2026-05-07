@@ -1,6 +1,6 @@
 /**
  * OrderTrackingPage - Refactored Real-time order status tracking for customers
- * 
+ *
  * Refactored to use extracted utilities, hooks, and components.
  * Reduced complexity by separating concerns and improving maintainability.
  */
@@ -17,6 +17,7 @@ import { useOrderTracking } from './hooks/useOrderTracking'
 import { OrderStatusCard } from './components/OrderStatusCard'
 import { OrderTrackingLoading } from './components/OrderTrackingLoading'
 import { OrderTrackingError } from './components/OrderTrackingError'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function OrderTrackingPage() {
   const {
@@ -33,13 +34,15 @@ export default function OrderTrackingPage() {
     handleTipSubmit,
     handleTipClose,
     handleBackToOrders,
-    navigate
+    navigate,
   } = useOrderTracking()
+
+  usePageTitle(order ? `Order #${order.id?.slice(-6)}` : 'Order Tracking', 'ShopShop')
 
   // ========================================
   // Loading State
   // ========================================
-  
+
   if (isLoadingOrder) {
     return <OrderTrackingLoading />
   }
@@ -47,7 +50,7 @@ export default function OrderTrackingPage() {
   // ========================================
   // Error State
   // ========================================
-  
+
   if (orderNotFound) {
     return <OrderTrackingError onBackToOrders={handleBackToOrders} />
   }
@@ -55,7 +58,7 @@ export default function OrderTrackingPage() {
   // ========================================
   // Guard Clause
   // ========================================
-  
+
   if (!order || !orderStatusInfo || !orderTimeInfo || !orderProgress) {
     return <OrderTrackingError onBackToOrders={handleBackToOrders} />
   }
@@ -67,14 +70,19 @@ export default function OrderTrackingPage() {
   const normalizedAddress = order.addressSnapshot
     ? { ...order.addressSnapshot, line2: order.addressSnapshot.line2 ?? undefined }
     : undefined
-  
+
   return (
-    <PageShell nested className="bg-background" containerClassName="max-w-3xl" contentClassName="space-y-5 py-6 md:py-6">
+    <PageShell
+      nested
+      className="bg-background"
+      containerClassName="max-w-3xl"
+      contentClassName="space-y-5 py-6 md:py-6"
+    >
       {/* Back Navigation */}
-      <Button 
-        variant="ghost" 
-        size="small" 
-        onClick={handleBackToOrders} 
+      <Button
+        variant="ghost"
+        size="small"
+        onClick={handleBackToOrders}
         className="-ml-2 text-muted-foreground"
       >
         <ArrowLeft className="w-4 h-4 mr-1" />

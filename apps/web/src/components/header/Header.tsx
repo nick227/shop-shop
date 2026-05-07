@@ -11,6 +11,8 @@ import { AuthBlock } from './AuthBlock'
 import { AddressDisplay } from './AddressDisplay'
 import { VendorStoreManager } from './VendorStoreManager'
 import { useHeaderAddressExtrasForMerge } from './HeaderAddressExtrasContext'
+import { Link } from 'react-router-dom'
+import { useAuthStore } from '@stores/authStore'
 
 interface HeaderProps {
   readonly className?: string
@@ -20,6 +22,7 @@ const DEFAULT_RADIUS_MILES = 25
 
 export function Header({ className = '' }: HeaderProps) {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const addressExtras = useHeaderAddressExtrasForMerge()
   const { location: urlLocation, clearLocation: urlClearLocation } = useUrlLocation()
   const fromUrlDisplay = useLocationDisplay(urlLocation, undefined)
@@ -102,6 +105,14 @@ export function Header({ className = '' }: HeaderProps) {
             
             {/* Right side - Actions */}
             <div className="flex items-center gap-3">
+              {user?.role === 'RIDER' && (
+                <Link
+                  to="/driver/deliveries"
+                  className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                >
+                  Driver Deliveries
+                </Link>
+              )}
               <VendorStoreManager onNavigateToVendor={handleVendorNavigate} />
               
               <AddressDisplay 

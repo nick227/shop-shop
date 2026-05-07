@@ -1,4 +1,5 @@
 import { prisma } from '@packages/db'
+import { computeBundlePrice } from '@packages/db/services'
 import { Decimal } from '@prisma/client/runtime/library'
 
 /**
@@ -102,10 +103,57 @@ export class CartDomain {
       })
     }
 
-    return {
-      cartId,
-      cartItemId: cartItem.id,
+    return { cartId, cartItemId: cartItem.id }
+  }
+
+  /**
+   * Add a bundle to cart as a single line (quantity always 1).
+   * unitPrice is resolved from BundlePricingService and snapshotted at add-time.
+   */
+  async addBundleToCart(
+    userId: string,
+    bundleId: string,
+    notes?: string,
+  ): Promise<{ cartId: string; cartItemId: string }> {
+    const bundle = await prisma.bundle.findUnique({
+      where: { id: bundleId },
+      include: {
+        items: { include: { item: { select: { isActive: true, isSoldOut: true } } } },
+      },
+    })
+
+    if (!bundle) throw new Error('Bundle not found')
+    if (!bundle.isActive) throw new Error('Bundle is not available')
+
+    const unavailable = bundle.items.filter((bi) => !bi.item.isActive || bi.item.isSoldOut)
+    if (unavailable.length > 0) throw new Error('One or more items in this bundle are unavailable')
+
+    const { resolvedPrice } = await computeBundlePrice(bundleId)
+    const cartId = await this.ensureActiveCart(userId, bundle.storeId)
+
+    const existing = await prisma.cartItem.findFirst({ where: { cartId, bundleId } })
+
+    let cartItem
+    if (existing) {
+      // Only update notes — quantity stays 1 per bundle line
+      cartItem = await prisma.cartItem.update({
+        where: { id: existing.id },
+        data: { notes },
+      })
+    } else {
+      cartItem = await prisma.cartItem.create({
+        data: {
+          cartId,
+          bundleId,
+          titleSnapshot: bundle.name,
+          unitPrice: resolvedPrice,
+          quantity: 1,
+          notes,
+        },
+      })
     }
+
+    return { cartId, cartItemId: cartItem.id }
   }
 
   /**
@@ -197,53 +245,50 @@ export class CartDomain {
   }
 
   /**
-   * Validate cart can be submitted (all items still available)
+   * Validate cart can be submitted.
+   * Checks both regular item lines and bundle constituent items.
    */
-  async validateCartForCheckout(cartId: string): Promise<{
-    valid: boolean
-    reason?: string
-  }> {
+  async validateCartForCheckout(cartId: string): Promise<{ valid: boolean; reason?: string }> {
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
       include: {
         items: {
-          include: { item: true },
+          include: {
+            item: true,
+            bundle: {
+              include: {
+                items: {
+                  include: { item: { select: { isActive: true, isSoldOut: true, stockQty: true } } },
+                },
+              },
+            },
+          },
         },
       },
     })
 
-    if (!cart) {
-      return { valid: false, reason: 'Cart not found' }
-    }
+    if (!cart) return { valid: false, reason: 'Cart not found' }
+    if (cart.items.length === 0) return { valid: false, reason: 'Cart is empty' }
 
-    if (cart.items.length === 0) {
-      return { valid: false, reason: 'Cart is empty' }
-    }
-
-    // Check each item availability
-    for (const cartItem of cart.items) {
-      if (!cartItem.item.isActive) {
-        return {
-          valid: false,
-          reason: `Item "${cartItem.titleSnapshot}" is no longer available`,
+    for (const ci of cart.items) {
+      if (ci.bundleId) {
+        if (!ci.bundle) return { valid: false, reason: `Bundle "${ci.titleSnapshot}" no longer exists` }
+        const sold = ci.bundle.items.filter((bi) => !bi.item.isActive || bi.item.isSoldOut)
+        if (sold.length > 0) {
+          return { valid: false, reason: `Bundle "${ci.titleSnapshot}" contains unavailable items` }
         }
-      }
-
-      if (cartItem.item.isSoldOut) {
-        return {
-          valid: false,
-          reason: `Item "${cartItem.titleSnapshot}" is sold out`,
+      } else if (ci.item) {
+        if (!ci.item.isActive) {
+          return { valid: false, reason: `Item "${ci.titleSnapshot}" is no longer available` }
         }
-      }
-
-      if (
-        cartItem.item.stockQty !== null &&
-        cartItem.item.stockQty < cartItem.quantity
-      ) {
-        return {
-          valid: false,
-          reason: `Only ${cartItem.item.stockQty} of "${cartItem.titleSnapshot}" available`,
+        if (ci.item.isSoldOut) {
+          return { valid: false, reason: `Item "${ci.titleSnapshot}" is sold out` }
         }
+        if (ci.item.stockQty !== null && ci.item.stockQty < ci.quantity) {
+          return { valid: false, reason: `Only ${ci.item.stockQty} of "${ci.titleSnapshot}" available` }
+        }
+      } else {
+        return { valid: false, reason: `Cart line "${ci.titleSnapshot}" references a deleted product` }
       }
     }
 

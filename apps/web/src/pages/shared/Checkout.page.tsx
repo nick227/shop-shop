@@ -12,8 +12,11 @@ import { calculateOrderPricing } from '@shared/lib/utils/pricing'
 type CreateCheckoutSessionResponse = Awaited<ReturnType<typeof apiClient.checkout.createSession>>
 type CompleteCheckoutResponse = Awaited<ReturnType<typeof apiClient.checkout.complete>>
 import { Button, Spinner } from '@shared/ui/primitives'
-import { CartSummary } from '@features/cart/components/CartSummary'
-import { PaymentSection } from '@features/checkout/components/PaymentSection'
+import { TipPrompt } from '@features/checkout/components/TipPrompt'
+import { DeliveryModeSelector, type DeliveryMode } from '@features/checkout/components/DeliveryModeSelector'
+import { CartSummary } from '@features/cart/components/CartSummary/CartSummary'
+import { PaymentSection } from '@features/checkout/components/PaymentSection/PaymentSection'
+import { OrderDetailsCard } from '@features/orders/components/OrderDetailsCard'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
@@ -34,6 +37,7 @@ export default function CheckoutPage() {
   const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false)
   
   const [deliveryType, setDeliveryType] = useState<'PICKUP' | 'DELIVERY'>('PICKUP')
+  const [deliveryMode, setDeliveryMode] = useState<'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'>('PICKUP')
   const [tip, setTip] = useState('')
   const [currentStep, setCurrentStep] = useState<'details' | 'payment'>('details')
   const [paymentError, setPaymentError] = useState<string | undefined>()
@@ -96,6 +100,7 @@ export default function CheckoutPage() {
         quantity: item.quantity,
       })),
       deliveryType,
+      deliveryMode,
       paymentMethod: {
         type: paymentToken === 'cod_test' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
         token: paymentToken,

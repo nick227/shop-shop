@@ -8,6 +8,17 @@ export default defineConfig({
   envDir: path.resolve(__dirname, '../..'),
   server: { 
     port: Number(process.env.VITE_PORT) || 5177,
+    headers: {
+      // Avoid conditional requests returning 304 without a usable module MIME type in some browsers.
+      'Cache-Control': 'no-store',
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   resolve: {
     alias: {

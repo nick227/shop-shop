@@ -28,6 +28,7 @@ type DeliveryAddress = {
 
 type SessionMeta = {
   deliveryType: 'DELIVERY' | 'PICKUP'
+  deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
   deliveryAddress?: DeliveryAddress | null
 }
 
@@ -53,6 +54,7 @@ async function fetchAndValidateItems(items: { itemId: string; quantity: number }
 export type CreateSessionInput = {
   items: { itemId: string; quantity: number; specialInstructions?: string }[]
   deliveryType: 'PICKUP' | 'DELIVERY'
+  deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
   deliveryAddress?: DeliveryAddress
   paymentMethod: { type: string; token: string }
   tipAmount?: number
@@ -75,6 +77,7 @@ export async function createCheckoutSession(userId: string, input: CreateSession
 
   const meta: SessionMeta = {
     deliveryType: input.deliveryType,
+    deliveryMode: input.deliveryMode,
     deliveryAddress: input.deliveryAddress ?? null,
   }
 
@@ -146,6 +149,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
 
   const meta = JSON.parse(cart.note ?? '{}') as SessionMeta
   const deliveryType = meta.deliveryType ?? 'PICKUP'
+  const deliveryMode = meta.deliveryMode ?? 'PICKUP'
   const totals = await orderDomain.calculateOrderTotals(
     input.sessionId,
     checkoutUserId,
@@ -163,6 +167,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         cartId: input.sessionId,
         status: 'PENDING_PAYMENT',
         deliveryType,
+        deliveryMode,
         subtotal: decimalToPrisma(totals.subtotal),
         fees: decimalToPrisma(totals.fees),
         tax: decimalToPrisma(totals.tax),

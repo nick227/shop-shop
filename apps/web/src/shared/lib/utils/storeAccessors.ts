@@ -25,9 +25,16 @@ export function hasValidCoordinates(store: StoreWithDistance): boolean {
  * Get store image URL with fallback;
  * Centralizes imageUrl pattern across all card variants;
  */
-export function getStoreImageUrl(store: { id: string; imageUrl?: string }, _variant: 'hero' | 'standard' | 'square' = 'standard'): string {
-  // imageUrl may not be in Store type yet;
+export function getStoreImageUrl(store: { id: string; imageUrl?: string; mediaAssets?: Array<{ url: string; kind: string }> }, _variant: 'hero' | 'standard' | 'square' = 'standard'): string {
+  // Check for mediaAssets first (from backend with media relations)
+  if (store.mediaAssets && store.mediaAssets.length > 0) {
+    const firstImage = store.mediaAssets.find(asset => asset.kind === 'IMAGE' || !asset.kind)
+    if (firstImage?.url) return firstImage.url
+  }
+  
+  // Fallback to imageUrl property (if it exists)
   if (store.imageUrl) return store.imageUrl;
-  // Fallback to placeholder (variant can be used later for different aspect ratios)
+  
+  // Final fallback to placeholder (variant can be used later for different aspect ratios)
   return '/placeholder-store-' + store.id + '.jpg'
 }

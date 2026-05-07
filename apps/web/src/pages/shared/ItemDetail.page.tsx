@@ -7,6 +7,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { Button, Spinner, Badge } from '@shared/ui/primitives'
@@ -17,7 +18,7 @@ import { parsePrice } from '@api/types'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import { useHaptics } from '@shared/hooks/useHaptics'
 import { CustomerMediaGallery } from '@shared/ui/media'
-import { useQuery } from '@tanstack/react-query'
+import { getImageUrl } from '@shared/lib/utils/image'
 
 export default function ItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>()
@@ -29,22 +30,10 @@ export default function ItemDetailPage() {
   const { data: store } = useStore(targetStoreId || '', { enabled: !!targetStoreId } as any)
   const addToCart = useAddToCart()
 
-  // Fetch item media for gallery
-  const { data: itemMedia } = useQuery({
-    queryKey: ['item-media', itemId],
-    queryFn: async () => {
-      if (!itemId) return []
-      const response = await fetch(`/media?itemId=${itemId}`, {
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to fetch item media')
-      }
-      const data = await response.json()
-      return data.data || []
-    },
-    enabled: !!itemId,
-  })
+  usePageTitle(item?.name, store?.name, 'ShopShop')
+
+  // Use mediaAssets from item data (now included in backend queries)
+  const itemMedia = (item as any)?.mediaAssets || []
 
   const handleBack = () => {
     if (store) {
@@ -74,7 +63,7 @@ export default function ItemDetailPage() {
     return (
       <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
         <Spinner size="large" />
-        <p className="mt-4 text-muted-foreground text-sm">Loading item...</p>
+        <p className="mt-4 text-sm text-muted-foreground">Loading item...</p>
       </PageContainer>
     )
   }
@@ -82,9 +71,13 @@ export default function ItemDetailPage() {
   if (error || !item) {
     return (
       <PageContainer className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-lg font-semibold text-destructive mb-2">Item Not Found</h2>
-        <p className="text-sm text-muted-foreground mb-4">{error?.message || 'The item you are looking for does not exist.'}</p>
-        <Button variant="outline" onClick={handleBack}>Go Back</Button>
+        <h2 className="mb-2 text-lg font-semibold text-destructive">Item Not Found</h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {error?.message || 'The item you are looking for does not exist.'}
+        </p>
+        <Button variant="outline" onClick={handleBack}>
+          Go Back
+        </Button>
       </PageContainer>
     )
   }
@@ -92,18 +85,24 @@ export default function ItemDetailPage() {
   const price = parsePrice(item.price)
 
   return (
-    <PageContainer>
-      <Button variant="ghost" size="small" onClick={handleBack} className="-ml-2 text-muted-foreground">
-        <ArrowLeft className="w-4 h-4 mr-1" />
+    <PageContainer className="max-w-[640px] mx-auto rounded-xl shadow-lg">
+      <Button
+        variant="ghost"
+        size="small"
+        onClick={handleBack}
+        className="-ml-2 text-muted-foreground"
+      >
+        <ArrowLeft className="mr-1 w-4 h-4" />
         Back
       </Button>
 
       <div className="flex flex-col gap-5">
+
         {/* Title + Price */}
-        <div className="flex justify-between items-start gap-4">
+        <div className="flex gap-4 justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight mb-2">{item.title}</h1>
-            <div className="flex gap-2 flex-wrap">
+            <h1 className="mb-2 text-2xl font-bold tracking-tight">{item.title}</h1>
+            <div className="flex flex-wrap gap-2">
               {item.isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
               {!item.isActive && <Badge variant="warning">Inactive</Badge>}
             </div>
@@ -115,7 +114,6 @@ export default function ItemDetailPage() {
         {itemMedia && itemMedia.length > 0 && (
           <Card>
             <CardContent className="pt-5">
-              <SectionHeader title="Photos & Videos" className="mb-3" />
               <CustomerMediaGallery media={itemMedia} />
             </CardContent>
           </Card>
@@ -126,7 +124,7 @@ export default function ItemDetailPage() {
           <Card>
             <CardContent className="pt-5">
               <SectionHeader title="Description" className="mb-3" />
-              <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
             </CardContent>
           </Card>
         )}
@@ -137,9 +135,7 @@ export default function ItemDetailPage() {
             <CardContent className="pt-5">
               <SectionHeader title="Availability" className="mb-3" />
               <p className="text-sm text-muted-foreground">
-                {item.stockQty > 0
-                  ? `${String(item.stockQty)} items in stock`
-                  : 'Out of stock'}
+                {item.stockQty > 0 ? `${String(item.stockQty)} items in stock` : 'Out of stock'}
               </p>
             </CardContent>
           </Card>
@@ -153,8 +149,8 @@ export default function ItemDetailPage() {
           onClick={handleAddToCart}
           disabled={item.isSoldOut || !item.isActive || addToCart.isPending}
         >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          {addToCart.isPending ? 'Adding...' : 'Add to Cart'}
+          <ShoppingCart className="mr-2 w-5 h-5" />
+          {addToCart.isPending ? 'Adding...' : 'Add7 to Cart'}
         </Button>
       </div>
     </PageContainer>

@@ -43,10 +43,18 @@ export type CartResponse = ListCarts200ResponseDataInner & {
   updatedAt: string
 }
 
+export interface ItemTag {
+  slug: string
+  label: string
+  category: string
+}
+
 export type ItemResponse = ListItems200ResponseDataInner & {
   id: string
   createdAt: string
   updatedAt: string
+  tags?: ItemTag[]
+  mediaAssets?: Array<{ url: string; kind: string; sortIndex?: number | null }>
 }
 
 export type OrderResponse = ListOrders200ResponseDataInner & {
@@ -56,6 +64,8 @@ export type OrderResponse = ListOrders200ResponseDataInner & {
   /** Canonical delivery pin (preferred over snapshot geo when present). */
   deliveryLatitude?: ListOrders200ResponseDataInner['deliveryLatitude']
   deliveryLongitude?: ListOrders200ResponseDataInner['deliveryLongitude']
+  /** Delivery execution mode - who handles the delivery */
+  deliveryMode?: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
 }
 
 export type PromotionResponse = ListPromotions200ResponseDataInner & {
@@ -147,12 +157,12 @@ export interface Bundle {
   store?: StoreResponse
   name: string
   description?: string
-  imageUrl?: string
   isActive: boolean
   sortIndex: number
   // Bundle-specific properties
   items?: BundleItem[]
   pricing?: BundlePricing
+  media?: MediaResponse[]
   // Computed fields
   totalItems: number
   individualPrice: number

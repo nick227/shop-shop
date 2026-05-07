@@ -9,6 +9,7 @@ import { OrderStatusBadge } from '../OrderStatusBadge'
 import { OrderActions } from './OrderActions'
 import { OrderDetails } from './OrderDetails'
 import { useVendorOrderCard } from './hooks/useVendorOrderCard'
+import { Badge } from '@shared/ui/primitives'
 import type { OrderResponse } from '@api/types'
 
 export interface DeliveryDriverOption {
@@ -83,6 +84,35 @@ export function VendorOrderCard({
 
       {/* Order Details */}
       <OrderDetails order={order} />
+      
+      {/* Delivery Mode Display */}
+      {order.deliveryType === 'DELIVERY' && (
+        <div className="mt-3 rounded-lg border border-border/70 bg-muted/20 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Delivery Mode</span>
+            <Badge variant="secondary" className="text-xs">
+              {order.deliveryMode === 'STORE_MANAGED_DELIVERY' ? 'Store Delivery' :
+               order.deliveryMode === 'PLATFORM_DRIVER' ? 'Platform Driver' :
+               order.deliveryMode === 'THIRD_PARTY_PROVIDER' ? 'Third-Party' : 'Unknown'}
+            </Badge>
+          </div>
+          {order.deliveryMode === 'STORE_MANAGED_DELIVERY' && (
+            <p className="text-sm text-muted-foreground">
+              Restaurant handles delivery with their own drivers
+            </p>
+          )}
+          {order.deliveryMode === 'PLATFORM_DRIVER' && (
+            <p className="text-sm text-muted-foreground">
+              Platform assigns delivery drivers
+            </p>
+          )}
+          {order.deliveryMode === 'THIRD_PARTY_PROVIDER' && (
+            <p className="text-sm text-muted-foreground">
+              Third-party delivery service (DoorDash, Uber, etc.)
+            </p>
+          )}
+        </div>
+      )}
 
       {isDelivery && (
         <div className="mt-3 rounded-lg border border-border/70 bg-muted/20 p-3" onClick={(event) => event.stopPropagation()}>

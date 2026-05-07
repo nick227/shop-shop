@@ -74,6 +74,8 @@ export interface components {
         };
         /** @enum {string} */
         DeliveryType: "PICKUP" | "DELIVERY";
+        /** @enum {string} */
+        DeliveryMode: "PICKUP" | "STORE_MANAGED_DELIVERY" | "PLATFORM_DRIVER" | "THIRD_PARTY_PROVIDER";
         DeliveryAddress: {
             street: string;
             city: string;
@@ -90,6 +92,7 @@ export interface components {
         CreateCheckoutSessionRequest: {
             items: components["schemas"]["CheckoutItem"][];
             deliveryType: components["schemas"]["DeliveryType"];
+            deliveryMode: components["schemas"]["DeliveryMode"];
             deliveryAddress?: components["schemas"]["DeliveryAddress"];
             paymentMethod: components["schemas"]["PaymentMethod"];
             tipAmount?: number;

@@ -1,4 +1,4 @@
-import { SignupForm } from '@features/auth/SignupForm'
+import { DualAuthWidget } from '@features/auth/DualAuthWidget/DualAuthWidget'
 import { useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
 import { PageShell } from '@shared/ui/layout/PageShell'
@@ -16,7 +16,8 @@ export default function SignupPage() {
   return (
     <PageShell className="bg-background" containerClassName="max-w-4xl" contentClassName="py-10 md:py-14">
       <div className="flex items-center justify-center">
-        <SignupForm
+        <DualAuthWidget
+          initialMode="register"
           onSuccess={() => {
             const from = (location.state)?.from as string | undefined
             navigate(from || '/', { replace: true })

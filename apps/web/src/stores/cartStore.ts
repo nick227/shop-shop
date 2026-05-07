@@ -11,12 +11,23 @@ interface AddCartItemInput {
   item?: Partial<ItemResponse>
 }
 
+export interface AddBundleToCartInput {
+  storeId: string
+  bundleId: string
+  title: string
+  unitPrice: string | number
+  bundleItems?: Array<{ itemId: string; title: string; price: number; quantity: number }>
+  notes?: string
+}
+
 interface CartStoreState {
   cart: CartWithTotals | undefined
   hasHydrated: boolean
   addItem: (input: AddCartItemInput) => CartWithTotals
+  addBundle: (input: AddBundleToCartInput) => CartWithTotals
   decrementItem: (itemId: string, quantity?: number) => CartWithTotals | undefined
   removeItem: (itemId: string) => CartWithTotals | undefined
+  removeBundle: (bundleId: string) => CartWithTotals | undefined
   setCart: (cart: CartWithTotals | undefined) => void
   clearCart: () => void
   setHasHydrated: (hasHydrated: boolean) => void
@@ -116,6 +127,39 @@ export const useCartStore = create<CartStoreState>()(
         return nextCart
       },
 
+      addBundle: (input) => {
+        const currentCart = get().cart
+        const baseCart =
+          currentCart?.storeId === input.storeId ? currentCart : createEmptyCart(input.storeId)
+        const baseItems = (baseCart as any).items
+        const items: any[] = Array.isArray(baseItems) ? [...baseItems] : []
+        const existingIndex = items.findIndex((item) => item.bundleId === input.bundleId)
+        const unitPrice = toNumber(input.unitPrice)
+
+        const bundleLine = {
+          id: `local-cart-bundle-${input.bundleId}`,
+          cartId: baseCart.id,
+          itemId: null,
+          bundleId: input.bundleId,
+          currentItem: null,
+          currentBundle: { id: input.bundleId, name: input.title, items: input.bundleItems ?? [] },
+          quantity: 1,
+          unitPrice,
+          titleSnapshot: input.title,
+          notes: input.notes,
+        }
+
+        if (existingIndex >= 0) {
+          items[existingIndex] = bundleLine
+        } else {
+          items.push(bundleLine)
+        }
+
+        const nextCart = recalculateCart(({ ...(baseCart as any), items } as unknown) as CartWithTotals)
+        set({ cart: nextCart })
+        return nextCart
+      },
+
       decrementItem: (itemId, quantity = 1) => {
         const currentCart = get().cart
         if (!currentCart) return
@@ -145,6 +189,25 @@ export const useCartStore = create<CartStoreState>()(
         const currentItems = (currentCart as any).items
         const items: any[] = (Array.isArray(currentItems) ? currentItems : [])
           .filter((item) => item.itemId !== itemId)
+
+        if (items.length === 0) {
+          set({ cart: undefined })
+          return
+        }
+
+        const nextCart = recalculateCart(({ ...(currentCart as any), items } as unknown) as CartWithTotals)
+        set({ cart: nextCart })
+        return nextCart
+      },
+
+      removeBundle: (bundleId) => {
+        const currentCart = get().cart
+        if (!currentCart) return
+
+        const currentItems = (currentCart as any).items
+        const items: any[] = (Array.isArray(currentItems) ? currentItems : []).filter(
+          (item) => item.bundleId !== bundleId,
+        )
 
         if (items.length === 0) {
           set({ cart: undefined })

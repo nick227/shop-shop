@@ -39,6 +39,7 @@
     "studio": "prisma studio",
     "reset": "prisma migrate reset",
     "seed": "node --import tsx prisma/seed.ts",
+    "seed:reference": "node --import tsx prisma/seed-reference-data.ts",
     "ingest:river": "node --import tsx src/cli/river-ingest-run.ts",
     "import-zips": "node --import tsx import-us-zips.ts",
     "build": "tsc -p tsconfig.json",

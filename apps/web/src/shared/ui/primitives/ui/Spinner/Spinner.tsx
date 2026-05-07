@@ -18,7 +18,7 @@ const sizeClasses = {
 export function Spinner({ size = 'medium', className }: SpinnerProps) {
   return (
     <div
-      className={cn('inline-flex items-center justify-center', className)}
+      className={cn('inline-flex items-center justify-center', size, className)}
       role="status"
       aria-label="Loading"
     >

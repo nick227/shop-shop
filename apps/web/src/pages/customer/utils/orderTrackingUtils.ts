@@ -6,6 +6,7 @@
  */
 
 import { getOrderStatusConfig, ORDER_STATUS_CONFIG } from '@features/orders/utils/orderUtils'
+import { getOrderAge, getEstimatedReadyTime } from '@shared/lib/utils/orderHelpers'
 
 export interface OrderItem {
   id: string
@@ -96,7 +97,7 @@ export function parseOrderData(orderData: any): ParsedOrder | undefined {
 export function getOrderStatusInfo(order: ParsedOrder) {
   const statusConfig = getOrderStatusConfig(order.status)
   const isCanceled = order.status === 'CANCELED'
-  const isCompleted = order.status === 'COMPLETED'
+  const isCompleted = order.status === 'COMPLETED' || order.status === 'DELIVERED'
   
   return {
     isCanceled,
@@ -114,8 +115,6 @@ export function getOrderStatusInfo(order: ParsedOrder) {
 // ========================================
 
 export function getOrderTimeInfo(order: ParsedOrder) {
-  const { getOrderAge, getEstimatedReadyTime } = require('@shared/lib/utils/orderHelpers')
-  
   const orderAge = getOrderAge(order.createdAt)
   const estimatedReadyDate = getEstimatedReadyTime(order.createdAt, 20)
   const estimatedReady = {
@@ -136,16 +135,29 @@ export function getOrderTimeInfo(order: ParsedOrder) {
 export function getOrderProgress(order: ParsedOrder) {
   // Use centralized status config for progress calculation
   const statusConfig = getOrderStatusConfig(order.status)
-  const statusProgressMap: Record<string, number> = {
+  
+  // Different progress maps for different delivery modes
+  const pickupProgressMap: Record<string, number> = {
+    'PLACED': 10,
+    'ACCEPTED': 25,
+    'PREPARING': 50,
+    'READY': 100, // Pickup orders complete at READY
+    'COMPLETED': 100,
+    'CANCELED': 0
+  }
+  
+  const deliveryProgressMap: Record<string, number> = {
     'PLACED': 10,
     'ACCEPTED': 25,
     'PREPARING': 50,
     'READY': 75,
     'OUT_FOR_DELIVERY': 90,
+    'DELIVERED': 100,
     'COMPLETED': 100,
     'CANCELED': 0
   }
   
+  const statusProgressMap = order.deliveryType === 'PICKUP' ? pickupProgressMap : deliveryProgressMap
   const percentage = statusProgressMap[order.status] || 0
   const statusMessage = statusConfig.label || `Order ${order.status.toLowerCase()}`
   

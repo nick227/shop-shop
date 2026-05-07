@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 import { tv, type VariantProps } from 'tailwind-variants'
 
 const inputVariants = tv({
@@ -30,15 +30,23 @@ export interface InputProps
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, size, variant, type, error, label, helperText, ...props }, ref) => {
+    const generatedId = useId()
+    const inputId = props.id ?? generatedId
+    const helperId = helperText ? `${inputId}-help` : undefined
+    const errorId = error ? `${inputId}-error` : undefined
+    const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined
+
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label className="text-sm font-medium text-foreground">
+          <label className="text-sm font-medium text-foreground" htmlFor={inputId}>
             {label}
           </label>
         )}
         <input
           type={type}
+          id={inputId}
+          aria-describedby={describedBy}
           className={inputVariants({
             size,
             variant,
@@ -48,10 +56,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {helperText && !error && (
-          <p className="text-sm text-muted-foreground">{helperText}</p>
+          <p className="text-sm text-muted-foreground" id={helperId}>
+            {helperText}
+          </p>
         )}
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive" id={errorId}>
+            {error}
+          </p>
         )}
       </div>
     )

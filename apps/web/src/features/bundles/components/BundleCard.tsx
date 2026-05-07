@@ -37,9 +37,9 @@ export function BundleCard({
       <CardHeader className="pb-3">
         <div className="flex gap-4 items-start">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
-            {bundle.imageUrl ? (
+            {bundle.media && bundle.media.length > 0 ? (
               <img 
-                src={bundle.imageUrl} 
+                src={bundle.media[0]?.url} 
                 alt={bundle.name}
                 className="w-full h-full object-cover"
               />

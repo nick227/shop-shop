@@ -5,16 +5,16 @@ interface SiteBrandingProps {
   className?: string
 }
 
-export function SiteBranding({ className = '' }: SiteBrandingProps) {
+export function SiteBranding({ className = '' }: Readonly<SiteBrandingProps>) {
   return (
     <Link 
       to="/" 
-      className={`flex items-center gap-2 text-xl font-bold text-gray-800 hover:text-gray-600 transition-colors ${className}`}
+      className={`flex gap-2 items-center text-xl font-bold text-gray-800 transition-colors hover:text-gray-600 ${className}`}
     >
-      <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-        <span className="text-white font-bold text-sm">SS</span>
+      <div className="flex justify-center items-center w-8 h-8 bg-white rounded-lg">
+        <img src="/logo.png" alt="Logo" className="object-contain w-full h-full" />
       </div>
-      <span>Shop Shop</span>
+      <span className="text-green-900">BagLunch</span>
     </Link>
   )
 }

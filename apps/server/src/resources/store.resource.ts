@@ -242,6 +242,18 @@ export const storeResource = defineResource({
     beforeList: async (filters) => {
       return buildStoreListFilters(filters as Record<string, unknown>)
     },
+    afterRead: async (result) => {
+      // Include media assets for single store read
+      const store = result as { id: string }
+      const mediaAssets = await prisma.mediaAsset.findMany({
+        where: { 
+          storeId: store.id,
+          kind: 'IMAGE' 
+        },
+        orderBy: { sortIndex: 'asc' }
+      })
+      return { ...(result as Record<string, unknown>), mediaAssets }
+    },
     afterList: async (result, context) => {
       const listResult = result as { data: Array<{
         id: string
@@ -273,11 +285,26 @@ export const storeResource = defineResource({
             orderBy: hookContext.orderBy || { createdAt: 'desc' },
           })
           const dedupedStores = dedupeStoresByArea(cityStores)
+          
+          // Add media assets to each store
+          const storesWithMedia = await Promise.all(
+            dedupedStores.map(async (store) => {
+              const mediaAssets = await prisma.mediaAsset.findMany({
+                where: { 
+                  storeId: store.id,
+                  kind: 'IMAGE' 
+                },
+                orderBy: { sortIndex: 'asc' }
+              })
+              return { ...store, mediaAssets }
+            })
+          )
+          
           const start = (page - 1) * limit
 
           return {
-            data: dedupedStores.slice(start, start + limit),
-            total: dedupedStores.length,
+            data: storesWithMedia.slice(start, start + limit),
+            total: storesWithMedia.length,
           }
         }
 
@@ -297,11 +324,26 @@ export const storeResource = defineResource({
         longitude,
         radiusMiles
       )
+      
+      // Add media assets to each store
+      const storesWithMedia = await Promise.all(
+        storesWithDistance.map(async (store) => {
+          const mediaAssets = await prisma.mediaAsset.findMany({
+            where: { 
+              storeId: store.id,
+              kind: 'IMAGE' 
+            },
+            orderBy: { sortIndex: 'asc' }
+          })
+          return { ...store, mediaAssets }
+        })
+      )
+      
       const start = (page - 1) * limit
       
       return {
-        data: storesWithDistance.slice(start, start + limit),
-        total: storesWithDistance.length,
+        data: storesWithMedia.slice(start, start + limit),
+        total: storesWithMedia.length,
       }
     },
   },

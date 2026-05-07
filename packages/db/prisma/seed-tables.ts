@@ -30,13 +30,11 @@ export async function cleanSeedTables(prisma: PrismaClient): Promise<void> {
   await prisma.promotionRedemption.deleteMany()
   await prisma.promotion.deleteMany()
 
-  await prisma.itemTag.deleteMany()
   await prisma.mediaAsset.deleteMany()
   await prisma.item.deleteMany()
 
   await prisma.favoriteItem.deleteMany()
   await prisma.favoriteStore.deleteMany()
-  await prisma.storeTag.deleteMany()
 
   await prisma.deliveryZone.deleteMany()
   await prisma.teamMember.deleteMany()

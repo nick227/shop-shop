@@ -73,7 +73,7 @@ export function FormPageTemplate({
       <PageHeader
         title={title}
         description={subtitle}
-        breadcrumbs={
+        backButton={
           <Button variant="ghost" size="small" onClick={onBack} className="-ml-2 text-muted-foreground hover:bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-1" />
             {backLabel.replace('← ', '')}

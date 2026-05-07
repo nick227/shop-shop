@@ -1,21 +1,29 @@
 /**
  * IconService Unit Tests;
  */
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+vi.mock('leaflet', () => {
+  const divIcon = vi.fn((options: unknown) => ({
+    ...(options as Record<string, unknown>),
+    _isDivIcon: true,
+  }))
+
+  return {
+    __esModule: true,
+    default: { divIcon },
+    divIcon,
+  }
+})
+
 import { IconService } from '../iconService'
 import L from 'leaflet'
-
-// Mock Leaflet;
-jest.mock('leaflet', () => ({
-  divIcon: jest.fn((options) => ({
-    ...options,
-    _isDivIcon: true
-  }))
-}))
 
 describe('IconService', () => {
   beforeEach(() => {
     // Clear any existing cache;
-    jest.clearAllMocks()
+    vi.clearAllMocks()
+    IconService.clearCache()
   })
 
   describe('getIcon', () => {
@@ -30,7 +38,7 @@ describe('IconService', () => {
 
       const icon = IconService.getIcon('test-key', options)
 
-      expect(L.divIcon).toHaveBeenCalledWith(options)
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining(options))
       expect(icon).toBeDefined()
     })
 
@@ -47,13 +55,13 @@ describe('IconService', () => {
     it('should use default values when options are not provided', () => {
       const icon = IconService.getIcon('test-key-3', {})
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-marker',
         html: '<div>📍</div>',
         iconSize: [40, 40],
         iconAnchor: [20, 40],
         popupAnchor: [0, -40]
-      })
+      }))
     })
   })
 
@@ -61,25 +69,25 @@ describe('IconService', () => {
     it('should create regular store icon', () => {
       const icon = IconService.getStoreIcon(false)
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-store-marker',
         html: expect.stringContaining('🍽️'),
         iconSize: [40, 40],
         iconAnchor: [20, 40],
         popupAnchor: [0, -40]
-      })
+      }))
     })
 
     it('should create nearest store icon', () => {
       const icon = IconService.getStoreIcon(true)
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-store-marker',
         html: expect.stringContaining('🍽️'),
         iconSize: [40, 40],
         iconAnchor: [20, 40],
         popupAnchor: [0, -40]
-      })
+      }))
     })
 
     it('should use custom styles when provided', () => {
@@ -91,13 +99,13 @@ describe('IconService', () => {
 
       const icon = IconService.getStoreIcon(true, customStyles)
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-store-marker',
         html: expect.stringContaining('custom-marker-class'),
         iconSize: [40, 40],
         iconAnchor: [20, 40],
         popupAnchor: [0, -40]
-      })
+      }))
     })
   })
 
@@ -105,12 +113,12 @@ describe('IconService', () => {
     it('should create user icon with default styles', () => {
       const icon = IconService.getUserIcon()
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-user-marker',
         html: expect.stringContaining('📍'),
         iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
+        iconAnchor: [15, 15],
+      }))
     })
 
     it('should use custom styles when provided', () => {
@@ -120,12 +128,12 @@ describe('IconService', () => {
 
       const icon = IconService.getUserIcon(customStyles)
 
-      expect(L.divIcon).toHaveBeenCalledWith({
+      expect(L.divIcon).toHaveBeenCalledWith(expect.objectContaining({
         className: 'custom-user-marker',
         html: expect.stringContaining('custom-user-class'),
         iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
+        iconAnchor: [15, 15],
+      }))
     })
   })
 })

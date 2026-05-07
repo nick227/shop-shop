@@ -52,12 +52,16 @@ export const CartQuerySchema = z.object({
 
 
 // Additional schemas
-export const AddToCartInputSchema = z.object({
-  itemId: z.string(),
-  quantity: z.number().int().min(1),
-  options: z.record(z.unknown()).optional(),
-  notes: z.string().optional(),
-})
+export const AddToCartInputSchema = z
+  .object({
+    itemId: z.string().optional(),
+    bundleId: z.string().optional(),
+    quantity: z.number().int().min(1).optional(),
+    options: z.record(z.unknown()).optional(),
+    notes: z.string().optional(),
+  })
+  .refine((d) => !!(d.itemId ?? d.bundleId), { message: 'Either itemId or bundleId is required' })
+  .refine((d) => !(d.itemId && d.bundleId), { message: 'Provide either itemId or bundleId, not both' })
 
 
 // Type exports

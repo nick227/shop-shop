@@ -1,25 +1,42 @@
 import { forwardRef } from 'react'
 import { cn } from '@shared/lib/cn'
 
-const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+type CardProps = React.HTMLAttributes<HTMLElement>
+
+const Card = forwardRef<HTMLElement, CardProps>(({ className, onClick, ...props }, ref) => {
+  const baseClassName = cn(
+    'rounded-xl bg-card text-card-foreground',
+    onClick ? 'clickable cursor-pointer' : undefined,
+    className,
+  )
+
+  if (onClick) {
+    return (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type="button"
+        className={baseClassName}
+        onClick={onClick}
+        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      />
+    )
+  }
+
+  return (
     <div
-      ref={ref}
-      className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-sm',
-        className
-      )}
-      {...props}
+      ref={ref as React.Ref<HTMLDivElement>}
+      className={baseClassName}
+      {...(props as React.HTMLAttributes<HTMLDivElement>)}
     />
   )
-)
+})
 Card.displayName = 'Card'
 
 const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex flex-col gap-1.5 p-5', className)}
+      className={cn('flex flex-col gap-1 p-2', className)}
       {...props}
     />
   )
@@ -30,7 +47,7 @@ const CardTitle = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHead
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+      className={cn('text-lg font-semibold tracking-tight leading-none', className)}
       {...props}
     />
   )

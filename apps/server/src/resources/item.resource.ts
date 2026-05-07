@@ -10,7 +10,7 @@ import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/d
 import { prisma } from '@packages/db'
 import { checkProductActivationRequirements } from '@packages/db/services'
 
-import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.js'
+import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.ts'
 
 // ========================================
 // Item Resource Definition
@@ -139,6 +139,65 @@ export const itemResource = defineResource({
       }
       
       return nextFilters
+    },
+    afterRead: async (result) => {
+      const item = result as { id: string }
+      const [mediaAssets, itemTags] = await Promise.all([
+        prisma.mediaAsset.findMany({
+          where: { itemId: item.id, kind: 'IMAGE' },
+          orderBy: { sortIndex: 'asc' },
+        }),
+        prisma.itemTag.findMany({
+          where: { itemId: item.id },
+          select: { tag: { select: { slug: true, label: true, category: true } } },
+        }),
+      ])
+      return {
+        ...(result as Record<string, unknown>),
+        mediaAssets,
+        tags: itemTags.map((t) => t.tag),
+      }
+    },
+    afterList: async (result) => {
+      const listResult = result as { data: Array<{ id: string; [key: string]: unknown }>; total: number }
+      const itemIds = listResult.data.map((item) => item.id)
+
+      // Two batch queries instead of N*2 individual queries
+      const [allMedia, allItemTags] = await Promise.all([
+        prisma.mediaAsset.findMany({
+          where: { itemId: { in: itemIds }, kind: 'IMAGE' },
+          orderBy: { sortIndex: 'asc' },
+        }),
+        prisma.itemTag.findMany({
+          where: { itemId: { in: itemIds } },
+          select: { itemId: true, tag: { select: { slug: true, label: true, category: true } } },
+        }),
+      ])
+
+      // Build O(1) lookup maps
+      const mediaByItem = new Map<string, typeof allMedia>()
+      for (const m of allMedia) {
+        if (!m.itemId) continue
+        const arr = mediaByItem.get(m.itemId)
+        if (arr) arr.push(m)
+        else mediaByItem.set(m.itemId, [m])
+      }
+
+      const tagsByItem = new Map<string, Array<{ slug: string; label: string; category: string }>>()
+      for (const t of allItemTags) {
+        const arr = tagsByItem.get(t.itemId)
+        if (arr) arr.push(t.tag)
+        else tagsByItem.set(t.itemId, [t.tag])
+      }
+
+      return {
+        ...listResult,
+        data: listResult.data.map((item) => ({
+          ...item,
+          mediaAssets: mediaByItem.get(item.id) ?? [],
+          tags: tagsByItem.get(item.id) ?? [],
+        })),
+      }
     },
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],

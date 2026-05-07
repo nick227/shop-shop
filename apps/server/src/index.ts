@@ -7,6 +7,8 @@ import rateLimit from '@fastify/rate-limit'
 import { authRoutes } from './routes/auth.route.js'
 import checkoutRoutes from './routes/checkout.js'
 import orderStatusRoutes from './routes/orderStatus.js'
+import { orderDispatchRoutes } from './routes/order-dispatch.route.js'
+import { driverRoutes } from './routes/driver.route.js'
 import { paymentRoutes } from './routes/payment.route.js'
 import { stripeWebhookRoutes } from './routes/stripe-webhook.route.js'
 import { mediaRoutes } from './routes/media.route.js'
@@ -16,6 +18,7 @@ import { geocodingRoutes } from './routes/geocoding.route.js'
 import { tipRoutes } from './routes/tip.route.js'
 import { affiliateRoutes } from './routes/affiliate.route.js'
 import { deliveryZoneRoutes } from './routes/delivery-zone.route.js'
+import { storeReadinessRoutes } from './routes/store-readiness.route.js'
 import { vendorVerificationRoutes } from './routes/vendor-verification.route.js'
 import { exportRoutes } from './routes/export.route.js'
 import { vendorPayoutRoutes } from './routes/vendor-payout.route.js'
@@ -23,6 +26,8 @@ import { teamRoutes } from './routes/team.route.js'
 import { promotionEnhancedRoutes } from './routes/promotion-enhanced.route.js'
 import { orderCancellationRoutes } from './routes/order-cancellation.route.js'
 import { favoritesRoutes } from './routes/favorites.route.js'
+import { searchUnifiedRoutes } from './routes/search-unified.route.js'
+import { tagsRoutes } from './routes/tags.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
 import multipart from '@fastify/multipart'
@@ -43,8 +48,7 @@ const app = Fastify({
   } : true,
 })
 
-// Zod is the single validation + serialization layer for all routes with schema declarations.
-// Resource routes only use schema.tags/summary — no body schemas — so this is safe globally.
+// Enable global Zod validation
 app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 
@@ -99,7 +103,7 @@ if (process.env.STORAGE_TYPE === 'local' || !process.env.STORAGE_TYPE) {
   app.log.info({ uploadDir }, 'Serving local uploads')
 }
 
-// Rate limiting: global false = only routes with `config.rateLimit` are limited (see constants/rateLimits.ts)
+// Rate limiting
 await app.register(rateLimit, {
   global: false,
   max: 100,
@@ -125,25 +129,32 @@ app.get('/healthz', async () => ({ ok: true }))
 await app.register(authRoutes, { prefix: '/auth/v1' })
 await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
 await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
-await app.register(stripeWebhookRoutes) // Stripe webhooks (raw JSON body for signatures)
-await app.register(paymentRoutes)  // Payment & Stripe Connect
-await app.register(mediaRoutes)    // Media uploads (custom multipart handling)
-await app.register(realtimeRoutes) // Real-time WebSocket
-await app.register(riverRoutes)    // River (posts) - Custom routes
-await app.register(geocodingRoutes) // Geocoding services (ZIP, city/state, address)
-await app.register(tipRoutes)      // Tip processing
-await app.register(affiliateRoutes) // Affiliate system
-await app.register(deliveryZoneRoutes) // Delivery zones with polygon support
-await app.register(vendorVerificationRoutes) // Vendor KYC/KYB verification
-await app.register(exportRoutes) // Accounting CSV exports
-await app.register(vendorPayoutRoutes) // Vendor payout management
-await app.register(teamRoutes) // Team members & invitations
-await app.register(promotionEnhancedRoutes) // Enhanced promotion validation and analytics
-await app.register(orderCancellationRoutes) // Order cancellations with refunds
-await app.register(favoritesRoutes) // Favorites and reorder functionality
+await app.register(orderDispatchRoutes, { prefix: '/api/v1/orders' })
+await app.register(driverRoutes, { prefix: '/api/v1' })
+await app.register(stripeWebhookRoutes) 
+await app.register(paymentRoutes)  
+await app.register(mediaRoutes)    
+await app.register(realtimeRoutes) 
+await app.register(riverRoutes)    
+await app.register(geocodingRoutes) 
+await app.register(tipRoutes)      
+await app.register(affiliateRoutes) 
+await app.register(deliveryZoneRoutes) 
+await app.register(storeReadinessRoutes) 
+await app.register(vendorVerificationRoutes) 
+await app.register(exportRoutes) 
+await app.register(vendorPayoutRoutes) 
+await app.register(teamRoutes) 
+await app.register(promotionEnhancedRoutes) 
+await app.register(orderCancellationRoutes) 
+await app.register(favoritesRoutes) 
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES)
+
+// Register search routes at the end to avoid conflicts
+await app.register(searchUnifiedRoutes)
+await app.register(tagsRoutes)
 
 // Wire up order service to realtime broker
 setOrderServiceBroadcast((topic, event) => {
@@ -163,7 +174,14 @@ process.on('uncaughtException', handleUncaughtException)
 process.on('unhandledRejection', handleUnhandledRejection)
 
 const port = env.PORT
-app.listen({ port, host: '0.0.0.0' }).then(() => {
-  app.log.info(`listening on http://localhost:${port}`)
-  app.log.info(`docs at http://localhost:${port}/docs`)
-})
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen({ port, host: '0.0.0.0' }).then(() => {
+    app.log.info(`listening on http://localhost:${port}`)
+    app.log.info(`docs at http://localhost:${port}/docs`)
+  })
+}
+
+export async function createApp() {
+  return app
+}

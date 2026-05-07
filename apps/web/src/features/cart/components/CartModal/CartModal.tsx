@@ -6,12 +6,31 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '@stores/cartStore'
-import { Button, BottomSheet, Spinner } from '@shared/ui/primitives'
+import { Button, BottomSheet } from '@shared/ui/primitives'
 import { ShoppingCart, Trash2, Plus, Minus, X } from 'lucide-react'
-import { CartItemRow } from '../CartItemRow'
-import { CartSummary } from '../CartSummary'
 import { formatCurrency } from '@shared/lib/format'
-import { cn } from '@shared/lib/cn'
+
+interface CartLineItem {
+  id: string
+  itemId: string | null
+  bundleId?: string | null
+  titleSnapshot?: string | null
+  unitPrice?: number
+  price?: number
+  quantity?: number
+  item?: { title?: string; price?: string }
+  currentItem?: { title?: string; price?: string }
+  notes?: string | null
+}
+
+function parseCartItems(items: unknown): CartLineItem[] {
+  if (Array.isArray(items)) return items as CartLineItem[]
+  if (typeof items === 'string') {
+    const parsed: unknown = JSON.parse(items)
+    return Array.isArray(parsed) ? (parsed as CartLineItem[]) : []
+  }
+  return []
+}
 
 export interface CartModalProps {
   readonly isOpen: boolean
@@ -26,27 +45,62 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
 
   // Calculate cart metrics
   const cartMetrics = useMemo(() => {
-    if (!cart?.items) return { itemCount: 0, subtotal: 0, total: 0 }
+    if (!cart?.items) {
+      return {
+        itemCount: 0,
+        subtotal: 0,
+        deliveryFee: 0,
+        otherFees: 0,
+        estimatedTotalToday: 0,
+        estimatedTotalHasUnknownFees: true,
+      }
+    }
     
     try {
-      const items = typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
-      const itemCount = items.reduce((sum: number, item: { quantity?: number }) => sum + (item.quantity || 0), 0)
+      const items = parseCartItems(cart.items)
+      const itemCount = items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
+      const subtotal = cart.subtotal ?? 0
+      const deliveryFee = cart.deliveryFee ?? 0
+      const otherFees = Math.max(0, (cart.fees ?? 0) - deliveryFee)
+      const deliveryFeeKnown = deliveryFee > 0
+      const otherFeesKnown = otherFees > 0
+      const estimatedTotalHasUnknownFees = !deliveryFeeKnown || !otherFeesKnown
+      const estimatedTotalToday =
+        subtotal +
+        (deliveryFeeKnown ? deliveryFee : 0) +
+        (otherFeesKnown ? otherFees : 0)
       return {
         itemCount,
-        subtotal: cart.subtotal || 0,
-        total: cart.total || 0
+        subtotal,
+        deliveryFee,
+        otherFees,
+        estimatedTotalToday,
+        estimatedTotalHasUnknownFees,
       }
     } catch {
-      return { itemCount: 0, subtotal: 0, total: 0 }
+      return {
+        itemCount: 0,
+        subtotal: 0,
+        deliveryFee: 0,
+        otherFees: 0,
+        estimatedTotalToday: 0,
+        estimatedTotalHasUnknownFees: true,
+      }
     }
   }, [cart])
 
+  const sheetDescription = useMemo(() => {
+    if (cartMetrics.itemCount <= 0) return 'Your cart is empty'
+    const label = `${cartMetrics.itemCount} item${cartMetrics.itemCount !== 1 ? 's' : ''}`
+    const suffix = cartMetrics.estimatedTotalHasUnknownFees ? '+' : ''
+    return `${label} • ${formatCurrency(cartMetrics.estimatedTotalToday)}${suffix} + tax`
+  }, [cartMetrics.estimatedTotalHasUnknownFees, cartMetrics.estimatedTotalToday, cartMetrics.itemCount])
+
   // Cart items with safe parsing
-  const cartItems = useMemo(() => {
+  const cartItems = useMemo<CartLineItem[]>(() => {
     if (!cart?.items) return []
-    
     try {
-      return typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+      return parseCartItems(cart.items)
     } catch {
       return []
     }
@@ -58,8 +112,9 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
     navigate('/checkout')
   }, [navigate, onClose])
 
-  const handleIncrementItem = useCallback(async (item: any) => {
+  const handleIncrementItem = useCallback((item: CartLineItem) => {
     if (!cart) return
+    if (!item.itemId) return
     
     setIsUpdating(true)
     try {
@@ -67,36 +122,36 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
         storeId: cart.storeId,
         itemId: item.itemId,
         quantity: 1,
-        item: item.currentItem || item.item
+        item: item.currentItem ?? item.item
       })
     } finally {
       setIsUpdating(false)
     }
   }, [cart, addItem])
 
-  const handleDecrementItem = useCallback(async (item: any) => {
+  const handleDecrementItem = useCallback((item: CartLineItem) => {
     if (!cart) return
     
     setIsUpdating(true)
     try {
-      decrementItem(item.itemId, 1)
+      if (item.itemId) decrementItem(item.itemId, 1)
     } finally {
       setIsUpdating(false)
     }
   }, [cart, decrementItem])
 
-  const handleRemoveItem = useCallback(async (item: any) => {
+  const handleRemoveItem = useCallback((item: CartLineItem) => {
     if (!cart) return
     
     setIsUpdating(true)
     try {
-      removeItem(item.itemId)
+      if (item.itemId) removeItem(item.itemId)
     } finally {
       setIsUpdating(false)
     }
   }, [cart, removeItem])
 
-  const handleClearCart = useCallback(async () => {
+  const handleClearCart = useCallback(() => {
     if (!cart) return
     
     setIsUpdating(true)
@@ -116,10 +171,7 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
       open={isOpen}
       onOpenChange={onClose}
       title="Shopping Cart"
-      description={cartMetrics.itemCount > 0 
-        ? `${cartMetrics.itemCount} item${cartMetrics.itemCount !== 1 ? 's' : ''} • ${formatCurrency(cartMetrics.total)}`
-        : "Your cart is empty"
-      }
+      description={sheetDescription}
     >
       <div className="flex flex-col h-full">
         {/* Empty State */}
@@ -154,7 +206,7 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto space-y-3 mb-6">
-              {cartItems.map((item: any) => (
+              {cartItems.map((item) => (
                 <CartItemEnhanced
                   key={item.id}
                   item={item}
@@ -175,12 +227,31 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
                   <span>{formatCurrency(cartMetrics.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax</span>
-                  <span>{formatCurrency((cart?.total || 0) - (cart?.subtotal || 0))}</span>
+                  <span className="text-gray-600">Delivery</span>
+                  <span>
+                    {cartMetrics.deliveryFee > 0
+                      ? formatCurrency(cartMetrics.deliveryFee)
+                      : 'Calculated at checkout'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Service/other fees</span>
+                  <span>
+                    {cartMetrics.otherFees > 0
+                      ? formatCurrency(cartMetrics.otherFees)
+                      : 'Calculated at checkout'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Estimated tax</span>
+                  <span className="text-gray-500">Calculated at checkout</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                  <span>Total</span>
-                  <span>{formatCurrency(cartMetrics.total)}</span>
+                  <span>Estimated total</span>
+                  <span>
+                    {formatCurrency(cartMetrics.estimatedTotalToday)}
+                    {cartMetrics.estimatedTotalHasUnknownFees ? '+' : ''} + tax
+                  </span>
                 </div>
               </div>
 
@@ -220,15 +291,18 @@ function CartItemEnhanced({
   onRemove, 
   isUpdating 
 }: {
-  item: any
-  onIncrement: () => void
-  onDecrement: () => void
-  onRemove: () => void
-  isUpdating: boolean
+  readonly item: CartLineItem
+  readonly onIncrement: () => void
+  readonly onDecrement: () => void
+  readonly onRemove: () => void
+  readonly isUpdating: boolean
 }) {
-  const itemTitle = item.titleSnapshot || item.item?.title || 'Item'
-  const itemPrice = item.unitPrice || item.price || 0
-  const quantity = item.quantity || 1
+  const itemTitle = item.titleSnapshot ?? item.item?.title ?? 'Item'
+  const itemPrice =
+    item.unitPrice ??
+    item.price ??
+    Number(item.currentItem?.price ?? item.item?.price ?? 0)
+  const quantity = item.quantity ?? 1
   const lineTotal = itemPrice * quantity
 
   return (

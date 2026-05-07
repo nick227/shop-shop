@@ -3,7 +3,21 @@ import { Decimal } from 'decimal.js'
 
 /** Prisma include shared by placement validation and totals (single source of truth). */
 export const CHECKOUT_CART_INCLUDE = {
-  items: { include: { item: true } },
+  items: {
+    include: {
+      item: true,
+      bundle: {
+        include: {
+          items: {
+            include: {
+              item: { select: { id: true, title: true, price: true, isActive: true, isSoldOut: true } },
+            },
+          },
+          pricing: true,
+        },
+      },
+    },
+  },
   store: {
     select: {
       id: true,
@@ -54,7 +68,17 @@ export function placementFailureReason(cart: CheckoutCart | null, userId: string
 
   const unavailable: string[] = []
   for (const ci of cart.items) {
-    if (!ci.item.isActive || ci.item.isSoldOut) {
+    if (ci.bundleId) {
+      if (!ci.bundle) {
+        unavailable.push(ci.titleSnapshot)
+        continue
+      }
+      if (!(ci.bundle as any).items.every((bi: any) => bi.item.isActive && !bi.item.isSoldOut)) {
+        unavailable.push(ci.titleSnapshot)
+      }
+    } else if (ci.item) {
+      if (!ci.item.isActive || ci.item.isSoldOut) unavailable.push(ci.titleSnapshot)
+    } else {
       unavailable.push(ci.titleSnapshot)
     }
   }

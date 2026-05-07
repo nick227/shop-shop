@@ -58,6 +58,8 @@ export const CreateStoreInputSchema = generateCreateInputSchema({
         website: z.string().url().optional(),
         deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Delivery distance must be between 0 and 100 miles').optional(),
         deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0, 'Delivery charge must be non-negative').optional(),
+        latitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
+        longitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
     },
 });
 export const UpdateStoreInputSchema = generateUpdateInputSchema({
@@ -74,6 +76,8 @@ export const UpdateStoreInputSchema = generateUpdateInputSchema({
         commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Commission rate must be between 0 and 100').optional(),
         deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Delivery distance must be between 0 and 100 miles').optional(),
         deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0, 'Delivery charge must be non-negative').optional(),
+        latitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
+        longitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
     },
 });
 export const StoreResponseSchema = generateResponseSchema({

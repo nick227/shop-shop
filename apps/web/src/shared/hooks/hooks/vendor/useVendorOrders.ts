@@ -16,9 +16,10 @@ export interface UseVendorOrdersOptions {
 
 export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
   const { user } = useAuth()
+  const userId = user?.id
 
   return useQuery<OrderResponse[]>({
-    queryKey: ['vendor-orders', (user as unknown as { id: string }).id, options.status],
+    queryKey: ['vendor-orders', userId, options.status],
     queryFn: async () => {
       // Fetch vendor stores once, then fetch orders once. Dedupe by id.
       const vendorStores = await stores.list()
@@ -51,7 +52,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
 
       return uniqueOrders
     },
-    enabled: !!user,
+    enabled: Boolean(userId),
     refetchInterval: options.refetchInterval ?? 30_000, // Default: refresh every 30 sec
   })
 }
@@ -61,9 +62,10 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
  */
 export function usePendingOrderCount() {
   const { user } = useAuth()
+  const userId = user?.id
 
   return useQuery({
-    queryKey: ['vendor-pending-orders-count', (user as unknown as { id: string }).id],
+    queryKey: ['vendor-pending-orders-count', userId],
     queryFn: async () => {
       const vendorStores = await stores.list()
       
@@ -83,7 +85,7 @@ export function usePendingOrderCount() {
       }
       return count
     },
-    enabled: !!user,
+    enabled: Boolean(userId),
     refetchInterval: 15_000, // Refresh every 15 sec for widget
   })
 }

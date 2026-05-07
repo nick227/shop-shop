@@ -117,20 +117,19 @@ export const mediaRoutes = async (app: FastifyInstance) => {
 
   // ========================================
   // GET /media
-  // List media files
+  // List media files (public for stores, authenticated for items)
   // ========================================
   app.get('/media', {
-    preHandler: [authenticate],
     schema: {
       tags: ['Media'],
       summary: 'List media files',
-      description: 'List media files for a store or item',
+      description: 'List media files for a store (public) or item (authenticated)',
       querystring: z.object({
         storeId: z.string().uuid().optional(),
         itemId: z.string().uuid().optional(),
       }),
     },
-  }, async (req: AuthenticatedRequest, reply) => {
+  }, async (req, reply) => {
     const { storeId, itemId } = req.query as { storeId?: string; itemId?: string }
 
     if (!storeId && !itemId) {
@@ -139,16 +138,37 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       })
     }
 
-    const media = await listMedia({
-      storeId,
-      itemId,
-      userId: req.user!.id,
-    })
+    // For public store media access, allow without authentication
+    // For item media, require authentication
+    if (storeId) {
+      const media = await listMedia({
+        storeId,
+        itemId,
+        userId: undefined, // Public access for store media
+      })
 
-    return reply.code(200).send({
-      data: media,
-      total: media.length,
-    })
+      return reply.code(200).send({
+        data: media,
+        total: media.length,
+      })
+    } else {
+      // Item media requires authentication
+      const authenticatedReq = req as AuthenticatedRequest
+      if (!authenticatedReq.user) {
+        return reply.code(401).send({ error: 'Authentication required for item media' })
+      }
+
+      const media = await listMedia({
+        storeId,
+        itemId,
+        userId: authenticatedReq.user.id,
+      })
+
+      return reply.code(200).send({
+        data: media,
+        total: media.length,
+      })
+    }
   })
 
   // ========================================

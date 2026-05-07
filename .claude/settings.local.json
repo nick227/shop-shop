@@ -27,7 +27,13 @@
       "Bash(npx --yes vitest --version)",
       "Bash(node --input-type=module -e ' *)",
       "Bash(npx --prefix packages/sdk tsx --noEmit packages/sdk/scripts/generate-api-wrapper.ts)",
-      "Bash(mkdir -p \"C:\\\\Users\\\\Administrator\\\\.claude\\\\projects\\\\c--wamp64-www-shop-shop\\\\memory\" 2>/dev/null; echo \"ok\")"
+      "Bash(mkdir -p \"C:\\\\Users\\\\Administrator\\\\.claude\\\\projects\\\\c--wamp64-www-shop-shop\\\\memory\" 2>/dev/null; echo \"ok\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\wamp64\\\\www\\\\shop-shop\" -Directory)",
+      "Bash(Select-Object Name)",
+      "PowerShell(Set-Location \"c:\\\\wamp64\\\\www\\\\shop-shop\"; npx tsc --noEmit --project apps/web/tsconfig.json 2>&1 | Where-Object { $_ -match \"search|SearchResults|UnifiedSearch|useUnifiedSearch\" } | Select-Object -First 20)",
+      "Bash(node --import tsx prisma/seed-reference-data.ts)",
+      "PowerShell(npx tsc -p apps/web/tsconfig.json --noEmit 2>&1 | Where-Object { $_ -notmatch 'BundleFormModal|BundleCard|bundle\\\\.types' })",
+      "PowerShell(npx tsc -p apps/web/tsconfig.json --noEmit 2>&1 | Where-Object { $_ -notmatch 'BundleFormModal|BundleCard|bundle\\\\.types' } | Select-Object -First 30)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"

@@ -9,6 +9,10 @@ import '@testing-library/jest-dom'
 // Extend expect with custom matchers
 expect.extend({})
 
+// Some legacy tests still reference `jest.*` APIs. Map them to Vitest's `vi`.
+// (Prefer updating tests over time; this keeps the suite runnable meanwhile.)
+;(globalThis as unknown as { jest?: typeof vi }).jest = vi
+
 // Global test utilities
 global.ResizeObserver = class ResizeObserver {
   observe() {}

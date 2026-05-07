@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import { afterAll } from 'vitest'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 import { prisma } from '@packages/db'
@@ -24,40 +24,6 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-min-32-chara
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 process.env.CORS_ORIGINS = process.env.CORS_ORIGINS || `http://localhost:${process.env.WEB_PORT || '5177'}`
 
-// Global test setup
-beforeAll(async () => {
-  // Setup test environment
-})
-
 afterAll(async () => {
-  // Final cleanup and disconnect
-  await cleanupAllTestData()
   await prisma.$disconnect()
 })
-
-beforeEach(async () => {
-  // Clean database before each test to avoid unique constraint violations
-  await cleanupAllTestData()
-})
-
-afterEach(async () => {
-  // Cleanup after each test
-  await cleanupAllTestData()
-})
-
-// Comprehensive cleanup function
-async function cleanupAllTestData() {
-  // Delete in correct order to respect foreign key constraints
-  await prisma.mediaAsset.deleteMany({})
-  await prisma.orderItem.deleteMany({})
-  await prisma.orderEvent.deleteMany({})
-  await prisma.cartItem.deleteMany({})
-  await prisma.order.deleteMany({})
-  await prisma.cart.deleteMany({})
-  await prisma.address.deleteMany({})
-  await prisma.item.deleteMany({})
-  await prisma.promotion.deleteMany({})
-  await prisma.store.deleteMany({})
-  await prisma.user.deleteMany({})
-}
-

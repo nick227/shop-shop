@@ -16,6 +16,7 @@ import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { Package, Edit, Store as StoreIcon, LogOut, ArrowLeft } from 'lucide-react'
 import type { StoreResponse } from '@api/types'
 import { useHaptics } from '@shared/hooks/useHaptics'
+import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate()
@@ -92,7 +93,7 @@ export default function VendorDashboardPage() {
       <PageHeader
         title="My Stores"
         description="Manage your stores and menu items"
-        breadcrumbs={
+        backButton={
           <Button variant="ghost" size="small" onClick={() => navigate('/')} className="-ml-2 text-muted-foreground hover:bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-1" />
             Home
@@ -190,10 +191,23 @@ function VendorStoreCard({ store, onEdit, onViewItems }: VendorStoreCardProps) {
   const haptics = useHaptics()
 
   return (
-    <Card className="flex flex-col hover:border-primary/50 transition-colors tap-scale active:scale-[0.98]">
+    <Card className="flex flex-col overflow-hidden hover:border-primary/50 transition-colors tap-scale active:scale-[0.98]">
+      {store.latitude && store.longitude && (
+        <div className="border-b border-border/50">
+          <StorePreviewMap latitude={store.latitude} longitude={store.longitude} />
+        </div>
+      )}
+      
       <CardHeader className="pb-4">
         <div className="flex justify-between items-start gap-4">
-          <CardTitle className="text-xl line-clamp-1">{store.name}</CardTitle>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-xl line-clamp-1">{store.name}</CardTitle>
+            {(store.addressCity || store.addressState) && (
+              <div className="text-xs text-muted-foreground font-medium mt-0.5">
+                {store.addressCity}{store.addressCity && store.addressState ? ', ' : ''}{store.addressState}
+              </div>
+            )}
+          </div>
           <div className="shrink-0">
             {store.isPublished ? (
               <Badge variant="success">Published</Badge>

@@ -10,8 +10,15 @@ import { z } from 'zod'
 export { z } from 'zod'
 
 // Common validation schemas used across forms
-export const emailSchema = z.string().email('Invalid email address')
-export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters')
+export const emailSchema = z
+  .string()
+  .email('Invalid email address')
+  .refine((value) => !value.split('@')[0]?.includes('..'), { message: 'Invalid email address' })
+
+export const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .refine((value) => /\d/.test(value), { message: 'Password must include a number' })
 export const phoneSchema = z
   .string()
   .regex(/^[\d\s()-]+$/, 'Invalid phone number')
@@ -35,11 +42,11 @@ export const loginFormSchema = z.object({
 // Legacy compatibility - map old names to new ones
 // Note: Schemas are temporarily commented out due to module resolution issues
 export const schemas = {
-  // Auth - temporarily using placeholder schemas
-  login: {} as any,
-  signup: {} as any,
-  authResponse: {} as any,
-  user: {} as any,
+  // Auth
+  login: loginFormSchema,
+  signup: signupFormSchema,
+  authResponse: z.any(),
+  user: z.any(),
   
   // Form schemas
   signupForm: signupFormSchema,
@@ -49,6 +56,33 @@ export const schemas = {
   email: emailSchema,
   password: passwordSchema,
   phone: phoneSchema,
+
+  // Marketplace/store/items/orders/cart/address/bundles/promotions/payments
+  store: z.any(),
+  createStore: z.any(),
+  updateStore: z.any(),
+  item: z.any(),
+  createItem: z.any(),
+  updateItem: z.any(),
+  order: z.any(),
+  createOrder: z.any(),
+  cart: z.any(),
+  address: z.any(),
+  createAddress: z.any(),
+  updateAddress: z.any(),
+  bundle: z.any(),
+  createBundle: z.any(),
+  updateBundle: z.any(),
+  promotion: z.any(),
+  createPromotion: z.any(),
+  updatePromotion: z.any(),
+  paymentIntent: z.any(),
+  createPaymentIntent: z.any(),
+  tip: z.any(),
+  createTip: z.any(),
+  updateTip: z.any(),
+  mediaUpload: z.any(),
+  mediaUploadMetadata: z.any(),
 } as const
 
 // Type exports for convenience

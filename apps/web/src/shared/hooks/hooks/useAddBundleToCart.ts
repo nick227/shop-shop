@@ -1,57 +1,31 @@
-/**
- * useAddBundleToCart Hook - Bundle add-to-cart functionality
- * Extends useAddToCart for bundle-specific logic
- */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
-import { toast } from 'sonner'
+import { useCartStore, type AddBundleToCartInput } from '@stores/cartStore'
+import { useCartToaster } from '@features/cart/components/CartToaster'
 import { handleApiError } from '@api/errors'
 
-export interface AddBundleToCartParams {
-  storeId: string
-  bundleId: string
-  quantity: number
-}
+export type { AddBundleToCartInput }
 
 export function useAddBundleToCart() {
   const queryClient = useQueryClient()
-  
+  const addBundle = useCartStore((state) => state.addBundle)
+  const { showItemAdded } = useCartToaster()
+
   return useMutation({
-    mutationFn: async (params: AddBundleToCartParams) => {
-      // For now, we'll add the bundle as a single item to the cart
-      // In the future, this could be enhanced to add all bundle items individually
-      // or create a special bundle cart item type
-      
-      // Get bundle details to add items individually
-      const bundle = await apiClient.bundles().getBundleById({ id: params.bundleId })
-      
-      // Parse the items JSON string
-      const bundleItems = Array.isArray(bundle.items) ? bundle.items : JSON.parse(bundle.items || '[]')
-      
-      if (bundleItems.length === 0) {
-        throw new Error('Bundle has no items')
-      }
-      
-      // Add each bundle item to the cart
-      const cartPromises = bundleItems.map((bundleItem: any) => 
-        apiClient.carts().createCart({
-          createCartRequest: {
-            itemId: bundleItem.itemId,
-            quantity: bundleItem.quantity * params.quantity
-          }
-        })
-      )
-      
-      return Promise.all(cartPromises)
-    },
-    onSuccess: () => {
+    mutationFn: async (params: AddBundleToCartInput) => addBundle(params),
+    onSuccess: (updatedCart, variables) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
       queryClient.invalidateQueries({ queryKey: ['carts'] })
-      toast.success('Bundle added to cart!')
+      showItemAdded({
+        item: { title: variables.title } as any,
+        quantity: 1,
+        cartTotal: updatedCart?.total,
+        cartItemCount: updatedCart?.itemCount,
+        duration: 4000,
+      })
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
-      toast.error(appError.message)
-    }
+      console.error('Add bundle to cart failed:', appError.message)
+    },
   })
 }

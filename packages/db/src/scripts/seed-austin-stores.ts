@@ -10,6 +10,7 @@
 import { fileURLToPath } from 'url'
 import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'
 import { hash } from 'bcrypt'
+import { seedCanonicalTags } from './seed-tags.js'
 
 // Austin area ZIPs with coordinates near 78758
 const AUSTIN_LOCATIONS = [
@@ -65,6 +66,95 @@ const STORE_TYPES = {
     names: ['Sweet Tooth', 'Artisan Bakery', 'Fresh Baked', 'Bakery Bliss', 'Sugar & Spice'],
     descriptions: ['Fresh baked daily', 'Artisan breads and pastries', 'Custom cakes available', 'European-style bakery'],
   },
+}
+
+const STORE_TYPE_TAG_SLUGS: Record<string, string[]> = {
+  COFFEE: ['cafe-style'],
+  PIZZA: ['italian'],
+  BURGER: ['american'],
+  SUSHI: ['japanese'],
+  TACO: ['mexican'],
+  THAI: ['thai'],
+  BBQ: ['bbq', 'american'],
+  BAKERY: ['bakery-style'],
+}
+
+const CATEGORY_ITEM_TYPE_SLUGS: Record<string, string> = {
+  Coffee: 'drink',
+  Espresso: 'drink',
+  Pastries: 'pastry',
+  Breakfast: 'entree',
+  Pizza: 'entree',
+  Pasta: 'entree',
+  Salads: 'salad',
+  Appetizers: 'side',
+  Burgers: 'sandwich',
+  Fries: 'side',
+  Shakes: 'drink',
+  Sides: 'side',
+  Rolls: 'entree',
+  Sashimi: 'entree',
+  Nigiri: 'entree',
+  Tacos: 'entree',
+  Burritos: 'entree',
+  Quesadillas: 'entree',
+  Curry: 'entree',
+  Noodles: 'entree',
+  'Rice Dishes': 'entree',
+  Brisket: 'entree',
+  Ribs: 'entree',
+  Sandwiches: 'sandwich',
+  Bread: 'bread',
+  Cakes: 'cake',
+  Cookies: 'dessert',
+}
+
+const ALLERGEN_TAG_SLUGS: Record<string, string> = {
+  wheat: 'contains-gluten',
+  dairy: 'contains-dairy',
+  eggs: 'contains-eggs',
+  nuts: 'contains-nuts',
+  peanuts: 'contains-nuts',
+  shellfish: 'contains-shellfish',
+}
+
+const CATEGORY_MEAL_TIME_SLUGS: Record<string, string[]> = {
+  Coffee: ['breakfast', 'snack'],
+  Espresso: ['breakfast', 'snack'],
+  Pastries: ['breakfast', 'snack'],
+  Breakfast: ['breakfast'],
+  Shakes: ['snack'],
+  Cakes: ['dessert-time'],
+  Cookies: ['dessert-time', 'snack'],
+}
+
+function itemTypeSlugFor(category: string, title: string): string {
+  const normalizedTitle = title.toLowerCase()
+  if (normalizedTitle.includes('sandwich') || normalizedTitle.includes('burger')) return 'sandwich'
+  if (normalizedTitle.includes('cake')) return 'cake'
+  if (normalizedTitle.includes('cookie')) return 'dessert'
+  if (normalizedTitle.includes('bread') || normalizedTitle.includes('loaf') || normalizedTitle.includes('baguette')) return 'bread'
+  if (normalizedTitle.includes('shake') || normalizedTitle.includes('brew') || normalizedTitle.includes('latte') || normalizedTitle.includes('espresso')) return 'drink'
+  return CATEGORY_ITEM_TYPE_SLUGS[category] ?? 'entree'
+}
+
+function itemTagSlugsFor(category: string, itemTemplate: Record<string, any>): string[] {
+  const slugs = new Set<string>([
+    itemTypeSlugFor(category, String(itemTemplate.title)),
+    ...(CATEGORY_MEAL_TIME_SLUGS[category] ?? ['lunch', 'dinner']),
+  ])
+
+  if (itemTemplate.isVegan) slugs.add('vegan')
+  if (itemTemplate.isVegetarian || itemTemplate.isVegan) slugs.add('vegetarian')
+  if (itemTemplate.isGlutenFree) slugs.add('gluten-free')
+  if (itemTemplate.isDairyFree) slugs.add('dairy-free')
+
+  for (const allergen of itemTemplate.allergens ?? []) {
+    const allergenSlug = ALLERGEN_TAG_SLUGS[String(allergen)]
+    if (allergenSlug) slugs.add(allergenSlug)
+  }
+
+  return [...slugs]
 }
 
 // Sample menu items for each category with enhanced data
@@ -623,6 +713,8 @@ async function createSampleFavorites(prisma: PrismaClient) {
 export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
   console.log('🌱 Starting Austin store seeding...\n')
 
+  await seedCanonicalTags(prisma)
+
   const passwordHash = await hash(PASSWORD, 10)
   let vendorCount = 0
   let storeCount = 0
@@ -715,6 +807,11 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
             saturday: { open: '09:00', close: '23:00' },
             sunday: { open: '09:00', close: '21:00' },
           },
+          tags: {
+            create: (STORE_TYPE_TAG_SLUGS[storeTypeKey] ?? []).map((tagSlug) => ({
+              tag: { connect: { slug: tagSlug } },
+            })),
+          },
         },
       })
       storeCount++
@@ -766,6 +863,11 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
               isDairyFree: (itemTemplate as any).isDairyFree || false,
               spicyLevel: (itemTemplate as any).spicyLevel || null,
               allergensJson: (itemTemplate as any).allergens ? (itemTemplate as any).allergens : undefined,
+              tags: {
+                create: itemTagSlugsFor(category, itemTemplate).map((tagSlug) => ({
+                  tag: { connect: { slug: tagSlug } },
+                })),
+              },
             },
           })
           storeItems.push(item) // Add to store items array

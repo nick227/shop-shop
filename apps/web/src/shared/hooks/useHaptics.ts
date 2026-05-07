@@ -12,6 +12,15 @@ export function useHaptics() {
     }
   }, [isSupported])
 
+  const medium = useCallback(() => {
+    if (!isSupported) return
+    try {
+      navigator.vibrate(20)
+    } catch {
+      // Ignore
+    }
+  }, [isSupported])
+
   const heavy = useCallback(() => {
     if (!isSupported) return
     try {
@@ -39,5 +48,5 @@ export function useHaptics() {
     }
   }, [isSupported])
 
-  return { light, heavy, success, error, isSupported }
+  return { light, medium, heavy, success, error, isSupported }
 }
