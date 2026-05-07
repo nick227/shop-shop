@@ -3,6 +3,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import type { MediaApiResponse } from '@api/types'
+import { authGet } from '@shared/lib/auth/authFetch'
 
 interface UseMediaListParams {
   storeId?: string;
@@ -13,23 +14,14 @@ export function useMediaList({ storeId, itemId }: UseMediaListParams) {
   return useQuery<MediaApiResponse[]>({
     queryKey: ['media', 'list', { storeId, itemId }],
     queryFn: async (): Promise<MediaApiResponse[]> => {
-      const token = localStorage.getItem('token')
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3005'
-
-      const url = new URL(apiUrl + '/media')
-      if (storeId) url.searchParams.set('storeId', storeId)
-      if (itemId) url.searchParams.set('itemId', itemId)
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token + '' } : {}),
-        },
-      })
+      const params = new URLSearchParams()
+      if (storeId) params.set('storeId', storeId)
+      if (itemId) params.set('itemId', itemId)
+      
+      const response = await authGet(`/api/media?${params.toString()}`)
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
+        const error = await response.json().catch(() => ({})) as { error?: string }
         throw new Error(error.error || 'Failed to load media')
       }
 

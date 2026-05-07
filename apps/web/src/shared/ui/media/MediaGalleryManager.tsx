@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { MediaUploader } from './MediaUploader'
 import { MediaSortableGrid } from './MediaSortableGrid'
+import { authFetch } from '@shared/lib/auth/authFetch'
+import { readHttpErrorFromResponse } from '@api/readHttpError'
 
 interface MediaGalleryManagerProps {
   storeId?: string
@@ -26,7 +28,6 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
   const [media, setMedia] = useState<MediaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
 
   // Load media on mount
   useEffect(() => {
@@ -42,12 +43,11 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
       if (storeId) params.append('storeId', storeId)
       if (itemId) params.append('itemId', itemId)
 
-      const response = await fetch(`/api/media?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const response = await authFetch(`/api/media?${params.toString()}`)
 
       if (!response.ok) {
-        throw new Error('Failed to load media')
+        const { message } = await readHttpErrorFromResponse(response.clone())
+        throw new Error(message || 'Failed to load media')
       }
 
       const data = await response.json()
@@ -69,14 +69,12 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
 
   const handleDelete = async (mediaId: string) => {
     try {
-      const response = await fetch(`/api/media/${mediaId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
+      const response = await authFetch(`/api/media/${mediaId}`, { method: 'DELETE' })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete media')
+        const { message, body } = await readHttpErrorFromResponse(response.clone())
+        const bodyError = body && typeof body.error === 'string' ? body.error : undefined
+        throw new Error(bodyError || message || 'Failed to delete media')
       }
 
       // Remove from local state
@@ -88,18 +86,15 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
 
   const handleReorder = async (mediaIds: string[]) => {
     try {
-      const response = await fetch('/api/media/reorder', {
+      const response = await authFetch('/api/media/reorder', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ mediaIds }),
-        credentials: 'include',
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to reorder media')
+        const { message, body } = await readHttpErrorFromResponse(response.clone())
+        const bodyError = body && typeof body.error === 'string' ? body.error : undefined
+        throw new Error(bodyError || message || 'Failed to reorder media')
       }
 
       // Update local state with new order
@@ -175,7 +170,7 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
           onUploadComplete={handleUploadComplete}
           onError={handleUploadError}
           maxFiles={maxFiles - media.length}
-          disabled={uploading}
+          disabled={disabled}
         />
       )}
 

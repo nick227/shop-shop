@@ -6,8 +6,9 @@
  */
 
 import type { ReactNode } from 'react';
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useCallback, useReducer } from 'react'
 import type { User } from '../types'
+import { useAuthStore } from '@stores/authStore'
 
 // ========================================
 // Types & Interfaces
@@ -158,8 +159,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const storeTokens = useCallback(async (accessToken: string, refreshToken: string) => {
     try {
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
+      // Store tokens in useAuthStore for consistency
+      useAuthStore.getState().setAuth(
+        { 
+          id: '', // Will be updated by login response
+          email: '',
+          name: '',
+          role: 'USER',
+          phone: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as any, // Temporary fix - User type needs to be aligned
+        accessToken
+      )
     } catch (error) {
       console.error('Failed to store tokens:', error)
     }
@@ -167,8 +179,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const clearTokens = useCallback(() => {
     try {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+      // Clear tokens from useAuthStore for consistency
+      useAuthStore.getState().clearAuth()
     } catch (error) {
       console.error('Failed to clear tokens:', error)
     }
@@ -176,9 +188,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const getStoredTokens = useCallback(() => {
     try {
-      const accessToken = localStorage.getItem('accessToken')
-      const refreshToken = localStorage.getItem('refreshToken')
-      return { accessToken, refreshToken }
+      // Get tokens from useAuthStore for consistency
+      const state = useAuthStore.getState()
+      return { 
+        accessToken: state.token || null, 
+        refreshToken: state.token || null // Simplified - using same token for both
+      }
     } catch (error) {
       console.error('Failed to get stored tokens:', error)
       return { accessToken: null, refreshToken: null }

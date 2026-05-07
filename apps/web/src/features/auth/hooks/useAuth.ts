@@ -9,6 +9,7 @@ import { useCallback, useEffect, useContext, useState } from 'react'
 import { AuthContext } from '../context/AuthContext'
 import type { LoginCredentials } from '../types'
 import { useAuthStore } from '@stores/authStore'
+import { apiClient } from '@api/client'
 
 export interface UseAuthProps {
   onSuccess?: () => void
@@ -76,6 +77,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
         // Store tokens and user data in both auth layers while the app still uses both.
         await contextLogin(data.user, accessToken, refreshToken)
         setAuth(data.user, accessToken)
+        apiClient.setToken(accessToken)
 
         onSuccess?.()
         return data
@@ -134,6 +136,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
         // Store tokens and user data in both auth layers while the app still uses both.
         await contextLogin(data.user, accessToken, refreshToken)
         setAuth(data.user, accessToken)
+        apiClient.setToken(accessToken)
 
         // Referral code has been consumed for attribution; clear it.
         if (storedAffiliateReferralCode) {
@@ -164,6 +167,8 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
       await contextLogout()
     } catch (error) {
       console.error('Logout error:', error)
+    } finally {
+      apiClient.setToken(undefined)
     }
   }, [contextLogout])
 

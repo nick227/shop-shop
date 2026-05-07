@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '@stores/authStore'
+import { authFetch } from '@shared/lib/auth/authFetch'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'

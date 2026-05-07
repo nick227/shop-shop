@@ -1,5 +1,6 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { authPost } from '@shared/lib/auth/authFetch'
 import { Upload, X, File, Image, Video, AlertCircle, Check, Camera } from 'lucide-react'
 import { CameraCapture } from './CameraCapture'
 
@@ -41,13 +42,14 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [showCamera, setShowCamera] = useState(false)
+  const previewUrlsRef = useRef<Set<string>>(new Set())
 
   const readJsonOrThrow = async <T,>(response: Response): Promise<T> => {
+    const text = await response.text().catch(() => '')
     try {
-      return (await response.json()) as T
+      return JSON.parse(text) as T
     } catch {
-      const body = await response.clone().text().catch(() => '')
-      throw new Error(`Expected JSON but got: ${JSON.stringify(body.slice(0, 60))}`)
+      throw new Error(`Expected JSON but got: ${JSON.stringify(text.slice(0, 60))}`)
     }
   }
 
@@ -55,10 +57,23 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     if (previewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl)
     }
+    previewUrlsRef.current.delete(previewUrl)
   }
+
+  useEffect(() => {
+    return () => {
+      previewUrlsRef.current.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
+        }
+      })
+      previewUrlsRef.current.clear()
+    }
+  }, [])
 
   const createFilePreview = async (file: File): Promise<FilePreview> => {
     const previewUrl = URL.createObjectURL(file)
+    previewUrlsRef.current.add(previewUrl)
     return {
       file,
       preview: previewUrl,
@@ -72,8 +87,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     setShowCamera(false)
     
     try {
-      const token = localStorage.getItem('token')
-
+      
       // Create preview for captured image
       const preview = await createFilePreview(capturedFile)
       setFilePreviews(prev => [...prev, preview])
@@ -85,8 +99,8 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
       const formData = new FormData()
       formData.append('file', capturedFile)
-      formData.append('storeId', storeId || '')
-      formData.append('itemId', itemId || '')
+      if (storeId) formData.append('storeId', storeId)
+      if (itemId) formData.append('itemId', itemId)
 
       let progressInterval: ReturnType<typeof setInterval> | undefined
       try {
@@ -101,14 +115,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
           })
         }, 200)
 
-        const response = await fetch('/api/media/upload', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        })
+        const response = await authPost('/api/media/upload', formData)
 
         if (!response.ok) {
           const error = await readJsonOrThrow<{ error?: string }>(response)
@@ -160,8 +167,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
       return
     }
 
-    const token = localStorage.getItem('token')
-
+    
     if (acceptedFiles.length === 0) return
 
     // Create previews for all files
@@ -183,8 +189,8 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('storeId', storeId || '')
-        formData.append('itemId', itemId || '')
+        if (storeId) formData.append('storeId', storeId)
+        if (itemId) formData.append('itemId', itemId)
 
         let progressInterval: ReturnType<typeof setInterval> | undefined
         try {
@@ -199,14 +205,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
             })
           }, 200)
 
-          const response = await fetch('/api/media/upload', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          })
+          const response = await authPost('/api/media/upload', formData)
 
           if (!response.ok) {
             const error = await readJsonOrThrow<{ error?: string }>(response)

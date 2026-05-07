@@ -3,6 +3,7 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { authDelete } from '@shared/lib/auth/authFetch'
 
 interface DeleteMediaInput {
   mediaId: string;
@@ -15,19 +16,10 @@ export function useMediaDelete() {
 
   return useMutation({
     mutationFn: async ({ mediaId }: DeleteMediaInput) => {
-      const token = localStorage.getItem('token')
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3005'
-
-      const response = await fetch(apiUrl + '/media/' + mediaId, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token + '' } : {}),
-        },
-      })
+      const response = await authDelete(`/api/media/${mediaId}`)
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
+        const error = await response.json().catch(() => ({})) as { error?: string }
         throw new Error(error.error || 'Delete failed')
       }
     },

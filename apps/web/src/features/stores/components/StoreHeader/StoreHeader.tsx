@@ -4,6 +4,7 @@ import type { StoreResponse, StoreWithRating } from '@api/types'
 import { cn } from '@shared/lib/cn'
 import { useQuery } from '@tanstack/react-query'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
+import { authGet } from '@shared/lib/auth/authFetch'
 
 /**
  * StoreHeader - Modern store header with two-column layout and map
@@ -26,9 +27,7 @@ export function StoreHeader({ store, className, showMap = true }: StoreHeaderPro
   const { data: storeMedia } = useQuery({
     queryKey: ['store-media', store.id],
     queryFn: async () => {
-      const response = await fetch(`/api/media?storeId=${store.id}`, {
-        credentials: 'include',
-      })
+      const response = await authGet(`/api/media?storeId=${store.id}`)
       if (!response.ok) {
         throw new Error('Failed to fetch store media')
       }

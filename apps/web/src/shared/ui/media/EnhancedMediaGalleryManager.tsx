@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { EnhancedMediaUploader } from './EnhancedMediaUploader'
 import { EnhancedMediaPreviewCard } from './EnhancedMediaPreviewCard'
 import { Search, Grid, Trash2, SortAsc, SortDesc } from 'lucide-react'
+import { authFetch } from '@shared/lib/auth/authFetch'
+import { readHttpErrorFromResponse } from '@api/readHttpError'
 
 interface EnhancedMediaGalleryManagerProps {
   storeId?: string
@@ -31,13 +33,9 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 }) => {
   const FAILED_TO_DELETE_MEDIA = 'Failed to delete media'
   const readErrorMessage = async (response: Response, fallbackMessage: string): Promise<string> => {
-    const text = await response.text().catch(() => '')
-    try {
-      const payload = JSON.parse(text) as { error?: string }
-      return payload.error ?? fallbackMessage
-    } catch {
-      return `${fallbackMessage}. Response starts with: ${JSON.stringify(text.slice(0, 60))}`
-    }
+    const { message, body } = await readHttpErrorFromResponse(response.clone())
+    const bodyError = body && typeof body.error === 'string' ? body.error : undefined
+    return bodyError ?? message ?? fallbackMessage
   }
 
   const [media, setMedia] = useState<MediaItem[]>([])
@@ -57,12 +55,11 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       if (storeId) params.append('storeId', storeId)
       if (itemId) params.append('itemId', itemId)
 
-      const response = await fetch(`/api/media?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const response = await authFetch(`/api/media?${params.toString()}`)
 
       if (!response.ok) {
-        throw new Error(`Failed to load media: ${response.status} ${response.statusText}`)
+        const { message } = await readHttpErrorFromResponse(response.clone())
+        throw new Error(message || `Failed to load media: ${response.status} ${response.statusText}`)
       }
 
       const text = await response.text().catch(() => '')
@@ -70,7 +67,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
         const list = JSON.parse(text) as { data?: MediaItem[] }
         setMedia(list.data ?? [])
       } catch {
-        throw new Error(`Failed to parse /media response as JSON. Body starts with: ${JSON.stringify(text.slice(0, 60))}`)
+        throw new Error(`Failed to parse /api/media response as JSON. Body starts with: ${JSON.stringify(text.slice(0, 60))}`)
       }
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : 'Failed to load media')
@@ -97,10 +94,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
   const handleDelete = async (mediaId: string) => {
     try {
-      const response = await fetch(`/api/media/${mediaId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
+      const response = await authFetch(`/api/media/${mediaId}`, { method: 'DELETE' })
 
       if (!response.ok) {
         throw new Error(await readErrorMessage(response, FAILED_TO_DELETE_MEDIA))
@@ -125,10 +119,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
     try {
       const deletePromises = selectedItems.map(id => 
-        fetch(`/api/media/${id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        })
+        authFetch(`/api/media/${id}`, { method: 'DELETE' })
       )
 
       const responses = await Promise.all(deletePromises)
@@ -158,10 +149,8 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       ].map((item, index) => ({ ...item, sortIndex: index }))
 
       // Update backend with new order
-      const response = await fetch('/api/media/reorder', {
+      const response = await authFetch('/api/media/reorder', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ mediaIds: ordered.map(m => m.id) }),
       })
 

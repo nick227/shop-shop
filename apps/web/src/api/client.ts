@@ -23,6 +23,7 @@ import {
 } from '@packages/sdk'
 import type { components, paths } from '../types/api'
 import type { ApiError } from './types/api-contracts'
+import { useAuthStore } from '@stores/authStore'
 
 interface ApiErrorResponse {
   error?: string
@@ -168,9 +169,34 @@ class ApiClient {
         }
         const hasAuthHeader = this.checkHasAuthHeader(context.init.headers)
 
+        // Only auto-logout on 401 if token is actually invalid/expired, not for other auth failures
         if (context.response.status === 401 && hasAuthHeader) {
-          this.setToken(undefined)
-          window.dispatchEvent(new CustomEvent('auth:logout'))
+          const currentToken = useAuthStore.getState().token
+          if (currentToken) {
+            // Check error message to determine if token is actually invalid
+            try {
+              const responseClone = context.response.clone()
+              const errorData = await responseClone.json().catch(() => ({}))
+              const errorMessage = errorData.error || errorData.message || ''
+              
+              // Only logout for specific token invalidation errors
+              const lower = errorMessage.toLowerCase()
+              const isTokenInvalid = lower.includes('invalid token') ||
+                                 lower.includes('token invalid') ||
+                                 lower.includes('expired token') ||
+                                 lower.includes('token expired') ||
+                                 lower.includes('jwt expired') ||
+                                 lower.includes('jwt malformed')
+              
+              if (isTokenInvalid) {
+                this.setToken(undefined)
+                useAuthStore.getState().clearAuth()
+                window.dispatchEvent(new CustomEvent('auth:logout'))
+              }
+            } catch {
+              // If we can't parse error, be conservative and don't logout
+            }
+          }
         }
         return context.response
       },
@@ -196,14 +222,17 @@ class ApiClient {
     
     // Handle Headers instance (from Fetch API)
     if (headers instanceof Headers) {
-      return headers.has('authorization')
+      const value = headers.get('authorization') ?? headers.get('Authorization')
+      return typeof value === 'string' && /^Bearer\s+\S+$/i.test(value.trim())
     }
     
     // Handle plain object or Record<string, string>
     if (typeof headers === 'object') {
-      return Object.entries(headers).some(
-        ([key, val]) => key.toLowerCase() === 'authorization' && Boolean(val)
-      )
+      return Object.entries(headers).some(([key, val]) => {
+        if (key.toLowerCase() !== 'authorization') return false
+        if (typeof val !== 'string') return false
+        return /^Bearer\s+\S+$/i.test(val.trim())
+      })
     }
     
     return false
@@ -313,8 +342,10 @@ class ApiClient {
       headers.set('Content-Type', 'application/json')
     }
 
-    if (this.token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${this.token}`)
+    // Read token from useAuthStore at request time
+    const currentToken = useAuthStore.getState().token
+    if (currentToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${currentToken}`)
     }
 
     if (method !== 'GET' && (init.idempotencyKey || init.enableAutoRetry)) {
@@ -376,10 +407,33 @@ class ApiClient {
     return requestId
   }
 
-  private handleUnauthorizedContractResponse(response: Response, headers: Headers): void {
+  private async handleUnauthorizedContractResponse(response: Response, headers: Headers): Promise<void> {
     if (response.status === 401 && headers.has('Authorization')) {
-      this.setToken(undefined)
-      window.dispatchEvent(new CustomEvent('auth:logout'))
+      const currentToken = useAuthStore.getState().token
+      if (currentToken) {
+        // Check error message to determine if token is actually invalid
+        try {
+          const errorData = await response.clone().json().catch(() => ({}))
+          const errorMessage = errorData.error || errorData.message || ''
+          
+          // Only logout for specific token invalidation errors
+          const lower = errorMessage.toLowerCase()
+          const isTokenInvalid = lower.includes('invalid token') ||
+                             lower.includes('token invalid') ||
+                             lower.includes('expired token') ||
+                             lower.includes('token expired') ||
+                             lower.includes('jwt expired') ||
+                             lower.includes('jwt malformed')
+          
+          if (isTokenInvalid) {
+            this.setToken(undefined)
+            useAuthStore.getState().clearAuth()
+            window.dispatchEvent(new CustomEvent('auth:logout'))
+          }
+        } catch {
+          // If we can't parse error, be conservative and don't logout
+        }
+      }
     }
   }
 
@@ -433,7 +487,7 @@ class ApiClient {
     const payload = await this.parseContractResponse(response)
 
     if (!response.ok) {
-      this.handleUnauthorizedContractResponse(response, request.headers)
+      await this.handleUnauthorizedContractResponse(response, request.headers)
       return this.handleContractErrorRetry(
         this.createContractResponseError(response, payload, requestId),
         {
@@ -552,17 +606,25 @@ class ApiClient {
    * Get SDK configuration with auth headers and middleware
    */
   private getConfig(): Configuration {
-    if (!this.config || this.token !== this.lastToken) {
+    const storeToken = useAuthStore.getState().token
+    const effectiveToken = this.token ?? storeToken
+
+    if (!this.config || effectiveToken !== this.lastToken) {
+      // If token changes outside of apiClient.setToken (e.g. store hydration),
+      // ensure we rebuild SDK API instances with new config.
+      if (effectiveToken !== this.lastToken) {
+        this.apiInstances = {}
+      }
       this.config = new Configuration({
         basePath: this.baseUrl.replace(/\/$/, ''), // Generated SDK paths are server-rooted: /stores, /orders, /payments, etc.
-        headers: this.token
+        headers: effectiveToken
           ? {
-              Authorization: 'Bearer ' + this.token + '',
+              Authorization: 'Bearer ' + effectiveToken + '',
             }
           : {},
         middleware: this.middleware,
       })
-      this.lastToken = this.token
+      this.lastToken = effectiveToken
     }
     return this.config
   }
@@ -571,17 +633,23 @@ class ApiClient {
    * Get SDK configuration for auth endpoints (uses /auth/v1 prefix)
    */
   private getAuthConfig(): Configuration {
-    if (!this.authConfig || this.token !== this.lastToken) {
+    const storeToken = useAuthStore.getState().token
+    const effectiveToken = this.token ?? storeToken
+
+    if (!this.authConfig || effectiveToken !== this.lastToken) {
+      if (effectiveToken !== this.lastToken) {
+        this.apiInstances = {}
+      }
       this.authConfig = new Configuration({
         basePath: `${this.baseUrl.replace(/\/$/, '')}/auth/v1`, // Auth endpoints use /auth/v1 prefix
-        headers: this.token
+        headers: effectiveToken
           ? {
-              Authorization: 'Bearer ' + this.token + '',
+              Authorization: 'Bearer ' + effectiveToken + '',
             }
           : {},
         middleware: this.middleware,
       })
-      this.lastToken = this.token
+      this.lastToken = effectiveToken
     }
     return this.authConfig
   }

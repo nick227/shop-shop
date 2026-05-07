@@ -1,27 +1,16 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '@stores/authStore'
+import { authFetch } from '@shared/lib/auth/authFetch'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button, Input } from '@shared/ui/primitives'
 import { toast } from 'sonner'
 
-function getApiBase(): string {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-}
-
 export default function AdminAffiliateDetailPage() {
   const { affiliateId } = useParams<{ affiliateId: string }>()
-  const token = useAuthStore((s) => s.token)
   const queryClient = useQueryClient()
-
-  const apiBase = getApiBase()
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -30,7 +19,7 @@ export default function AdminAffiliateDetailPage() {
   const profileQuery = useQuery({
     queryKey: ['admin-affiliate', affiliateId],
     queryFn: async () => {
-      const res = await fetch(`${apiBase}/api/affiliates`, { headers })
+      const res = await authFetch('/api/affiliates')
       if (!res.ok) throw new Error('Failed to load')
       const data = (await res.json()) as { affiliates: Record<string, unknown>[] }
       const found = data.affiliates.find((a) => a.id === affiliateId)
@@ -43,7 +32,7 @@ export default function AdminAffiliateDetailPage() {
   const commissionsQuery = useQuery({
     queryKey: ['admin-affiliate-commissions', affiliateId],
     queryFn: async () => {
-      const res = await fetch(`${apiBase}/api/affiliates/me/commissions`, { headers })
+      const res = await authFetch('/api/affiliates/me/commissions')
       if (!res.ok) throw new Error('Failed to load commissions')
       return res.json() as Promise<{ commissions: Record<string, unknown>[]; total: number }>
     },
@@ -52,9 +41,8 @@ export default function AdminAffiliateDetailPage() {
 
   const payoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/payout`, {
+      const res = await authFetch(`/api/affiliates/${affiliateId}/payout`, {
         method: 'POST',
-        headers,
         body: JSON.stringify({
           periodStart: new Date(periodStart).toISOString(),
           periodEnd: new Date(periodEnd).toISOString(),

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@stores/authStore'
 
 interface LikePostParams {
   postId: string;
@@ -9,7 +10,7 @@ interface LikePostParams {
  * TODO: Add to OpenAPI spec and regenerate SDK;
  */
 async function likePostAPI(postId: string): Promise<void> {
-  const token = localStorage.getItem('token')
+  const token = useAuthStore.getState().token
   const response = await fetch('http://localhost:3000/river/posts/' + postId + '/like', {
     method: 'POST',
     headers: {
@@ -26,7 +27,7 @@ async function likePostAPI(postId: string): Promise<void> {
  * TODO: Add to OpenAPI spec and regenerate SDK;
  */
 async function unlikePostAPI(postId: string): Promise<void> {
-  const token = localStorage.getItem('token')
+  const token = useAuthStore.getState().token
   const response = await fetch('http://localhost:3000/river/posts/' + postId + '/like', {
     method: 'DELETE',
     headers: {

@@ -1,26 +1,11 @@
-import { useAuthStore } from '@stores/authStore'
+import { authFetch } from '@shared/lib/auth/authFetch'
 import { AffiliateApiError, type AffiliateAccountStatus } from './affiliateApiError'
 
-function getApiBase(): string {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-}
-
 export function useAffiliateApi() {
-  const token = useAuthStore((s) => s.token)
-  const base = getApiBase()
-
   async function request<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-    const res = await fetch(`${base}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
-    })
+    const res = await authFetch<T>(path, options)
     if (!res.ok) {
-      const data: { error?: string; message?: string; status?: AffiliateAccountStatus } =
-        await res.json().catch(() => ({}))
+      const data = await res.json().catch(() => ({})) as { error?: string; message?: string; status?: AffiliateAccountStatus }
       throw new AffiliateApiError({
         message: data.error || data.message || `Request failed (${res.status})`,
         httpStatus: res.status,

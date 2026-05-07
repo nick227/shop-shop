@@ -45,6 +45,8 @@ export function ItemCard({ item }: Readonly<ItemCardProps>) {
       item})
   }
 
+  const canAddToCart = Boolean(item.isActive) && !item.isSoldOut
+
   return (
     <Card className="flex overflow-hidden relative flex-col h-full transition-colors border-border bg-card hover:border-primary/40">
       
@@ -77,6 +79,15 @@ export function ItemCard({ item }: Readonly<ItemCardProps>) {
             {!item.isActive && <Badge variant="warning">Inactive</Badge>}
           </div>
           
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Add to cart"
+            disabled={!canAddToCart || addToCart.isPending}
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </Card>

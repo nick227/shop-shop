@@ -23,7 +23,7 @@ describe('EnhancedMediaGalleryManager - HTML fallback regression', () => {
     )
 
     expect(
-      await screen.findByText(/Failed to parse \/media response as JSON/i)
+      await screen.findByText(/Failed to parse \/api\/media response as JSON/i)
     ).toBeInTheDocument()
 
     expect(
@@ -31,8 +31,8 @@ describe('EnhancedMediaGalleryManager - HTML fallback regression', () => {
     ).toBeInTheDocument()
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/media?storeId=store-id&itemId=new-item-id',
-      expect.objectContaining({ credentials: 'include' })
+      expect.stringContaining('/api/media?storeId=store-id&itemId=new-item-id'),
+      expect.any(Object)
     )
   })
 })

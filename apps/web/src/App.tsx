@@ -6,11 +6,10 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { useEffect } from 'react'
 import { apiClient } from './api/client'
-import { useAuthStore } from './stores/authStore'
+import { useAuthStore } from '@stores/authStore'
 import { ErrorBoundary } from '@shared/ui/ErrorBoundary'
 import { Toaster } from '@shared/ui/primitives'
 import { AuthProvider } from './features/auth/context/AuthContext'
-// Use a relative import here to avoid TS path-alias resolution issues in some editors/tooling.
 import { setupViewTransitions } from './shared/lib/utils/view-transitions'
 
 // Create QueryClient instance;

@@ -4,6 +4,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { MediaApiResponse } from '@api/types'
+import { authPost } from '@shared/lib/auth/authFetch'
 
 interface UploadMediaInput {
   file: File;
@@ -17,7 +18,7 @@ export function useMediaUpload() {
   const queryClient = useQueryClient()
 
   return useMutation<MediaApiResponse, Error, UploadMediaInput>({
-    mutationFn: async (input: UploadMediaInput) => {
+    mutationFn: async (input: UploadMediaInput): Promise<MediaApiResponse> => {
       const formData = new FormData()
       formData.append('file', input.file)
       
@@ -37,22 +38,15 @@ export function useMediaUpload() {
         formData.append('sortIndex', input.sortIndex.toString())
       }
 
-      // Upload via fetch since SDK doesn't handle multipart/form-data well;
-      const token = localStorage.getItem('token')
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3005'
-      
-      const response = await fetch('' + apiUrl + '/media/upload', {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: 'Bearer ' + token + '' } : {})},
-        body: formData})
+      // Upload via authFetch since SDK doesn't handle multipart/form-data well;
+      const response = await authPost('/api/media/upload', formData)
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await response.json() as { error?: string }
         throw new Error(error.error || 'Upload failed')
       }
 
-      return response.json()
+      return response.json() as Promise<MediaApiResponse>
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['media', 'list'] })

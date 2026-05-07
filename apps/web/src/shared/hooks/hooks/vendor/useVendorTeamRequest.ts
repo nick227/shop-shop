@@ -1,23 +1,17 @@
-import { useAuthStore } from '@stores/authStore'
 import { getVendorApiBase } from './vendorTeamApi'
+import { authFetch } from '@shared/lib/auth/authFetch'
 
 export function useVendorTeamRequest() {
-  const token = useAuthStore((s) => s.token)
   const base = getVendorApiBase()
 
   return async function teamRequest<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${base}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
-    })
+    const response = await authFetch<T>(`${base}${path}`, options)
+    
     if (!response.ok) {
-      const data: { error?: string; message?: string } = await response.json().catch(() => ({}))
+      const data = await response.json().catch(() => ({})) as { error?: string; message?: string }
       throw new Error(data.error || data.message || 'Request failed')
     }
+    
     if (response.status === 204) return null as T
     return response.json() as Promise<T>
   }

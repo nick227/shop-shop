@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { authPost } from '@shared/lib/auth/authFetch'
+import { readHttpErrorFromResponse } from '@api/readHttpError'
 
 interface MediaUploaderProps {
   storeId?: string
@@ -27,25 +29,18 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     if (acceptedFiles.length === 0) return
 
     try {
-      const token = localStorage.getItem('token')
       const uploadPromises = acceptedFiles.map(async (file) => {
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('storeId', storeId || '')
-        formData.append('itemId', itemId || '')
+        if (storeId) formData.append('storeId', storeId)
+        if (itemId) formData.append('itemId', itemId)
 
-        const response = await fetch('/api/media/upload', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        })
+        const response = await authPost('/api/media/upload', formData)
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Upload failed')
+          const { message, body } = await readHttpErrorFromResponse(response.clone())
+          const bodyError = body && typeof body.error === 'string' ? body.error : undefined
+          throw new Error(bodyError || message || 'Upload failed')
         }
 
         return response.json()
