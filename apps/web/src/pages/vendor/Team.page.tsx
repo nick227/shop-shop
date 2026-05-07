@@ -6,11 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives/
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import {
-  useVendorStores,
-  useVendorStoreScope,
-  useVendorTeamRequest,
-} from '@shared/hooks/hooks/vendor'
+import { useVendorStores, useVendorTeamRequest } from '@shared/hooks/hooks/vendor'
+import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { ShieldCheck, Mail, Users, X } from 'lucide-react'
 
 type TeamRolePreset =
@@ -79,7 +76,7 @@ export default function VendorTeamPage() {
   const queryClient = useQueryClient()
   const teamRequest = useVendorTeamRequest()
   const { data: stores = [], isLoading: storesLoading } = useVendorStores()
-  const { selectedStoreId, selectedStore, setSelectedStoreId } = useVendorStoreScope(stores)
+  const { selectedStoreId, selectedStore } = useVendorActiveStore()
 
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -181,26 +178,8 @@ export default function VendorTeamPage() {
     <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6">
       <PageHeader
         title="Team"
-        description="Invite people who can access and operate this store. Use Drivers for delivery assignments."
+        description="Invite people who can access and operate this store. Use Drivers for delivery assignments. Switch the active store from the header."
       />
-
-      <div className="flex flex-col gap-2 sm:max-w-sm">
-        <label className="text-sm font-medium" htmlFor="team-store">
-          Store
-        </label>
-        <select
-          id="team-store"
-          value={selectedStoreId}
-          onChange={(event) => setSelectedStoreId(event.target.value)}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          {stores.map((store) => (
-            <option key={store.id} value={store.id}>
-              {store.name}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <Card>
         <CardHeader>

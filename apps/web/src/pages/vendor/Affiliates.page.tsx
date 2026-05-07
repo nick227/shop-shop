@@ -5,7 +5,8 @@ import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge } from '@shared/ui/primitives'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { useVendorStores, useVendorStoreScope, useVendorTeamRequest } from '@shared/hooks/hooks/vendor'
+import { useVendorStores, useVendorTeamRequest } from '@shared/hooks/hooks/vendor'
+import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { formatPriceCurrency, formatDateShort } from '@shared/lib/utils/format'
 import { Users } from 'lucide-react'
 
@@ -51,7 +52,7 @@ function metricLabel(n: number, singular: string, plural = `${singular}s`) {
 export default function VendorAffiliatesPage() {
   const vendorRequest = useVendorTeamRequest()
   const { data: stores = [], isLoading: storesLoading } = useVendorStores()
-  const { selectedStoreId, setSelectedStoreId } = useVendorStoreScope(stores)
+  const { selectedStoreId } = useVendorActiveStore()
 
   const salesQuery = useQuery({
     queryKey: ['affiliate-sales', selectedStoreId],
@@ -89,22 +90,8 @@ export default function VendorAffiliatesPage() {
     <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6">
       <PageHeader
         title="Affiliate Sales"
-        description="See orders, revenue, and customers brought to this store through Shop-shop affiliates."
+        description="See orders, revenue, and customers brought to this store through Shop-shop affiliates. Switch the active store from the header."
       />
-
-      <div className="flex flex-col gap-2 sm:max-w-sm">
-        <label className="text-sm font-medium" htmlFor="affiliates-store">Store</label>
-        <select
-          id="affiliates-store"
-          value={selectedStoreId}
-          onChange={(event) => setSelectedStoreId(event.target.value)}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          {stores.map((store) => (
-            <option key={store.id} value={store.id}>{store.name}</option>
-          ))}
-        </select>
-      </div>
 
       {salesQuery.isLoading ? (
         <div className="flex min-h-[240px] items-center justify-center">

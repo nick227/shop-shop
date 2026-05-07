@@ -7,11 +7,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { OrderStatus, OrderResponse, StoreResponse } from '@api/types'
-import { useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor/useVendorRealtimeOrders'
 import { useAuth } from '@features/auth/hooks/useAuth'
 import { useAuthStore } from '@stores/authStore'
 import { useVendorOrders, usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
-import { useVendorStores } from '@shared/hooks/hooks/vendor/useVendorStores'
+import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { useUpdateOrderStatus } from '@shared/hooks/hooks/vendor/useUpdateOrderStatus'
 import { usePagination } from '@shared/hooks/hooks/usePagination'
 import { Button, Badge, Spinner, Pagination } from '@shared/ui/primitives'
@@ -87,22 +86,18 @@ export default function VendorOrdersPage() {
   const token = useAuthStore((state) => state.token)
   const haptics = useHaptics()
 
-  const { data: vendorStores = [] } = useVendorStores()
-  const vendorStoreIds = useMemo(() => vendorStores.map((s: any) => s.id).filter(Boolean), [vendorStores])
-  const driverQueryKey = useMemo(() => vendorStoreIds.join('|'), [vendorStoreIds])
+  const { selectedStoreId } = useVendorActiveStore()
 
   const { data: driversByStore = {} } = useQuery({
-    queryKey: ['store-delivery-drivers', driverQueryKey],
-    enabled: !!token && vendorStoreIds.length > 0,
+    queryKey: ['store-delivery-drivers', selectedStoreId],
+    enabled: !!token && Boolean(selectedStoreId),
     queryFn: async () => {
-      const entries = await Promise.all(
-        vendorStoreIds.map(async (storeId) => [storeId, await fetchStoreDrivers(storeId, token)] as const),
-      )
-      return Object.fromEntries(entries)
+      const list = await fetchStoreDrivers(selectedStoreId!, token)
+      return { [selectedStoreId!]: list }
     },
   })
 
-  // Fetch orders
+  // Fetch orders (scoped to active store from layout)
   const {
     data: orders = [],
     isLoading,
@@ -111,10 +106,13 @@ export default function VendorOrdersPage() {
   } = useVendorOrders({
     status: selectedFilter === 'ALL' ? undefined : selectedFilter,
     refetchInterval: 3000,
+    storeId: selectedStoreId || undefined,
   })
 
   // Get pending count
-  const { data: pendingCount = 0 } = usePendingOrderCount()
+  const { data: pendingCount = 0 } = usePendingOrderCount(selectedStoreId || undefined)
+
+  const updateStatusMutation = useUpdateOrderStatus()
 
   // Auto-accept new orders
   useEffect(() => {
@@ -128,15 +126,6 @@ export default function VendorOrdersPage() {
       }, 1000)
     }
   }, [orders, autoAccept])
-
-  // Real-time subscriptions
-  useVendorRealtimeOrders({
-    storeIds: vendorStoreIds,
-    enableSound: true,
-    enableDesktopNotification: true,
-  })
-
-  const updateStatusMutation = useUpdateOrderStatus()
 
   const handleStatusUpdate = (orderId: string, newStatus: OrderStatus) => {
     haptics.medium()

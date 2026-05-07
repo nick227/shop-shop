@@ -5,10 +5,12 @@
 import { useNavigate } from 'react-router-dom'
 import { usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
 import { Button, Badge } from '@shared/ui/primitives'
+import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 
 export function OrderCountWidget() {
   const navigate = useNavigate()
-  const { data: pendingCount, isLoading } = usePendingOrderCount()
+  const { selectedStoreId } = useVendorActiveStore()
+  const { data: pendingCount, isLoading } = usePendingOrderCount(selectedStoreId || undefined)
 
   const handleClick = () => {
     navigate('/vendor/orders')
@@ -18,13 +20,13 @@ export function OrderCountWidget() {
     return (
       <div className="">
         <Button variant="ghost" size="small" onClick={handleClick}>
-          📋 Orders;
+          📋 Orders
         </Button>
       </div>
     )
   }
 
-  const hasPending = pendingCount && pendingCount > 0;
+  const hasPending = pendingCount && pendingCount > 0
   return (
     <div className="">
       <Button

@@ -12,6 +12,8 @@ import type { OrderResponse } from '@api/types'
 export interface UseVendorOrdersOptions {
   status?: string;
   refetchInterval?: number;
+  /** When set, only orders for this store (must belong to vendor). */
+  storeId?: string;
 }
 
 export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
@@ -19,7 +21,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
   const userId = user?.id
 
   return useQuery<OrderResponse[]>({
-    queryKey: ['vendor-orders', userId, options.status],
+    queryKey: ['vendor-orders', userId, options.status, options.storeId],
     queryFn: async () => {
       // Fetch vendor stores once, then fetch orders once. Dedupe by id.
       const vendorStores = await stores.list()
@@ -29,12 +31,19 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
       }
 
       const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      if (options.storeId && !storeIds.has(options.storeId)) {
+        return []
+      }
+      const scopeIds = options.storeId
+        ? new Set<string>([options.storeId])
+        : storeIds
+
       const rawOrders = await orders.list()
       const allOrders = rawOrders.map(mapOrder)
 
       // Filter to vendor stores + optional status.
       const filtered = allOrders.filter((order) => {
-        if (!storeIds.has((order as any).storeId)) return false
+        if (!scopeIds.has((order as any).storeId)) return false
         if (options.status && order.status !== options.status) return false
         return true
       })
@@ -60,20 +69,23 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
 /**
  * Get count of pending orders (PLACED, ACCEPTED, PREPARING, READY)
  */
-export function usePendingOrderCount() {
+export function usePendingOrderCount(storeId?: string) {
   const { user } = useAuth()
   const userId = user?.id
 
   return useQuery({
-    queryKey: ['vendor-pending-orders-count', userId],
+    queryKey: ['vendor-pending-orders-count', userId, storeId],
     queryFn: async () => {
       const vendorStores = await stores.list()
       
       if (vendorStores.length === 0) return 0
 
-      const storeIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      const vendorStoreIds = new Set(vendorStores.map((s: any) => s.id).filter(Boolean))
+      if (storeId && !vendorStoreIds.has(storeId)) return 0
+      const scopeIds = storeId ? new Set<string>([storeId]) : vendorStoreIds
+
       const allOrders = (await orders.list()) as unknown as OrderResponse[]
-      const filtered = allOrders.filter((order) => storeIds.has((order as any).storeId))
+      const filtered = allOrders.filter((order) => scopeIds.has((order as any).storeId))
       
       // Count pending orders (using consolidated helper)
       const byId = new Set<string>()

@@ -5,8 +5,17 @@ export type VendorStorePick = { readonly id: string; readonly name?: string }
 
 const STORE_QUERY = 'storeId'
 
+const VENDOR_STORE_PATH = /^\/vendor\/stores\/([^/]+)(\/.*)?$/
+
+function pathStoreIdFromLocation(pathname: string, stores: readonly VendorStorePick[]): string {
+  const match = pathname.match(VENDOR_STORE_PATH)
+  const id = match?.[1]
+  if (id && stores.some((s) => s.id === id)) return id
+  return ''
+}
+
 /**
- * Syncs `?storeId=` with the vendor people pages; auto-fills when missing or invalid.
+ * Syncs `?storeId=` across vendor routes; respects `/vendor/stores/:id/...` path; auto-fills when missing or invalid.
  */
 export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
   const [searchParams] = useSearchParams()
@@ -14,12 +23,17 @@ export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
   const location = useLocation()
 
   const urlStoreId = searchParams.get(STORE_QUERY) ?? ''
+  const pathStoreId = useMemo(
+    () => pathStoreIdFromLocation(location.pathname, stores),
+    [location.pathname, stores]
+  )
 
   const selectedStoreId = useMemo(() => {
     if (stores.length === 0) return ''
     if (urlStoreId && stores.some((s) => s.id === urlStoreId)) return urlStoreId
+    if (pathStoreId) return pathStoreId
     return stores[0]!.id
-  }, [stores, urlStoreId])
+  }, [stores, urlStoreId, pathStoreId])
 
   useEffect(() => {
     if (stores.length === 0) return
@@ -33,9 +47,15 @@ export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
   const setSelectedStoreId = useCallback(
     (storeId: string) => {
       if (!stores.some((s) => s.id === storeId)) return
+      const pathMatch = location.pathname.match(/^(\/vendor\/stores\/)[^/]+(\/.*)?$/)
+      let pathname = location.pathname
+      if (pathMatch) {
+        const [, prefix, suffix] = pathMatch
+        pathname = `${prefix}${storeId}${suffix ?? ''}`
+      }
       const next = new URLSearchParams(searchParams)
       next.set(STORE_QUERY, storeId)
-      navigate({ pathname: location.pathname, search: `?${next.toString()}` })
+      navigate({ pathname, search: `?${next.toString()}` })
     },
     [stores, searchParams, navigate, location.pathname]
   )
