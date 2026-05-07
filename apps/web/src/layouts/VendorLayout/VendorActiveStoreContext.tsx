@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- provider + hook belong together for vendor shell */
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import {
   useVendorStoreScope,

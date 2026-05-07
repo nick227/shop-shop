@@ -29,12 +29,7 @@ export function OrderCountWidget() {
   const hasPending = pendingCount && pendingCount > 0
   return (
     <div className="">
-      <Button
-        variant={hasPending ? 'primary' : 'ghost'}
-        size="small"
-        onClick={handleClick}
-        className={hasPending ? 'gap-2' : 'gap-2'}
-      >
+      <Button variant={hasPending ? 'primary' : 'ghost'} size="small" onClick={handleClick} className="gap-2">
         <span className="">📋</span>
         <span>Orders</span>
         {hasPending && (

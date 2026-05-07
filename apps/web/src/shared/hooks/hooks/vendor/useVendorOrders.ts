@@ -39,7 +39,7 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
         : storeIds
 
       const rawOrders = await orders.list()
-      const allOrders = rawOrders.map(mapOrder)
+      const allOrders = rawOrders.map((row) => mapOrder(row))
 
       // Filter to vendor stores + optional status.
       const filtered = allOrders.filter((order) => {

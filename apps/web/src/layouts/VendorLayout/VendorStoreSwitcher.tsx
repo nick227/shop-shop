@@ -8,7 +8,7 @@ export function VendorStoreSwitcher() {
   const { stores, selectedStoreId, setSelectedStoreId } = useVendorActiveStore()
 
   if (stores.length === 0) {
-    return null
+    return
   }
 
   return (
