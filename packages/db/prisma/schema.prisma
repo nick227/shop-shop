@@ -69,6 +69,13 @@ enum DeliveryType {
   PICKUP
 }
 
+enum DeliveryMode {
+  PICKUP
+  STORE_MANAGED_DELIVERY
+  PLATFORM_DRIVER
+  THIRD_PARTY_PROVIDER
+}
+
 enum DeliveryProvider {
   IN_HOUSE
   DOORDASH_DRIVE
@@ -99,6 +106,37 @@ enum StoreStatus {
   ACTIVE
   PAUSED
   DISABLED
+}
+
+enum StoreType {
+  MEAL_PREP
+  BAKERY
+  COFFEE
+  SPECIALTY
+  GENERAL
+}
+
+enum PriceRange {
+  BUDGET
+  MODERATE
+  PREMIUM
+}
+
+enum TagCategory {
+  DIETARY
+  FREE_FROM
+  CONTAINS_ALLERGEN
+  CUISINE
+  FEATURE
+  MEAL_TIME
+  ITEM_TYPE
+  OCCASION
+}
+
+enum TagTarget {
+  STORE
+  ITEM
+  BOTH
 }
 
 enum TipStatus {
@@ -183,6 +221,8 @@ model Store {
 
   isPublished      Boolean     @default(false)
   status           StoreStatus @default(ACTIVE)
+  storeType        StoreType?
+  priceRange       PriceRange?
   disabledAt       DateTime?
   disabledByUserId String?     @db.Char(36)
   disabledReason   String?     @db.Text
@@ -223,6 +263,7 @@ model Store {
   stripeAccountId      String?
   stripeOnboarded      Boolean         @default(false)
   commissionRate       Decimal?        @db.Decimal(5, 2)
+  tags                 StoreTag[]
   media                MediaAsset[]
   items                Item[]
   orders               Order[]
@@ -302,6 +343,7 @@ model Item {
   isDairyFree   Boolean @default(false)
   spicyLevel    Int? // 0-5 scale
 
+  tags         ItemTag[]
   media        MediaAsset[]
   cartItems    CartItem[]
   orderItems   OrderItem[]
@@ -387,6 +429,7 @@ model Order {
   /// Initial checkout state; transitions to PLACED after Stripe payment_intent.succeeded. Invariant: status === PLACED ⇒ paymentStatus === PAID (enforced in OrderService + PATCH).
   status                 OrderStatus   @default(PENDING_PAYMENT)
   deliveryType           DeliveryType
+  deliveryMode           DeliveryMode   @default(PICKUP)
   paymentStatus          PaymentStatus @default(UNPAID)
   subtotal               Decimal       @db.Decimal(10, 2)
   fees                   Decimal       @db.Decimal(10, 2)
@@ -1110,4 +1153,53 @@ enum BundlePricingType {
   DISCOUNT_PERCENT // Bundle gets X% off total
   DISCOUNT_AMOUNT // Bundle gets $X off total
   BEST_DEAL // Show best available discount
+}
+
+// ============================================================================
+// SEARCH TAGS (flexible M2M attribute system)
+// ============================================================================
+
+model Tag {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  label       String
+  category    TagCategory
+  target      TagTarget   @default(BOTH)
+  isPublic    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  description String?
+
+  stores    StoreTag[]
+  items     ItemTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([target])
+  @@index([isPublic])
+}
+
+model StoreTag {
+  storeId String  @db.Char(36)
+  tagId   String
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([storeId, tagId])
+  @@index([tagId])
+  @@index([storeId])
+}
+
+model ItemTag {
+  itemId String  @db.Char(36)
+  tagId  String
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+  @@index([tagId])
+  @@index([itemId])
 }

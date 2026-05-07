@@ -5,28 +5,32 @@ import { seedAustinStores } from '../src/scripts/seed-austin-stores.js'
 import { seedUsers } from '../src/scripts/seed-users.js'
 import { seedGeocodingCache } from '../seed-geocoding-cache.js'
 import { seedCityCache } from '../seed-city-cache.js'
+import { seedCanonicalTags } from '../src/scripts/seed-tags.js'
 
 const prisma = new PrismaClient()
 
 async function main(): Promise<void> {
   console.log('🌱 Seeding database...\n')
 
-  console.log('[1/6] Cleaning tables...')
+  console.log('[1/7] Cleaning tables...')
   await cleanSeedTables(prisma)
 
-  console.log('[2/6] Comprehensive user accounts...')
+  console.log('[2/7] Canonical search tags...')
+  await seedCanonicalTags(prisma)
+
+  console.log('[3/7] Comprehensive user accounts...')
   await seedUsers(prisma)
 
-  console.log('[3/6] Core demo accounts + schema coverage...')
+  console.log('[4/7] Core demo accounts + schema coverage...')
   await seedFullDemo(prisma)
 
-  console.log('[4/6] Austin store catalog...')
+  console.log('[5/7] Austin store catalog...')
   await seedAustinStores(prisma)
 
-  console.log('[5/6] Geocoding cache — ZIP codes...')
+  console.log('[6/7] Geocoding cache — ZIP codes...')
   await seedGeocodingCache(prisma)
 
-  console.log('[6/6] Geocoding cache — cities...')
+  console.log('[7/7] Geocoding cache — cities...')
   await seedCityCache(prisma)
 
   console.log('\n✅ Seed complete.\n')

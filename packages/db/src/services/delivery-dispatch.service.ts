@@ -38,6 +38,7 @@ export async function dispatchOrderDelivery(input: DispatchDeliveryInput): Promi
       storeId: true,
       status: true,
       deliveryType: true,
+      deliveryMode: true,
       deliveryLatitude: true,
       deliveryLongitude: true,
       addressSnapshot: true,
@@ -46,6 +47,19 @@ export async function dispatchOrderDelivery(input: DispatchDeliveryInput): Promi
   if (!order) throw new Error('Order not found')
   if (order.deliveryType !== 'DELIVERY') throw new Error('Order is not a delivery order')
   if (order.status !== 'READY') throw new Error('Order must be READY to dispatch')
+  if (order.deliveryMode === 'PICKUP') throw new Error('PICKUP orders cannot be dispatched')
+  
+  // Validate delivery mode consistency
+  const validModeCombinations = {
+    'IN_HOUSE': ['STORE_MANAGED_DELIVERY'],
+    'DOORDASH_DRIVE': ['THIRD_PARTY_PROVIDER'],
+    'UBER_DIRECT': ['THIRD_PARTY_PROVIDER'],
+  }
+  
+  const allowedModes = validModeCombinations[input.provider] || []
+  if (!allowedModes.includes(order.deliveryMode)) {
+    throw new Error(`Delivery mode ${order.deliveryMode} is not compatible with provider ${input.provider}`)
+  }
   if (order.deliveryLatitude == null || order.deliveryLongitude == null) {
     throw new Error('Delivery requires coordinates')
   }
