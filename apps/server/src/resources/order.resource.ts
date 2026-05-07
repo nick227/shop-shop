@@ -12,6 +12,7 @@ import {
   publishOrderStatusChanged,
   assertValidTransition,
 } from '@packages/db'
+import { snapshotBundle } from '@packages/db/services'
 import { assertOrderAccess } from './order-access.js'
 import {
   asOrderBeforeCreateInput,
@@ -101,7 +102,7 @@ export const orderResource = defineResource({
   },
   access: {
     create: ['USER', 'VENDOR', 'ADMIN'],
-    read: [],
+    read: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
     update: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
     delete: ['ADMIN'],
     list: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
@@ -257,6 +258,31 @@ export const orderResource = defineResource({
         )
       }
 
+      // Build OrderItem creates — snapshot bundle contents for immutable order history
+      const cartItems = await prisma.cartItem.findMany({
+        where: { cartId: input.cartId },
+        include: {
+          item: { select: { id: true } },
+          bundle: { select: { id: true } },
+        },
+      })
+
+      const orderItemCreates = await Promise.all(
+        cartItems.map(async (ci) => {
+          const base = {
+            titleSnapshot: ci.titleSnapshot,
+            unitPrice: ci.unitPrice,
+            quantity: ci.quantity,
+            optionsJson: ci.optionsJson,
+            notes: ci.notes,
+          }
+          if (ci.bundleId) {
+            return { ...base, bundleId: ci.bundleId, bundleSnapshot: await snapshotBundle(ci.bundleId) }
+          }
+          return { ...base, itemId: ci.itemId }
+        }),
+      )
+
       return {
         userId,
         storeId: totals.storeId,
@@ -277,6 +303,7 @@ export const orderResource = defineResource({
         deliveryLatitude: persistPair ? persistPair.lat.toFixed(8) : null,
         deliveryLongitude: persistPair ? persistPair.lng.toFixed(8) : null,
         deliveryDistanceMiles,
+        items: { create: orderItemCreates },
       }
     },
     afterCreate: async (result) => {

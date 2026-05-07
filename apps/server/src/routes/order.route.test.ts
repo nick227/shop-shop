@@ -99,6 +99,19 @@ describe('Order Routes E2E', () => {
       expect(body.id).toBe(order.id)
     })
 
+    it('should block a different customer from viewing the order', async () => {
+      const otherUser = await createAuthenticatedUser('USER')
+      const order = await createTestOrder(user.id, storeId)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/orders/${order.id}`,
+        headers: authHeaders(otherUser.token),
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
     it('should allow admin to view any order', async () => {
       const order = await createTestOrder(user.id, storeId)
 
