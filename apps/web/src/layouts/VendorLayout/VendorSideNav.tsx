@@ -14,7 +14,6 @@ export function VendorSideNav() {
 
   const getStoreEditPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/edit`
   const getStoreItemsPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/items`
-  const getStoreRiverPath = (storeId: string) => `${STORE_BASE_PATH}${storeId}/river`
 
   const activeStoreTitle =
     selectedStoreId && selectedStore?.name?.trim() ? selectedStore.name.trim() : 'Store'
@@ -117,20 +116,6 @@ export function VendorSideNav() {
         >
           <span className={styles.navIcon}>🍽️</span>
           <span className={styles.navItemText}>Menu Items</span>
-        </button>
-        <button
-          type="button"
-          disabled={!storeScoped}
-          className={navClass(
-            Boolean(selectedStoreId && isActive(getStoreRiverPath(selectedStoreId))),
-          )}
-          onClick={() => {
-            if (!selectedStoreId) return
-            navigate(getStoreRiverPath(selectedStoreId))
-          }}
-        >
-          <span className={styles.navIcon}>📱</span>
-          <span className={styles.navItemText}>Store River</span>
         </button>
       </div>
     </nav>

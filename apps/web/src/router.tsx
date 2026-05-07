@@ -48,7 +48,6 @@ const ItemFormPage = lazy(() => import('./pages/vendor/ItemForm.page'))
 const StoreBundlesPage = lazy(() => import('./pages/vendor/StoreBundles.page'))
 const StoreBundleEditorPage = lazy(() => import('./pages/vendor/StoreBundleEditor.page'))
 const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
-const VendorStoreRiverPage = lazy(() => import('./pages/vendor/Bundles.page'))
 const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
 const VendorDriversPage = lazy(() => import('./pages/vendor/Drivers.page'))
 const VendorAffiliatesPage = lazy(() => import('./pages/vendor/Affiliates.page'))
@@ -300,11 +299,6 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               path: 'stores/:storeId/bundles/:bundleId/edit',
               element: lazyRoute(StoreBundleEditorPage),
               handle: { title: 'Edit Bundle' },
-            },
-            {
-              path: 'stores/:storeId/river',
-              element: lazyRoute(VendorStoreRiverPage),
-              handle: { title: 'Store River' },
             },
             {
               path: 'orders',
