@@ -26,7 +26,7 @@ The current application supports:
 - Checkout: `/checkout`
 - Order history: `/orders`
 - Order tracking: `/orders/:id`
-- Store river feed: `/river/:storeId?`
+- Store menu (auth, same as kitchen UI): `/menu`, `/menu/:storeId` — legacy redirect from `/river`
 
 ### Vendor portal
 Vendor routes are under `/vendor` and include:
@@ -35,7 +35,7 @@ Vendor routes are under `/vendor` and include:
 - Store items list: `/vendor/stores/:storeId/items`
 - Item create/edit: `/vendor/stores/:storeId/items/new`, `/vendor/stores/:storeId/items/:itemId/edit`
 - Vendor orders: `/vendor/orders`
-- Vendor store river: `/vendor/stores/:storeId/river`
+- Store bundles: `/vendor/stores/:storeId/bundles` (and create/edit under `bundles/...`)
 
 ### Customer account portal
 Customer account routes are under `/account` and include:

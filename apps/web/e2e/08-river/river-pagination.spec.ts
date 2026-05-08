@@ -6,7 +6,7 @@ import { vendorTest as test, expect } from '../fixtures/vendor-auth'
 
 test.describe('Store River - Pagination', () => {
   test.beforeEach(async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
   })
 
@@ -114,7 +114,7 @@ test.describe('Store River - Pagination', () => {
 test.describe('Store River - Infinite Scroll (Future)', () => {
   test('should support scroll-based loading', async ({ authenticatedVendor: page }) => {
     // This test is for future infinite scroll implementation
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Scroll to bottom
@@ -122,7 +122,7 @@ test.describe('Store River - Infinite Scroll (Future)', () => {
     await page.waitForTimeout(1000)
     
     // Page should handle scroll gracefully
-    expect(page.url()).toContain('/river')
+    expect(page.url()).toContain('/menu')
   })
 })
 

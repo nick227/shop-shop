@@ -6,7 +6,7 @@ import { vendorTest as test, expect } from '../fixtures/vendor-auth'
 
 test.describe('Store River - Accessibility', () => {
   test('should have proper ARIA labels on action buttons', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Create a post to test
@@ -21,7 +21,7 @@ test.describe('Store River - Accessibility', () => {
   })
 
   test('should be keyboard navigable', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Tab through elements
@@ -34,7 +34,7 @@ test.describe('Store River - Accessibility', () => {
   })
 
   test('should support screen reader text', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Create post button should have descriptive text
@@ -46,7 +46,7 @@ test.describe('Store River - Accessibility', () => {
   })
 
   test('should have semantic HTML structure', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Should have heading for page title
@@ -55,7 +55,7 @@ test.describe('Store River - Accessibility', () => {
   })
 
   test('should have sufficient color contrast', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Page should be visible and readable
@@ -65,7 +65,7 @@ test.describe('Store River - Accessibility', () => {
 
 test.describe('Store River - Edge Cases', () => {
   test('should handle extremely long post content', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     await page.getByRole('button', { name: /create post/i }).click()
     
@@ -79,7 +79,7 @@ test.describe('Store River - Edge Cases', () => {
   })
 
   test('should prevent posting over character limit', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     await page.getByRole('button', { name: /create post/i }).click()
     
@@ -92,7 +92,7 @@ test.describe('Store River - Edge Cases', () => {
   })
 
   test('should handle rapid like/unlike clicks', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Create a post
@@ -111,11 +111,11 @@ test.describe('Store River - Edge Cases', () => {
     await page.waitForTimeout(1000)
     
     // Should handle gracefully (no errors)
-    expect(page.url()).toContain('/river')
+    expect(page.url()).toContain('/menu')
   })
 
   test('should handle network errors gracefully', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Page should load even if some requests fail
@@ -123,7 +123,7 @@ test.describe('Store River - Edge Cases', () => {
   })
 
   test('should handle empty media array', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     // Create post with no media
     await page.getByRole('button', { name: /create post/i }).click()
@@ -137,7 +137,7 @@ test.describe('Store River - Edge Cases', () => {
   })
 
   test('should handle special characters in post content', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     await page.getByRole('button', { name: /create post/i }).click()
     
@@ -152,7 +152,7 @@ test.describe('Store River - Edge Cases', () => {
   })
 
   test('should handle filter changes while loading', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     // Quickly change filters
     await page.getByText(/popular/i).click()
@@ -162,7 +162,7 @@ test.describe('Store River - Edge Cases', () => {
     await page.waitForTimeout(1000)
     
     // Should handle gracefully
-    expect(page.url()).toContain('/river')
+    expect(page.url()).toContain('/menu')
   })
 })
 
@@ -170,7 +170,7 @@ test.describe('Store River - Performance', () => {
   test('should load page within reasonable time', async ({ authenticatedVendor: page }) => {
     const startTime = Date.now()
     
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     const loadTime = Date.now() - startTime
@@ -180,7 +180,7 @@ test.describe('Store River - Performance', () => {
   })
 
   test('should handle many posts efficiently', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     // Create multiple posts
     for (let i = 0; i < 3; i++) {
@@ -196,7 +196,7 @@ test.describe('Store River - Performance', () => {
   })
 
   test('should not have memory leaks on filter changes', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Change filters multiple times

@@ -119,7 +119,7 @@ test('should create post', async ({ authenticatedVendor: page, storeId }) => {
 ### Selectors Priority
 1. Role-based: `getByRole('button', { name: /create/i })`
 2. Label-based: `getByLabel(/email/i)`
-3. Text-based: `getByText(/river/i)`
+3. Text-based: `getByText(/menu/i)`
 4. Placeholder: `getByPlaceholder(/search/i)`
 5. Test ID: `getByTestId('post-card')`
 6. Class-based: `locator('[class*="postCard"]')` (last resort)

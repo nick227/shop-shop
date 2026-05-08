@@ -1,7 +1,7 @@
 /**
  * Router Configuration - Route definitions;
  */
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom'
 import { Layout } from './layouts/MainLayout'
 import { VendorLayout } from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -62,12 +62,15 @@ const CustomerAddressesPage = lazy(() => import('./pages/customer/Addresses.page
 // Driver pages
 const DriverDeliveriesPage = lazy(() => import('./pages/driver/Deliveries.page'))
 
-// River (social feed)
-const StoreRiverPage = lazy(() => import('./pages/shared/StoreDetail.page'))
-
 // Error pages;
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const ErrorPage = lazy(() => import('./pages/ErrorPage'))
+
+/** Legacy `/river/*` (misnamed) → `/menu/*` (store menu = StoreDetail). */
+function LegacyRiverToMenuRedirect() {
+  const { storeId } = useParams<{ storeId: string }>()
+  return <Navigate to={`/menu/${storeId}`} replace />
+}
 
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter(
   [
@@ -138,10 +141,21 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           element: <ProtectedRoute>{lazyRoute(DriverDeliveriesPage)}</ProtectedRoute>,
           handle: { title: 'Driver Deliveries' },
         },
+        /** Authenticated store menu (same UI as `/kitchen/:slug`; `:storeId` is store id or slug token). */
         {
-          path: '/river/:storeId?',
-          element: <ProtectedRoute>{lazyRoute(StoreRiverPage)}</ProtectedRoute>,
-          handle: { title: 'River' },
+          path: '/menu',
+          element: <ProtectedRoute>{lazyRoute(StoreDetailPage)}</ProtectedRoute>,
+          handle: { title: 'Store menu' },
+        },
+        {
+          path: '/menu/:storeId',
+          element: <ProtectedRoute>{lazyRoute(StoreDetailPage)}</ProtectedRoute>,
+          handle: { title: 'Store menu' },
+        },
+        { path: '/river', element: <Navigate to="/menu" replace /> },
+        {
+          path: '/river/:storeId',
+          element: <LegacyRiverToMenuRedirect />,
         },
         // Become an affiliate (public, no auth required — form handles login check);
         {

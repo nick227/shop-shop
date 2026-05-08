@@ -6,7 +6,7 @@ import { vendorTest as test, expect } from '../fixtures/vendor-auth'
 
 test.describe('Store River - Posts', () => {
   test.beforeEach(async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
   })
 
@@ -153,7 +153,7 @@ test.describe('Store River - Posts', () => {
 
 test.describe('Store River - Post Actions', () => {
   test('should display post actions (like, comment, share)', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Create a post first
@@ -172,7 +172,7 @@ test.describe('Store River - Post Actions', () => {
   })
 
   test('should like a post', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Create a post
@@ -193,7 +193,7 @@ test.describe('Store River - Post Actions', () => {
   })
 
   test('should unlike a post', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Create and like a post
@@ -220,7 +220,7 @@ test.describe('Store River - Post Actions', () => {
   })
 
   test('should show like count updates', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Create a post
@@ -252,7 +252,7 @@ test.describe('Store River - Responsive Design', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 })
     
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Page should still be usable
@@ -263,7 +263,7 @@ test.describe('Store River - Responsive Design', () => {
   test('should show mobile-optimized filters', async ({ authenticatedVendor: page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Filters should be visible on mobile
@@ -273,7 +273,7 @@ test.describe('Store River - Responsive Design', () => {
 
 test.describe('Store River - Empty States', () => {
   test('should show empty state when no posts exist', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Check for posts or empty state
@@ -286,7 +286,7 @@ test.describe('Store River - Empty States', () => {
   })
 
   test('should show loading state', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     
     // Loading indicator should appear briefly
     const loading = page.getByText(/loading/i)

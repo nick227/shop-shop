@@ -6,7 +6,7 @@ import { vendorTest as test, expect } from '../fixtures/vendor-auth'
 
 test.describe('Store River - Comments', () => {
   test.beforeEach(async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Create a test post for comments
@@ -57,7 +57,7 @@ test.describe('Store River - Comments', () => {
 
 test.describe('Store River - Comment Interaction', () => {
   test('should increment comment count after adding comment', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(1000)
     
     // Create a post
@@ -81,7 +81,7 @@ test.describe('Store River - Comment Interaction', () => {
 test.describe('Store River - Comment Display', () => {
   test('should show comment author name', async ({ authenticatedVendor: page }) => {
     // This test assumes comments exist
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     const commentButton = page.getByRole('button', { name: /comment/i }).first()
@@ -97,7 +97,7 @@ test.describe('Store River - Comment Display', () => {
   })
 
   test('should show comment timestamp', async ({ authenticatedVendor: page }) => {
-    await page.goto('/river')
+    await page.goto('/menu')
     await page.waitForTimeout(2000)
     
     // Posts should have timestamps
