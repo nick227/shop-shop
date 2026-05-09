@@ -80,6 +80,15 @@ export interface StoreFormData {
   phone: string
   email: string
   website: string
+  customDomain: string
+  socialYoutube: string
+  socialInstagram: string
+  socialFacebook: string
+  socialTiktok: string
+  socialTwitter: string
+  socialWhatsapp: string
+  socialDiscord: string
+  socialSnapchat: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
   disabledAt?: string | null

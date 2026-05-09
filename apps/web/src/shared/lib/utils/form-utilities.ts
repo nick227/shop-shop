@@ -2,7 +2,7 @@
 import type { StoreFormData } from '@shared/types/types/form-types'
 import type { CreateStoreInput, StoreResponse } from '@api/types'
 
-/** Optional fields that fail CreateStoreInput regex when sent as "" — omit instead */
+/** Optional fields omitted from payload when empty */
 const STORE_PAYLOAD_STRIP_IF_EMPTY: (keyof StoreFormData)[] = [
   'latitude',
   'longitude',
@@ -10,17 +10,42 @@ const STORE_PAYLOAD_STRIP_IF_EMPTY: (keyof StoreFormData)[] = [
   'deliveryCharge',
   'commissionRate',
   'imageUrl',
+  'customDomain',
 ]
+
+const SOCIAL_FIELD_MAP: Record<string, keyof StoreFormData> = {
+  youtube:   'socialYoutube',
+  instagram: 'socialInstagram',
+  facebook:  'socialFacebook',
+  tiktok:    'socialTiktok',
+  twitter:   'socialTwitter',
+  whatsapp:  'socialWhatsapp',
+  discord:   'socialDiscord',
+  snapchat:  'socialSnapchat',
+}
 
 export function storePayloadFromFormData(formData: StoreFormData): CreateStoreInput {
   const cleaned = cleanStoreFormData(formData)
   const payload = { ...cleaned } as Record<string, unknown>
+
   for (const key of STORE_PAYLOAD_STRIP_IF_EMPTY) {
     const v = payload[key]
     if (typeof v === 'string' && v.trim() === '') {
       delete payload[key]
     }
   }
+
+  // Assemble socialLinksJson from flat social* fields and remove them from payload
+  const socialLinks: Record<string, string> = {}
+  for (const [platform, formKey] of Object.entries(SOCIAL_FIELD_MAP)) {
+    const val = (payload[formKey] as string | undefined)?.trim()
+    if (val) socialLinks[platform] = val
+    delete payload[formKey]
+  }
+  if (Object.keys(socialLinks).length > 0) {
+    payload.socialLinksJson = socialLinks
+  }
+
   return payload as CreateStoreInput
 }
 
@@ -35,6 +60,15 @@ export function createInitialStoreFormData(): StoreFormData {
     phone: '',
     email: '',
     website: '',
+    customDomain: '',
+    socialYoutube: '',
+    socialInstagram: '',
+    socialFacebook: '',
+    socialTiktok: '',
+    socialTwitter: '',
+    socialWhatsapp: '',
+    socialDiscord: '',
+    socialSnapchat: '',
     imageUrl: '',
     isPublished: false,
     status: 'ACTIVE',
@@ -68,6 +102,15 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     phone: store.phone ?? '',
     email: store.email ?? '',
     website: store.website ?? '',
+    customDomain: (store as any).customDomain ?? '',
+    socialYoutube:   (store as any).socialLinksJson?.youtube   ?? '',
+    socialInstagram: (store as any).socialLinksJson?.instagram ?? '',
+    socialFacebook:  (store as any).socialLinksJson?.facebook  ?? '',
+    socialTiktok:    (store as any).socialLinksJson?.tiktok    ?? '',
+    socialTwitter:   (store as any).socialLinksJson?.twitter   ?? '',
+    socialWhatsapp:  (store as any).socialLinksJson?.whatsapp  ?? '',
+    socialDiscord:   (store as any).socialLinksJson?.discord   ?? '',
+    socialSnapchat:  (store as any).socialLinksJson?.snapchat  ?? '',
     imageUrl: (store as any).imageUrl ?? '',
     isPublished: store.isPublished ?? false,
     status: (store as any).status ?? 'ACTIVE',
@@ -126,7 +169,7 @@ function cleanFormData<T extends Record<string, any>>(
 export function cleanStoreFormData(formData: StoreFormData): StoreFormData {
   return cleanFormData(
     formData,
-    ['name', 'slug', 'description', 'storeType', 'companyName', 'taxId', 'phone', 'email', 'website', 'imageUrl', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
+    ['name', 'slug', 'description', 'storeType', 'companyName', 'taxId', 'phone', 'email', 'website', 'customDomain', 'socialYoutube', 'socialInstagram', 'socialFacebook', 'socialTiktok', 'socialTwitter', 'socialWhatsapp', 'socialDiscord', 'socialSnapchat', 'imageUrl', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
     ['prepTimeMin'],
     ['isPublished', 'deliveryEnabled', 'pickupEnabled']
   )

@@ -13,6 +13,6 @@ export function useVendorTeamRequest() {
     }
     
     if (response.status === 204) return null as T
-    return response.json() as Promise<T>
+    return response.json()
   }
 }

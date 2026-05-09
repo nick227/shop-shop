@@ -16,6 +16,7 @@ vi.mock('react-dropzone', () => ({
     return {
       getRootProps: () => ({}),
       getInputProps: () => ({}),
+      open: vi.fn(),
     }
   },
 }))

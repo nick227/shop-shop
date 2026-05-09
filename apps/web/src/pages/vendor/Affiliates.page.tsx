@@ -10,14 +10,14 @@ import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreCon
 import { formatPriceCurrency, formatDateShort } from '@shared/lib/utils/format'
 import { Users } from 'lucide-react'
 
-type AffiliateSalesSummary = {
+interface AffiliateSalesSummary {
   revenue: number
   orders: number
   customers: number
   averageOrderValue: number
 }
 
-type AffiliateSalesRow = {
+interface AffiliateSalesRow {
   affiliateId: string
   affiliateName: string
   referralCode: string
@@ -29,7 +29,7 @@ type AffiliateSalesRow = {
   lastOrderAt: string | null
 }
 
-type AffiliateRecentOrder = {
+interface AffiliateRecentOrder {
   orderId: string
   customerName?: string | null
   total: number
@@ -39,7 +39,7 @@ type AffiliateRecentOrder = {
   status: string
 }
 
-type AffiliateSalesResponse = {
+interface AffiliateSalesResponse {
   summary: AffiliateSalesSummary
   rows: AffiliateSalesRow[]
   recentOrders: AffiliateRecentOrder[]
@@ -78,7 +78,7 @@ export default function VendorAffiliatesPage() {
     )
   }
 
-  if (!stores.length) {
+  if (stores.length === 0) {
     return (
       <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6">
         <EmptyState icon={Users} title="Create a store first" description="Affiliate sales are tracked per store." />

@@ -9,7 +9,7 @@ function searchErrorUi(error: Error | undefined): { message: string; hint?: stri
   if (!error) {
     return { message: 'Unable to load kitchens right now.' }
   }
-  const details = (error as AppError).details as Record<string, unknown> | undefined
+  const details = (error as AppError).details
   return formatUserFacingApiError(error, details)
 }
 

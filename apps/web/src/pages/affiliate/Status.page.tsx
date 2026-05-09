@@ -29,17 +29,46 @@ export default function AffiliateStatusPage() {
       .getMyApplication()
       .then((res) => {
         const st = res.affiliate?.status
-        if (st === 'ACTIVE') navigate('/affiliate/dashboard', { replace: true })
-        else if (st === 'PENDING') navigate('/affiliate/pending', { replace: true })
-        else if (st === 'SUSPENDED') navigate('/affiliate/suspended', { replace: true })
-        else if (st === 'TERMINATED') navigate('/affiliate/unavailable', { replace: true })
+        switch (st) {
+        case 'ACTIVE': {
+        navigate('/affiliate/dashboard', { replace: true })
+        break;
+        }
+        case 'PENDING': {
+        navigate('/affiliate/pending', { replace: true })
+        break;
+        }
+        case 'SUSPENDED': {
+        navigate('/affiliate/suspended', { replace: true })
+        break;
+        }
+        case 'TERMINATED': { {
+        navigate('/affiliate/unavailable', { replace: true })
+        // No default
+        }
+        break;
+        }
+        }
       })
-      .catch((err: unknown) => {
-        if (err instanceof AffiliateApiError && err.affiliateStatus) {
-          const s = err.affiliateStatus
-          if (s === 'PENDING') navigate('/affiliate/pending', { replace: true })
-          else if (s === 'SUSPENDED') navigate('/affiliate/suspended', { replace: true })
-          else if (s === 'TERMINATED') navigate('/affiliate/unavailable', { replace: true })
+      .catch((error: unknown) => {
+        if (error instanceof AffiliateApiError && error.affiliateStatus) {
+          const s = error.affiliateStatus
+          switch (s) {
+          case 'PENDING': {
+          navigate('/affiliate/pending', { replace: true })
+          break;
+          }
+          case 'SUSPENDED': {
+          navigate('/affiliate/suspended', { replace: true })
+          break;
+          }
+          case 'TERMINATED': { {
+          navigate('/affiliate/unavailable', { replace: true })
+          // No default
+          }
+          break;
+          }
+          }
         }
       })
     // Intentionally run once per mount on these small status pages.
@@ -52,7 +81,7 @@ export default function AffiliateStatusPage() {
           title: 'Pending approval',
           body: 'Your affiliate application is under review.',
         }
-      : status === 'SUSPENDED'
+      : (status === 'SUSPENDED'
         ? {
             title: 'Account suspended',
             body: 'Your affiliate account is currently suspended. Contact support if this seems wrong.',
@@ -60,7 +89,7 @@ export default function AffiliateStatusPage() {
         : {
             title: 'Affiliate unavailable',
             body: 'This affiliate account is no longer active.',
-          }
+          })
 
   return (
     <PageShell className="bg-background" containerClassName="max-w-lg" contentClassName="py-10 md:py-14">

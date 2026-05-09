@@ -1,7 +1,7 @@
 import type { StoreResponse } from '@api/types'
 import { authGet } from '@shared/lib/auth/authFetch'
 
-type TeamMeStoreRow = {
+interface TeamMeStoreRow {
   readonly storeId: string
   readonly store: Pick<StoreResponse, 'id' | 'name' | 'slug' | 'isPublished'>
 }

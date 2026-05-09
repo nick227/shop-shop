@@ -149,7 +149,7 @@ export class CartAnimationUtils {
   /**
    * Trigger a scale animation for cart updates
    */
-  static triggerScaleAnimation(element: HTMLElement, scale: number = 1.1): void {
+  static triggerScaleAnimation(element: HTMLElement, scale = 1.1): void {
     element.style.transform = `scale(${scale})`
     element.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     
@@ -165,7 +165,7 @@ export class CartAnimationUtils {
     element: HTMLElement, 
     from: number, 
     to: number, 
-    duration: number = 300
+    duration = 300
   ): void {
     const startTime = Date.now()
     const difference = to - from
@@ -207,7 +207,7 @@ export class CartAnimationUtils {
 
     button.style.position = 'relative'
     button.style.overflow = 'hidden'
-    button.appendChild(ripple)
+    button.append(ripple)
 
     setTimeout(() => {
       ripple.remove()

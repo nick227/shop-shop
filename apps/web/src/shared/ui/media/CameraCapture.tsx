@@ -49,17 +49,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       })
       
       setPermissionGranted(true)
-      stream.getTracks().forEach(track => track.stop())
+      for (const track of stream.getTracks()) track.stop()
       return true
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        if (error_.name === 'NotAllowedError') {
           setError('Camera access denied. Please allow camera permissions in your browser settings.')
           setPermissionGranted(false)
-        } else if (err.name === 'NotFoundError') {
+        } else if (error_.name === 'NotFoundError') {
           setError('No camera found on this device.')
         } else {
-          setError('Camera access failed: ' + err.message)
+          setError('Camera access failed: ' + error_.message)
         }
       }
       return false
@@ -100,15 +100,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         setIsStreaming(true)
         setPermissionGranted(true)
       }
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        if (error_.name === 'NotAllowedError') {
           setError('Camera access denied. Please allow camera permissions.')
           setPermissionGranted(false)
-        } else if (err.name === 'ConstraintNotSatisfiedError') {
+        } else if (error_.name === 'ConstraintNotSatisfiedError') {
           setError('Camera does not support the requested resolution.')
         } else {
-          setError('Failed to start camera: ' + err.message)
+          setError('Failed to start camera: ' + error_.message)
         }
       }
     } finally {
@@ -119,7 +119,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   // Stop camera stream
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
+      for (const track of streamRef.current.getTracks()) track.stop()
       streamRef.current = null
     }
     if (videoRef.current) {

@@ -37,7 +37,7 @@ export default function AffiliatePayoutsPage() {
     queryFn: () => api.getMyPayouts(status ? { status } : undefined),
   })
 
-  const payouts = (query.data?.payouts ?? []) as Record<string, unknown>[]
+  const payouts = (query.data?.payouts ?? [])
 
   return (
     <PageShell
@@ -67,7 +67,7 @@ export default function AffiliatePayoutsPage() {
         <div className="flex min-h-[240px] items-center justify-center">
           <Spinner size="large" />
         </div>
-      ) : payouts.length === 0 ? (
+      ) : (payouts.length === 0 ? (
         <EmptyState
           icon={Banknote}
           title="No payouts yet"
@@ -101,7 +101,7 @@ export default function AffiliatePayoutsPage() {
             </Card>
           ))}
         </div>
-      )}
+      ))}
     </PageShell>
   )
 }

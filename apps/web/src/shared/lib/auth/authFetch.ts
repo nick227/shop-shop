@@ -28,7 +28,7 @@ export function getApiBaseUrl(): string {
  */
 export function apiPath(path: string): string {
   // Remove leading slash if present to avoid double slashes
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path
   return `${getApiBaseUrl()}/${cleanPath}`
 }
 
@@ -66,7 +66,7 @@ export async function authFetch<T = unknown>(
   })
   
   // Handle 401 Unauthorized responses
-  if (response.status === 401 && token && /^Bearer\s+\S+$/i.test((headers.get('Authorization') ?? '').trim())) {
+  if (response.status === 401 && token && /^bearer\s+\S+$/i.test((headers.get('Authorization') ?? '').trim())) {
     try {
       const errorResponse = await response.clone().json();
       const errorMessage = errorResponse.error || errorResponse.message || ''
@@ -89,7 +89,7 @@ export async function authFetch<T = unknown>(
         useAuthStore.getState().clearAuth()
         window.dispatchEvent(new CustomEvent('auth:logout'))
       }
-    } catch (error) {
+    } catch {
       // Ignore error and continue
     }
   }

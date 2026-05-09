@@ -25,7 +25,7 @@ import type { components, paths } from '../types/api'
 
 function assertSdkConstructor(name: string, Ctor: unknown): asserts Ctor is new (config: Configuration) => unknown {
   if (typeof Ctor !== 'function') {
-    throw new Error(
+    throw new TypeError(
       `[api/client] ${name} failed to load from @packages/sdk (got ${typeof Ctor}). Build the SDK: pnpm --filter @packages/sdk build`,
     )
   }
@@ -234,7 +234,7 @@ class ApiClient {
     // Handle Headers instance (from Fetch API)
     if (headers instanceof Headers) {
       const value = headers.get('authorization') ?? headers.get('Authorization')
-      return typeof value === 'string' && /^Bearer\s+\S+$/i.test(value.trim())
+      return typeof value === 'string' && /^bearer\s+\S+$/i.test(value.trim())
     }
     
     // Handle plain object or Record<string, string>
@@ -242,7 +242,7 @@ class ApiClient {
       return Object.entries(headers).some(([key, val]) => {
         if (key.toLowerCase() !== 'authorization') return false
         if (typeof val !== 'string') return false
-        return /^Bearer\s+\S+$/i.test(val.trim())
+        return /^bearer\s+\S+$/i.test(val.trim())
       })
     }
     

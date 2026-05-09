@@ -20,7 +20,7 @@ describe('EnhancedMediaGalleryManager - API route usage', () => {
       />
     )
 
-    await screen.findByText(/No media uploaded yet/i)
+    await screen.findByText(/no media uploaded yet/i)
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/media?storeId=store-123&itemId=item-123'),

@@ -25,11 +25,9 @@ export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!disabled && onDelete) {
-      if (confirm('Are you sure you want to delete this media?')) {
+    if (!disabled && onDelete && confirm('Are you sure you want to delete this media?')) {
         onDelete()
       }
-    }
   }
 
   const handlePreview = (e: React.MouseEvent) => {

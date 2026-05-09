@@ -27,8 +27,8 @@ export default function AffiliateDashboardPage() {
     queryFn: () => api.getMyStats(),
   })
 
-  const profile = profileQuery.data?.affiliate as Record<string, unknown> | undefined
-  const stats = statsQuery.data as Record<string, unknown> | undefined
+  const profile = profileQuery.data?.affiliate
+  const stats = statsQuery.data
   const statsData = stats?.stats as Record<string, unknown> | undefined
 
   const referralCode = profile?.referralCode as string | undefined

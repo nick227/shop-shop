@@ -227,5 +227,29 @@ export default tseslint.config(
       '@typescript-eslint/ban-ts-comment': 'warn',
     },
   },
+  // Demote noisy stylistic / duplicate checks to warn so `npm run lint:serious` (eslint --quiet)
+  // surfaces async, correctness, imports boundary, and similar errors first.
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'warn',
+      'sonarjs/unused-import': 'warn',
+      'sonarjs/prefer-read-only-props': 'warn',
+      'sonarjs/no-duplicate-string': 'warn',
+      'sonarjs/no-nested-conditional': 'warn',
+      'sonarjs/todo-tag': 'warn',
+      'sonarjs/no-redundant-optional': 'warn',
+      'sonarjs/no-nested-template-literals': 'warn',
+      'sonarjs/no-redundant-jump': 'warn',
+      'unicorn/text-encoding-identifier-case': 'warn',
+      'unicorn/switch-case-braces': 'warn',
+      'unicorn/prefer-number-properties': 'warn',
+      'unicorn/no-array-callback-reference': 'warn',
+      'unicorn/prefer-top-level-await': 'warn',
+      'unicorn/consistent-destructuring': 'warn',
+    },
+  },
 )
 

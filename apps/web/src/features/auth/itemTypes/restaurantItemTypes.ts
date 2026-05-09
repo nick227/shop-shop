@@ -4,7 +4,7 @@
  * Enhanced with third-level categorization for foodie website
  */
 
-export const RESTAURANT_ITEM_TYPES: Record<string, Array<{value: string, label: string}>> = {
+export const RESTAURANT_ITEM_TYPES: Record<string, {value: string, label: string}[]> = {
   // Core Menu Categories
   appetizers: [
     // Cold Appetizers
@@ -750,7 +750,7 @@ export const RESTAURANT_ITEM_TYPES: Record<string, Array<{value: string, label: 
 
 export type RestaurantItemType = typeof RESTAURANT_ITEM_TYPES[string][number]
 
-export function getRestaurantItemTypes(category: string): Array<{value: string, label: string}> {
+export function getRestaurantItemTypes(category: string): {value: string, label: string}[] {
   return RESTAURANT_ITEM_TYPES[category] || []
 }
 

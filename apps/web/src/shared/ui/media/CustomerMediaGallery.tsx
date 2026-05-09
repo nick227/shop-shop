@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 
 interface CustomerMediaGalleryProps {
-  media: Array<{
+  media: {
     id: string
     kind: 'IMAGE' | 'VIDEO'
     url: string
     altText?: string
     sortIndex: number
-  }>
+  }[]
   className?: string
 }
 
@@ -17,7 +17,7 @@ export const CustomerMediaGallery: React.FC<CustomerMediaGalleryProps> = ({
 }) => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0)
 
-  if (!media || media.length === 0) {
+  if (media?.length === 0) {
     return null
   }
 

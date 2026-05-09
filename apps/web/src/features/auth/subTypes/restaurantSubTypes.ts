@@ -3,7 +3,7 @@
  * Comprehensive restaurant subtype definitions with realistic and varied options
  */
 
-export const RESTAURANT_SUB_TYPES: Record<string, Record<string, Array<{value: string, label: string}>>> = {
+export const RESTAURANT_SUB_TYPES: Record<string, Record<string, {value: string, label: string}[]>> = {
   appetizers: {
     appetizer: [
       { value: 'cold', label: '🥒 Cold Appetizer' },
@@ -266,7 +266,7 @@ export const RESTAURANT_SUB_TYPES: Record<string, Record<string, Array<{value: s
 
 export type RestaurantSubType = typeof RESTAURANT_SUB_TYPES[string][string][number]
 
-export function getRestaurantSubTypes(category: string, type: string): Array<{value: string, label: string}> {
+export function getRestaurantSubTypes(category: string, type: string): {value: string, label: string}[] {
   return RESTAURANT_SUB_TYPES[category]?.[type] || []
 }
 

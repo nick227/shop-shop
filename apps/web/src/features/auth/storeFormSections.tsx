@@ -53,23 +53,6 @@ export function createStoreFormSections(
             </SelectContent>
           </Select>
 
-          <Input
-            label="Store Thumbnail"
-            value={formData.imageUrl || ''}
-            onChange={(e) => onChange('imageUrl', e.target.value)}
-            placeholder="https://..."
-            helperText="Used as the main store thumbnail (separate from Store Media uploads)"
-          />
-          {formData.imageUrl?.trim() ? (
-            <div className="overflow-hidden w-32 h-32 rounded-lg border border-gray-200 bg-muted">
-              <img
-                src={resolveBrowserAssetUrl(formData.imageUrl.trim())}
-                alt=""
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ) : null}
-
           <div>
             <TextArea
               label="Description"
@@ -121,6 +104,87 @@ export function createStoreFormSections(
               value={formData.website}
               onChange={(e) => onChange('website', e.target.value)}
               placeholder="https://www.store.com"
+            />
+          </FormRow>
+        </>
+      ),
+    },
+    {
+      id: 'social',
+      icon: '🔗',
+      title: 'Social & Contact Links',
+      description: 'Add your social media handles so customers can find and follow you',
+      content: (
+        <>
+          <Input
+            label="Custom Domain"
+            type="url"
+            value={formData.customDomain}
+            onChange={(e) => onChange('customDomain', e.target.value)}
+            placeholder="https://mybakery.com"
+            helperText="Your own domain name if you have one"
+          />
+
+          <FormRow>
+            <Input
+              label="YouTube"
+              value={formData.socialYoutube}
+              onChange={(e) => onChange('socialYoutube', e.target.value)}
+              placeholder="@YourChannel"
+            />
+            <Input
+              label="Instagram"
+              value={formData.socialInstagram}
+              onChange={(e) => onChange('socialInstagram', e.target.value)}
+              placeholder="@yourhandle"
+            />
+          </FormRow>
+
+          <FormRow>
+            <Input
+              label="Facebook"
+              value={formData.socialFacebook}
+              onChange={(e) => onChange('socialFacebook', e.target.value)}
+              placeholder="YourPageName"
+            />
+            <Input
+              label="TikTok"
+              value={formData.socialTiktok}
+              onChange={(e) => onChange('socialTiktok', e.target.value)}
+              placeholder="@yourhandle"
+            />
+          </FormRow>
+
+          <FormRow>
+            <Input
+              label="X / Twitter"
+              value={formData.socialTwitter}
+              onChange={(e) => onChange('socialTwitter', e.target.value)}
+              placeholder="@yourhandle"
+            />
+            <Input
+              label="Snapchat"
+              value={formData.socialSnapchat}
+              onChange={(e) => onChange('socialSnapchat', e.target.value)}
+              placeholder="@yourhandle"
+            />
+          </FormRow>
+
+          <FormRow>
+            <Input
+              label="WhatsApp"
+              type="tel"
+              value={formData.socialWhatsapp}
+              onChange={(e) => onChange('socialWhatsapp', e.target.value)}
+              placeholder="+15551234567"
+              helperText="Phone number with country code"
+            />
+            <Input
+              label="Discord"
+              value={formData.socialDiscord}
+              onChange={(e) => onChange('socialDiscord', e.target.value)}
+              placeholder="https://discord.gg/invite"
+              helperText="Server invite link"
             />
           </FormRow>
         </>
@@ -210,7 +274,7 @@ export function createStoreFormSections(
                       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(resolve, reject, {
                           enableHighAccuracy: true,
-                          timeout: 10000,
+                          timeout: 10_000,
                           maximumAge: 0
                         })
                       })

@@ -156,7 +156,7 @@ export default function VendorDriversPage() {
     )
   }
 
-  if (!stores.length) {
+  if (stores.length === 0) {
     return (
       <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6">
         <EmptyState icon={Users} title="Create a store first" description="Drivers are managed per store." />
@@ -241,7 +241,7 @@ export default function VendorDriversPage() {
           <CardContent className="space-y-3">
             {driversQuery.isLoading ? (
               <Spinner />
-            ) : drivers.length === 0 ? (
+            ) : (drivers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No drivers with delivery permissions yet.</p>
             ) : (
               drivers.map((member) => (
@@ -270,7 +270,7 @@ export default function VendorDriversPage() {
                   </div>
                 </div>
               ))
-            )}
+            ))}
           </CardContent>
         </Card>
 
@@ -284,7 +284,7 @@ export default function VendorDriversPage() {
           <CardContent className="space-y-3">
             {invitationsQuery.isLoading ? (
               <Spinner />
-            ) : driverInvitations.length === 0 ? (
+            ) : (driverInvitations.length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending driver invitations.</p>
             ) : (
               driverInvitations.map((invitation) => (
@@ -306,7 +306,7 @@ export default function VendorDriversPage() {
                   </div>
                 </div>
               ))
-            )}
+            ))}
           </CardContent>
         </Card>
       </section>

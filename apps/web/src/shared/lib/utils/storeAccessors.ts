@@ -36,7 +36,7 @@ export function hasValidCoordinates(store: StoreWithDistance): boolean {
  * Get store image URL with fallback;
  * Centralizes imageUrl pattern across all card variants;
  */
-export function getStoreImageUrl(store: { id: string; imageUrl?: string; mediaAssets?: Array<{ url: string; kind: string }> }, _variant: 'hero' | 'standard' | 'square' = 'standard'): string {
+export function getStoreImageUrl(store: { id: string; imageUrl?: string; mediaAssets?: { url: string; kind: string }[] }, _variant: 'hero' | 'standard' | 'square' = 'standard'): string {
   // Check for mediaAssets first (from backend with media relations)
   if (store.mediaAssets && store.mediaAssets.length > 0) {
     const firstImage = store.mediaAssets.find(asset => asset.kind === 'IMAGE' || !asset.kind)

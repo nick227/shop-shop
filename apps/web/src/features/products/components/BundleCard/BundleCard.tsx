@@ -33,7 +33,7 @@ export function BundleCard({ bundle, store }: BundleCardProps) {
 
   const savings = bundle.savings ?? (bundle.itemSum ? bundle.itemSum - bundle.resolvedPrice : 0)
   const showSavings = bundle.pricing?.showSavings !== false && savings > 0.005
-  const unavailable = !bundle.isActive || (bundle.items !== undefined && bundle.items.length === 0)
+  const unavailable = !bundle.isActive || (bundle.items?.length === 0)
 
   const handleAddToCart = () => {
     addBundleToCart.mutate({

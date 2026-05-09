@@ -1,32 +1,26 @@
 import React, { useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Trash2, Eye, Star, Edit2 } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Trash2, Eye, Edit2 } from 'lucide-react'
 
 interface EnhancedMediaPreviewCardProps {
-  media: {
+  readonly media: {
     id: string
     kind: 'IMAGE' | 'VIDEO'
     url: string
     altText?: string
     sortIndex: number
   }
-  isPrimary?: boolean
   onDelete?: () => void
   onPreview?: () => void
-  onSetPrimary?: () => void
   onEditAlt?: () => void
   disabled?: boolean
-  setPrimaryLabel?: string
 }
 
 export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> = ({
   media,
-  isPrimary = false,
   onDelete,
   onPreview,
-  onSetPrimary,
   onEditAlt,
   disabled = false,
-  setPrimaryLabel = 'Set as primary',
 }) => {
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -44,13 +38,6 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
     e.stopPropagation()
     if (!disabled && onPreview) {
       onPreview()
-    }
-  }
-
-  const handleSetPrimary = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!disabled && onSetPrimary) {
-      onSetPrimary()
     }
   }
 
@@ -75,7 +62,7 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
 
   const handleMuteToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const video = e.currentTarget.parentElement?.querySelector('video') as HTMLVideoElement
+    const video = e.currentTarget.parentElement?.querySelector('video')!
     if (video) {
       video.muted = !isMuted
       setIsMuted(!isMuted)
@@ -88,14 +75,6 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Primary Badge */}
-      {isPrimary && (
-        <div className="absolute top-3 left-3 z-20 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-lg flex items-center space-x-1">
-          <Star className="w-3 h-3" />
-          <span>Primary</span>
-        </div>
-      )}
-
       {/* Media Content */}
       <div 
         className="aspect-square cursor-pointer relative"
@@ -187,17 +166,6 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
             >
               <Eye className="w-4 h-4" />
             </button>
-
-            {/* Set Primary (if not already primary) */}
-            {!isPrimary && onSetPrimary && (
-              <button
-                onClick={handleSetPrimary}
-                className="bg-white bg-opacity-90 text-gray-700 p-2 rounded-lg hover:bg-opacity-100 transition-all shadow-lg"
-                title={setPrimaryLabel}
-              >
-                <Star className="w-4 h-4" />
-              </button>
-            )}
 
             {/* Edit Alt Text */}
             {onEditAlt && (

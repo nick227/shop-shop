@@ -16,7 +16,7 @@ export interface AddBundleToCartInput {
   bundleId: string
   title: string
   unitPrice: string | number
-  bundleItems?: Array<{ itemId: string; title: string; price: number; quantity: number }>
+  bundleItems?: { itemId: string; title: string; price: number; quantity: number }[]
   notes?: string
 }
 

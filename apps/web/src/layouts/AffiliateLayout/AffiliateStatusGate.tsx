@@ -28,18 +28,30 @@ export function AffiliateStatusGate() {
           return
         }
 
-        if (st === 'PENDING') navigate('/affiliate/pending', { replace: true })
-        else if (st === 'SUSPENDED') navigate('/affiliate/suspended', { replace: true })
-        else if (st === 'TERMINATED') navigate('/affiliate/unavailable', { replace: true })
-        else navigate('/affiliate/unavailable', { replace: true })
+        switch (st) {
+        case 'PENDING': {
+        navigate('/affiliate/pending', { replace: true })
+        break;
+        }
+        case 'SUSPENDED': {
+        navigate('/affiliate/suspended', { replace: true })
+        break;
+        }
+        case 'TERMINATED': {
+        navigate('/affiliate/unavailable', { replace: true })
+        break;
+        }
+        default: { navigate('/affiliate/unavailable', { replace: true })
+        }
+        }
       })
-      .catch((err: unknown) => {
+      .catch((error: unknown) => {
         if (cancelled) return
-        if (err instanceof AffiliateApiError && err.httpStatus === 404) {
+        if (error instanceof AffiliateApiError && error.httpStatus === 404) {
           navigate('/affiliate/unavailable', { replace: true })
           return
         }
-        if (err instanceof AffiliateApiError && err.httpStatus === 403) {
+        if (error instanceof AffiliateApiError && error.httpStatus === 403) {
           navigate('/affiliate/unavailable', { replace: true })
           return
         }

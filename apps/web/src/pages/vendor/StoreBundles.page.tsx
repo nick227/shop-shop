@@ -199,7 +199,7 @@ function BundleListCard({
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg line-clamp-1 mb-1">{bundle.name}</CardTitle>
-            {resolvedPrice != null && (
+            {resolvedPrice != undefined && (
               <span className="text-xl font-bold text-success">{formatCurrency(Number(resolvedPrice))}</span>
             )}
           </div>

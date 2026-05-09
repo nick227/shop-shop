@@ -18,6 +18,7 @@ import type { ItemResponse } from '@api/types'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 import { useHaptics } from '@shared/hooks/useHaptics'
 import { ItemAnalyticsTable } from './components/ItemAnalyticsTable'
+import { CsvImportButton } from './components/CsvImportButton'
 
 export default function StoreItemsPage() {
   const { storeId } = useParams<{ storeId: string }>()
@@ -149,11 +150,14 @@ export default function StoreItemsPage() {
           <Button
             variant="primary"
             onClick={() => navigate('/vendor/stores/' + storeId + '/items/new')}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto flex-shrink-0"
           >
             <Plus className="mr-2 w-4 h-4" />
             Add Item
           </Button>
+          <div className="flex flex-col items-center flex-shrink-0 h-[40px]">
+            <CsvImportButton storeId={storeId!} />
+          </div>
         </div>
       </div>
 

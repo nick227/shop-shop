@@ -59,6 +59,6 @@ export function formatUserFacingApiError(
   const requestId = typeof details?.requestId === 'string' ? details.requestId : undefined
   const summary = summarizeApiErrorMessage(error.message)
   const hint =
-    import.meta.env.DEV && requestId ? `Request ID: ${requestId}` : requestId ? `Reference: ${requestId}` : undefined
+    import.meta.env.DEV && requestId ? `Request ID: ${requestId}` : (requestId ? `Reference: ${requestId}` : undefined)
   return { message: summary, hint }
 }

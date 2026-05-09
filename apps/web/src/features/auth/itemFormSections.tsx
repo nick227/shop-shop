@@ -80,7 +80,7 @@ export function createItemFormSections(
       id: 'basic',
       icon: '🍽️',
       title: 'Basic Information',
-      description: 'Describe your menu item with an appetizing title, description, and price',
+      description: 'Describe your appetizing item with delicious information',
       content: (
         <>
           <FormRow>
@@ -92,22 +92,6 @@ export function createItemFormSections(
                 placeholder="Delicious Menu Item"
                 required
               />
-              <Input
-                label="Product Thumbnail"
-                value={formData.imageUrl || ''}
-                onChange={(e) => onChange('imageUrl', e.target.value)}
-                placeholder="https://..."
-                helperText="Used as the main item thumbnail (separate from Product Media uploads)"
-              />
-              {formData.imageUrl?.trim() ? (
-                <div className="overflow-hidden rounded-lg border border-gray-200 bg-muted w-32 h-32">
-                  <img
-                    src={resolveBrowserAssetUrl(formData.imageUrl.trim())}
-                    alt=""
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-              ) : null}
               
               <Select
                 value={formData.category || ''}

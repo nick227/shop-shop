@@ -1,10 +1,37 @@
-import { MapPin, Phone, Clock } from 'lucide-react'
+import type React from 'react'
+import { MapPin, Phone, Clock, Globe, Youtube, Instagram, Facebook, Twitter, MessageCircle, MessageSquare, Music, Ghost } from 'lucide-react'
 import { Badge } from '@shared/ui/primitives'
-import type { MediaApiResponse, StoreResponse, StoreWithRating } from '@api/types'
+import type { MediaApiResponse, StoreResponse, StoreWithRating, StoreSocialLinks } from '@api/types'
 import { cn } from '@shared/lib/cn'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import { useMediaList } from '@shared/hooks/hooks/vendor/useMediaList'
 import { getImageUrl } from '@shared/lib/utils/image'
+
+function buildSocialUrl(platform: keyof StoreSocialLinks, value: string): string {
+  const v = value.trim()
+  const handle = v.startsWith('@') ? v.slice(1) : v
+  switch (platform) {
+    case 'youtube':   return `https://youtube.com/@${handle}`
+    case 'instagram': return `https://instagram.com/${handle}`
+    case 'facebook':  return `https://facebook.com/${handle}`
+    case 'tiktok':    return `https://tiktok.com/@${handle}`
+    case 'twitter':   return `https://x.com/${handle}`
+    case 'whatsapp':  return `https://wa.me/${v.replace(/\D/g, '')}`
+    case 'discord':   return v.startsWith('http') ? v : `https://discord.gg/${v}`
+    case 'snapchat':  return `https://snapchat.com/add/${handle}`
+  }
+}
+
+const SOCIAL_ICONS: Record<keyof StoreSocialLinks, React.ReactNode> = {
+  youtube:   <Youtube className="w-4 h-4" />,
+  instagram: <Instagram className="w-4 h-4" />,
+  facebook:  <Facebook className="w-4 h-4" />,
+  tiktok:    <Music className="w-4 h-4" />,
+  twitter:   <Twitter className="w-4 h-4" />,
+  whatsapp:  <MessageCircle className="w-4 h-4" />,
+  discord:   <MessageSquare className="w-4 h-4" />,
+  snapchat:  <Ghost className="w-4 h-4" />,
+}
 
 /**
  * StoreHeader - Modern store header with two-column layout and map
@@ -144,6 +171,45 @@ export function StoreHeader({ store, className, showMap = true, fullSize = true 
                     Prep time: {store.prepTimeMin ?? 20} minutes
                   </span>
                 </div>
+
+                {/* Custom Domain */}
+                {(store as any).customDomain && (
+                  <div className="flex gap-2 items-center text-sm">
+                    <Globe className="w-4 h-4 text-muted-foreground" />
+                    <a
+                      href={(store as any).customDomain}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors text-primary hover:underline"
+                    >
+                      {(store as any).customDomain.replace(/^https?:\/\//, '')}
+                    </a>
+                  </div>
+                )}
+
+                {/* Social Links */}
+                {(() => {
+                  const links = (store as any).socialLinksJson as StoreSocialLinks | undefined
+                  if (!links) return null
+                  const entries = Object.entries(links).filter(([, v]) => v) as [keyof StoreSocialLinks, string][]
+                  if (entries.length === 0) return null
+                  return (
+                    <div className="flex flex-wrap gap-3 pt-1">
+                      {entries.map(([platform, value]) => (
+                        <a
+                          key={platform}
+                          href={buildSocialUrl(platform, value)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
+                          aria-label={platform}
+                        >
+                          {SOCIAL_ICONS[platform]}
+                        </a>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Rating & Delivery Info */}

@@ -23,7 +23,7 @@ interface LocationInfo {
 }
 
 function buildDirectory(storeList: StoreResponse[]): { cities: CityDirectoryEntry[] } {
-  type Agg = {
+  interface Agg {
     city: string
     state: string
     count: number

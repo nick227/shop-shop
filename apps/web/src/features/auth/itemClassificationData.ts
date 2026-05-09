@@ -15,7 +15,7 @@ import { RESTAURANT_SUB_TYPES } from './subTypes/restaurantSubTypes'
 // Store Type Specific Categories
 // ============================================
 
-export const STORE_TYPE_CATEGORIES: Record<string, Array<{value: string, label: string}>> = {
+export const STORE_TYPE_CATEGORIES: Record<string, {value: string, label: string}[]> = {
   RESTAURANT: RESTAURANT_CATEGORIES,
   CONVENIENCE: [
     { value: 'snacks', label: '🍿 Snacks' },
@@ -298,7 +298,7 @@ export const CATEGORIES = [
 // Item Type Options
 // ============================================
 
-export const ITEM_TYPES: Record<string, Array<{value: string, label: string}>> = {
+export const ITEM_TYPES: Record<string, {value: string, label: string}[]> = {
   ...RESTAURANT_ITEM_TYPES,
   entrees: [
     { value: 'entree', label: '🍽️ Main Entree' },
@@ -1431,7 +1431,7 @@ export const DEFAULT_ITEM_TYPES = [
 // Sub Type Options
 // ============================================
 
-export const SUB_TYPES: Record<string, Record<string, Array<{value: string, label: string}>>> = {
+export const SUB_TYPES: Record<string, Record<string, {value: string, label: string}[]>> = {
   ...RESTAURANT_SUB_TYPES,
 }
 
@@ -1445,11 +1445,11 @@ export const DEFAULT_SUB_TYPES = [
 // Utility Functions
 // ============================================
 
-export function getCategoriesForStoreType(storeType: string): Array<{value: string, label: string}> {
+export function getCategoriesForStoreType(storeType: string): {value: string, label: string}[] {
   return STORE_TYPE_CATEGORIES[storeType] || CATEGORIES
 }
 
-export function getAvailableItemTypes(category: string): Array<{value: string, label: string}> {
+export function getAvailableItemTypes(category: string): {value: string, label: string}[] {
   return ITEM_TYPES[category] || DEFAULT_ITEM_TYPES
 }
 
@@ -1458,7 +1458,7 @@ export function isTypeValidForCategory(type: string, category: string): boolean 
   return availableTypes.some(itemType => itemType.value === type)
 }
 
-export function getAvailableSubTypes(category: string, type: string): Array<{value: string, label: string}> {
+export function getAvailableSubTypes(category: string, type: string): {value: string, label: string}[] {
   if (!category || !type) return DEFAULT_SUB_TYPES
   return SUB_TYPES[category]?.[type] || DEFAULT_SUB_TYPES
 }

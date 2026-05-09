@@ -40,7 +40,7 @@ export function showCartToast(type: CartToastData['type'], options: CartToastOpt
   } = options
 
   switch (type) {
-    case 'item-added':
+    case 'item-added': {
       return toast.custom(
         (id) => (
           <CartItemAddedToast
@@ -54,8 +54,9 @@ export function showCartToast(type: CartToastData['type'], options: CartToastOpt
         ),
         { duration }
       )
+    }
 
-    case 'item-removed':
+    case 'item-removed': {
       return toast.custom(
         (id) => (
           <CartItemRemovedToast
@@ -69,8 +70,9 @@ export function showCartToast(type: CartToastData['type'], options: CartToastOpt
         ),
         { duration }
       )
+    }
 
-    case 'cart-cleared':
+    case 'cart-cleared': {
       return toast.custom(
         (id) => (
           <CartClearedToast
@@ -80,8 +82,9 @@ export function showCartToast(type: CartToastData['type'], options: CartToastOpt
         ),
         { duration }
       )
+    }
 
-    case 'cart-updated':
+    case 'cart-updated': {
       return toast.custom(
         (id) => (
           <CartUpdatedToast
@@ -92,9 +95,11 @@ export function showCartToast(type: CartToastData['type'], options: CartToastOpt
         ),
         { duration: 3000 }
       )
+    }
 
-    default:
+    default: {
       return toast.success('Cart updated')
+    }
   }
 }
 

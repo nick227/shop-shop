@@ -23,7 +23,7 @@ describe('EnhancedMediaGalleryManager - HTML fallback regression', () => {
     )
 
     expect(
-      await screen.findByText(/Failed to parse \/api\/media response as JSON/i)
+      await screen.findByText(/failed to parse \/api\/media response as json/i)
     ).toBeInTheDocument()
 
     expect(

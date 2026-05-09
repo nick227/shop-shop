@@ -22,7 +22,7 @@ interface HeaderAddressExtrasContextValue {
 const HeaderAddressExtrasContext = createContext<HeaderAddressExtrasContextValue | null>(null)
 
 export function HeaderAddressExtrasProvider({ children }: { readonly children: ReactNode }) {
-  const [extras, setExtrasState] = useState<HeaderAddressExtras | undefined>(undefined)
+  const [extras, setExtrasState] = useState<HeaderAddressExtras | undefined>()
   const setExtras = useCallback((value: HeaderAddressExtras | undefined) => {
     setExtrasState(value)
   }, [])

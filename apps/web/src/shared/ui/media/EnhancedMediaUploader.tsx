@@ -1,16 +1,24 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { authPost } from '@shared/lib/auth/authFetch'
-import { Upload, X, File, Image, Video, AlertCircle, Check, Camera } from 'lucide-react'
+import { Upload, X, Image, Video, AlertCircle, Check, Camera } from 'lucide-react'
 import { CameraCapture } from './CameraCapture'
+
+export interface EnhancedMediaUploaderHandle {
+  openFilePicker: () => void
+}
 
 interface EnhancedMediaUploaderProps {
   storeId?: string
   itemId?: string
-  onUploadComplete?: (media: any[]) => void
+  onUploadComplete?: (media: unknown[]) => void
   onError?: (error: string) => void
   maxFiles?: number
   disabled?: boolean
+  /** When the native file dialog closes with no selection (react-dropzone). */
+  onFilePickerCancel?: () => void
+  /** Scoped-queue mode: after files are appended to the local queue (before API upload). */
+  onScopedFilesAccepted?: (files: readonly File[]) => void
   /**
    * While store/item id is missing (e.g. new store form), hold File objects locally and upload after save.
    */
@@ -34,18 +42,24 @@ const formatFileSize = (bytes: number): string => {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
-  storeId,
-  itemId,
-  onUploadComplete,
-  onError,
-  maxFiles = 10,
-  disabled = false,
-  pendingUntilScoped,
-}) => {
+export const EnhancedMediaUploader = forwardRef<
+  EnhancedMediaUploaderHandle,
+  EnhancedMediaUploaderProps
+>(function EnhancedMediaUploader(props, ref) {
+  const {
+    storeId,
+    itemId,
+    onUploadComplete,
+    onError,
+    maxFiles = 10,
+    disabled = false,
+    pendingUntilScoped,
+    onFilePickerCancel,
+    onScopedFilesAccepted,
+  } = props
   const [filePreviews, setFilePreviews] = useState<FilePreview[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
@@ -75,11 +89,11 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
   useEffect(() => {
     return () => {
-      previewUrlsRef.current.forEach((url) => {
+      for (const url of previewUrlsRef.current) {
         if (url.startsWith('blob:')) {
           URL.revokeObjectURL(url)
         }
-      })
+      }
       previewUrlsRef.current.clear()
     }
   }, [])
@@ -92,7 +106,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     const urls = pendingUntilScoped.files.map((f) => URL.createObjectURL(f))
     setScopedQueuePreviewUrls(urls)
     return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u))
+      for (const u of urls) URL.revokeObjectURL(u)
     }
   }, [pendingUntilScoped?.files, useScopedQueue])
 
@@ -118,6 +132,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
         return
       }
       pendingUntilScoped.onFilesChange([...pendingUntilScoped.files, capturedFile])
+      onScopedFilesAccepted?.([capturedFile])
       return
     }
 
@@ -194,7 +209,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
       )
       onError?.(error instanceof Error ? error.message : 'Upload failed')
     }
-  }, [storeId, itemId, onUploadComplete, onError, useScopedQueue, pendingUntilScoped, maxFiles])
+  }, [storeId, itemId, onUploadComplete, onError, useScopedQueue, pendingUntilScoped, maxFiles, onScopedFilesAccepted])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!hasScope) {
@@ -203,6 +218,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
         const slice = acceptedFiles.slice(0, room)
         if (slice.length === 0) return
         pendingUntilScoped.onFilesChange([...pendingUntilScoped.files, ...slice])
+        onScopedFilesAccepted?.(slice)
         return
       }
       onError?.('Store ID or Item ID is required for media uploads')
@@ -219,8 +235,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     const uploadedResults: unknown[] = []
 
     // Upload files one by one
-    for (let i = 0; i < previews.length; i++) {
-      const preview = previews[i]
+    for (const preview of previews) {
       const { file } = preview
 
       try {
@@ -296,13 +311,13 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     if (uploadedResults.length > 0) {
       onUploadComplete?.(uploadedResults)
     }
-  }, [storeId, itemId, onUploadComplete, onError, hasScope, useScopedQueue, pendingUntilScoped, maxFiles])
+  }, [storeId, itemId, onUploadComplete, onError, hasScope, useScopedQueue, pendingUntilScoped, maxFiles, onScopedFilesAccepted])
 
   const queueFull =
     useScopedQueue &&
     (pendingUntilScoped?.files.length ?? 0) >= maxFiles
 
-  const { getRootProps, getInputProps } = useDropzone({
+  const { getRootProps, getInputProps, open } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.gif'],
@@ -313,7 +328,21 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     disabled: disabled || Boolean(queueFull),
     onDragEnter: () => setIsDragging(true),
     onDragLeave: () => setIsDragging(false),
+    onFileDialogCancel: () => {
+      onFilePickerCancel?.()
+    },
   })
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openFilePicker: () => {
+        if (disabled || queueFull) return
+        open()
+      },
+    }),
+    [disabled, queueFull, open],
+  )
 
   const removeFile = (file: File) => {
     setFilePreviews(prev => {
@@ -334,14 +363,18 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
   const getStatusIcon = (status: FilePreview['status']) => {
     switch (status) {
-      case 'uploading':
+      case 'uploading': {
         return <div className="w-4 h-4 rounded-full border-2 border-blue-500 animate-spin border-t-transparent" />
-      case 'success':
+      }
+      case 'success': {
         return <Check className="w-4 h-4 text-green-500" />
-      case 'error':
+      }
+      case 'error': {
         return <AlertCircle className="w-4 h-4 text-red-500" />
-      default:
+      }
+      default: {
         return null
+      }
     }
   }
 
@@ -555,4 +588,6 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
       )}
       </>
   )
-}
+})
+
+EnhancedMediaUploader.displayName = 'EnhancedMediaUploader'

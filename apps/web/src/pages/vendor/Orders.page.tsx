@@ -37,7 +37,7 @@ import { cn } from '@shared/lib/cn'
 import { Activity, Bell, BellOff, Layers, MousePointer2 } from 'lucide-react'
 import { VendorOrdersEmptyState } from './components/VendorOrdersEmptyState'
 
-type DeliveryDriver = {
+interface DeliveryDriver {
   id: string
   userId: string
   user?: {
@@ -92,8 +92,8 @@ export default function VendorOrdersPage() {
     queryKey: ['store-delivery-drivers', selectedStoreId],
     enabled: !!token && Boolean(selectedStoreId),
     queryFn: async () => {
-      const list = await fetchStoreDrivers(selectedStoreId!, token)
-      return { [selectedStoreId!]: list }
+      const list = await fetchStoreDrivers(selectedStoreId, token)
+      return { [selectedStoreId]: list }
     },
   })
 

@@ -37,7 +37,7 @@ export function SearchResultsMap({
 
   useEffect(() => {
     if (!containerRef.current) return
-    if (stores.length === 0 && userLat == null) return
+    if (stores.length === 0 && userLat == undefined) return
 
     if (!mapRef.current) {
       const map = L.map(containerRef.current, { zoomControl: true, attributionControl: false })
@@ -58,7 +58,7 @@ export function SearchResultsMap({
     const bounds: L.LatLngTuple[] = []
 
     // User location dot
-    if (userLat != null && userLng != null) {
+    if (userLat != undefined && userLng != undefined) {
       bounds.push([userLat, userLng])
       const icon = L.divIcon({
         className: '',
@@ -82,8 +82,8 @@ export function SearchResultsMap({
     // Store pins — stores are pre-filtered to have coords, so no null checks needed
     for (const store of stores) {
       // Caller guarantees coords are present; cast avoids redundant Number() on already-number values
-      const lat = store.latitude as number
-      const lng = store.longitude as number
+      const lat = store.latitude!
+      const lng = store.longitude!
       bounds.push([lat, lng])
 
       const icon = L.divIcon({
@@ -93,7 +93,7 @@ export function SearchResultsMap({
         iconAnchor: [15, 15],
       })
 
-      const distHtml = store.distance != null
+      const distHtml = store.distance != undefined
         ? `<div style="color:#6b7280;font-size:12px;margin-top:2px">${formatDistance(store.distance)} away</div>`
         : ''
 
@@ -139,7 +139,7 @@ export function SearchResultsMap({
     [],
   )
 
-  if (stores.length === 0 && userLat == null) {
+  if (stores.length === 0 && userLat == undefined) {
     return (
       <div
         className="flex items-center justify-center rounded-xl border border-border bg-muted/40"

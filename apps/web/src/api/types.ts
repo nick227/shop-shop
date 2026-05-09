@@ -47,6 +47,21 @@ export * from '@shared/types/types/extensions'
 // SDK-Based Form Types
 // ============================================
 
+// Store Social Links
+export interface StoreSocialLinks {
+  youtube?: string
+  instagram?: string
+  facebook?: string
+  tiktok?: string
+  twitter?: string
+  whatsapp?: string
+  discord?: string
+  snapchat?: string
+}
+
+export const SOCIAL_PLATFORMS = ['youtube', 'instagram', 'facebook', 'tiktok', 'twitter', 'whatsapp', 'discord', 'snapchat'] as const
+export type SocialPlatform = typeof SOCIAL_PLATFORMS[number]
+
 // Store Form Types
 export interface StoreFormData {
   name: string
@@ -58,6 +73,15 @@ export interface StoreFormData {
   phone: string
   email: string
   website: string
+  customDomain: string
+  socialYoutube: string
+  socialInstagram: string
+  socialFacebook: string
+  socialTiktok: string
+  socialTwitter: string
+  socialWhatsapp: string
+  socialDiscord: string
+  socialSnapchat: string
   imageUrl?: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
@@ -89,6 +113,15 @@ export interface StoreUpdateFormData {
   phone: string
   email: string
   website: string
+  customDomain: string
+  socialYoutube: string
+  socialInstagram: string
+  socialFacebook: string
+  socialTiktok: string
+  socialTwitter: string
+  socialWhatsapp: string
+  socialDiscord: string
+  socialSnapchat: string
   imageUrl?: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'

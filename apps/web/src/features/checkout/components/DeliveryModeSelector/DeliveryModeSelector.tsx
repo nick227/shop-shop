@@ -20,14 +20,14 @@ export interface DeliveryModeSelectorProps {
   disabled?: boolean
 }
 
-const DELIVERY_MODES: Array<{
+const DELIVERY_MODES: {
   value: DeliveryMode
   label: string
   description: string
   icon: string
   badge?: string
   disabled?: boolean
-}> = [
+}[] = [
   {
     value: 'PICKUP',
     label: 'Pickup',

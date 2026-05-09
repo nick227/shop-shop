@@ -3,7 +3,7 @@ import { useCartStore, type AddBundleToCartInput } from '@stores/cartStore'
 import { useCartToaster } from '@features/cart/components/CartToaster'
 import { handleApiError } from '@api/errors'
 
-export type { AddBundleToCartInput }
+
 
 export function useAddBundleToCart() {
   const queryClient = useQueryClient()
@@ -29,3 +29,5 @@ export function useAddBundleToCart() {
     },
   })
 }
+
+export {type AddBundleToCartInput} from '@stores/cartStore'

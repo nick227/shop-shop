@@ -131,11 +131,11 @@ function SearchStoreCard({
   index: number
 }) {
   const imageUrl = getStoreImageUrl(store, 'standard')
-  const locationLabel = store.distance != null
+  const locationLabel = store.distance != undefined
     ? formatDistance(store.distance)
-    : store.address?.city
+    : (store.address?.city
       ? `${store.address.city}${store.address.state ? `, ${store.address.state}` : ''}`
-      : 'Near you'
+      : 'Near you')
   const categoryLabel = STORE_TYPE_LABEL[store.category] ?? store.category
 
   return (
@@ -172,7 +172,7 @@ function SearchStoreCard({
             {locationLabel}
           </span>
           <div className="flex shrink-0 items-center gap-2">
-            {store.rating != null && (
+            {store.rating != undefined && (
               <span className="flex items-center gap-0.5 font-semibold text-foreground">
                 <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                 {store.rating.toFixed(1)}
@@ -309,7 +309,7 @@ export default function UnifiedSearchPage() {
     longitude: location?.longitude,
     radiusMiles: location?.radiusMiles,
     storeType: SLUG_TO_STORE_TYPE[activeBrowse],
-    tags: activeTags.length ? activeTags : undefined,
+    tags: activeTags.length > 0 ? activeTags : undefined,
   }
 
   const { data: searchResults, isLoading, isFetching, error } = useUnifiedSearchApi(searchRequest)
@@ -330,7 +330,7 @@ export default function UnifiedSearchPage() {
   }, [allStoreResults, sort])
 
   const storesWithCoords = useMemo(
-    () => sortedStores.filter((s) => s.latitude != null && s.longitude != null),
+    () => sortedStores.filter((s) => s.latitude != undefined && s.longitude != undefined),
     [sortedStores],
   )
 
@@ -576,7 +576,7 @@ export default function UnifiedSearchPage() {
                           disabled && 'cursor-not-allowed opacity-40',
                         )}
                       >
-                        {opt === 'distance' ? 'Nearest' : opt === 'newest' ? 'Newest' : 'A–Z'}
+                        {opt === 'distance' ? 'Nearest' : (opt === 'newest' ? 'Newest' : 'A–Z')}
                       </button>
                     )
                   })}

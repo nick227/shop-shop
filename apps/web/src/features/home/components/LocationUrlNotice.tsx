@@ -30,15 +30,15 @@ export function LocationUrlNotice({ notice, onDismiss }: LocationUrlNoticeProps)
       aria-live="polite"
     >
       <span className="text-xl leading-none" aria-hidden="true">
-        {notice.variant === 'error' ? '⚠️' : notice.variant === 'warning' ? 'ⓘ' : 'ℹ️'}
+        {notice.variant === 'error' ? '⚠️' : (notice.variant === 'warning' ? 'ⓘ' : 'ℹ️')}
       </span>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold">
           {notice.variant === 'error'
             ? 'Location couldn’t be loaded'
-            : notice.variant === 'warning'
+            : (notice.variant === 'warning'
               ? 'Heads up'
-              : 'Notice'}
+              : 'Notice')}
         </p>
         <p className="mt-1 text-muted-foreground">{notice.message}</p>
       </div>

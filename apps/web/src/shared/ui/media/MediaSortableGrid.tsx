@@ -2,13 +2,13 @@ import React, { useState } from 'react'
 import { MediaPreviewCard } from './MediaPreviewCard'
 
 interface MediaSortableGridProps {
-  media: Array<{
+  media: {
     id: string
     kind: 'IMAGE' | 'VIDEO'
     url: string
     altText?: string
     sortIndex: number
-  }>
+  }[]
   onReorder?: (mediaIds: string[]) => void
   onDelete?: (mediaId: string) => void
   onPreview?: (media: any) => void
@@ -60,20 +60,20 @@ export const MediaSortableGrid: React.FC<MediaSortableGridProps> = ({
 
     if (direction === 'up' && indices[0] > 0) {
       // Move selected items up
-      indices.forEach((index, i) => {
+      for (const [i, index] of indices.entries()) {
         const targetIndex = index - 1 - i
         if (targetIndex >= 0) {
           [newMedia[index], newMedia[targetIndex]] = [newMedia[targetIndex], newMedia[index]]
         }
-      })
+      }
     } else if (direction === 'down' && indices[indices.length - 1] < media.length - 1) {
       // Move selected items down
-      indices.reverse().forEach((index, i) => {
+      for (const [i, index] of indices.reverse().entries()) {
         const targetIndex = index + 1 + i
         if (targetIndex < media.length) {
           [newMedia[index], newMedia[targetIndex]] = [newMedia[targetIndex], newMedia[index]]
         }
-      })
+      }
     }
 
     const reorderedIds = newMedia.map(m => m.id)

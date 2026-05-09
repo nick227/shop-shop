@@ -52,9 +52,7 @@ function summarizeTeamRole(permissions: unknown): string {
   const list = Array.isArray(permissions) ? permissions : []
   if (list.includes('FULL_ACCESS')) return 'Manager'
   if (list.includes('VIEW_FINANCE')) return 'Finance'
-  if (list.includes('MANAGE_ITEMS') || list.includes('VIEW_ITEMS')) {
-    if (!list.includes('MANAGE_ORDERS')) return 'Menu editor'
-  }
+  if ((list.includes('MANAGE_ITEMS') || list.includes('VIEW_ITEMS')) && !list.includes('MANAGE_ORDERS')) return 'Menu editor'
   if (list.includes('MANAGE_ORDERS') || list.includes('VIEW_ORDERS')) return 'Order handler'
   return 'Staff'
 }
@@ -162,7 +160,7 @@ export default function VendorTeamPage() {
     )
   }
 
-  if (!stores.length) {
+  if (stores.length === 0) {
     return (
       <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6">
         <EmptyState icon={Users} title="Create a store first" description="Team access is managed per store." />
@@ -258,7 +256,7 @@ export default function VendorTeamPage() {
           <CardContent className="space-y-3">
             {membersQuery.isLoading ? (
               <Spinner />
-            ) : members.length === 0 ? (
+            ) : (members.length === 0 ? (
               <p className="text-sm text-muted-foreground">No team members yet.</p>
             ) : (
               members.map((member) => (
@@ -278,7 +276,7 @@ export default function VendorTeamPage() {
                   </div>
                 </div>
               ))
-            )}
+            ))}
           </CardContent>
         </Card>
 
@@ -292,7 +290,7 @@ export default function VendorTeamPage() {
           <CardContent className="space-y-3">
             {invitationsQuery.isLoading ? (
               <Spinner />
-            ) : invitations.length === 0 ? (
+            ) : (invitations.length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending invitations.</p>
             ) : (
               invitations.map((invitation) => (
@@ -314,7 +312,7 @@ export default function VendorTeamPage() {
                   </div>
                 </div>
               ))
-            )}
+            ))}
           </CardContent>
         </Card>
       </section>

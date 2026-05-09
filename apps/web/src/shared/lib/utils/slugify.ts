@@ -57,7 +57,7 @@ export function createItemSlug(itemTitle: string, _itemId?: string): string {
  * Example: "joes-pizza-abc123" → "abc123" (if it ends with 6 chars)
  */
 export function extractIdFromSlug(slug: string): string | undefined {
-  const uuidMatch = slug.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  const uuidMatch = /[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.exec(slug)
   return uuidMatch?.[0]
 }
 

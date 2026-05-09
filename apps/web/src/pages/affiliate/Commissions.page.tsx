@@ -37,7 +37,7 @@ export default function AffiliateCommissionsPage() {
     queryFn: () => api.getMyCommissions(status ? { status } : undefined),
   })
 
-  const commissions = (query.data?.commissions ?? []) as Record<string, unknown>[]
+  const commissions = (query.data?.commissions ?? [])
 
   return (
     <PageShell
@@ -67,7 +67,7 @@ export default function AffiliateCommissionsPage() {
         <div className="flex min-h-[240px] items-center justify-center">
           <Spinner size="large" />
         </div>
-      ) : commissions.length === 0 ? (
+      ) : (commissions.length === 0 ? (
         <EmptyState
           icon={DollarSign}
           title="No commissions yet"
@@ -99,7 +99,7 @@ export default function AffiliateCommissionsPage() {
             </Card>
           ))}
         </div>
-      )}
+      ))}
     </PageShell>
   )
 }

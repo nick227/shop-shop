@@ -22,7 +22,7 @@ export function getImageUrl(
   imageUrl: string | undefined,
   id: string,
   type: PlaceholderType,
-  mediaAssets?: Array<{ url: string; kind: string }>
+  mediaAssets?: { url: string; kind: string }[]
 ): string {
   // Check for mediaAssets first (from backend with media relations)
   if (mediaAssets && mediaAssets.length > 0) {

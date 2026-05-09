@@ -54,7 +54,7 @@ export type ItemResponse = ListItems200ResponseDataInner & {
   createdAt: string
   updatedAt: string
   tags?: ItemTag[]
-  mediaAssets?: Array<{ url: string; kind: string; sortIndex?: number | null }>
+  mediaAssets?: { url: string; kind: string; sortIndex?: number | null }[]
 }
 
 export type OrderResponse = ListOrders200ResponseDataInner & {

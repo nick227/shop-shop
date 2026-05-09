@@ -124,7 +124,7 @@ export default function StoreBundleEditorPage() {
         pricing,
       }
       if (isEditing) {
-        return apiClient.bundles().updateBundle({ id: bundleId!, updateBundleRequest: payload as any })
+        return apiClient.bundles().updateBundle({ id: bundleId, updateBundleRequest: payload as any })
       }
       return apiClient.bundles().createBundle({ createBundleRequest: payload as any })
     },
@@ -160,12 +160,15 @@ export default function StoreBundleEditorPage() {
   const resolvedPreview = (): number | null => {
     if (selectedItems.length === 0) return null
     switch (form.pricingType) {
-      case 'FIXED_PRICE':
+      case 'FIXED_PRICE': {
         return form.fixedPrice ? Number(form.fixedPrice) : null
-      case 'DISCOUNT_PERCENT':
+      }
+      case 'DISCOUNT_PERCENT': {
         return form.discountPercent ? itemSum * (1 - Number(form.discountPercent) / 100) : null
-      case 'DISCOUNT_AMOUNT':
+      }
+      case 'DISCOUNT_AMOUNT': {
         return form.discountAmount ? itemSum - Number(form.discountAmount) : null
+      }
       case 'BEST_DEAL': {
         const candidates = [
           form.fixedPrice ? Number(form.fixedPrice) : Infinity,
@@ -179,7 +182,7 @@ export default function StoreBundleEditorPage() {
   }
 
   const preview = resolvedPreview()
-  const savings = preview != null ? itemSum - preview : null
+  const savings = preview != undefined ? itemSum - preview : null
   const canSave = form.name.trim().length > 0 && selectedItems.length > 0
 
   if (isEditing && isLoadingBundle) {
@@ -411,13 +414,13 @@ export default function StoreBundleEditorPage() {
                 <span className="text-muted-foreground">Items sum</span>
                 <span>{formatCurrency(itemSum)}</span>
               </div>
-              {preview != null && (
+              {preview != undefined && (
                 <>
                   <div className="flex justify-between font-semibold">
                     <span>Bundle price</span>
                     <span className="text-success">{formatCurrency(Math.max(0, preview))}</span>
                   </div>
-                  {savings != null && savings > 0.005 && (
+                  {savings != undefined && savings > 0.005 && (
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Customer saves</span>
                       <span className="text-success font-medium">{formatCurrency(savings)}</span>
@@ -440,8 +443,8 @@ export default function StoreBundleEditorPage() {
           onClick={() => saveMutation.mutate()}
         >
           {saveMutation.isPending
-            ? isEditing ? 'Saving…' : 'Creating…'
-            : isEditing ? 'Save changes' : 'Create bundle'}
+            ? (isEditing ? 'Saving…' : 'Creating…')
+            : (isEditing ? 'Save changes' : 'Create bundle')}
         </Button>
       </div>
     </PageShell>

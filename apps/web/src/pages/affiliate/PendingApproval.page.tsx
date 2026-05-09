@@ -15,7 +15,7 @@ export default function PendingApprovalPage() {
     queryFn: () => api.getMyApplication(),
   })
 
-  const appStatus = (appQuery.data?.affiliate?.status as string | undefined) ?? null
+  const appStatus = (appQuery.data?.affiliate?.status) ?? null
 
   useEffect(() => {
     if (!appStatus) return

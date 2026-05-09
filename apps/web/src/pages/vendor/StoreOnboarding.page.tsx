@@ -80,7 +80,7 @@ export default function VendorStoreOnboardingPage() {
       return await apiClient.stores().createStore({ 
         createStoreRequest: {
           name: data.name,
-          slug: data.name.toLowerCase().replace(/\s+/g, '-'),
+          slug: data.name.toLowerCase().replaceAll(/\s+/g, '-'),
           description: data.description,
           addressStreet: data.address,
           pickupEnabled: data.pickupEnabled,

@@ -16,7 +16,7 @@ export default function AffiliateSettingsPage() {
     queryFn: () => api.getMyProfile(),
   })
 
-  const profile = profileQuery.data?.affiliate as Record<string, unknown> | undefined
+  const profile = profileQuery.data?.affiliate
 
   const [paypalEmail, setPaypalEmail] = useState('')
   const [website, setWebsite] = useState('')

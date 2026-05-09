@@ -1,12 +1,29 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { EnhancedMediaUploader } from './EnhancedMediaUploader'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  EnhancedMediaUploader,
+  type EnhancedMediaUploaderHandle,
+} from './EnhancedMediaUploader'
 import { EnhancedMediaPreviewCard } from './EnhancedMediaPreviewCard'
 import { Search, Grid, Trash2, SortAsc, SortDesc } from 'lucide-react'
 import { authFetch } from '@shared/lib/auth/authFetch'
 import { readHttpErrorFromResponse } from '@api/readHttpError'
 import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 
-type EntityThumbnailMode = 'store' | 'item'
+function pickThumbnailUrlFromUploadResults(items: unknown[]): string | undefined {
+  for (const item of items) {
+    if (item && typeof item === 'object' && 'kind' in item && 'url' in item) {
+      const o = item as { kind?: unknown; url?: unknown }
+      if (o.kind === 'IMAGE' && typeof o.url === 'string') return o.url
+    }
+  }
+  for (const item of items) {
+    if (item && typeof item === 'object' && 'url' in item) {
+      const u = (item as { url?: unknown }).url
+      if (typeof u === 'string') return u
+    }
+  }
+  return undefined
+}
 
 interface EnhancedMediaGalleryManagerProps {
   storeId?: string
@@ -48,6 +65,9 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
   onPendingScopedMediaFilesChange,
 }) => {
   const pendingScopedCount = pendingScopedMediaFiles?.length ?? 0
+  const thumbnailPickerRef = useRef<HTMLDivElement>(null)
+  const uploaderRef = useRef<EnhancedMediaUploaderHandle>(null)
+  const assignThumbnailAfterNextUploadRef = useRef(false)
 
   const FAILED_TO_DELETE_MEDIA = 'Failed to delete media'
   const readErrorMessage = async (response: Response, fallbackMessage: string): Promise<string> => {
@@ -112,10 +132,13 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
     void loadMedia()
   }, [loadMedia])
 
-  const handleUploadComplete = (_newMediaItems: MediaItem[]) => {
-    // Backend may assign canonical sortIndex / return partial data.
-    // Always reload from server to keep order consistent.
+  const handleUploadComplete = (newMediaItems: unknown[]) => {
     void loadMedia()
+    if (assignThumbnailAfterNextUploadRef.current && onThumbnailChange) {
+      assignThumbnailAfterNextUploadRef.current = false
+      const url = pickThumbnailUrlFromUploadResults(newMediaItems)
+      if (url) onThumbnailChange(url)
+    }
   }
 
   const handleUploadError = (errorMessage: string) => {
@@ -167,40 +190,6 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
     }
   }
 
-  const handleSetPrimary = async (mediaId: string) => {
-    try {
-      const selected = media.find(m => m.id === mediaId)
-      if (!selected) throw new Error('Media not found')
-
-      // Update thumbnail URL if callback is provided
-      if (onThumbnailChange) {
-        onThumbnailChange(selected.url)
-      }
-
-      const ordered = [
-        selected,
-        ...media
-          .filter(m => m.id !== mediaId)
-          .sort((a, b) => a.sortIndex - b.sortIndex),
-      ].map((item, index) => ({ ...item, sortIndex: index }))
-
-      // Update backend with new order
-      const response = await authFetch('/api/media/reorder', {
-        method: 'PATCH',
-        body: JSON.stringify({ mediaIds: ordered.map(m => m.id) }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to set primary media')
-      }
-
-      // Reload from server to ensure canonical order
-      await loadMedia()
-    } catch (error_) {
-      setError(error_ instanceof Error ? error_.message : 'Failed to set primary media')
-    }
-  }
-
   const handlePreview = (mediaItem: MediaItem) => {
     // Enhanced preview with modal (simplified for now)
     window.open(mediaItem.url, '_blank')
@@ -244,10 +233,28 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
     return acc
   }, { total: 0, images: 0, videos: 0 })
 
+  const handleRemoveThumbnail = () => {
+    if (disabled || !onThumbnailChange) return
+    onThumbnailChange('')
+  }
+
+  const handleChangeThumbnail = () => {
+    if (disabled) return
+    if (!canUploadMore) {
+      thumbnailPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    assignThumbnailAfterNextUploadRef.current = true
+    uploaderRef.current?.openFilePicker()
+  }
+
+  const linkLikeButtonClass =
+    'font-medium text-green-800 underline decoration-green-600/50 underline-offset-2 hover:text-green-900 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
+      <div className="flex flex-col justify-center items-center py-16 space-y-4">
+        <div className="w-12 h-12 rounded-full border-4 border-blue-500 animate-spin border-t-transparent" />
         <div className="text-gray-500">Loading your media gallery...</div>
       </div>
     )
@@ -256,7 +263,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+        <div className="px-6 py-4 text-red-700 bg-red-50 rounded-xl border border-red-200">
           <div className="flex items-center space-x-2">
             <span className="text-lg">⚠️</span>
             <span>{error}</span>
@@ -265,7 +272,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
         <button
           onClick={() => void loadMedia()}
           disabled={disabled}
-          className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+          className="px-6 py-3 text-white bg-red-500 rounded-lg transition-colors hover:bg-red-600 disabled:opacity-50"
         >
           Try Again
         </button>
@@ -276,10 +283,10 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-        <div className="flex items-center justify-between">
+      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Media Gallery</h3>
+            <h3 className="mb-2 text-xl font-semibold text-gray-800">Media Gallery</h3>
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <span className="flex items-center space-x-1">
                 <span>📊</span>
@@ -300,23 +307,15 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
             </div>
           </div>
           
-          {!disabled && canUploadMore && (
-            <div className="text-sm text-blue-600 font-medium">
-              {onThumbnailChange 
-                ? "⭐ Selected thumbnail."
-                : "⭐ First image is primary"
-              }
-            </div>
-          )}
         </div>
       </div>
 
       {/* Current Thumbnail Preview */}
       {thumbnailUrl && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-          <div className="flex items-center justify-between">
+        <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+          <div className="flex justify-between items-center">
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">
+              <h4 className="mb-2 text-lg font-semibold text-gray-800">
                 Current {thumbnailLabel ?? 'thumbnail'}
               </h4>
               <div className="flex items-center space-x-4">
@@ -324,15 +323,32 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
                   <img
                     src={resolveBrowserAssetUrl(thumbnailUrl)}
                     alt="Current thumbnail"
-                    className="w-20 h-20 object-cover rounded-lg border-2 border-green-300 shadow-sm"
+                    className="object-cover w-20 h-20 rounded-lg border-2 border-green-300 shadow-sm"
                   />
-                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  <div className="absolute -top-2 -right-2 px-2 py-1 text-xs font-medium text-white bg-green-500 rounded-full">
                     Active
                   </div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  <div className="font-medium">This is the active thumbnail</div>
-                  <div>Used on cards and analytics</div>
+                <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-gray-600">
+                  <button
+                    type="button"
+                    disabled={disabled || !onThumbnailChange}
+                    onClick={handleRemoveThumbnail}
+                    className={linkLikeButtonClass}
+                  >
+                    Remove
+                  </button>
+                  <span aria-hidden className="text-gray-400">
+                    /
+                  </span>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={handleChangeThumbnail}
+                    className={linkLikeButtonClass}
+                  >
+                    Change
+                  </button>
                 </div>
               </div>
             </div>
@@ -340,18 +356,19 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
         </div>
       )}
 
+      <div ref={thumbnailPickerRef} className="space-y-4">
       {/* Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+      <div className="flex flex-wrap gap-4 justify-between items-center p-4 bg-gray-50 rounded-lg">
         {/* Search */}
-        <div className="flex items-center space-x-2 flex-1 min-w-0">
+        <div className="flex flex-1 items-center space-x-2 min-w-0">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 w-4 h-4 text-gray-400 transform -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search media..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="py-2 pr-4 pl-10 w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -361,7 +378,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as FilterType)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Media</option>
             <option value="images">Images Only</option>
@@ -370,13 +387,13 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
           <button
             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg border border-gray-300 transition-colors hover:bg-gray-100"
             title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
           >
             {sortOrder === 'asc' ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
           </button>
 
-          <div className="flex items-center border border-gray-300 rounded-lg">
+          <div className="flex items-center rounded-lg border border-gray-300">
             <div className="p-2 bg-gray-200" title="Grid view">
               <Grid className="w-4 h-4" />
             </div>
@@ -386,15 +403,15 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
       {/* Bulk Actions */}
       {selectedItems.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
+        <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <span className="text-blue-700 font-medium">
+              <span className="font-medium text-blue-700">
                 {selectedItems.length} item{selectedItems.length > 1 ? 's' : ''} selected
               </span>
               <button
                 onClick={clearSelection}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="text-sm text-blue-600 hover:text-blue-800"
               >
                 Clear selection
               </button>
@@ -403,7 +420,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => void handleBulkDelete()}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2"
+                className="flex items-center px-4 py-2 space-x-2 text-white bg-red-500 rounded-lg transition-colors hover:bg-red-600"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Selected</span>
@@ -416,12 +433,23 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       {/* Upload Area */}
       {!disabled && canUploadMore && (
         <EnhancedMediaUploader
+          ref={uploaderRef}
           storeId={storeId}
           itemId={itemId}
           onUploadComplete={handleUploadComplete}
           onError={handleUploadError}
           maxFiles={maxFiles - media.length - pendingScopedCount}
           disabled={disabled}
+          onFilePickerCancel={() => {
+            assignThumbnailAfterNextUploadRef.current = false
+          }}
+          onScopedFilesAccepted={(accepted) => {
+            if (!assignThumbnailAfterNextUploadRef.current || !onThumbnailChange) return
+            assignThumbnailAfterNextUploadRef.current = false
+            const thumbFile =
+              accepted.find((f) => f.type.startsWith('image/')) ?? accepted[0]
+            if (thumbFile) onThumbnailChange(URL.createObjectURL(thumbFile))
+          }}
           pendingUntilScoped={
             !storeId &&
             !itemId &&
@@ -437,7 +465,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
       {/* Upload Limit Reached */}
       {!disabled && !canUploadMore && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-xl">
+        <div className="px-6 py-4 text-yellow-800 bg-yellow-50 rounded-xl border border-yellow-200">
           <div className="flex items-center space-x-2">
             <span className="text-lg">📦</span>
             <span>Maximum media limit reached ({maxFiles} items). Delete some items to upload more.</span>
@@ -447,9 +475,9 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
 
       {/* Media Grid/List */}
       {filteredMedia.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">📸</div>
-          <div className="text-xl font-medium text-gray-700 mb-2">
+        <div className="py-16 text-center">
+          <div className="mb-4 text-6xl">📸</div>
+          <div className="mb-2 text-xl font-medium text-gray-700">
             {searchQuery || filterType !== 'all' ? 'No media found' : 'No media uploaded yet'}
           </div>
           <div className="text-gray-500">
@@ -460,7 +488,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filteredMedia.map((item) => (
             <div
               key={item.id}
@@ -480,21 +508,15 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
             >
               <EnhancedMediaPreviewCard
                 media={item}
-                isPrimary={
-                  thumbnailUrl
-                    ? resolveBrowserAssetUrl(thumbnailUrl) === item.url
-                    : item.sortIndex === 0
-                }
                 onDelete={() => void handleDelete(item.id)}
                 onPreview={() => handlePreview(item)}
-                onSetPrimary={() => void handleSetPrimary(item.id)}
                 disabled={disabled}
-                setPrimaryLabel={onThumbnailChange ? 'Set as thumbnail' : 'Set as primary'}
               />
             </div>
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
