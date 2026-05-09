@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiClient } from '@api/client'
+import { authFetch } from '@shared/lib/auth/authFetch'
 import { useCustomerRealtimeOrder } from '@shared/hooks/hooks/useCustomerRealtimeOrder'
 import { useTip } from '@shared/hooks/hooks/useTip'
 import { useStore } from '@shared/hooks/generated'
@@ -48,6 +49,26 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
     },
     enabled: !!orderId,
     refetchInterval: 5000,
+  })
+
+  const orderDeliveryType = (orderData as { deliveryType?: string } | undefined)?.deliveryType
+
+  const deliveryPollMs = 15_000
+
+  const { data: deliveryJob, refetch: refetchDeliveryJob } = useQuery({
+    queryKey: ['delivery-tracking', orderId],
+    queryFn: async () => {
+      if (!orderId) return null
+
+      const response = await authFetch(`delivery/tracking/${orderId}`)
+      if (!response.ok) return null
+
+      const data = (await response.json()) as { deliveryJob?: Record<string, unknown> | null }
+      return data.deliveryJob ?? null
+    },
+    enabled: !!orderId && orderDeliveryType === 'DELIVERY',
+    refetchInterval: deliveryPollMs,
+    retry: 3,
   })
   
   const { createTip, isLoading: isTipLoading } = useTip()
@@ -141,23 +162,21 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
     order,
     store,
     orderItems,
-    
-    // Computed values
+    deliveryJob,
+    deliveryPollIntervalMs: deliveryPollMs,
     orderStatusInfo,
     orderTimeInfo,
     orderProgress,
-    
     // State
     isLoadingOrder,
     orderNotFound,
     canShowTipPrompt,
     isTipLoading,
-    
     // Actions
     handleTipSubmit,
     handleTipClose,
     handleBackToOrders,
-    
+    refetchDeliveryJob,
     // Navigation
     navigate
   }

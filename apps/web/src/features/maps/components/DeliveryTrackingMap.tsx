@@ -1,22 +1,28 @@
-import { useState, useEffect, useRef } from 'react'
-import { MapPin, Navigation, Clock, Truck, Package } from 'lucide-react'
+import { MapPin, Navigation, Clock, Truck, Package, RefreshCw } from 'lucide-react'
 import { Button } from '@shared/ui/primitives'
 import type { LatLng } from '@shared/lib/utils/maps'
+import {
+  formatMilesDistance,
+  haversineMiles,
+  openNavigateNewTab,
+} from '@shared/lib/utils/maps'
+import { StoreDestinationMap } from '@features/stores/components/StoreMap/StoreDestinationMap'
+import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 
 export interface DeliveryTrackingMapProps {
-  storeLocation: LatLng
-  deliveryLocation?: LatLng
-  userLocation?: LatLng
-  driverLocation?: LatLng
-  storeName: string
-  deliveryMode:
+  readonly storeLocation: Readonly<LatLng>
+  readonly deliveryLocation?: Readonly<LatLng>
+  readonly userLocation?: Readonly<LatLng>
+  readonly driverLocation?: Readonly<LatLng>
+  readonly storeName: string
+  readonly deliveryMode:
     | 'PICKUP'
     | 'DELIVERY'
     | 'STORE_MANAGED_DELIVERY'
     | 'PLATFORM_DRIVER'
     | 'THIRD_PARTY_PROVIDER'
-  estimatedTime?: string
-  status:
+  readonly estimatedTime?: string
+  readonly status:
     | 'PLACED'
     | 'ACCEPTED'
     | 'PREPARING'
@@ -25,215 +31,190 @@ export interface DeliveryTrackingMapProps {
     | 'DELIVERED'
     | 'CANCELED'
     | 'COMPLETED'
-  onRefresh?: () => void
+  readonly onRefresh?: () => void
+}
+
+function isPickupMode(mode: DeliveryTrackingMapProps['deliveryMode']) {
+  return mode === 'PICKUP'
+}
+
+function statusIcon(status: DeliveryTrackingMapProps['status']) {
+  switch (status) {
+    case 'PREPARING':
+    case 'PLACED':
+    case 'ACCEPTED':
+      return <Package className="w-5 h-5 text-amber-600" />
+    case 'READY':
+      return <Clock className="w-5 h-5 text-blue-600" />
+    case 'OUT_FOR_DELIVERY':
+      return <Truck className="w-5 h-5 text-green-600" />
+    case 'COMPLETED':
+    case 'DELIVERED':
+      return <MapPin className="w-5 h-5 text-muted-foreground" />
+    case 'CANCELED':
+      return <Package className="w-5 h-5 text-muted-foreground" />
+    default:
+      return <Package className="w-5 h-5 text-muted-foreground" />
+  }
+}
+
+function statusLine(
+  status: DeliveryTrackingMapProps['status'],
+  pickup: boolean,
+): string {
+  switch (status) {
+    case 'PREPARING':
+    case 'PLACED':
+    case 'ACCEPTED':
+      return 'Being prepared'
+    case 'READY':
+      return pickup ? 'Ready for pickup' : 'Ready for dispatch'
+    case 'OUT_FOR_DELIVERY':
+      return pickup ? 'Pickup window' : 'Out for delivery'
+    case 'COMPLETED':
+    case 'DELIVERED':
+      return pickup ? 'Picked up' : 'Delivered'
+    case 'CANCELED':
+      return 'Canceled'
+    default:
+      return 'Processing'
+  }
 }
 
 export function DeliveryTrackingMap({
   storeLocation,
   deliveryLocation,
-  userLocation,
   driverLocation,
   storeName,
   deliveryMode,
   estimatedTime,
   status,
-  onRefresh
+  onRefresh,
 }: DeliveryTrackingMapProps) {
-  const [mapUrl, setMapUrl] = useState<string>('')
-  const [isTracking, setIsTracking] = useState(false)
-  const mapRef = useRef<HTMLDivElement>(null)
+  const pickup = isPickupMode(deliveryMode)
+  const routeMiles =
+    deliveryLocation && !pickup
+      ? haversineMiles(storeLocation, deliveryLocation)
+      : undefined
 
-  useEffect(() => {
-    // Generate dynamic map URL for embedded display
-    const generateMapUrl = () => {
-      const baseUrl = 'https://www.google.com/maps/embed/v1/view'
-      const params = new URLSearchParams({
-        key: 'YOUR_API_KEY', // Would need actual API key
-        center: `${storeLocation.latitude},${storeLocation.longitude}`,
-        zoom: '14',
-        maptype: 'roadmap'
-      })
-      
-      // Add markers for different locations
-      const markers = []
-      
-      // Store marker
-      markers.push(`markers=color:blue|label:S|${storeLocation.latitude},${storeLocation.longitude}`)
-      
-      // User/delivery location marker
-      if (deliveryLocation) {
-        markers.push(`markers=color:red|label:D|${deliveryLocation.latitude},${deliveryLocation.longitude}`)
-      }
-      
-      // Driver marker (if available)
-      if (driverLocation) {
-        markers.push(`markers=color:green|label:Driver|${driverLocation.latitude},${driverLocation.longitude}`)
-      }
-      
-      if (markers.length > 0) {
-        params.append('markers', markers.join('|'))
-      }
-      
-      return `${baseUrl}?${params.toString()}`
-    }
-
-    setMapUrl(generateMapUrl())
-  }, [storeLocation, deliveryLocation, driverLocation])
-
-  const handleGetDirections = () => {
-    const destination = deliveryMode === 'PICKUP' ? storeLocation : deliveryLocation
-    
-    if (destination) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}&destination_label=${encodeURIComponent(storeName)}`
-      window.open(url, '_blank')
-    }
-  }
-
-  const handleStartTracking = () => {
-    setIsTracking(true)
-    // Would implement real-time tracking logic here
-  }
-
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'PREPARING':
-      case 'PLACED':
-      case 'ACCEPTED':
-        return <Package className="w-5 h-5 text-orange-500" />
-      case 'READY': return <Clock className="w-5 h-5 text-blue-500" />
-      case 'OUT_FOR_DELIVERY': return <Truck className="w-5 h-5 text-green-500" />
-      case 'COMPLETED':
-      case 'DELIVERED':
-        return <MapPin className="w-5 h-5 text-gray-500" />
-      case 'CANCELED':
-        return <Package className="w-5 h-5 text-gray-400" />
-      default: return <Package className="w-5 h-5 text-gray-500" />
-    }
-  }
-
-  const getStatusText = () => {
-    switch (status) {
-      case 'PREPARING':
-      case 'PLACED':
-      case 'ACCEPTED':
-        return 'Order is being prepared'
-      case 'READY': return 'Order is ready for pickup'
-      case 'OUT_FOR_DELIVERY': return 'Driver is on the way'
-      case 'COMPLETED':
-      case 'DELIVERED':
-        return 'Order has been delivered'
-      case 'CANCELED':
-        return 'Order canceled'
-      default: return 'Order processing'
-    }
-  }
+  const mapSection =
+    !pickup && deliveryLocation ? (
+      <StoreDestinationMap
+        store={{
+          latitude: storeLocation.latitude,
+          longitude: storeLocation.longitude,
+          label: storeName,
+        }}
+        destination={{
+          latitude: deliveryLocation.latitude,
+          longitude: deliveryLocation.longitude,
+          label: 'Drop-off',
+        }}
+        driver={
+          driverLocation && status === 'OUT_FOR_DELIVERY'
+            ? {
+                latitude: driverLocation.latitude,
+                longitude: driverLocation.longitude,
+                label: 'Courier',
+              }
+            : undefined
+        }
+        height="280px"
+      />
+    ) : (
+      <StorePreviewMap
+        latitude={storeLocation.latitude}
+        longitude={storeLocation.longitude}
+        height="220px"
+        zoom={14}
+      />
+    )
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      {/* Map Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {getStatusIcon()}
-            <div>
-              <h3 className="font-semibold text-lg">{storeName}</h3>
-              <p className="text-blue-100 text-sm">{getStatusText()}</p>
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden">
+      <div className="border-b border-border bg-muted/40 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {statusIcon(status)}
+            <div className="min-w-0">
+              <h3 className="font-semibold truncate">{storeName}</h3>
+              <p className="text-sm text-muted-foreground truncate">
+                {statusLine(status, pickup)}
+              </p>
             </div>
           </div>
-          
-          {estimatedTime && (
-            <div className="text-right">
-              <p className="text-blue-100 text-xs">ETA</p>
-              <p className="font-semibold">{estimatedTime}</p>
+          {estimatedTime ? (
+            <div className="text-right shrink-0">
+              <p className="text-xs text-muted-foreground">ETA</p>
+              <p className="font-medium tabular-nums">{estimatedTime}</p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="relative">
-        <div 
-          ref={mapRef}
-          className="w-full h-64 bg-gray-100"
-          style={{
-            backgroundImage: `url(https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-l+555555(${storeLocation.longitude},${storeLocation.latitude}),${storeLocation.longitude},${storeLocation.longitude},14,600x400@2x?access_token=YOUR_MAPBOX_TOKEN)`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          {/* Fallback static map display */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white opacity-20"></div>
-          
-          {/* Location Markers Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">{storeName}</p>
-              {deliveryLocation && (
-                <div className="mt-4">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mx-auto mb-1"></div>
-                  <p className="text-xs text-gray-600">Delivery Location</p>
-                </div>
-              )}
-            </div>
+      <div className="relative border-b border-border bg-muted/20">
+        {mapSection}
+        {onRefresh ? (
+          <div className="absolute top-3 right-3">
+            <Button
+              type="button"
+              size="small"
+              variant="secondary"
+              className="shadow-md"
+              onClick={onRefresh}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Refresh
+            </Button>
           </div>
-        </div>
-
-        {/* Tracking Controls */}
-        <div className="absolute top-4 right-4 space-y-2">
-          <Button
-            size="small"
-            onClick={onRefresh}
-            className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
-          >
-            Refresh
-          </Button>
-        </div>
+        ) : null}
       </div>
 
-      {/* Action Buttons */}
-      <div className="p-4 space-y-3">
-        <div className="flex gap-3">
+      <div className="space-y-3 p-4">
+        {!pickup && typeof routeMiles === 'number' && Number.isFinite(routeMiles) ? (
+          <p className="text-sm text-muted-foreground">
+            Straight-line distance: {formatMilesDistance(routeMiles)}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2">
           <Button
-            onClick={handleGetDirections}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            type="button"
+            className="flex-1 min-w-[140px]"
+            onClick={() =>
+              openNavigateNewTab({
+                destination: pickup ? storeLocation : deliveryLocation ?? storeLocation,
+                destinationLabel: storeName,
+              })
+            }
           >
             <Navigation className="w-4 h-4 mr-2" />
-            Get Directions
+            {pickup ? 'Directions to store' : 'Directions to address'}
           </Button>
-          
-          {status === 'OUT_FOR_DELIVERY' && !isTracking && (
+          {!pickup ? (
             <Button
-              onClick={handleStartTracking}
+              type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 min-w-[140px]"
+              onClick={() =>
+                openNavigateNewTab({
+                  destination: storeLocation,
+                  destinationLabel: storeName,
+                })
+              }
             >
-              <Truck className="w-4 h-4 mr-2" />
-              Track Driver
+              Store location
             </Button>
-          )}
+          ) : null}
         </div>
 
-        {/* Status Details */}
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {getStatusIcon()}
-              <span className="text-sm font-medium text-gray-900">
-                {deliveryMode === 'PICKUP' ? 'Pickup' : 'Delivery'} Status
-              </span>
-            </div>
-            <span className="text-sm text-gray-600">{getStatusText()}</span>
-          </div>
-          
-          {estimatedTime && (
-            <div className="mt-2 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
-                Estimated {deliveryMode === 'PICKUP' ? 'pickup' : 'delivery'}: {estimatedTime}
-              </span>
-            </div>
-          )}
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">
+            {pickup ? 'Pickup' : 'Delivery'}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {statusLine(status, pickup)}
+          </span>
         </div>
       </div>
     </div>

@@ -315,3 +315,52 @@ Point-in-time audit of the codebase and CI against this list (**not** a substitu
 | External | 52 |
 
 *Treat this list as a gate: anything unchecked is either done before launch or explicitly waived with owner and risk noted.*
+
+---
+
+## Delivery regression checklist (manual QA)
+
+Use after shipping delivery-related changes (DoorDash, in-house, tracking UI).
+
+### DoorDash path
+
+| Step | Verify |
+|------|--------|
+| Quote | Checkout quote returns ETA/fee when DoorDash / third-party mode selected. |
+| Checkout | Order creates with `deliveryMode` `THIRD_PARTY_PROVIDER`, coords + paid path OK. |
+| READY | Vendor marks order READY; dispatch enabled. |
+| Dispatch | `POST …/dispatch` with `DOORDASH_DRIVE` returns 201 + job + optional tracking URL. |
+| Webhook | Provider webhook updates `DeliveryJob` + order status (`OUT_FOR_DELIVERY` / `DELIVERED`) as configured. |
+| Delivered | Customer order tracking shows terminal state + external tracking link when present. |
+
+### In-house path
+
+| Step | Verify |
+|------|--------|
+| READY | Store-managed delivery order READY with coords. |
+| Dispatch | `IN_HOUSE` dispatch with valid driver assignment. |
+| Status | Order transitions to `OUT_FOR_DELIVERY` then `DELIVERED` via provider/webhook or internal actions as implemented. |
+| Tracking API | `GET /api/delivery/tracking/:orderId` returns latest job for `DELIVERY` orders (Bearer required). |
+
+### Customer tracking
+
+| Step | Verify |
+|------|--------|
+| Auth | Tracking endpoint rejects unauthenticated callers (`401`). |
+| Ownership | Customer A cannot load tracking JSON for customer B’s order (`403`). |
+| Vendor | Team member with deliveries scope can load tracking for their store’s orders. |
+| Realtime | WebSocket events scoped by `orderId` + `userId`; when disconnected, UI shows polling interval. |
+
+### Admin / ops
+
+| Step | Verify |
+|------|--------|
+| Jobs list | `GET /api/admin/delivery/jobs` admin-only. |
+| Events | `GET /api/admin/delivery/events` shows webhook audit trail for investigations. |
+
+### Failure modes
+
+| Step | Verify |
+|------|--------|
+| Failed / canceled job | Customer UI shows destructive alert; status badge matches job row. |
+| No coords | Map card hidden when store geo missing; rest of page still works. |

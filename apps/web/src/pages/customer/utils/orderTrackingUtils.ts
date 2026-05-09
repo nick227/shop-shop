@@ -21,6 +21,9 @@ export interface ParsedOrder {
   id: string
   status: string
   deliveryType: string
+  deliveryMode: string
+  deliveryLatitude?: number
+  deliveryLongitude?: number
   subtotal: number
   fees: number
   tax: number
@@ -67,13 +70,21 @@ export function parseOrderItems(orderItemsString: string | null | undefined): Or
 // Order Data Parser
 // ========================================
 
+function parseCoord(raw: unknown): number | undefined {
+  if (raw === null || raw === undefined || raw === '') return undefined
+  const n = Number.parseFloat(String(raw))
+  return Number.isFinite(n) ? n : undefined
+}
+
 export function parseOrderData(orderData: any): ParsedOrder | undefined {
   if (!orderData) return undefined
-  
+
   return {
     ...orderData,
     status: orderData.status as string,
     deliveryType: orderData.deliveryType,
+    deliveryLatitude: parseCoord(orderData.deliveryLatitude),
+    deliveryLongitude: parseCoord(orderData.deliveryLongitude),
     subtotal: Number.parseFloat(orderData.subtotal),
     fees: Number.parseFloat(orderData.fees),
     tax: Number.parseFloat(orderData.tax),
