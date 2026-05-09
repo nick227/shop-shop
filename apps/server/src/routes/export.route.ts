@@ -13,6 +13,7 @@ import {
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const DateRangeSchema = z.object({
   startDate: z.string().datetime().optional(),
@@ -108,7 +109,7 @@ export const exportRoutes = async (app: FastifyInstance) => {
         const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
         if (!store) return reply.code(404).send({ error: 'Store not found' })
         if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
-          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+          return VendorErrors.forbidden(reply, 'You cannot access analytics for this store')
         }
       }
 
@@ -148,7 +149,7 @@ export const exportRoutes = async (app: FastifyInstance) => {
         const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
         if (!store) return reply.code(404).send({ error: 'Store not found' })
         if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
-          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+          return VendorErrors.forbidden(reply, 'You cannot access analytics for this store')
         }
       }
 
@@ -195,7 +196,7 @@ export const exportRoutes = async (app: FastifyInstance) => {
         const store = await prisma.store.findUnique({ where: { id: storeId }, select: { id: true } })
         if (!store) return reply.code(404).send({ error: 'Store not found' })
         if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'analytics'))) {
-          return reply.code(403).send({ error: 'Forbidden: you do not manage this store' })
+          return VendorErrors.forbidden(reply, 'You cannot access analytics for this store')
         }
       }
 

@@ -16,6 +16,7 @@ import {
   type UploadFile,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 // ========================================
 // Media Routes
@@ -162,7 +163,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       // Item media requires authentication
       const authenticatedReq = req as AuthenticatedRequest
       if (!authenticatedReq.user) {
-        return reply.code(401).send({ error: 'Authentication required for item media' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const media = await listMedia({

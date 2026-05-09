@@ -12,6 +12,7 @@ import {
   getUserOrderHistory,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const FavoriteStoreSchema = z.object({
   storeId: z.string().uuid(),
@@ -33,7 +34,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = FavoriteStoreSchema.parse(req.body)
@@ -56,7 +57,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { storeId: string }
@@ -76,7 +77,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const favorites = await getUserFavoriteStores(userId)
@@ -94,7 +95,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { storeId: string }
@@ -114,7 +115,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = FavoriteItemSchema.parse(req.body)
@@ -137,7 +138,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { itemId: string }
@@ -157,7 +158,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const favorites = await getUserFavoriteItems(userId)
@@ -175,7 +176,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = ReorderSchema.parse(req.body)
@@ -208,7 +209,7 @@ export const favoritesRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const query = req.query as { limit?: string; offset?: string }

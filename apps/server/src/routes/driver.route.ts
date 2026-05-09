@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@packages/db'
 import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 export const driverRoutes = async (app: FastifyInstance) => {
   // GET /driver/deliveries - Assigned active delivery orders for current driver
@@ -8,7 +9,7 @@ export const driverRoutes = async (app: FastifyInstance) => {
     preHandler: [requireRole(['RIDER', 'ADMIN'])],
   }, async (req, reply) => {
     const { user } = req
-    if (!user) return reply.code(401).send({ error: 'Unauthorized' })
+    if (!user) return VendorErrors.unauthorized(reply)
 
     // ADMIN can optionally query other drivers later; v1 is "current driver only"
     const driverUserId = user.id

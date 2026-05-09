@@ -9,6 +9,7 @@ import {
   rejectVendorApplication
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { VendorErrors } from './vendor/vendorHelpers'
 import { prisma } from '@packages/db'
 import type { Role } from '@packages/db/generated/client'
 
@@ -35,7 +36,7 @@ export const vendorApplicationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       // Check if user already has an application
@@ -78,7 +79,7 @@ export const vendorApplicationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const application = await getVendorApplicationByUserId(userId)

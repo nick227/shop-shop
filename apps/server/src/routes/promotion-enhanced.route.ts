@@ -9,6 +9,7 @@ import {
   getActivePromotionsForStore,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const ValidatePromotionSchema = z.object({
   code: z.string().min(1),
@@ -31,7 +32,7 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = ValidatePromotionSchema.parse(req.body)
@@ -57,7 +58,7 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = RedeemPromotionSchema.parse(req.body)
@@ -83,7 +84,7 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const history = await getUserPromotionHistory(userId)
@@ -121,7 +122,7 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { id: string }

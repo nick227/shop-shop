@@ -12,6 +12,7 @@ import {
   isVendorVerified,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const CreateVerificationSchema = z.object({
   businessName: z.string().min(1),
@@ -43,7 +44,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const existing = await getVerificationByUserId(userId)
@@ -70,7 +71,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const verification = await getVerificationByUserId(userId)
@@ -91,7 +92,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const verified = await isVendorVerified(userId)
@@ -108,7 +109,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const verification = await getVerificationByUserId(userId)
@@ -141,7 +142,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const verification = await getVerificationByUserId(userId)
