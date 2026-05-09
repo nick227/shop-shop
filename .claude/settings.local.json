@@ -34,7 +34,10 @@
       "Bash(node --import tsx prisma/seed-reference-data.ts)",
       "PowerShell(npx tsc -p apps/web/tsconfig.json --noEmit 2>&1 | Where-Object { $_ -notmatch 'BundleFormModal|BundleCard|bundle\\\\.types' })",
       "PowerShell(npx tsc -p apps/web/tsconfig.json --noEmit 2>&1 | Where-Object { $_ -notmatch 'BundleFormModal|BundleCard|bundle\\\\.types' } | Select-Object -First 30)",
-      "Bash(git -C \"c:/wamp64/www/shop-shop\" diff HEAD apps/server/src/routes/store-readiness.route.ts apps/server/src/routes/team.route.ts)"
+      "Bash(git -C \"c:/wamp64/www/shop-shop\" diff HEAD apps/server/src/routes/store-readiness.route.ts apps/server/src/routes/team.route.ts)",
+      "Bash(cd /mnt/c/wamp64/www/shop-shop/packages/db && npx prisma migrate dev --name add_store_youtube_channel 2>&1)",
+      "Read(//mnt/c/wamp64/www/shop-shop/packages/**)",
+      "PowerShell(Set-Location \"c:\\\\wamp64\\\\www\\\\shop-shop\\\\packages\\\\db\"; $env:FORCE_COLOR = \"0\"; npx prisma migrate dev --name add_store_youtube_channel --create-only 2>&1)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"

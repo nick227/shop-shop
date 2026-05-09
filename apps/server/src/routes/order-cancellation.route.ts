@@ -42,7 +42,8 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
       const input = CancelOrderSchema.parse(req.body)
 
       const result = await cancelOrder({
-        ...input,
+        orderId: input.orderId,
+        reason: input.reason,
         userId,
       })
 

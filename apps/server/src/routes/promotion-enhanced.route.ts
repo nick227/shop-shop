@@ -64,7 +64,9 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
       const input = RedeemPromotionSchema.parse(req.body)
 
       const redemption = await redeemPromotion({
-        ...input,
+        promotionId: input.promotionId,
+        orderId: input.orderId,
+        discountAmount: input.discountAmount,
         userId,
       })
 

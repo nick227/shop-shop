@@ -327,7 +327,8 @@ export const teamRoutes = async (app: FastifyInstance) => {
       const input = UpdateTeamMemberSchema.parse(req.body)
 
       const member = await updateTeamMember(params.id, userId, {
-        ...input,
+        permissions: input.permissions,
+        isActive: input.isActive,
         actorRole: req.user!.role,
       })
 

@@ -42,7 +42,7 @@ export const userResource = defineResource({
       // Clear companyName if switching to non-company
       if (input.isCompany === false) {
         return {
-          ...input,
+          isCompany: input.isCompany,
           companyName: null,
         }
       }

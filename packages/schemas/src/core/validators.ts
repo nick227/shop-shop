@@ -144,17 +144,43 @@ export const FeesJsonSchema = z.object({
 /**
  * Store hours structure
  */
-export const HoursJsonSchema = z.record(
-  z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']),
-  z.object({
-    open: timeValidator,
-    close: timeValidator,
-    closed: z.boolean().optional(),
-  }).refine(
-    data => !data.closed && data.open < data.close,
-    { message: 'Opening time must be before closing time' }
-  )
-).optional().describe('Store operating hours by day of week')
+export const DayHoursSchema = z.object({
+  open: timeValidator,
+  close: timeValidator,
+  closed: z.boolean().optional(),
+}).refine(
+  data => !data.closed && data.open < data.close,
+  { message: 'Opening time must be before closing time' }
+)
+
+/**
+ * Special hours for holidays/closures
+ */
+export const SpecialHoursSchema = z.object({
+  closed: z.boolean(),
+  open: timeValidator.optional(),
+  close: timeValidator.optional(),
+  reason: z.string().optional(),
+})
+
+/**
+ * Enhanced store hours structure with timezone support
+ */
+export const HoursJsonSchema = z.object({
+  timezone: z.string().optional().describe('IANA timezone identifier'),
+  storeHours: z.record(
+    z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']),
+    DayHoursSchema
+  ).optional().describe('Store operating hours by day of week'),
+  deliveryHours: z.record(
+    z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']),
+    DayHoursSchema
+  ).optional().describe('Delivery hours by day of week'),
+  specialHours: z.record(
+    z.string().date(),
+    SpecialHoursSchema
+  ).optional().describe('Special hours for holidays/closures')
+}).optional().describe('Store hours with timezone and delivery support')
 
 /**
  * Address JSON structure (for stores)
@@ -235,6 +261,8 @@ export function promotionDateRangeValidator(
 
 export type FeesJson = z.infer<typeof FeesJsonSchema>
 export type HoursJson = z.infer<typeof HoursJsonSchema>
+export type DayHours = z.infer<typeof DayHoursSchema>
+export type SpecialHours = z.infer<typeof SpecialHoursSchema>
 export type AddressJson = z.infer<typeof AddressJsonSchema>
 export type OptionsJson = z.infer<typeof OptionsJsonSchema>
 export type GeoJson = z.infer<typeof GeoJsonSchema>

@@ -34,12 +34,20 @@ const CreateAffiliateSchema = z.object({
   taxId: z.string().optional(),
 })
 
+const BankAccountSchema = z.object({
+  accountNumber: z.string().min(1),
+  routingNumber: z.string().min(1),
+  accountType: z.enum(['CHECKING', 'SAVINGS']),
+  bankName: z.string().min(1),
+  accountHolderName: z.string().min(1),
+}).optional()
+
 const UpdateAffiliateSchema = z.object({
   bio: z.string().optional(),
   website: z.string().url().optional(),
   paypalEmail: z.string().email().optional(),
   taxId: z.string().optional(),
-  bankAccountJson: z.unknown().optional(),
+  bankAccountJson: BankAccountSchema,
 })
 
 const ProcessPayoutSchema = z.object({
@@ -84,7 +92,13 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
       }
 
       const input = CreateAffiliateSchema.parse(req.body)
-      const affiliate = await createAffiliate({ ...input, userId })
+      const affiliate = await createAffiliate({ 
+        bio: input.bio,
+        website: input.website,
+        paypalEmail: input.paypalEmail,
+        taxId: input.taxId,
+        userId 
+      })
 
       return reply.code(201).send({ affiliate })
     } catch (error) {
@@ -154,7 +168,13 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
       }
 
       const input = UpdateAffiliateSchema.parse(req.body)
-      const updated = await updateAffiliate(affiliate.id, input)
+      const updated = await updateAffiliate(affiliate.id, {
+        bio: input.bio,
+        website: input.website,
+        paypalEmail: input.paypalEmail,
+        taxId: input.taxId,
+        bankAccountJson: input.bankAccountJson,
+      })
 
       return reply.code(200).send({ affiliate: updated })
     } catch (error) {

@@ -1,0 +1,120 @@
+id,area,subsystem,risk_type,priority,prompt
+TX-AUDIT-001,Orders,Order creation,money_integrity,Critical,"Audit the order creation flow from cart/checkout request to database insert. Confirm subtotal, tax, tip, delivery fee, service fee, store commission, affiliate attribution, delivery mode, customer id, store id, and item snapshots are persisted exactly once and cannot drift from the payment session."
+TX-AUDIT-002,Orders,Order creation,idempotency,Critical,Find every code path that can create an Order. Verify Stripe/session/webhook/client retries cannot create duplicate paid orders. Recommend a single idempotency key strategy and tests.
+TX-AUDIT-003,Orders,Order creation,data_snapshot,High,"Verify order items snapshot product title, price, quantity, modifiers, and item id at checkout time. Confirm later product edits cannot mutate historical order totals."
+TX-AUDIT-004,Orders,Order creation,validation,High,"Trace validation for storeId, itemId, item ownership, item active status, sold-out status, and store published/readiness state before allowing checkout."
+TX-AUDIT-005,Orders,Order status,state_machine,Critical,"Map every allowed order status transition. Find any route or service that can skip required states, regress status, or transition canceled/refunded orders incorrectly."
+TX-AUDIT-006,Orders,Order status,duplication,High,Search for duplicate status transition logic across routes/services. Propose one canonical OrderService transition function and list callers that should use it.
+TX-AUDIT-007,Orders,Order events,auditability,Critical,"Verify every financially meaningful order transition writes an OrderEvent/audit record with actor, previous status, next status, timestamp, and reason."
+TX-AUDIT-008,Orders,Order history,authorization,Critical,"Audit order history endpoints. Confirm customers can only view their own orders, vendors only their store orders, staff only permitted stores, riders only assigned deliveries, and admins all."
+TX-AUDIT-009,Orders,Order cancellation,state_machine,Critical,Review cancellation eligibility rules. Confirm orders cannot be canceled after final states unless explicit refund/admin paths exist.
+TX-AUDIT-010,Orders,Order cancellation,refunds,Critical,"Trace cancellation to refund behavior. Confirm canceled paid orders produce expected refund or no-refund decisions, and unpaid orders do not trigger refund attempts."
+TX-AUDIT-011,Orders,Order totals,money_integrity,Critical,"Recalculate total cents from order line items, fees, tax, tip, delivery fee, discounts, and commissions. Identify any code that derives totals using subtraction or ambiguous service fee fields."
+TX-AUDIT-012,Orders,Order totals,rounding,High,"Find all money math. Confirm all amounts are integer cents, no floating-point currency math, and percent fees use deterministic rounding rules."
+TX-AUDIT-013,Orders,Order lifecycle,concurrency,High,Check whether two actors can update the same order simultaneously. Recommend transaction boundaries or optimistic checks for status transitions.
+TX-AUDIT-014,Orders,Order query,performance,Medium,"Audit vendor/customer order list queries for N+1 issues, missing indexes, excessive includes, and expensive filters."
+TX-AUDIT-015,Orders,Order data model,code_drift,High,"Compare Prisma Order model fields to API response types and frontend expectations. Identify unused, duplicate, or misleading monetary fields."
+TX-AUDIT-016,Payments,Stripe checkout,money_integrity,Critical,Trace Stripe Checkout session creation. Confirm the amount sent to Stripe exactly matches the order/cart server calculation and cannot be overridden by client input.
+TX-AUDIT-017,Payments,Stripe checkout,security,Critical,Identify every field accepted from the client during checkout. Mark which fields are trusted vs recalculated server-side. Recommend rejecting or ignoring unsafe client-provided prices/fees.
+TX-AUDIT-018,Payments,Stripe webhooks,idempotency,Critical,"Audit Stripe webhook handling for idempotency. Confirm each event id is processed once and repeated webhook deliveries cannot duplicate orders, commissions, payouts, or events."
+TX-AUDIT-019,Payments,Stripe webhooks,signature,Critical,Verify webhook signature validation uses raw body correctly and rejects unsigned or malformed events in production.
+TX-AUDIT-020,Payments,Payment status,state_machine,Critical,Map payment states against order states. Confirm paid/captured/refunded/failed statuses cannot contradict order status.
+TX-AUDIT-021,Payments,Payment intent,duplication,High,"Find duplicated payment/session creation logic across payment, checkout, and order routes. Propose one canonical payment service."
+TX-AUDIT-022,Payments,Payment metadata,auditability,High,Verify Stripe metadata includes stable order/session/store/customer references required to reconcile payments and orders.
+TX-AUDIT-023,Payments,Payment reconciliation,money_integrity,Critical,Design an audit that compares local paid orders against Stripe sessions/intents. Identify fields needed for reconciliation and gaps.
+TX-AUDIT-024,Payments,Failed payments,state_machine,High,"Review failed, expired, abandoned, and canceled checkout flows. Confirm unpaid orders are not treated as payable, deliverable, commissionable, or analytics revenue."
+TX-AUDIT-025,Payments,Checkout redirects,security,Medium,Review success/cancel redirect handling. Confirm redirects do not mark orders paid without webhook/server verification.
+TX-AUDIT-026,Payments,Payment errors,observability,Medium,"Audit payment error logging. Confirm logs include safe identifiers but never leak Stripe secrets, card data, or sensitive customer data."
+TX-AUDIT-027,Payments,Environment,security,Critical,Check Stripe secret/public key usage. Confirm backend-only secrets never reach the frontend and test/live modes cannot mix silently.
+TX-AUDIT-028,Fees,Service charges,money_integrity,Critical,Find every service fee/customer fee/platform fee calculation. Confirm naming is consistent and no field is double-counted in totals or revenue reports.
+TX-AUDIT-029,Fees,Store commission,money_integrity,Critical,Audit storeCommissionCents semantics. Confirm it represents platform share of subtotal and is not confused with customer service fee.
+TX-AUDIT-030,Fees,Delivery fee,money_integrity,Critical,"Trace deliveryFeeCents from checkout through order, vendor reporting, driver/provider dispatch, and payout. Confirm pass-through vs platform revenue treatment."
+TX-AUDIT-031,Fees,Tips,money_integrity,Critical,"Trace tipCents. Confirm tips are never counted as platform revenue, affiliate revenue, or store commission unless intentionally designed."
+TX-AUDIT-032,Fees,Taxes,compliance,Critical,"Audit taxCents handling. Confirm tax is calculated by a trusted source or clearly deferred, and never derived as total minus subtotal."
+TX-AUDIT-033,Fees,Discounts,money_integrity,High,"Audit promotion/discount calculations. Confirm discounts cannot make totals negative, bypass minimums, or reduce taxes/fees incorrectly."
+TX-AUDIT-034,Fees,Rounding,rounding,High,"Document rounding rules for percentage fees, commissions, discounts, and affiliate payouts. Add tests for $0.01, $0.99, and high-value orders."
+TX-AUDIT-035,Fees,Revenue reports,code_drift,High,"Compare platformGrossRevenueCents, storeCommissionCents, serviceFeeCents, customerServiceFeeCents, and similar names. Flag duplicates and misleading terms."
+TX-AUDIT-036,Fees,Cart display,ux_money,High,Compare cart UI totals to checkout server totals. Identify places where estimated totals could mislead customers before payment.
+TX-AUDIT-037,Fees,Vendor finance,money_integrity,Critical,"Confirm vendor payout calculations exclude platform fees, customer service fees, tax, tips, provider delivery pass-throughs, and canceled/refunded orders."
+TX-AUDIT-038,Stores,Store readiness,authorization,High,Audit store readiness routes and frontend gating. Confirm only authorized vendors/staff/admins can view or change readiness-sensitive store data.
+TX-AUDIT-039,Stores,Publishing,state_machine,Critical,"Verify stores cannot be published unless required fields, media, active products, address, payment readiness, and operational settings pass readiness checks."
+TX-AUDIT-040,Stores,Store ownership,authorization,Critical,Audit every store update/delete/settings endpoint for owner/team/admin access. Confirm random vendors cannot edit other stores.
+TX-AUDIT-041,Stores,Team permissions,authorization,Critical,"Map team permission scopes: settings, team, analytics, finance, dispatch, content, orders. Verify each route uses the right scope."
+TX-AUDIT-042,Stores,Store selector,code_drift,Medium,Compare store selector data source across vendor pages. Confirm owned stores and manageable team stores behave consistently.
+TX-AUDIT-043,Stores,Store search,eligibility,High,"Audit public store listing eligibility. Confirm unpublished, inactive, disabled, or unreadiness-blocked stores are hidden from customers."
+TX-AUDIT-044,Stores,Store hours,logic,Medium,"Review open/closed logic for timezone, overnight hours, missing hours, and temporary closures."
+TX-AUDIT-045,Stores,Geocoding,data_integrity,High,"Trace address to lat/lng persistence. Confirm delivery/search functions handle missing, invalid, or stale coordinates safely."
+TX-AUDIT-046,Stores,Delivery distance,logic,High,"Verify store deliveryDistance, customer radius search, and exact Haversine filtering are applied before pagination and cannot leak ineligible stores."
+TX-AUDIT-047,Stores,Store media,code_drift,Medium,Audit store thumbnail vs store media gallery usage. Identify duplicate image fields and define the source of truth for customer cards and vendor edit forms.
+TX-AUDIT-048,Items,Item CRUD,authorization,Critical,Audit item create/update/delete. Confirm item storeId belongs to the authenticated vendor/team/admin and cannot be reassigned to another store.
+TX-AUDIT-049,Items,Item visibility,eligibility,High,"Verify inactive, sold-out, unpublished-store, or deleted items are hidden from customer purchase paths but still visible to authorized vendor management screens."
+TX-AUDIT-050,Items,Item price,money_integrity,Critical,Trace item price changes. Confirm historical orders use snapshot prices and current checkout uses server-side current prices.
+TX-AUDIT-051,Items,Item analytics,authorization,Critical,Confirm item analytics requires store-scoped analytics access and rejects cross-store vendor access with tests.
+TX-AUDIT-052,Items,Item analytics,code_drift,Medium,"Compare analytics item image source, product card image source, and edit form image source. Identify drift between imageUrl and MediaAsset."
+TX-AUDIT-053,Items,Media gallery,ux_data,Medium,Audit EnhancedMediaGalleryManager usage in create/edit store and product flows. Confirm thumbnail selection updates the correct parent field and media upload remains scoped.
+TX-AUDIT-054,Items,Seed images,data_integrity,Medium,Update seed logic so seeded imageUrl also creates a MediaAsset row when appropriate. Confirm seeded product thumbnails appear in gallery and cards.
+TX-AUDIT-055,Items,Inventory status,logic,High,Audit soldOut/isActive/deleted flags. Confirm checkout blocks unavailable items while vendor edit pages still show all relevant products.
+TX-AUDIT-056,Items,Bulk operations,safety,Medium,Search for bulk item/media delete/update operations. Confirm they verify store ownership for every affected resource.
+TX-AUDIT-057,Items,Product categories,code_drift,Low,"Audit product category enums/constants across backend, frontend, seeds, and filters. Identify duplicate category lists or mismatches."
+TX-AUDIT-058,Delivery,Delivery mode,state_machine,Critical,"Audit deliveryMode values across checkout, order creation, dispatch, tracking, and vendor UI. Confirm pickup/store delivery/platform/third-party modes do not share invalid assumptions."
+TX-AUDIT-059,Delivery,Dispatch,authorization,Critical,Verify dispatch route allows only authorized vendor/staff/admin with dispatch scope and never customers or unrelated vendors.
+TX-AUDIT-060,Delivery,Delivery job,idempotency,Critical,Confirm dispatch cannot create duplicate active DeliveryJobs for the same order. Add tests for retry/double-click/concurrent dispatch.
+TX-AUDIT-061,Delivery,Provider adapters,duplication,High,"Review IN_HOUSE, DOORDASH_DRIVE, and UBER_DIRECT adapters. Identify duplicate structures and define a shared adapter contract."
+TX-AUDIT-062,Delivery,Provider webhooks,state_machine,Critical,Audit provider webhook status mapping. Confirm picked_up/delivered/failed/canceled update Order and DeliveryJob consistently without unsafe auto-cancel behavior.
+TX-AUDIT-063,Delivery,Driver access,authorization,Critical,Verify riders/drivers can only see assigned deliveries and cannot mark unrelated deliveries picked up/delivered.
+TX-AUDIT-064,Delivery,Navigation address,privacy,High,"Audit delivery address exposure. Confirm only assigned driver, store staff, customer, and admin can access dropoff address/coordinates."
+TX-AUDIT-065,Delivery,Delivery tracking,state_machine,High,Map tracking timeline per delivery mode. Confirm pickup orders do not show delivery-only states and third-party jobs show provider state safely.
+TX-AUDIT-066,Delivery,Store-managed drivers,authorization,Critical,Audit store-managed delivery. Confirm assignedToUserId is a valid store driver/team member with delivery permissions.
+TX-AUDIT-067,Delivery,Delivery fee payout,money_integrity,Critical,"Trace delivery fee allocation for store-managed, platform, and third-party delivery. Confirm vendor/provider/driver payouts match business model."
+TX-AUDIT-068,Affiliates,Referral attribution,money_integrity,Critical,"Audit referral code capture from /r/:code through signup, checkout, order, and commission creation. Confirm attribution is snapshotted on Order."
+TX-AUDIT-069,Affiliates,Commission trigger,money_integrity,Critical,"Verify commissions are only created for paid orders in DELIVERED or COMPLETED states and never pending, canceled, failed, refunded, or in-progress orders."
+TX-AUDIT-070,Affiliates,Commission idempotency,idempotency,Critical,Confirm each eligible order creates at most one affiliate commission. Add unique constraint or test if missing.
+TX-AUDIT-071,Affiliates,Affiliate status,authorization,High,Audit ACTIVE/PENDING/SUSPENDED/TERMINATED behavior. Confirm inactive affiliates cannot earn new commissions or access protected affiliate data.
+TX-AUDIT-072,Affiliates,Residual payouts,business_logic,High,Document residual/ongoing affiliate payout logic. Confirm code matches current business strategy and can be changed later without data loss.
+TX-AUDIT-073,Affiliates,Affiliate portal,authorization,High,"Verify affiliates can only see their own stats, commissions, referrals, and payouts unless admin."
+TX-AUDIT-074,Affiliates,Vendor affiliate reports,authorization,Critical,Audit vendor affiliate sales reporting. Confirm vendors see only orders for stores they can access and only appropriate order/affiliate details.
+TX-AUDIT-075,Affiliates,Payout eligibility,money_integrity,Critical,Trace affiliate payout eligibility against order payment/status. Confirm unpaid and canceled orders are excluded.
+TX-AUDIT-076,Affiliates,Role promotion,security,High,Review affiliate signup role promotion. Confirm it does not clobber existing vendor/admin roles or grant unintended privileges.
+TX-AUDIT-077,Affiliates,Referral abuse,fraud,Medium,"Identify simple abuse cases: self-referral, duplicate accounts, referral code reuse, canceled order commission farming. Propose basic checks and logging."
+TX-AUDIT-078,Payouts,Vendor payout calculation,money_integrity,Critical,"Recalculate vendor payout from paid delivered/completed orders. Confirm fees, tips, tax, refunds, delivery fees, and platform commission are included/excluded correctly."
+TX-AUDIT-079,Payouts,Payout records,auditability,Critical,Verify payout records are immutable once finalized or have explicit adjustment records. Confirm recalculation cannot silently rewrite history.
+TX-AUDIT-080,Payouts,Payout status,state_machine,High,Map payout statuses and transitions. Confirm paid/failed/canceled/reversed states cannot be updated inconsistently.
+TX-AUDIT-081,Payouts,Finance access,authorization,Critical,Audit finance routes. Confirm only store owner/team with finance scope/admin can view payout summaries and exports.
+TX-AUDIT-082,Payouts,Export routes,privacy,High,Review finance/export routes for PII and financial leakage. Confirm cross-store export access is blocked.
+TX-AUDIT-083,Payouts,Refund impact,money_integrity,Critical,"Trace how refunds or cancellations after payout eligibility affect vendor payout, affiliate commission, and platform revenue."
+TX-AUDIT-084,Payouts,Adjustment model,design_gap,High,"Identify whether manual adjustments, chargebacks, or corrections have a model. Propose minimal adjustment ledger if missing."
+TX-AUDIT-085,Payouts,Reconciliation,money_integrity,Critical,"Design a reconciliation report comparing order gross, Stripe captured, platform fees, vendor payable, affiliate payable, and delivery payable."
+TX-AUDIT-086,Security,RBAC,authorization,Critical,"Audit requireAuth, requireRole, optionalAuthenticate, and route preHandlers. Confirm public/authenticated/role-protected routes use the intended pattern consistently."
+TX-AUDIT-087,Security,Store access helper,authorization,Critical,Review userHasStoreAccess and requireVendorAuth. Confirm every supported scope maps to correct team/vendor/admin permissions.
+TX-AUDIT-088,Security,Cross-store access,authorization,Critical,"Add or verify tests proving Vendor A cannot access Vendor B analytics, orders, media, payouts, readiness, delivery zones, team, or promotions."
+TX-AUDIT-089,Security,Route path drift,code_drift,Medium,List route path conventions: /api/vendor/stores/:storeId/* vs /vendor-* vs /api/items/*. Identify cleanup candidates without breaking clients.
+TX-AUDIT-090,Security,Public routes,privacy,High,"Audit public routes for accidental financial, address, customer, order, payout, or vendor private data exposure."
+TX-AUDIT-091,Security,Input validation,validation,High,Find routes without Zod/schema validation. Prioritize money-changing and ownership-changing endpoints.
+TX-AUDIT-092,Security,Mass assignment,security,Critical,"Search create/update routes for spreading req.body into Prisma. Confirm clients cannot set ownerId, storeId, role, price, payout status, paid flags, or commission fields directly."
+TX-AUDIT-093,Security,Secrets,security,Critical,"Search for exposed secrets, API keys, Stripe keys, JWT secrets, provider credentials, and accidentally committed env values."
+TX-AUDIT-094,Security,Error messages,privacy,Medium,"Review auth and transaction error messages. Confirm they are useful but do not expose sensitive account, order, payment, or store existence data."
+TX-AUDIT-095,Security,Audit logging,auditability,High,"Identify every route that changes money, orders, roles, permissions, payouts, or delivery state. Confirm audit logging exists or propose minimal event records."
+TX-AUDIT-096,Code Quality,Duplicate services,duplication,High,"Search for duplicate order, checkout, payment, payout, and delivery calculations. Produce a table of duplicated logic and recommended canonical owner service."
+TX-AUDIT-097,Code Quality,Dead code,maintainability,Medium,"Find unused routes, services, helper functions, Prisma fields, and frontend API methods related to transactions. Recommend removal or test coverage."
+TX-AUDIT-098,Code Quality,Over-engineering,maintainability,Medium,Identify transaction code that is abstracted too early or has provider/factory layers without multiple real implementations. Recommend simplification where safe.
+TX-AUDIT-099,Code Quality,Under-engineering,design_gap,High,"Identify money-changing flows lacking transactions, idempotency, tests, audit records, or reconciliation hooks."
+TX-AUDIT-100,Code Quality,Frontend/backend drift,code_drift,High,"Compare frontend API calls to backend routes. Find path prefix mismatches, /api guessing, stale endpoints, and response type drift."
+TX-AUDIT-101,Code Quality,OpenAPI/client drift,code_drift,Medium,Compare OpenAPI-generated client types to live backend routes/types. Identify stale generated clients and missing regeneration steps.
+TX-AUDIT-102,Code Quality,Prisma schema drift,code_drift,High,"Compare Prisma schema to business concepts: Order, OrderItem, DeliveryJob, MediaAsset, AffiliateCommission, VendorPayout. Flag overloaded, unused, or ambiguous fields."
+TX-AUDIT-103,Code Quality,Migrations,data_integrity,High,"Review migrations for transaction/money tables. Confirm constraints, indexes, unique keys, and defaults protect real-money flows."
+TX-AUDIT-104,Code Quality,Tests,test_gap,Critical,"List transaction-critical flows without tests. Prioritize checkout paid order creation, webhook idempotency, cancellation/refund, payout eligibility, commission creation, and cross-store access."
+TX-AUDIT-105,Code Quality,Observability,observability,Medium,Audit logs and metrics for order/payment/delivery/payout failures. Recommend structured logging fields and alert-worthy events.
+TX-AUDIT-106,Code Quality,Race conditions,concurrency,Critical,Search for read-then-write transaction flows without database transactions. Identify double-submit/double-webhook/double-dispatch race risks.
+TX-AUDIT-107,Code Quality,Indexes,performance,Medium,"Review Prisma indexes for order lists, payout reports, affiliate reports, delivery jobs, media galleries, and store searches. Recommend missing indexes."
+TX-AUDIT-108,Code Quality,Seed realism,test_data,Low,"Review seed data for transaction realism. Ensure seeded stores/items/orders/media allow testing vendor dashboards, media thumbnails, payouts, commissions, and delivery states."
+TX-AUDIT-109,Code Quality,Admin tools,design_gap,Medium,"Identify missing admin tools for reconciling payments, resolving stuck orders, correcting payouts, viewing logs, and managing disputes."
+TX-AUDIT-110,Code Quality,Data deletion,data_integrity,High,"Audit delete behavior for stores, items, media, orders, users, affiliates. Confirm financial records are not hard-deleted in ways that break audits."
+TX-AUDIT-111,Code Quality,Naming,maintainability,Medium,"Find misleading transaction field names such as serviceFee, commission, platformFee, deliveryFee, total, gross, net. Propose a consistent money naming glossary."
+TX-AUDIT-112,Frontend,Checkout UI,ux_money,High,"Compare checkout UI fees and totals to server calculation. Confirm labels clearly distinguish subtotal, delivery, service fee, tax, tip, discount, and total."
+TX-AUDIT-113,Frontend,Vendor dashboard,code_drift,Medium,Audit vendor dashboard metrics. Confirm displayed revenue/order counts match backend definitions and exclude unpaid/canceled orders appropriately.
+TX-AUDIT-114,Frontend,Order management UI,state_machine,High,"Review order action buttons. Confirm UI only shows actions valid for current status, role, delivery mode, and payment state."
+TX-AUDIT-115,Frontend,Delivery UI,state_machine,Medium,Review driver/vendor delivery screens. Confirm actions map to backend allowed transitions and show clear errors for invalid transitions.
+TX-AUDIT-116,Frontend,Payout UI,ux_money,High,"Review vendor finance/payout UI labels. Confirm platform fees, vendor payable, tax, tip, and delivery pass-through are not misleading."
+TX-AUDIT-117,Frontend,Affiliate UI,ux_money,Medium,Audit affiliate dashboard stats. Confirm pending vs payable vs paid commissions are clearly separated.
+TX-AUDIT-118,Frontend,Error handling,ux_reliability,Medium,Find frontend routes that auto-logout on any 401 or hide permission errors. Confirm token invalidation is distinguished from forbidden or route errors.
+TX-AUDIT-119,Frontend,Media thumbnails,ux_data,Low,Audit store/product media forms. Confirm imageUrl thumbnail and MediaAsset gallery behavior is clear and one-click thumbnail changes persist.

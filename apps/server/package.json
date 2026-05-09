@@ -19,7 +19,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.913.0",
     "@fastify/cors": "^8.5.0",
-    "@fastify/helmet": "^13.0.2",
+    "@fastify/helmet": "11",
     "@fastify/multipart": "^8.3.1",
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/static": "^7.0.4",

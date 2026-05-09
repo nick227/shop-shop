@@ -1,0 +1,11 @@
+title,description,price,category,type,subtype,tags,imageUrl,isActive,isSoldOut,stockQty
+Classic Burger,"Juicy beef patty with lettuce, tomato, and our special sauce",12.99,mains,burger,beef,"popular;signature;comfort-food",https://example.com/burger.jpg,true,false,100
+Veggie Delight,"Fresh garden vegetables grilled to perfection with herbs",9.99,mains,salad,vegetarian,"healthy;fresh;vegan;vegetarian",https://example.com/veggie.jpg,true,false,50
+Spicy Chicken Sandwich,"Crispy chicken with spicy mayo and pickles",11.99,mains,sandwich,chicken,"spicy;popular;crispy",https://example.com/chicken.jpg,true,false,75
+Caesar Salad,"Romaine lettuce, parmesan cheese, croutons, and caesar dressing",8.99,mains,salad,classic,"fresh;popular;classic",https://example.com/caesar.jpg,true,false,60
+Margherita Pizza,"Fresh mozzarella, basil, and tomato sauce on crispy dough",14.99,mains,pizza,vegetarian,"classic;fresh;italian;vegetarian",https://example.com/pizza.jpg,true,false,40
+Chocolate Cake,"Rich chocolate cake with chocolate frosting",6.99,desserts,cake,chocolate,"sweet;dessert;popular;chocolate",https://example.com/cake.jpg,true,false,30
+Greek Salad,"Cucumbers, tomatoes, olives, feta cheese, and olive oil",7.99,mains,salad,mediterranean,"fresh;healthy;mediterranean",https://example.com/greek.jpg,true,false,45
+BBQ Pulled Pork,"Slow-cooked pulled pork with BBQ sauce on a brioche bun",13.99,mains,sandwich,pork,"bbq;slow-cooked;comfort-food",https://example.com/bbq.jpg,true,false,55
+Fish Tacos,"Fresh grilled fish with cabbage slaw and lime crema",10.99,mains,tacos,seafood,"fresh;seafood;mexican",https://example.com/tacos.jpg,true,false,35
+Mushroom Soup,"Creamy mushroom soup with fresh herbs",5.99,soups,soup,vegetarian,"creamy;healthy;vegetarian",https://example.com/soup.jpg,true,false,80

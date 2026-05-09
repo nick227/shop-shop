@@ -228,11 +228,15 @@ model Store {
   description String?
 
   // Company Information
-  companyName String?
-  taxId       String?
-  phone       String?
-  email       String?
-  website     String?
+  companyName  String?
+  taxId        String?
+  phone        String?
+  email        String?
+  website      String?
+  customDomain String? @db.VarChar(191)
+
+  // Social Media Links (JSON: { youtube, instagram, facebook, tiktok, twitter, whatsapp, discord, snapchat })
+  socialLinksJson Json?
 
   isPublished      Boolean     @default(false)
   status           StoreStatus @default(ACTIVE)
@@ -246,6 +250,7 @@ model Store {
   prepTimeMin      Int         @default(15)
   feesJson         Json?
   hoursJson        Json?
+  timezone         String?      @db.VarChar(50) // IANA timezone identifier (e.g., America/New_York)
 
   // Branding
   brandColor  String? @db.VarChar(7) // Hex color code #RRGGBB
