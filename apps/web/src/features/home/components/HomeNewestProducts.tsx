@@ -11,24 +11,24 @@ import type { ItemResponse } from '@api/types'
 function ProductMiniCard({ item }: { readonly item: ItemResponse }) {
   const price = parsePrice(item.price)
   const href = getItemRouteSimple({ id: item.id, title: item.title })
-  const imageUrl = getImageUrl(undefined, item.id, 'product')
+  const imageUrl = getImageUrl(undefined, item.id, 'product', item.mediaAssets)
 
   return (
     <Link
       to={href}
-      className="flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40 hover:bg-muted/30"
+      className="flex overflow-hidden flex-col rounded-xl border transition-colors border-border bg-card hover:border-primary/40 hover:bg-muted/30"
     >
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className="overflow-hidden relative aspect-square bg-muted">
         <img
           src={imageUrl}
           alt={item.title}
-          className="h-full w-full object-cover"
+          className="object-cover w-full h-full"
           loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
         />
       </div>
       <div className="p-3">
-        <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">{item.title}</p>
+        <p className="text-sm font-medium leading-snug line-clamp-2 text-foreground">{item.title}</p>
         <p className="mt-1.5 text-sm font-semibold text-foreground">{formatCurrency(price)}</p>
       </div>
     </Link>
@@ -39,25 +39,17 @@ export function HomeNewestProducts() {
   const { data: products, isLoading } = useNewestProducts(8)
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
+      <div className="flex gap-4 justify-between items-start">
           <h2 className="text-lg font-semibold tracking-tight text-foreground">New on menus</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">Recently listed dishes across kitchens.</p>
-        </div>
-        <Link
-          to="/search"
-          className="shrink-0 text-sm font-medium text-primary hover:underline"
-        >
-          View all →
-        </Link>
       </div>
 
       {isLoading ? (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="aspect-square animate-pulse bg-muted" />
+              <div className="animate-pulse aspect-square bg-muted" />
               <div className="space-y-1.5 p-3">
                 <div className="h-3.5 w-full animate-pulse rounded bg-muted" />
                 <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
@@ -67,7 +59,7 @@ export function HomeNewestProducts() {
           ))}
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-4">
           {(products ?? []).map((item) => (
             <ProductMiniCard key={item.id} item={item} />
           ))}

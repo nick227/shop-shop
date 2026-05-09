@@ -29,6 +29,7 @@ import { orderCancellationRoutes } from './routes/order-cancellation.route.js'
 import { favoritesRoutes } from './routes/favorites.route.js'
 import { searchUnifiedRoutes } from './routes/search-unified.route.js'
 import { tagsRoutes } from './routes/tags.route.js'
+import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
 import multipart from '@fastify/multipart'
@@ -39,6 +40,7 @@ import { setOrderServiceBroadcast, setTipServiceBroadcast } from '@packages/db'
 import { realtimeBroker } from './services/realtime.broker.js'
 import { globalErrorHandler, handleUncaughtException, handleUnhandledRejection } from './middleware/errorHandler.js'
 import { requestIdMiddleware } from './middleware/requestId.js'
+import { optionalAuthenticate } from './middleware/auth.js'
 
 const app = Fastify({
   logger: env.NODE_ENV === 'development' ? {
@@ -122,6 +124,8 @@ await app.register(swaggerUI, { routePrefix: '/docs' })
 
 // Add request ID middleware
 app.addHook('preHandler', requestIdMiddleware)
+// Populate req.user when a valid Bearer token is present (without forcing auth for public routes).
+app.addHook('preHandler', optionalAuthenticate)
 
 // Health check
 app.get('/healthz', async () => ({ ok: true }))
@@ -153,7 +157,10 @@ await app.register(vendorAffiliateSalesRoutes)
 await app.register(teamRoutes) 
 await app.register(promotionEnhancedRoutes) 
 await app.register(orderCancellationRoutes) 
-await app.register(favoritesRoutes) 
+await app.register(favoritesRoutes)
+
+// Item analytics must register before `/items/:id` so `/items/analytics` is not parsed as an id.
+await app.register(itemAnalyticsRoutes)
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES)

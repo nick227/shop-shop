@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Analytics API</title>
+</head>
+<body>
+    <h1>Testing Analytics API</h1>
+    <button onclick="testAnalytics()">Test Analytics API</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testAnalytics() {
+        try {
+            const response = await fetch('http://localhost:3005/api/items/analytics?storeId=182584b6-1b7d-4168-b68c-29acab85f764&period=30d&sortBy=revenue&sortOrder=desc&limit=100');
+            const data = await response.json();
+            document.getElementById('result').innerHTML = JSON.stringify(data, null, 2);
+        } catch (error) {
+            document.getElementById('result').innerHTML = 'Error: ' + error.message;
+        }
+    }
+    </script>
+</body>
+</html>

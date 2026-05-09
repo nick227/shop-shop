@@ -40,16 +40,15 @@ export function VendorSideNav() {
   return (
     <nav className={styles.sideNav}>
       <div className={styles.navSection}>
-        <div className={styles.navLabel}>Overview</div>
+        
         <button
           type="button"
           className={`${styles.navItem} ${isActive('/vendor/dashboard') ? styles.navItemActive : ''}`}
           onClick={() => navigate('/vendor/dashboard')}
         >
-          <span className={styles.navIcon}>🏪</span>
           <span className={styles.navItemText}>My Stores</span>
         </button>
-
+        
         <button
           type="button"
           disabled={!storeScoped}
@@ -61,48 +60,11 @@ export function VendorSideNav() {
             navigate(getStoreEditPath(selectedStoreId))
           }}
         >
-          <span className={styles.navIcon}>✏️</span>
           <span className={styles.navItemText} title={activeStoreTitle}>
             {activeStoreTitle}
           </span>
         </button>
-
-        <button
-          type="button"
-          disabled={!storeScoped}
-          className={navClass(isActive('/vendor/orders'))}
-          onClick={() => navigateScoped('/vendor/orders')}
-        >
-          <span className={styles.navIcon}>📋</span>
-          <span className={styles.navItemText}>Orders</span>
-        </button>
-        <button
-          type="button"
-          disabled={!storeScoped}
-          className={navClass(location.pathname === '/vendor/affiliates')}
-          onClick={() => navigateScoped(peoplePaths.affiliates)}
-        >
-          <span className={styles.navIcon}>A</span>
-          <span className={styles.navItemText}>Affiliates</span>
-        </button>
-        <button
-          type="button"
-          disabled={!storeScoped}
-          className={navClass(location.pathname === '/vendor/team')}
-          onClick={() => navigateScoped(peoplePaths.team)}
-        >
-          <span className={styles.navIcon}>T</span>
-          <span className={styles.navItemText}>Team</span>
-        </button>
-        <button
-          type="button"
-          disabled={!storeScoped}
-          className={navClass(location.pathname === '/vendor/drivers')}
-          onClick={() => navigateScoped(peoplePaths.drivers)}
-        >
-          <span className={styles.navIcon}>D</span>
-          <span className={styles.navItemText}>Drivers</span>
-        </button>
+        
         <button
           type="button"
           disabled={!storeScoped}
@@ -114,9 +76,42 @@ export function VendorSideNav() {
             navigate(getStoreItemsPath(selectedStoreId))
           }}
         >
-          <span className={styles.navIcon}>🍽️</span>
-          <span className={styles.navItemText}>Menu Items</span>
+          <span className={styles.navItemText}>Menu</span>
         </button>
+
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(isActive('/vendor/orders'))}
+          onClick={() => navigateScoped('/vendor/orders')}
+        >
+          <span className={styles.navItemText}>Orders</span>
+        </button>
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/affiliates')}
+          onClick={() => navigateScoped(peoplePaths.affiliates)}
+        >
+          <span className={styles.navItemText}>Affiliates</span>
+        </button>
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/team')}
+          onClick={() => navigateScoped(peoplePaths.team)}
+        >
+          <span className={styles.navItemText}>Team</span>
+        </button>
+        <button
+          type="button"
+          disabled={!storeScoped}
+          className={navClass(location.pathname === '/vendor/drivers')}
+          onClick={() => navigateScoped(peoplePaths.drivers)}
+        >
+          <span className={styles.navItemText}>Drivers</span>
+        </button>
+
       </div>
     </nav>
   )

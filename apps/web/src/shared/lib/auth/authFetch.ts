@@ -42,13 +42,7 @@ export async function authFetch<T = unknown>(
 ): Promise<AuthFetchResponse<T>> {
   const { token } = useAuthStore.getState()
   
-  // Debug logging to check token state
-  console.log('[AuthFetch] Request:', {
-    url,
-    hasToken: !!token,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none'
-  })
-  
+    
   // Build full URL if it's a relative path
   const fullUrl = url.startsWith('http') ? url : apiPath(url)
   
@@ -77,13 +71,7 @@ export async function authFetch<T = unknown>(
       const errorResponse = await response.clone().json();
       const errorMessage = errorResponse.error || errorResponse.message || ''
       
-      // Debug logging to understand the issue
-      console.log('[AuthFetch] 401 Response:', {
-        url: fullUrl,
-        errorMessage,
-        errorResponse
-      })
-      
+            
       // Only logout for specific token invalidation errors
       const lower = errorMessage.toLowerCase()
       const isTokenInvalid = lower.includes('invalid token') ||
@@ -98,15 +86,10 @@ export async function authFetch<T = unknown>(
       const isGenericUnauthorized = lower === 'unauthorized' || lower === 'authentication required'
       
       if (isTokenInvalid && !isGenericUnauthorized) {
-        console.log('[AuthFetch] Logging out due to token invalidation:', errorMessage)
-        // Clear auth state and dispatch logout event
         useAuthStore.getState().clearAuth()
         window.dispatchEvent(new CustomEvent('auth:logout'))
-      } else {
-        console.log('[AuthFetch] Not logging out - generic unauthorized or missing token invalidation pattern')
       }
     } catch (error) {
-      console.log('[AuthFetch] Error parsing 401 response:', error)
       // Ignore error and continue
     }
   }
@@ -120,6 +103,19 @@ export async function authFetch<T = unknown>(
  */
 export function authGet<T = unknown>(url: string, options?: Omit<AuthFetchOptions, 'method' | 'body'>): Promise<AuthFetchResponse<T>> {
   return authFetch<T>(url, { ...options, method: 'GET' })
+}
+
+/**
+ * Public (non-auth) GET helper
+ */
+export async function publicGet<T = unknown>(
+  url: string,
+  options?: Omit<AuthFetchOptions, 'method' | 'body'>
+): Promise<AuthFetchResponse<T>> {
+  const fullUrl = url.startsWith('http') ? url : apiPath(url)
+  const headers = new Headers(options?.headers)
+  headers.set('Accept', 'application/json')
+  return await fetch(fullUrl, { ...options, method: 'GET', headers }) as AuthFetchResponse<T>
 }
 
 /**

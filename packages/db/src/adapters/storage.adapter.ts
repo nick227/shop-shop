@@ -3,6 +3,10 @@
 // Abstract interface for file storage (R2, S3, local, etc.)
 // ========================================
 
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+
 export interface StorageAdapter {
   upload(file: UploadFile): Promise<UploadResult>
   delete(key: string): Promise<void>

@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
+import { authenticate } from './auth.js'
 
 // ========================================
 // Role-Based Access Control (RBAC) Middleware
@@ -18,6 +19,12 @@ export function requireRole(allowedRoles: string[]) {
       return
     }
     
+    // If a Bearer token exists but `req.user` wasn't populated by a prior hook,
+    // authenticate now to avoid "forgot to include authenticate" route bugs.
+    if (!req.user && typeof req.headers.authorization === 'string' && req.headers.authorization.startsWith('Bearer ')) {
+      await authenticate(req, reply)
+    }
+
     const user = req.user
     
     // User must be authenticated

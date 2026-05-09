@@ -4,9 +4,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
+import { authPost } from '@shared/lib/auth/authFetch'
 import { Button, Input, TextArea, Alert } from '@shared/ui/primitives'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
@@ -34,12 +34,9 @@ export default function VendorApplicationPage() {
 
   const submitApplication = useMutation({
     mutationFn: async (data: VendorApplicationData) => {
-      // TODO: Update to use actual API endpoint when implemented
-      return await fetch('/api/vendor/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }).then(res => res.json())
+      const response = await authPost<{ application: unknown }>('/vendor/apply', data)
+      if (!response.ok) throw new Error('Failed to submit vendor application')
+      return await response.json()
     },
     onSuccess: () => {
       toast.success('Application submitted successfully!')

@@ -227,9 +227,18 @@ export class BaseCrudController {
       const input = this.resource.schemas.update!.parse(req.body)
       
       // Before hook
-      const processedInput = this.resource.customHooks?.beforeUpdate
-        ? await this.resource.customHooks.beforeUpdate(id, input, this.getHookContext(req))
-        : input
+      let processedInput
+      try {
+        processedInput = this.resource.customHooks?.beforeUpdate
+          ? await this.resource.customHooks.beforeUpdate(id, input, this.getHookContext(req))
+          : input
+      } catch (hookError) {
+        // All beforeUpdate hook errors are authorization/business rule violations
+        if (hookError instanceof Error) {
+          return reply.code(403).send({ error: hookError.message })
+        }
+        throw hookError
+      }
       
       // Update resource
       const result = await this.service.update(id, processedInput)
@@ -271,7 +280,14 @@ export class BaseCrudController {
       
       // Before hook
       if (this.resource.customHooks?.beforeDelete) {
-        await this.resource.customHooks.beforeDelete(id, this.getHookContext(req))
+        try {
+          await this.resource.customHooks.beforeDelete(id, this.getHookContext(req))
+        } catch (hookError) {
+          if (hookError instanceof Error) {
+            return reply.code(403).send({ error: hookError.message })
+          }
+          throw hookError
+        }
       }
       
       // Delete resource

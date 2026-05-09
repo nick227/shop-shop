@@ -25,7 +25,7 @@ export const CreateItemInputSchema = generateCreateInputSchema({
         title: z.string().min(1).max(200),
         description: z.string().max(1000).optional(),
         price: z.string().regex(/^\d+(\.\d{1,2})?$/),
-        stockQty: z.number().int().min(0).optional(),
+        stockQty: z.coerce.number().int().min(0).optional(),
     },
 });
 export const UpdateItemInputSchema = generateUpdateInputSchema({
@@ -35,7 +35,7 @@ export const UpdateItemInputSchema = generateUpdateInputSchema({
         title: z.string().min(1).max(200).optional(),
         description: z.string().max(1000).optional(),
         price: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
-        stockQty: z.number().int().min(0).optional(),
+        stockQty: z.coerce.number().int().min(0).optional(),
     },
 });
 export const ItemResponseSchema = generateResponseSchema({

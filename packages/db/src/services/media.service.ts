@@ -11,6 +11,7 @@ export interface UploadMediaInput {
   storeId?: string
   itemId?: string
   userId: string
+  userRole?: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
   altText?: string
   sortIndex?: number
 }
@@ -48,7 +49,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
       throw new Error('Store not found')
     }
 
-    if (store.ownerUserId !== input.userId) {
+    if (input.userRole !== 'ADMIN' && store.ownerUserId !== input.userId) {
       throw new Error('Unauthorized: Store does not belong to user')
     }
 
@@ -72,7 +73,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
       throw new Error('Item not found')
     }
 
-    if (item.store.ownerUserId !== input.userId) {
+    if (input.userRole !== 'ADMIN' && item.store.ownerUserId !== input.userId) {
       throw new Error('Unauthorized: Item does not belong to user')
     }
 
@@ -139,6 +140,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
 export interface DeleteMediaInput {
   mediaId: string
   userId: string
+  userRole?: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
 }
 
 export const deleteMedia = async (input: DeleteMediaInput): Promise<void> => {
@@ -159,7 +161,7 @@ export const deleteMedia = async (input: DeleteMediaInput): Promise<void> => {
   // Verify ownership
   const ownerId = media.store?.ownerUserId || media.item?.store.ownerUserId
 
-  if (!ownerId || ownerId !== input.userId) {
+  if (input.userRole !== 'ADMIN' && (!ownerId || ownerId !== input.userId)) {
     throw new Error('Unauthorized: You do not own this media')
   }
 
@@ -238,6 +240,7 @@ export const listMedia = async (input: ListMediaInput) => {
 export interface UpdateMediaSortInput {
   mediaId: string
   userId: string
+  userRole?: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
   sortIndex: number
 }
 
@@ -259,7 +262,7 @@ export const updateMediaSort = async (input: UpdateMediaSortInput): Promise<void
   // Verify ownership
   const ownerId = media.store?.ownerUserId || media.item?.store.ownerUserId
 
-  if (!ownerId || ownerId !== input.userId) {
+  if (input.userRole !== 'ADMIN' && (!ownerId || ownerId !== input.userId)) {
     throw new Error('Unauthorized: You do not own this media')
   }
 
@@ -272,6 +275,7 @@ export const updateMediaSort = async (input: UpdateMediaSortInput): Promise<void
 export interface ReorderMediaInput {
   mediaIds: string[]
   userId: string
+  userRole?: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
 }
 
 export const reorderMedia = async (input: ReorderMediaInput): Promise<void> => {
@@ -295,10 +299,12 @@ export const reorderMedia = async (input: ReorderMediaInput): Promise<void> => {
   }
 
   // Verify ownership for all assets
-  for (const asset of mediaAssets) {
-    const ownerId = asset.store?.ownerUserId || asset.item?.store.ownerUserId
-    if (!ownerId || ownerId !== input.userId) {
-      throw new Error('Unauthorized: You do not own all media assets')
+  if (input.userRole !== 'ADMIN') {
+    for (const asset of mediaAssets) {
+      const ownerId = asset.store?.ownerUserId || asset.item?.store.ownerUserId
+      if (!ownerId || ownerId !== input.userId) {
+        throw new Error('Unauthorized: You do not own all media assets')
+      }
     }
   }
 

@@ -57,7 +57,7 @@ export default function VendorAffiliatesPage() {
   const salesQuery = useQuery({
     queryKey: ['affiliate-sales', selectedStoreId],
     queryFn: async () =>
-      vendorRequest<AffiliateSalesResponse>(`/api/vendor/stores/${selectedStoreId}/affiliate-sales`),
+      vendorRequest<AffiliateSalesResponse>(`/stores/${selectedStoreId}/affiliate-sales`),
     enabled: Boolean(selectedStoreId),
   })
 

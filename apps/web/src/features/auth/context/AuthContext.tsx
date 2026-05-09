@@ -278,42 +278,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ========================================
 
   const refreshToken = useCallback(async () => {
-    const authBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
-    const { refreshToken: storedRefreshToken } = getStoredTokens()
+    // Server doesn't support refresh tokens - JWT tokens are used instead
+    // Just return the current token without refreshing
+    const { accessToken } = getStoredTokens()
     
-    if (!storedRefreshToken) {
-      throw new Error('No refresh token available')
+    if (!accessToken) {
+      throw new Error('No access token available')
     }
-
-    try {
-      const response = await fetch(`${authBaseUrl}/auth/v1/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: storedRefreshToken }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Token refresh failed')
-      }
-
-      await storeTokens(data.accessToken, data.refreshToken)
-      
-      dispatch({
-        type: 'REFRESH_TOKEN',
-        payload: { accessToken: data.accessToken, refreshToken: data.refreshToken }
-      })
-    } catch (error) {
-      console.error('Token refresh failed:', error)
-      // Clear tokens and logout on refresh failure
-      clearTokens()
-      dispatch({ type: 'LOGOUT' })
-      throw error
-    }
-  }, [getStoredTokens, storeTokens, clearTokens])
+    
+    // No refresh needed - JWT tokens are valid until they expire
+    return
+  }, [getStoredTokens])
 
   // ========================================
   // Clear Error Function

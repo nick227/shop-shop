@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { Flame } from 'lucide-react'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'
+import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 import type { StoreWithDistance } from '@api/types'
 
 interface HomeFeaturedHeroProps {
@@ -25,7 +26,10 @@ export function HomeFeaturedHero({ store, isLoading }: HomeFeaturedHeroProps) {
     )
   }
 
-  const img = getStoreImageUrl(store, 'hero')
+  const { data: heroMedia } = usePublicMediaList({ storeId: store.id })
+  const primaryHeroImage = heroMedia?.find((m) => m.kind === 'IMAGE' || !m.kind)?.url
+
+  const img = primaryHeroImage ?? getStoreImageUrl(store, 'hero')
   const href = getStoreRoute({ id: store.id, name: store.name })
 
   return (

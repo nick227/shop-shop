@@ -1,14 +1,13 @@
 /**
  * ApplicationStatusPage - Check vendor application status
  */
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
 import { Button, Alert, Badge } from '@shared/ui/primitives'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { ArrowLeft, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { authGet } from '@shared/lib/auth/authFetch'
 
 interface VendorApplication {
   id: string
@@ -27,8 +26,7 @@ export default function ApplicationStatusPage() {
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['vendor-application-status'],
     queryFn: async () => {
-      // TODO: Update to use actual API endpoint when implemented
-      const response = await fetch('/api/vendor/application-status')
+      const response = await authGet('/vendor/application-status')
       if (!response.ok) {
         throw new Error('Failed to fetch application status')
       }

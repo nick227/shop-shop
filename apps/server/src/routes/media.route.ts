@@ -83,6 +83,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
         storeId: input.storeId,
         itemId: input.itemId,
         userId: req.user!.id,
+        userRole: req.user!.role,
         altText: input.altText,
         sortIndex: input.sortIndex,
       })
@@ -97,6 +98,14 @@ export const mediaRoutes = async (app: FastifyInstance) => {
 
       return reply.code(201).send(result)
     } catch (error) {
+      // Zod validation error
+      if (error && typeof error === 'object' && 'issues' in error) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: (error as { issues: unknown[] }).issues,
+        })
+      }
+
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
@@ -104,14 +113,13 @@ export const mediaRoutes = async (app: FastifyInstance) => {
         if (error.message.includes('Invalid') || error.message.includes('too large')) {
           return reply.code(400).send({ error: error.message })
         }
-        if (error.message.includes('issues')) {
-          return reply.code(400).send({
-            error: 'Validation error',
-            issues: (error as { issues?: unknown[] }).issues,
-          })
-        }
+
+        req.log.error({ err: error }, 'Media upload failed')
+        return reply.code(500).send({ error: error.message })
       }
-      throw error
+
+      req.log.error({ err: error }, 'Media upload failed (non-error)')
+      return reply.code(500).send({ error: 'Media upload failed' })
     }
   })
 
@@ -189,6 +197,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       await deleteMedia({
         mediaId: id,
         userId: req.user!.id,
+        userRole: req.user!.role,
       })
 
       req.log.info({
@@ -199,6 +208,13 @@ export const mediaRoutes = async (app: FastifyInstance) => {
 
       return reply.code(200).send({ success: true })
     } catch (error) {
+      // Zod validation error (future-proofing)
+      if (error && typeof error === 'object' && 'issues' in error) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: (error as { issues: unknown[] }).issues,
+        })
+      }
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
@@ -227,20 +243,22 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       await updateMediaSort({
         mediaId: id,
         userId: req.user!.id,
+        userRole: req.user!.role,
         sortIndex: input.sortIndex,
       })
 
       return reply.code(200).send({ success: true })
     } catch (error) {
+      // Zod validation error
+      if (error && typeof error === 'object' && 'issues' in error) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: (error as { issues: unknown[] }).issues,
+        })
+      }
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
-        }
-        if (error.message.includes('issues')) {
-          return reply.code(400).send({
-            error: 'Validation error',
-            issues: (error as { issues?: unknown[] }).issues,
-          })
         }
       }
       throw error
@@ -275,22 +293,24 @@ export const mediaRoutes = async (app: FastifyInstance) => {
       await reorderMedia({
         mediaIds,
         userId: req.user!.id,
+        userRole: req.user!.role,
       })
 
       return reply.code(200).send({ success: true })
     } catch (error) {
+      // Zod validation error
+      if (error && typeof error === 'object' && 'issues' in error) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          issues: (error as { issues: unknown[] }).issues,
+        })
+      }
       if (error instanceof Error) {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
         }
         if (error.message.includes('No media IDs provided')) {
           return reply.code(400).send({ error: error.message })
-        }
-        if (error.message.includes('issues')) {
-          return reply.code(400).send({
-            error: 'Validation error',
-            issues: (error as { issues?: unknown[] }).issues,
-          })
         }
       }
       throw error
