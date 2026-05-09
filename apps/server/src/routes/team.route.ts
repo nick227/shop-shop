@@ -7,17 +7,16 @@ import {
   declineInvitation,
   revokeInvitation,
   getStoreTeamMembers,
-  getUserStoreAccess,
-  updateTeamMember,
-  removeTeamMember,
   getStorePendingInvitations,
   getStoreDeliveryDrivers,
+  getUserStoreAccess,
   getUserInvitations,
-  hasStorePermission,
-  prisma,
+  updateTeamMember,
+  removeTeamMember,
 } from '@packages/db'
+import { prisma } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
-import { userHasStoreAccess } from '../middleware/storeAccess'
+import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers'
 
 const PermissionSchema = z.enum([
   'VIEW_ORDERS',
@@ -65,13 +64,15 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
-      if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+      const role = req.user?.role
+      
+      if (!userId || !role) {
+        return VendorErrors.unauthorized(reply)
       }
-
+      
       const input = CreateInvitationSchema.parse(req.body)
-      if (!(await canManageTeam(userId, req.user!.role, input.storeId))) {
-        return reply.code(403).send({ error: 'You cannot manage access for this store' })
+      if (!(await userHasStoreAccess(userId, role, input.storeId, 'team'))) {
+        return VendorErrors.forbidden(reply, 'You cannot access team for this store')
       }
 
       const invitation = await createInvitation({
@@ -130,8 +131,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
+      
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = AcceptInvitationSchema.parse(req.body)
@@ -184,8 +186,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
+      
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { id: string }
@@ -209,8 +212,8 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
-      if (!req.user || !(await canManageTeam(req.user.id, req.user.role, params.storeId))) {
-        return reply.code(403).send({ error: 'You cannot manage access for this store' })
+      if (!(await requireVendorAuth(req.user?.id, req.user?.role, params.storeId, 'team', reply))) {
+        return
       }
 
       const members = await getStoreTeamMembers(params.storeId)
@@ -245,8 +248,8 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
-      if (!req.user || !(await canAssignDeliveries(req.user.id, req.user.role, params.storeId))) {
-        return reply.code(403).send({ error: 'You cannot assign deliveries for this store' })
+      if (!(await requireVendorAuth(req.user?.id, req.user?.role, params.storeId, 'dispatch', reply))) {
+        return
       }
 
       const drivers = await getStoreDeliveryDrivers(params.storeId)
@@ -296,8 +299,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const email = req.user?.email
+      
       if (!email) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const invitations = await getUserInvitations(email)
@@ -314,8 +318,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
+      
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { id: string }
@@ -346,8 +351,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
+      
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { id: string }
