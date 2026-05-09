@@ -11,7 +11,7 @@ import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createItemFormSections } from '@features/auth'
-import { MediaGalleryManager } from '@shared/ui/media'
+import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 
 export default function ItemFormPage() {
   const { storeId, itemId } = useParams<{ storeId: string; itemId?: string }>()
@@ -53,25 +53,31 @@ export default function ItemFormPage() {
     enabled: isEdit,
   })
 
+  // Fetch item media for edit mode (SDK strips mediaAssets, so we fetch separately)
+  const { data: itemMedia } = usePublicMediaList({ storeId: isEdit ? storeId! : undefined, itemId: isEdit ? itemId : undefined })
+
   // Populate form when editing
   useEffect(() => {
     if (item) {
+      const primaryImageUrl = itemMedia
+        ?.filter((m) => m.kind === 'IMAGE')
+        ?.sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))[0]?.url
       setFormData({
         title: item.title || '',
         description: item.description || '',
         price: item.price?.toString() || '',
-        category: item.category || '',
-        type: item.type || '',
+        category: (item.optionsJson as any)?.category || '',
+        type: (item.optionsJson as any)?.type || '',
         isActive: item.isActive ?? true,
         isSoldOut: item.isSoldOut ?? false,
         stockQty: item.stockQty?.toString() || '',
         sortIndex: item.sortIndex ?? 0,
         tags: item.tags || [],
-        imageUrl: item.optionsJson?.imageUrl || item.imageUrl || '',
+        imageUrl: (item.optionsJson as any)?.imageUrl || primaryImageUrl || '',
         optionsJson: item.optionsJson || {},
       })
     }
-  }, [item])
+  }, [item, itemMedia])
 
   // Create item mutation
   const createItemMutation = useMutation({
@@ -82,14 +88,17 @@ export default function ItemFormPage() {
           title: data.title,
           description: data.description || '',
           price: data.price,
-          category: data.category,
-          type: data.type,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
-          optionsJson: { ...(data.optionsJson || {}), imageUrl: data.imageUrl || undefined },
+          optionsJson: {
+            ...(data.optionsJson || {}),
+            imageUrl: data.imageUrl || undefined,
+            category: data.category || undefined,
+            type: data.type || undefined,
+          },
         },
       })
     },
@@ -113,14 +122,17 @@ export default function ItemFormPage() {
           title: data.title,
           description: data.description || '',
           price: data.price,
-          category: data.category,
-          type: data.type,
           isActive: data.isActive,
           isSoldOut: data.isSoldOut,
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
-          optionsJson: { ...(data.optionsJson || {}), imageUrl: data.imageUrl || undefined },
+          optionsJson: {
+            ...(data.optionsJson || {}),
+            imageUrl: data.imageUrl || undefined,
+            category: data.category || undefined,
+            type: data.type || undefined,
+          },
         },
       })
     },
@@ -166,15 +178,16 @@ export default function ItemFormPage() {
 
   const isSubmitting = createItemMutation.isPending || updateItemMutation.isPending
   const sections = createItemFormSections(
-    { 
-      ...formData, 
+    {
+      ...formData,
       price: Number.parseFloat(formData.price) || 0,
       stockQty: Number.parseInt(formData.stockQty) || 0
-    }, 
+    },
     handleChange,
     {
       storeId: storeId!,
-      itemId: itemId
+      itemId: itemId,
+      storeType: (store as any)?.storeType,
     }
   )
 

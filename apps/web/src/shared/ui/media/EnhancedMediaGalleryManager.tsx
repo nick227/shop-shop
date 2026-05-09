@@ -4,6 +4,7 @@ import { EnhancedMediaPreviewCard } from './EnhancedMediaPreviewCard'
 import { Search, Grid, Trash2, SortAsc, SortDesc } from 'lucide-react'
 import { authFetch } from '@shared/lib/auth/authFetch'
 import { readHttpErrorFromResponse } from '@api/readHttpError'
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 
 interface EnhancedMediaGalleryManagerProps {
   storeId?: string
@@ -65,7 +66,13 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       const text = await response.text().catch(() => '')
       try {
         const list = JSON.parse(text) as { data?: MediaItem[] }
-        setMedia(list.data ?? [])
+        const rows = list.data ?? []
+        setMedia(
+          rows.map((item) => ({
+            ...item,
+            url: resolveBrowserAssetUrl(String(item.url ?? '')),
+          })),
+        )
       } catch {
         throw new Error(`Failed to parse /api/media response as JSON. Body starts with: ${JSON.stringify(text.slice(0, 60))}`)
       }

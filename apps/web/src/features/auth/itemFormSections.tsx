@@ -7,6 +7,7 @@ import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import { EnhancedMediaGalleryManager } from '@shared/ui/media'
 import type { FormSection } from '@shared/ui/templates'
 import type { ItemFormData } from '@api/types'
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import {
   CATEGORIES,
   getCategoriesForStoreType,
@@ -98,6 +99,15 @@ export function createItemFormSections(
                 placeholder="https://..."
                 helperText="Used as the main item thumbnail (separate from Product Media uploads)"
               />
+              {formData.imageUrl?.trim() ? (
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-muted w-32 h-32">
+                  <img
+                    src={resolveBrowserAssetUrl(formData.imageUrl.trim())}
+                    alt=""
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              ) : null}
               
               <Select
                 value={formData.category || ''}
@@ -289,7 +299,8 @@ export function createItemFormSections(
           itemId={options?.itemId}
           maxFiles={100}
         />
-      )},
+      ),
+    },
   ]
 }
 
