@@ -364,3 +364,84 @@ Use after shipping delivery-related changes (DoorDash, in-house, tracking UI).
 |------|--------|
 | Failed / canceled job | Customer UI shows destructive alert; status badge matches job row. |
 | No coords | Map card hidden when store geo missing; rest of page still works. |
+
+---
+
+## DoorDash sandbox smoke
+
+Prove end-to-end (sandbox or staging): **quote → checkout → READY → dispatch → `providerExternalId` / `trackingUrl` → webhook → delivered**, then verify UI surfaces.
+
+### Automated smoke (canonical — uses mock adapter + real webhook route in tests)
+
+Run from repo root:
+
+```bash
+pnpm --dir apps/server run test:stripe-smoke
+```
+
+This bundle covers, among other things:
+
+| Proof | Test / area |
+|-------|----------------|
+| Dispatch creates job + `providerExternalId` + `trackingUrl` | `delivery-dispatch-lifecycle.test.ts` |
+| Webhook accepts payload, audit/dedupe, order transition | `doordash-webhook.integration.test.ts` |
+| Webhook auth modes | `doordash-webhook-auth.test.ts`, `env.schema.doordash.test.ts` |
+| Customer tracking API auth | `delivery-tracking.route.test.ts` |
+
+The legacy file `tests/doordash-sandbox-smoke.test.ts` is **not** maintained against the current Prisma schema; do not rely on it until rewritten. Prefer the server smoke command above.
+
+### Live DoorDash sandbox API (optional)
+
+When exercising **real** DoorDash sandbox credentials (developer dashboard keys, sandbox base URL):
+
+1. Configure env vars from `.env.example` (`DOORDASH_*` client IDs/secrets as applicable to your integration).
+2. Run quote → checkout → mark **READY** → vendor **dispatch** (`DOORDASH_DRIVE`).
+3. Confirm `DeliveryJob` rows show non-null `providerExternalId` and `trackingUrl`.
+4. Trigger or simulate provider webhooks against your **public HTTPS** webhook URL (see Production webhook & env).
+
+### Manual UI verification (after automated smoke + optional live sandbox)
+
+| Surface | Verify |
+|---------|--------|
+| **Admin delivery event viewer** | New webhook rows appear; payloads auditable; dedupe behavior matches expectations. |
+| **Customer tracking** | Order tracking page / `GET /api/delivery/tracking/:orderId` reflects job status after webhook (poll + realtime when enabled). |
+| **Vendor dispatch panel** | Status updates after dispatch and after webhook-driven transitions (`DoorDashDispatchPanel` / vendor order UX). |
+| **Failed / canceled** | Provider failure/cancel events map to `DeliveryJob` + UI (destructive state, not stuck “in progress”). |
+
+---
+
+## Production webhook & environment validation
+
+Before production deploy, confirm:
+
+| Item | Notes |
+|------|--------|
+| `DOORDASH_WEBHOOK_AUTH_MODE` | Must be `basic` or `hmac` in production (never `none`). |
+| Basic auth | If `basic`: `DOORDASH_WEBHOOK_BASIC_USER` / `DOORDASH_WEBHOOK_BASIC_PASSWORD` set and match DoorDash dashboard. |
+| HMAC | If `hmac`: `DOORDASH_WEBHOOK_SECRET` set; header name aligned (`DOORDASH_WEBHOOK_SIGNATURE_HEADER`). |
+| `STRIPE_WEBHOOK_SECRET` | Set for Stripe signature verification. |
+| Public HTTPS URLs | DoorDash webhook URL and Stripe webhook URL reachable from the internet (no localhost-only callbacks). |
+| `ENABLE_COD_PAYMENTS` | `false` unless COD is intentionally enabled in prod. |
+
+See `.env.example` for variable names and comments.
+
+---
+
+## Delivery monitoring / alerts
+
+- [ ] Alert on DoorDash quote failures above threshold
+- [ ] Alert on DoorDash dispatch failures above threshold
+- [ ] Alert on webhook auth failures
+- [ ] Alert on webhook processing failures
+- [ ] Alert on `DeliveryJob` stuck in `DISPATCHED` / `OUT_FOR_DELIVERY` too long
+- [ ] Alert on READY orders awaiting dispatch too long
+- [ ] Alert on failed/canceled delivery spike
+- [ ] Admin delivery event viewer verified in production
+- [ ] Manual refresh works for stuck provider deliveries
+- [ ] Raw provider payloads remain admin-only
+
+---
+
+## Manual QA matrix (delivery hardening)
+
+Use **Delivery regression checklist** above for step-by-step scenarios. After DoorDash sandbox smoke passes in CI, remaining delivery work is mostly **ops** (monitoring, dashboards, runbooks) and periodic manual runs of the regression tables—not core product code unless gaps appear.
