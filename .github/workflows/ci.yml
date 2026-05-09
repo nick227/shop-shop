@@ -153,6 +153,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: PaymentIntent Connect adapter unit tests
+        run: pnpm test:payments-adapter
+
       - name: Prisma generate & migrate (billing smoke DB)
         working-directory: packages/db
         run: pnpm exec prisma generate && pnpm exec prisma migrate deploy

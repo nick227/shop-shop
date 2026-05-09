@@ -10,7 +10,9 @@ From repo root:
 pnpm verify:payments
 ```
 
-Same as `pnpm typecheck` followed by `pnpm test:stripe-smoke` (Connect gate, webhook signature, PI → PAID/PLACED, checkout route tests in `@apps/server`). Alias: `pnpm test:billing`.
+(Runs `@packages/db` typecheck, Connect PI adapter tests, then server billing smoke — not the full monorepo `typecheck` unless you run that separately.)
+
+Runs **`pnpm --filter @packages/db typecheck`**, then **`pnpm test:payments-adapter`** (mocked Stripe: **`transfer_data.destination`** + **`application_fee_amount`** on PI create), then **`pnpm test:stripe-smoke`** (Connect gate, webhooks, checkout, COD, affiliate guard in `@apps/server`). Also run **`pnpm typecheck`** at the monorepo level when the workspace is green. Alias for server-only bundle: **`pnpm test:billing`**.
 
 All of the above should pass before you treat staging manual steps as authoritative.
 
@@ -44,11 +46,7 @@ For step-by-step ordering with extra checks (health, idempotency), see **Staging
 - **COD enabled** → **`PLACED` + `UNPAID`**, **`paymentId` null**, **`processOrderPayment` not called** (`checkout.service.cod.test.ts`).
 - **`calculateCommissionForOrder`** skips orders **not `paymentStatus: PAID`** (`affiliate-commission-unpaid.test.ts`).
 - Plus existing Connect gate, webhook signature, PI → PAID/PLACED, checkout route E2E.
-
-Still worth adding later:
-
-- **Connected store:** PI creation includes **`transfer_data.destination`** (mock Stripe client).
-- **Connected store:** PI includes **`application_fee_amount`** when a platform/service fee applies (mock Stripe client).
+- **Adapter:** `createPaymentIntent` sets **`transfer_data.destination`** and optional **`application_fee_amount`** (cents) — `packages/db` `payments.adapter.connect-intent.test.ts`, run via **`pnpm test:payments-adapter`** or **`pnpm verify:payments`**.
 
 ## Staging / test-mode environment
 
