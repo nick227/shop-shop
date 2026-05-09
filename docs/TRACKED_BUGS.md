@@ -12,6 +12,20 @@
 
 So the smell is **route / plugin / test-app lifecycle**, not the DoorDash mock adapter or core DB service.
 
+## First-pass inspection (route + service)
+
+**Success handler pattern — OK.** The route ends with a single return and no extra awaited work after send:
+
+```69:69:apps/server/src/routes/order-dispatch.route.ts
+      return reply.code(201).send({ deliveryJob })
+```
+
+**Dispatch service — no realtime on this path.** `dispatchOrderDelivery` only runs Prisma reads/writes and `getDeliveryProviderAdapter(...).createDelivery`; it does **not** call `OrderService`, `publishOrderStatusChanged`, or `publishOrderCreated` (`packages/db/src/services/delivery-dispatch.service.ts`). So the usual **broadcast / realtime** suspects do not apply *inside* dispatch unless something else hooks Prisma.
+
+**Minimal test app — no full-server hooks.** `order-dispatch.route.test.ts` builds `Fastify()` + `app.decorate('authenticate', authenticate)` + `orderDispatchRoutes` only. It does **not** register `apps/server/src/index.ts` hooks (`requestIdMiddleware`, `optionalAuthenticate`, etc.), so global server plugins are ruled out for that test file.
+
+**Updated suspicion focus:** Fastify `inject` + serialization (`deliveryJob` payload: dates, `Decimal`, JSON fields), Vitest worker / vite-node behavior, Prisma client middleware if any fires on `deliveryJob.update`, or an **auth/`requireAuth`** edge case after the handler returns (less likely given direct DB timing).
+
 ## Likely suspects (check in order)
 
 1. Route **awaits something that never resolves** after sending the response.
@@ -23,11 +37,12 @@ So the smell is **route / plugin / test-app lifecycle**, not the DoorDash mock a
 
 ## Investigation checklist
 
-- [ ] Trace `order-dispatch.route.ts` success path after `reply.code(201).send(...)`.
-- [ ] Confirm no `await` after `return reply...` in middleware/plugins used by this route.
-- [ ] Search for `setOrderServiceBroadcast`, realtime, River, or websocket hooks touching orders/delivery.
-- [ ] Run the minimal inject repro with Fastify logger enabled and a single route registered.
-- [ ] Compare with a trivial `GET` inject on the same app instance.
+- [x] Trace `order-dispatch.route.ts` success path — uses `return reply.code(201).send(...)`; nothing awaited after.
+- [x] Confirm dispatch service path — no realtime publisher calls in `dispatchOrderDelivery`.
+- [ ] Prisma extension / middleware on `deliveryJob` update (if any beyond coords guard on `Order`).
+- [ ] Serialize payload: try `reply.code(201).send(JSON.parse(JSON.stringify({ deliveryJob })))` or a plain DTO in inject repro.
+- [ ] Run minimal inject repro with Fastify logger + trace; compare `GET` vs `POST` success on same app.
+- [ ] Vitest: try `pool: 'forks'` vs default for this file only; rule out worker deadlock.
 
 ## Related files
 
