@@ -132,4 +132,88 @@ describe('GET /api/delivery/tracking/:orderId', () => {
     })
     expect(res.statusCode).toBe(200)
   })
+
+  it('returns 200 for STAFF team member with deliveries permission', async () => {
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const customer = await createAuthenticatedUser('USER')
+    const staff = await createAuthenticatedUser('STAFF')
+    const store = await createTestStore(vendor.id)
+    await prisma.teamMember.create({
+      data: {
+        storeId: store.id,
+        userId: staff.id,
+        permissionsJson: ['VIEW_DELIVERIES'],
+      },
+    })
+
+    const order = await createTestOrder(customer.id, store.id, {
+      status: 'READY',
+      paymentStatus: 'PAID',
+    })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'THIRD_PARTY_PROVIDER' },
+    })
+    const { randomUUID } = await import('crypto')
+    await prisma.deliveryJob.create({
+      data: {
+        id: randomUUID(),
+        orderId: order.id,
+        storeId: store.id,
+        provider: 'DOORDASH_DRIVE',
+        status: 'DISPATCHED',
+        providerExternalId: `test_${randomUUID().slice(0, 8)}`,
+        providerPayload: {},
+      },
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/delivery/tracking/${order.id}`,
+      headers: authHeaders(staff.token),
+    })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('returns 403 for STAFF team member without deliveries permission', async () => {
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const customer = await createAuthenticatedUser('USER')
+    const staff = await createAuthenticatedUser('STAFF')
+    const store = await createTestStore(vendor.id)
+    await prisma.teamMember.create({
+      data: {
+        storeId: store.id,
+        userId: staff.id,
+        permissionsJson: ['MANAGE_ORDERS'],
+      },
+    })
+
+    const order = await createTestOrder(customer.id, store.id, {
+      status: 'READY',
+      paymentStatus: 'PAID',
+    })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'THIRD_PARTY_PROVIDER' },
+    })
+    const { randomUUID } = await import('crypto')
+    await prisma.deliveryJob.create({
+      data: {
+        id: randomUUID(),
+        orderId: order.id,
+        storeId: store.id,
+        provider: 'DOORDASH_DRIVE',
+        status: 'DISPATCHED',
+        providerExternalId: `test_${randomUUID().slice(0, 8)}`,
+        providerPayload: {},
+      },
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/delivery/tracking/${order.id}`,
+      headers: authHeaders(staff.token),
+    })
+    expect(res.statusCode).toBe(403)
+  })
 })
