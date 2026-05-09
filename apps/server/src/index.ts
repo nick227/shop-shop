@@ -23,6 +23,7 @@ import { tipRoutes } from './routes/tip.route.js'
 import { affiliateRoutes } from './routes/affiliate.route.js'
 import { deliveryZoneRoutes } from './routes/delivery-zone.route.js'
 import { storeReadinessRoutes } from './routes/store-readiness.route.js'
+import { deliveryTrackingRoutes } from './routes/delivery-tracking.route.js'
 import { vendorVerificationRoutes } from './routes/vendor-verification.route.js'
 import { exportRoutes } from './routes/export.route.js'
 import { vendorPayoutRoutes } from './routes/vendor-payout.route.js'
@@ -166,6 +167,7 @@ await app.register(tipRoutes)
 await app.register(affiliateRoutes, { prefix: '/api' }) 
 await app.register(deliveryZoneRoutes) 
 await app.register(storeReadinessRoutes) 
+await app.register(deliveryTrackingRoutes)
 await app.register(vendorVerificationRoutes) 
 await app.register(exportRoutes) 
 await app.register(vendorPayoutRoutes) 
