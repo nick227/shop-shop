@@ -73,6 +73,7 @@ docs/*
 !docs/api/versioning.md
 !docs/api/openapi.yaml
 !docs/GO_LIVE_CHECKLIST.md
+!docs/STRIPE_CONNECT_RELEASE_CHECKLIST.md
 src\*.md
 private/
 
