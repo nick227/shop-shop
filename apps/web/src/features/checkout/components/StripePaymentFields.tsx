@@ -1,15 +1,17 @@
 /**
  * Stripe Payment Element — creates a PaymentMethod id for server-side PaymentIntent confirmation.
  */
-import { forwardRef, useImperativeHandle } from 'react'
+import { type ForwardedRef, forwardRef, useImperativeHandle } from 'react'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 
 export type StripePaymentFieldsHandle = {
   readonly confirmPayment: () => Promise<{ readonly paymentMethodId?: string; readonly errorMessage?: string }>
 }
 
-export const StripePaymentFields = forwardRef<StripePaymentFieldsHandle, Record<never, never>>(
-  function StripePaymentFields(_props, ref) {
+export const StripePaymentFields = forwardRef(function StripePaymentFields(
+  _props: unknown,
+  ref: ForwardedRef<StripePaymentFieldsHandle>,
+) {
     const stripe = useStripe()
     const elements = useElements()
 
@@ -43,5 +45,4 @@ export const StripePaymentFields = forwardRef<StripePaymentFieldsHandle, Record<
         <PaymentElement />
       </div>
     )
-  },
-)
+})
