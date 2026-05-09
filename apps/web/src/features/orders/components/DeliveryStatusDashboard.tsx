@@ -275,20 +275,23 @@ export function DeliveryStatusDashboard({
               </p>
             </div>
           ) : (
-            sortedOrders.map(order => (
-              <div key={order.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            sortedOrders.map(order => {
+              const { id, ...orderRest } = order
+              return (
+              <div key={id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <NativeDeliveryStatus
-                  {...order}
-                  onRefresh={() => onRefreshOrder?.(order.id)}
-                  onContactDriver={() => onContactDriver?.(order.id)}
-                  onContactStore={() => onContactStore?.(order.id)}
+                  {...orderRest}
+                  orderId={id}
+                  onRefresh={() => onRefreshOrder?.(id)}
+                  onContactDriver={() => onContactDriver?.(id)}
+                  onContactStore={() => onContactStore?.(id)}
                   onTrackOrder={() => {
                     setSelectedOrder(order)
-                    onTrackOrder?.(order.id)
+                    onTrackOrder?.(id)
                   }}
                 />
               </div>
-            ))
+            )})
           )}
         </div>
       </div>

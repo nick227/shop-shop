@@ -9,9 +9,22 @@ export interface DeliveryTrackingMapProps {
   userLocation?: LatLng
   driverLocation?: LatLng
   storeName: string
-  deliveryMode: 'PICKUP' | 'DELIVERY' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER'
+  deliveryMode:
+    | 'PICKUP'
+    | 'DELIVERY'
+    | 'STORE_MANAGED_DELIVERY'
+    | 'PLATFORM_DRIVER'
+    | 'THIRD_PARTY_PROVIDER'
   estimatedTime?: string
-  status: 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'COMPLETED'
+  status:
+    | 'PLACED'
+    | 'ACCEPTED'
+    | 'PREPARING'
+    | 'READY'
+    | 'OUT_FOR_DELIVERY'
+    | 'DELIVERED'
+    | 'CANCELED'
+    | 'COMPLETED'
   onRefresh?: () => void
 }
 
@@ -83,20 +96,34 @@ export function DeliveryTrackingMap({
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'PREPARING': return <Package className="w-5 h-5 text-orange-500" />
+      case 'PREPARING':
+      case 'PLACED':
+      case 'ACCEPTED':
+        return <Package className="w-5 h-5 text-orange-500" />
       case 'READY': return <Clock className="w-5 h-5 text-blue-500" />
       case 'OUT_FOR_DELIVERY': return <Truck className="w-5 h-5 text-green-500" />
-      case 'COMPLETED': return <MapPin className="w-5 h-5 text-gray-500" />
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return <MapPin className="w-5 h-5 text-gray-500" />
+      case 'CANCELED':
+        return <Package className="w-5 h-5 text-gray-400" />
       default: return <Package className="w-5 h-5 text-gray-500" />
     }
   }
 
   const getStatusText = () => {
     switch (status) {
-      case 'PREPARING': return 'Order is being prepared'
+      case 'PREPARING':
+      case 'PLACED':
+      case 'ACCEPTED':
+        return 'Order is being prepared'
       case 'READY': return 'Order is ready for pickup'
       case 'OUT_FOR_DELIVERY': return 'Driver is on the way'
-      case 'COMPLETED': return 'Order has been delivered'
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return 'Order has been delivered'
+      case 'CANCELED':
+        return 'Order canceled'
       default: return 'Order processing'
     }
   }
@@ -155,7 +182,7 @@ export function DeliveryTrackingMap({
         {/* Tracking Controls */}
         <div className="absolute top-4 right-4 space-y-2">
           <Button
-            size="sm"
+            size="small"
             onClick={onRefresh}
             className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
           >

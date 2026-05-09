@@ -7,12 +7,79 @@ import {
   createAccountLink as stripeCreateAccountLink,
   retrieveAccount as stripeRetrieveAccount,
   createRefund as stripeCreateRefund,
+  createExpressLoginLink,
   type CreatePaymentIntentParams,
   type CreateConnectAccountParams,
   type CreateAccountLinkParams,
 } from '../adapters/payments.adapter.js'
 import { orderService } from './order.service.js'
 import { publishOrderCreated } from './order-realtime.publisher.js'
+
+function parseTeamPermissionsJson(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((p): p is string => typeof p === 'string')
+}
+
+/** Owner, admin, or team member with finance scope (matches apps/server storeAccess finance). */
+export async function assertUserCanManageStoreFinance(userId: string, storeId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  })
+  if (user?.role === 'ADMIN') return
+
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: { ownerUserId: true },
+  })
+  if (!store) {
+    throw new Error('Store not found')
+  }
+  if (store.ownerUserId === userId) return
+
+  const member = await prisma.teamMember.findFirst({
+    where: { storeId, userId, isActive: true },
+    select: { permissionsJson: true },
+  })
+  if (!member) {
+    throw new Error('Unauthorized: Store finance access required')
+  }
+  const perms = parseTeamPermissionsJson(member.permissionsJson)
+  if (perms.includes('VIEW_FINANCE') || perms.includes('FULL_ACCESS')) return
+
+  throw new Error('Unauthorized: Store finance access required')
+}
+
+export function storeAcceptsOnlineCardPayments(store: {
+  stripeAccountId: string | null
+  stripeOnboarded: boolean
+  stripeChargesEnabled: boolean
+}): boolean {
+  return Boolean(
+    store.stripeAccountId && store.stripeOnboarded && store.stripeChargesEnabled,
+  )
+}
+
+export async function persistStripeAccountSnapshotOnStore(
+  storeId: string,
+  account: Awaited<ReturnType<typeof stripeRetrieveAccount>>,
+): Promise<void> {
+  await prisma.store.update({
+    where: { id: storeId },
+    data: {
+      stripeOnboarded: account.details_submitted ?? false,
+      stripeChargesEnabled: account.charges_enabled ?? false,
+      stripePayoutsEnabled: account.payouts_enabled ?? false,
+      stripeRequirementsJson: {
+        currentlyDue: account.requirements?.currently_due ?? [],
+        eventuallyDue: account.requirements?.eventually_due ?? [],
+        pastDue: account.requirements?.past_due ?? [],
+        disabledReason: account.requirements?.disabled_reason ?? null,
+      } as object,
+      stripeLastSyncedAt: new Date(),
+    },
+  })
+}
 
 // ========================================
 // Payment Service
@@ -35,6 +102,14 @@ export interface ProcessOrderPaymentResult {
 export const processOrderPayment = async (
   input: ProcessOrderPaymentInput
 ): Promise<ProcessOrderPaymentResult> => {
+  const pm = input.paymentMethodId?.trim()
+  if (!pm || !pm.startsWith('pm_')) {
+    throw new Error('INVALID_STRIPE_PAYMENT_METHOD')
+  }
+  if (pm === 'cod_test' || pm.startsWith('cod_')) {
+    throw new Error('INVALID_STRIPE_PAYMENT_METHOD')
+  }
+
   // Fetch order with store info
   const order = await prisma.order.findUnique({
     where: { id: input.orderId },
@@ -54,6 +129,10 @@ export const processOrderPayment = async (
 
   if (order.paymentStatus === 'PAID') {
     throw new Error('Order already paid')
+  }
+
+  if (!storeAcceptsOnlineCardPayments(order.store)) {
+    throw new Error('STORE_CARD_PAYMENTS_UNAVAILABLE')
   }
 
   // Idempotency: return existing PaymentIntent if one was already created
@@ -79,23 +158,18 @@ export const processOrderPayment = async (
     // Existing PI was canceled — fall through to create a fresh one
   }
 
-  // Prepare payment intent parameters
+  // Prepare payment intent parameters — route to Connect account + platform fee (service dollars → cents once in adapter).
   const params: CreatePaymentIntentParams = {
     amount: order.total,
     orderId: order.id,
-    paymentMethodId: input.paymentMethodId,
+    paymentMethodId: pm,
+    connectedAccountId: order.store.stripeAccountId!,
+    applicationFeeAmount: order.serviceFeeAmount,
+    idempotencyKey: `paymentintent-order-${order.id}`,
   }
 
-  // Add connected account for marketplace (if store has Stripe account)
-  if (order.store.stripeAccountId && order.store.stripeOnboarded) {
-    params.connectedAccountId = order.store.stripeAccountId
-    params.applicationFeeAmount = order.serviceFeeAmount
-  }
-
-  // Create payment intent
   const result = await stripeCreatePaymentIntent(params)
 
-  // Update order with payment intent ID
   await prisma.order.update({
     where: { id: order.id },
     data: {
@@ -126,7 +200,6 @@ export interface InitiateStripeConnectResult {
 export const initiateStripeConnect = async (
   input: InitiateStripeConnectInput
 ): Promise<InitiateStripeConnectResult> => {
-  // Verify store ownership
   const store = await prisma.store.findUnique({
     where: { id: input.storeId },
     include: { owner: true },
@@ -136,9 +209,7 @@ export const initiateStripeConnect = async (
     throw new Error('Store not found')
   }
 
-  if (store.ownerUserId !== input.userId) {
-    throw new Error('Unauthorized: Store does not belong to user')
-  }
+  await assertUserCanManageStoreFinance(input.userId, input.storeId)
 
   if (store.stripeAccountId) {
     // Account already exists, just create new onboarding link
@@ -186,10 +257,25 @@ export const initiateStripeConnect = async (
   }
 }
 
+export interface StripeConnectStatusApiResult {
+  connected: boolean
+  stripeAccountId?: string
+  onboarded: boolean
+  chargesEnabled: boolean
+  payoutsEnabled: boolean
+  requirements?: {
+    currentlyDue: string[]
+    eventuallyDue: string[]
+    pastDue?: string[]
+    disabledReason?: string | null
+  }
+  dashboardUrl?: string
+}
+
 export const checkStripeConnectStatus = async (
   storeId: string,
   userId: string
-) => {
+): Promise<StripeConnectStatusApiResult> => {
   const store = await prisma.store.findUnique({
     where: { id: storeId },
   })
@@ -198,29 +284,41 @@ export const checkStripeConnectStatus = async (
     throw new Error('Store not found')
   }
 
-  if (store.ownerUserId !== userId) {
-    throw new Error('Unauthorized: Store does not belong to user')
-  }
+  await assertUserCanManageStoreFinance(userId, storeId)
 
   if (!store.stripeAccountId) {
     return {
       connected: false,
       onboarded: false,
+      chargesEnabled: false,
+      payoutsEnabled: false,
     }
   }
 
   const account = await stripeRetrieveAccount(store.stripeAccountId)
+  await persistStripeAccountSnapshotOnStore(store.id, account)
+
+  let dashboardUrl: string | undefined
+  try {
+    const dash = await createExpressLoginLink(store.stripeAccountId)
+    dashboardUrl = dash.url
+  } catch {
+    dashboardUrl = undefined
+  }
 
   return {
     connected: true,
-    onboarded: account.details_submitted || false,
-    chargesEnabled: account.charges_enabled || false,
-    payoutsEnabled: account.payouts_enabled || false,
+    stripeAccountId: store.stripeAccountId,
+    onboarded: Boolean(account.details_submitted),
+    chargesEnabled: Boolean(account.charges_enabled),
+    payoutsEnabled: Boolean(account.payouts_enabled),
     requirements: {
-      currentlyDue: account.requirements?.currently_due || [],
-      eventuallyDue: account.requirements?.eventually_due || [],
-      pastDue: account.requirements?.past_due || [],
+      currentlyDue: account.requirements?.currently_due ?? [],
+      eventuallyDue: account.requirements?.eventually_due ?? [],
+      pastDue: account.requirements?.past_due ?? [],
+      disabledReason: account.requirements?.disabled_reason ?? null,
     },
+    ...(dashboardUrl ? { dashboardUrl } : {}),
   }
 }
 
@@ -298,6 +396,10 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
         timestamp: new Date().toISOString(),
       }),
     )
+    return
+  }
+
+  if (order.paymentStatus === 'PAID' && order.status === 'PLACED') {
     return
   }
 
@@ -379,12 +481,6 @@ export const handleAccountUpdated = async (accountId: string) => {
   }
 
   const account = await stripeRetrieveAccount(accountId)
-
-  await prisma.store.update({
-    where: { id: store.id },
-    data: {
-      stripeOnboarded: account.details_submitted || false,
-    },
-  })
+  await persistStripeAccountSnapshotOnStore(store.id, account)
 }
 

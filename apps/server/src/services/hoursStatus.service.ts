@@ -44,6 +44,14 @@ const DAY_MAP = {
 export class HoursStatusService {
   constructor() {}
 
+  private normalizeDayHours(day: DayHours): { open: string; close: string; closed: boolean } {
+    return {
+      open: day.open,
+      close: day.close,
+      closed: day.closed ?? false,
+    }
+  }
+
   /**
    * Get current hours status for a store
    */
@@ -102,8 +110,8 @@ export class HoursStatusService {
         reason: specialHours.reason || 'Closed for holiday',
         timezone,
         todayHours: {
-          store: todayStoreHours,
-          delivery: todayDeliveryHours
+          store: todayStoreHours ? this.normalizeDayHours(todayStoreHours) : undefined,
+          delivery: todayDeliveryHours ? this.normalizeDayHours(todayDeliveryHours) : undefined,
         }
       }
     }
@@ -130,8 +138,8 @@ export class HoursStatusService {
       statusLabel: this.getStatusLabel(isStoreOpen, isDeliveryAvailable),
       timezone,
       todayHours: {
-        store: todayStoreHours,
-        delivery: todayDeliveryHours
+        store: todayStoreHours ? this.normalizeDayHours(todayStoreHours) : undefined,
+        delivery: todayDeliveryHours ? this.normalizeDayHours(todayDeliveryHours) : undefined,
       }
     }
 
