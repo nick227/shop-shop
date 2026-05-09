@@ -1,4 +1,4 @@
-import { prisma } from '../client'
+﻿import { prisma } from '../client.js'
 import { Decimal } from 'decimal.js'
 
 export interface ValidatePromotionInput {

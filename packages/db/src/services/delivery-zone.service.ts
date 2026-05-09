@@ -1,4 +1,4 @@
-import { prisma } from '../client'
+﻿import { prisma } from '../client.js'
 import type { DeliveryZone } from '../generated/client'
 
 export interface CreateDeliveryZoneInput {

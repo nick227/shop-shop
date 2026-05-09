@@ -4,11 +4,11 @@
  */
 
 import type { ExtendedPrismaClient } from '../client.js'
-import { GeocodingCacheService, GeocodingQuery, GeocodingResult } from './geocoding-cache.service'
+import { GeocodingCacheService, GeocodingQuery, GeocodingResult } from './geocoding-cache.service.js'
 import {
   createGeocodingAdapter,
   GeocodingResult as ApiResult,
-} from '../adapters/geocoding.adapter'
+} from '../adapters/geocoding.adapter.js'
 
 export interface GeocodingConfig {
   apiKey: string

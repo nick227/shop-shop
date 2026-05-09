@@ -1,4 +1,4 @@
-import { prisma } from '../client'
+﻿import { prisma } from '../client.js'
 import type { User, Role } from '../generated/client'
 
 export interface CreateVendorApplicationInput {

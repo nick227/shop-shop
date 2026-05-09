@@ -1,5 +1,5 @@
-import { nanoid } from 'nanoid'
-import { prisma } from '../client'
+﻿import { nanoid } from 'nanoid'
+import { prisma } from '../client.js'
 import type {
   Affiliate,
   Commission,
@@ -330,10 +330,11 @@ export async function calculateCommissionForOrder(orderId: string): Promise<void
       storeId: true,
       serviceFeeAmount: true,
       referredByAffiliateId: true,
+      paymentStatus: true,
     },
   })
 
-  if (!order || !order.referredByAffiliateId) {
+  if (!order || order.paymentStatus !== 'PAID' || !order.referredByAffiliateId) {
     return
   }
 

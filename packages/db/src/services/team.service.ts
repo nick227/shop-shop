@@ -1,5 +1,5 @@
-import { nanoid } from 'nanoid'
-import { prisma } from '../client'
+﻿import { nanoid } from 'nanoid'
+import { prisma } from '../client.js'
 
 export type TeamMemberPermission =
   | 'VIEW_ORDERS'
