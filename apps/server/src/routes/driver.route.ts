@@ -1,12 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 
 export const driverRoutes = async (app: FastifyInstance) => {
   // GET /driver/deliveries - Assigned active delivery orders for current driver
   app.get('/driver/deliveries', {
-    preHandler: [authenticate, requireRole(['RIDER', 'ADMIN'])],
+    preHandler: [requireRole(['RIDER', 'ADMIN'])],
   }, async (req, reply) => {
     const { user } = req
     if (!user) return reply.code(401).send({ error: 'Unauthorized' })

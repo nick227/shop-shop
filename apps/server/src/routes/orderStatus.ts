@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { OrderStatus } from '../orders/validation'
 import { createOrderStatusValidationMiddleware, logOrderStatusChange } from '../middleware/orderValidation'
 import { prisma } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const updateOrderStatusSchema = z.object({
@@ -112,7 +112,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
   fastify.patch(
     '/:orderId/status',
     {
-      preHandler: [authenticate, orderValidationMiddleware],
+      preHandler: [requireAuth, orderValidationMiddleware],
     },
     async (request, reply) => {
       try {
@@ -170,7 +170,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/:orderId/status',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (request, reply) => {
       try {
@@ -214,7 +214,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/:orderId/transitions',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (request, reply) => {
       try {

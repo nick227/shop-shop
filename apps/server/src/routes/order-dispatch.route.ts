@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { dispatchOrderDelivery, prisma } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const paramsSchema = z.object({
@@ -33,7 +33,7 @@ async function assertCanDispatchOrder(
 
 export const orderDispatchRoutes = async (app: FastifyInstance) => {
   app.post('/:orderId/dispatch', {
-    preHandler: [authenticate],
+    preHandler: [requireAuth],
   }, async (req, reply) => {
     try {
       const { user } = req

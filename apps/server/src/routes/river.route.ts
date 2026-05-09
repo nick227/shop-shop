@@ -25,7 +25,7 @@ import {
   prisma,
   type CreatePostInput,
 } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/rbac.js'
 import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
@@ -166,7 +166,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.post(
     '/river/posts',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       try {
@@ -228,7 +228,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.patch(
     '/river/posts/:id',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -257,7 +257,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.delete(
     '/river/posts/:id',
     {
-      preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -291,7 +291,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.post(
     '/river/posts/:id/like',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -319,7 +319,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.delete(
     '/river/posts/:id/like',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -393,7 +393,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.post(
     '/river/posts/:id/comments',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (req, reply) => {
       try {
@@ -434,7 +434,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.delete(
     '/river/comments/:id',
     {
-      preHandler: [authenticate],
+      preHandler: [requireAuth],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }

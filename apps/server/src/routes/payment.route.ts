@@ -11,8 +11,7 @@ import {
   checkStripeConnectStatus,
   refundOrder,
 } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
-import { requireRole } from '../middleware/rbac.js'
+import { requireAuth, requireRole } from '../middleware/rbac.js'
 import { rateLimits } from '../constants/rateLimits.js'
 import 'dotenv/config'
 
@@ -31,7 +30,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentCreateIntent,
     },
-    preHandler: [authenticate],
+    preHandler: [requireAuth],
     schema: {
       tags: ['Payments'],
       summary: 'Create payment intent for order',
@@ -76,7 +75,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentConnect,
     },
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can set up payments for their store
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can set up payments for their store
     schema: {
       tags: ['Payments'],
       summary: 'Initiate Stripe Connect onboarding',
@@ -122,7 +121,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentConnectStatus,
     },
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can check payment status for their store
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can check payment status for their store
     schema: {
       tags: ['Payments'],
       summary: 'Check Stripe Connect status',
@@ -153,7 +152,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentRefund,
     },
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can refund orders from their store
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can refund orders from their store
     schema: {
       tags: ['Payments'],
       summary: 'Refund an order',

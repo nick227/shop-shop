@@ -12,7 +12,7 @@ import {
   createPayoutAdjustment,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
-import { userHasStoreAccess } from '../middleware/storeAccess'
+import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers'
 
 const ProcessPayoutSchema = z.object({
   storeId: z.string().uuid(),
@@ -61,11 +61,8 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
       const userId = req.user?.id
       const role = req.user?.role
-      if (!userId || !role) {
-        return reply.code(401).send({ error: 'Unauthorized' })
-      }
-      if (!(await userHasStoreAccess(userId, role, query.storeId, 'finance'))) {
-        return reply.code(403).send({ error: 'Forbidden' })
+      if (!userId || !role || !(await requireVendorAuth(userId, role, query.storeId, 'finance', reply))) {
+        return
       }
       
       const summary = await getVendorPayoutSummary(
@@ -97,11 +94,8 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
       const userId = req.user?.id
       const role = req.user?.role
-      if (!userId || !role) {
-        return reply.code(401).send({ error: 'Unauthorized' })
-      }
-      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
-        return reply.code(403).send({ error: 'Forbidden' })
+      if (!await requireVendorAuth(userId, role, params.storeId, 'finance', reply)) {
+        return
       }
 
       const amount = await getPendingPayoutAmount(params.storeId)
@@ -122,11 +116,8 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
       const userId = req.user?.id
       const role = req.user?.role
-      if (!userId || !role) {
-        return reply.code(401).send({ error: 'Unauthorized' })
-      }
-      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
-        return reply.code(403).send({ error: 'Forbidden' })
+      if (!await requireVendorAuth(userId, role, params.storeId, 'finance', reply)) {
+        return
       }
 
       const history = await getVendorPayoutHistory(params.storeId, {
@@ -149,11 +140,8 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
       const userId = req.user?.id
       const role = req.user?.role
-      if (!userId || !role) {
-        return reply.code(401).send({ error: 'Unauthorized' })
-      }
-      if (!(await userHasStoreAccess(userId, role, params.storeId, 'finance'))) {
-        return reply.code(403).send({ error: 'Forbidden' })
+      if (!await requireVendorAuth(userId, role, params.storeId, 'finance', reply)) {
+        return
       }
 
       const payout = await getVendorPayoutDetailForStore({ payoutId: params.payoutId, storeId: params.storeId })

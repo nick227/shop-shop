@@ -2,7 +2,6 @@ import type { FastifyInstance } from 'fastify'
 import type { ResourceDefinition } from '@packages/schemas'
 import { getResourceOperations, requiresAuthentication, getRequiredRoles } from '@packages/schemas'
 import { BaseCrudController } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 
 // ========================================
@@ -26,7 +25,7 @@ export async function registerResource(
   if (ops.hasCreate) {
     const roles = getRequiredRoles(resource, 'create')
     const preHandler = requiresAuthentication(resource, 'create')
-      ? [authenticate, requireRole(roles)]
+      ? [requireRole(roles)]
       : []
     
     app.post(resource.path, {
@@ -49,7 +48,7 @@ export async function registerResource(
   if (ops.hasList) {
     const roles = getRequiredRoles(resource, 'list')
     const preHandler = requiresAuthentication(resource, 'list')
-      ? [authenticate, requireRole(roles)]
+      ? [requireRole(roles)]
       : []
     
     app.get(resource.path, {
@@ -72,7 +71,7 @@ export async function registerResource(
   if (ops.hasRead) {
     const roles = getRequiredRoles(resource, 'read')
     const preHandler = requiresAuthentication(resource, 'read')
-      ? [authenticate, requireRole(roles)]
+      ? [requireRole(roles)]
       : []
     
     app.get(`${resource.path}/:id`, {
@@ -95,7 +94,7 @@ export async function registerResource(
   if (ops.hasUpdate) {
     const roles = getRequiredRoles(resource, 'update')
     const preHandler = requiresAuthentication(resource, 'update')
-      ? [authenticate, requireRole(roles)]
+      ? [requireRole(roles)]
       : []
     
     app.patch(`${resource.path}/:id`, {
@@ -119,7 +118,7 @@ export async function registerResource(
   if (ops.hasDelete) {
     const roles = getRequiredRoles(resource, 'delete')
     const preHandler = requiresAuthentication(resource, 'delete')
-      ? [authenticate, requireRole(roles)]
+      ? [requireRole(roles)]
       : []
     
     app.delete(`${resource.path}/:id`, {

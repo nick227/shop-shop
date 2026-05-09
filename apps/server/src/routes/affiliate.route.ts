@@ -14,7 +14,6 @@ import {
   updatePayoutStatus,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
-import { authenticate } from '../middleware/auth.js'
 
 async function requireActiveAffiliate(req: any, reply: any) {
   const userId = req.user?.id as string | undefined
@@ -57,7 +56,7 @@ const UpdatePayoutStatusSchema = z.object({
 export const affiliateRoutes = async (app: FastifyInstance) => {
   // GET /affiliates/application - Get current user's affiliate application/status (any authed user)
   app.get('/affiliates/application', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN'])],
   }, async (req, reply) => {
     const userId = req.user?.id
     if (!userId) return reply.code(401).send({ error: 'Unauthorized' })
@@ -70,7 +69,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // POST /affiliates/signup - Create affiliate account
   app.post('/affiliates/signup', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR'])],
+    preHandler: [requireRole(['USER', 'VENDOR'])],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -97,7 +96,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // GET /affiliates/me - Get current user's affiliate profile
   app.get('/affiliates/me', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -118,7 +117,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // GET /affiliates/me/stats - Get affiliate statistics
   app.get('/affiliates/me/stats', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -140,7 +139,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // PATCH /affiliates/me - Update affiliate profile
   app.patch('/affiliates/me', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -167,7 +166,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // GET /affiliates/me/commissions - Get affiliate commissions
   app.get('/affiliates/me/commissions', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -195,7 +194,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // GET /affiliates/me/payouts - Get affiliate payouts
   app.get('/affiliates/me/payouts', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -247,7 +246,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
   // Admin routes
   // GET /affiliates - List all affiliates
   app.get('/affiliates', {
-    preHandler: [authenticate, requireRole(['ADMIN'])],
+    preHandler: [requireRole(['ADMIN'])],
   }, async (req, reply) => {
     try {
       const query = req.query as { status?: string; limit?: string; offset?: string }
@@ -265,7 +264,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // PATCH /affiliates/:id/status - Update affiliate status
   app.patch('/affiliates/:id/status', {
-    preHandler: [authenticate, requireRole(['ADMIN'])],
+    preHandler: [requireRole(['ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
@@ -280,7 +279,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // POST /affiliates/:id/payout - Process payout for affiliate
   app.post('/affiliates/:id/payout', {
-    preHandler: [authenticate, requireRole(['ADMIN'])],
+    preHandler: [requireRole(['ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
@@ -304,7 +303,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
 
   // PATCH /payouts/:id/status - Update payout status
   app.patch('/payouts/:id/status', {
-    preHandler: [authenticate, requireRole(['ADMIN'])],
+    preHandler: [requireRole(['ADMIN'])],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }

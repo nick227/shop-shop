@@ -8,7 +8,6 @@ import {
   completeCheckout,
   getCheckoutStatus,
 } from '../services/checkout.service.js'
-import { optionalAuthenticate } from '../middleware/auth.js'
 import { prisma } from '@packages/db'
 
 // ─── Schemas (validation + OpenAPI docs) ─────────────────────────────────────
@@ -91,7 +90,6 @@ export default async function checkoutRoutes(fastify: FastifyInstance) {
   f.post(
     '/session',
     {
-      preHandler: [optionalAuthenticate],
       // Temporarily disable schema validation to fix server startup
       // schema: {
       //   body: checkoutSchema,
@@ -115,7 +113,6 @@ export default async function checkoutRoutes(fastify: FastifyInstance) {
   f.post(
     '/complete',
     {
-      preHandler: [optionalAuthenticate],
       // Temporarily disable schema validation to fix server startup
       // schema: {
       //   body: completeCheckoutSchema,
@@ -142,7 +139,6 @@ export default async function checkoutRoutes(fastify: FastifyInstance) {
   f.get(
     '/status/:sessionId',
     {
-      preHandler: [optionalAuthenticate],
       // Temporarily disable schema validation to fix server startup
       // schema: {
       //   params: statusParamsSchema,

@@ -15,7 +15,6 @@ import {
   reorderMedia,
   type UploadFile,
 } from '@packages/db'
-import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 
 // ========================================
@@ -34,7 +33,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Upload image or video file
   // ========================================
   app.post('/media/upload', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can upload media
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can upload media
     schema: {
       tags: ['Media'],
       summary: 'Upload media file',
@@ -184,7 +183,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Delete media file
   // ========================================
   app.delete('/media/:id', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can delete their own media
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can delete their own media
     schema: {
       tags: ['Media'],
       summary: 'Delete media file',
@@ -229,7 +228,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Update media sort order
   // ========================================
   app.patch('/media/:id/sort', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can update their own media
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can update their own media
     schema: {
       tags: ['Media'],
       summary: 'Update media sort order',
@@ -270,7 +269,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Bulk reorder media files
   // ========================================
   app.patch('/media/reorder', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],
     schema: {
       tags: ['Media'],
       summary: 'Reorder media files',

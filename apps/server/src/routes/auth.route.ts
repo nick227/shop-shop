@@ -14,7 +14,7 @@ import {
   toPublicUser,
 } from '@packages/db'
 import { rateLimits } from '../constants/rateLimits.js'
-import { authenticate } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/rbac.js'
 
 export const authRoutes = async (app: FastifyInstance) => {
   // POST /signup — brute-force / signup spam protection
@@ -144,7 +144,7 @@ export const authRoutes = async (app: FastifyInstance) => {
 
   // GET /me — get current user info
   app.get('/me', {
-    preHandler: [authenticate],
+    preHandler: [requireAuth],
   }, async (req, reply) => {
     try {
       // User is attached to request by authenticate middleware

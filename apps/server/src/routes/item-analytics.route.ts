@@ -2,8 +2,9 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { prisma } from '@packages/db'
 import { Prisma } from '@packages/db/generated/client'
 import { z } from 'zod'
-import { authenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const QuerySchema = z.object({
   storeId: z.string().uuid(),
@@ -196,8 +197,22 @@ async function handleItemAnalytics(request: FastifyRequest, reply: FastifyReply)
 
 export async function itemAnalyticsRoutes(app: FastifyInstance) {
   app.get('/api/items/analytics', {
-    preHandler: [authenticate, requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
-  }, handleItemAnalytics)
+    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+  }, async (req, reply) => {
+    const { storeId } = QuerySchema.parse(req.query)
+    const userId = req.user?.id
+    const role = req.user?.role
+    
+    if (!userId || !role) {
+      return VendorErrors.unauthorized(reply)
+    }
+    
+    if (!(await userHasStoreAccess(userId, role, storeId, 'analytics'))) {
+      return VendorErrors.forbidden(reply, 'You cannot access analytics for this store')
+    }
+    
+    return handleItemAnalytics(req, reply)
+  })
 
   app.log.info(
     {

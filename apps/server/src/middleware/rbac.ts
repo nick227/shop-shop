@@ -55,6 +55,21 @@ export function requireRole(allowedRoles: string[]) {
 }
 
 /**
+ * Require any authenticated user (no role restriction).
+ *
+ * Use as: `preHandler: [requireAuth]`
+ */
+export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
+  if (!req.user) {
+    await authenticate(req, reply)
+  }
+
+  if (!req.user) {
+    return reply.code(401).send({ error: 'Unauthorized' })
+  }
+}
+
+/**
  * Check if user is admin
  */
 export function requireAdmin() {
@@ -71,7 +86,7 @@ export function requireVendor() {
 /**
  * Allow any authenticated user
  */
-export function requireAuth() {
+export function requireAnyAuthRole() {
   return requireRole(['USER', 'VENDOR', 'ADMIN', 'AFFILIATE', 'RIDER', 'STAFF'])
 }
 
