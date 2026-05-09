@@ -103,7 +103,7 @@ export default function ItemFormPage() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items', storeId] })
+      queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
       toast.success('Item created successfully!')
       navigate('/vendor/stores/' + storeId + '/items')
     },
@@ -138,7 +138,7 @@ export default function ItemFormPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['item', itemId] })
-      queryClient.invalidateQueries({ queryKey: ['items', storeId] })
+      queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
       toast.success('Item updated successfully!')
       navigate('/vendor/stores/' + storeId + '/items')
     },

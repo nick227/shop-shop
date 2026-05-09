@@ -4,6 +4,7 @@ import type { MediaApiResponse, StoreResponse, StoreWithRating } from '@api/type
 import { cn } from '@shared/lib/cn'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import { useMediaList } from '@shared/hooks/hooks/vendor/useMediaList'
+import { getImageUrl } from '@shared/lib/utils/image'
 
 /**
  * StoreHeader - Modern store header with two-column layout and map
@@ -26,92 +27,132 @@ export function StoreHeader({ store, className, showMap = true, fullSize = true 
 
   const { data: storeMedia } = useMediaList({ storeId: fullSize ? store.id : undefined })
   const primaryMedia: MediaApiResponse | undefined = storeMedia?.[0]
+  const storeImageUrl = getImageUrl(
+    (store as { imageUrl?: string }).imageUrl,
+    store.id,
+    'store',
+    (store as { mediaAssets?: { url: string; kind: string }[] }).mediaAssets,
+  )
+  const heroMedia = fullSize ? primaryMedia : undefined
+  const heroNode = (() => {
+    if (!heroMedia) {
+      return (
+        <img
+          src={storeImageUrl}
+          alt={store.name}
+          className="object-cover w-full h-full"
+        />
+      )
+    }
+
+    if (heroMedia.kind === 'IMAGE') {
+      return (
+        <img
+          src={heroMedia.url}
+          alt={heroMedia.altText ?? store.name}
+          className="object-cover w-full h-full"
+        />
+      )
+    }
+
+    return (
+      <video
+        src={heroMedia.url}
+        className="object-cover w-full h-full"
+        controls
+        playsInline
+      >
+        <track kind="captions" />
+      </video>
+    )
+  })()
 
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card', className)}>
       <div className="flex flex-col md:flex-row">
         {/* Store Info Section */}
-        <div className="flex-1 p-6 space-y-5">
-          {/* Store Hero Media */}
-          {fullSize && primaryMedia && (
-            <div className="overflow-hidden relative mb-4 bg-gray-100 rounded-lg aspect-video">
-              {primaryMedia.kind === 'IMAGE' ? (
-                <img
-                  src={primaryMedia.url}
-                  alt={primaryMedia.altText ?? store.name}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <video
-                  src={primaryMedia.url}
-                  className="object-cover w-full h-full"
-                  controls
-                  playsInline
-                >
-                  <track kind="captions" />
-                </video>
+        <div className="flex-1 p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:gap-8">
+            {/* Logo / hero — left column */}
+            <div className="shrink-0 flex justify-center md:justify-start">
+              {!fullSize && (
+                <div className="overflow-hidden bg-gray-100 rounded-lg w-16 h-16 md:w-20 md:h-20">
+                  <img
+                    src={storeImageUrl}
+                    alt={store.name}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              )}
+              {fullSize && (heroMedia ?? storeImageUrl) && (
+                <div className="overflow-hidden relative w-full max-w-md mx-auto bg-gray-100 rounded-lg aspect-video md:mx-0 md:w-52 md:max-w-none md:aspect-square">
+                  {heroNode}
+                </div>
               )}
             </div>
-          )}
 
-          {/* Store Name & Status */}
-          <div>
-            <div className="flex gap-2 justify-between items-start mb-2">
-              <h1
-                className={cn(
-                  'font-bold tracking-tight text-foreground',
-                  fullSize ? 'text-6xl' : 'text-3xl',
+            {/* Name, description, meta */}
+            <div className="flex-1 min-w-0 space-y-5">
+              {/* Store Name & Status */}
+              <div>
+                <div className="flex gap-2 justify-between items-start mb-2">
+                  <h1
+                    className={cn(
+                      'font-bold tracking-tight text-foreground',
+                      fullSize ? 'text-6xl' : 'text-3xl',
+                    )}
+                  >
+                    {store.name}
+                  </h1>
+                  {!store.isPublished && (
+                    <Badge variant="warning">Draft</Badge>
+                  )}
+                </div>
+
+                {store.description && (
+                  <p className="text-muted-foreground">{store.description}</p>
                 )}
-              >
-                {store.name}
-              </h1>
-              {!store.isPublished && (
-                <Badge variant="warning">Draft</Badge>
-              )}
-            </div>
-            
-            {store.description && (
-              <p className="text-muted-foreground">{store.description}</p>
-            )}
-          </div>
-
-          {/* Meta Information */}
-          <div className="space-y-2">
-            {/* Address */}
-            {fullAddress && (
-              <div className="flex gap-2 items-start text-sm">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-muted-foreground">{fullAddress}</span>
               </div>
-            )}
 
-            {/* Phone */}
-            {store.phone && (
-              <div className="flex gap-2 items-center text-sm">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <a 
-                  href={'tel:' + store.phone}
-                  className="transition-colors text-primary hover:underline"
-                >
-                  {store.phone}
-                </a>
+              {/* Meta Information */}
+              <div className="space-y-2">
+                {/* Address */}
+                {fullAddress && (
+                  <div className="flex gap-2 items-start text-sm">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-muted-foreground">{fullAddress}</span>
+                  </div>
+                )}
+
+                {/* Phone */}
+                {store.phone && (
+                  <div className="flex gap-2 items-center text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <a
+                      href={'tel:' + store.phone}
+                      className="transition-colors text-primary hover:underline"
+                    >
+                      {store.phone}
+                    </a>
+                  </div>
+                )}
+
+                {/* Prep Time */}
+                <div className="flex gap-2 items-center text-sm">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    Prep time: {store.prepTimeMin ?? 20} minutes
+                  </span>
+                </div>
               </div>
-            )}
 
-            {/* Prep Time */}
-            <div className="flex gap-2 items-center text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                Prep time: {store.prepTimeMin ?? 20} minutes
-              </span>
+              {/* Rating & Delivery Info */}
+              <div className="flex flex-wrap gap-2">
+                {typeof store.averageRating === 'number' ? (
+                  <Badge variant="secondary">{store.averageRating} Rating</Badge>
+                ) : undefined}
+              </div>
             </div>
-          </div>
-
-          {/* Rating & Delivery Info */}
-          <div className="flex flex-wrap gap-2">
-            {typeof store.averageRating === 'number' ? (
-              <Badge variant="secondary">{store.averageRating} Rating</Badge>
-            ) : undefined}
           </div>
         </div>
 

@@ -15,6 +15,7 @@ interface EnhancedMediaPreviewCardProps {
   onSetPrimary?: () => void
   onEditAlt?: () => void
   disabled?: boolean
+  setPrimaryLabel?: string
 }
 
 export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> = ({
@@ -25,6 +26,7 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
   onSetPrimary,
   onEditAlt,
   disabled = false,
+  setPrimaryLabel = 'Set as primary',
 }) => {
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -191,7 +193,7 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
               <button
                 onClick={handleSetPrimary}
                 className="bg-white bg-opacity-90 text-gray-700 p-2 rounded-lg hover:bg-opacity-100 transition-all shadow-lg"
-                title="Set as primary"
+                title={setPrimaryLabel}
               >
                 <Star className="w-4 h-4" />
               </button>

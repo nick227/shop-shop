@@ -44,7 +44,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove, isUpdating }: CartI
         containerClassName="w-24 h-24 rounded-md overflow-hidden flex-shrink-0"
       />
       <div className="">
-        <h4 className="text-3xl font-bold text-gray-900 mb-2">{item.titleSnapshot}</h4>
+        <h4 className="mb-2 text-3xl font-bold text-gray-900">{item.titleSnapshot}</h4>
         {item.notes && (
           <p className="">{item.notes}</p>
         )}

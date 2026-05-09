@@ -774,6 +774,10 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       const latOffset = (Math.random() - 0.5) * 0.01
       const lngOffset = (Math.random() - 0.5) * 0.01
       
+      // Generate store media URLs first to use first one as thumbnail
+      const numStoreMedia = Math.floor(Math.random() * 3) + 3 // 3-5 images
+      const storeMediaUrls = generateImageUrls(storeName.replace(/\s+/g, ''), numStoreMedia, 1200, 400)
+      
       // Create store
       const description = storeType.descriptions[Math.floor(Math.random() * storeType.descriptions.length)]
       const store = await prisma.store.create({
@@ -782,6 +786,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           name: storeName,
           slug,
           description,
+          imageUrl: storeMediaUrls[0], // Use first store media as thumbnail
           isPublished: true,
           status: 'ACTIVE',
           deliveryEnabled: true,
@@ -819,10 +824,6 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       })
       storeCount++
       
-      // Add multiple store media images (3-5) using Lorem Picsum
-      const numStoreMedia = Math.floor(Math.random() * 3) + 3 // 3-5 images
-      const storeMediaUrls = generateImageUrls(storeName.replace(/\s+/g, ''), numStoreMedia, 1200, 400)
-      
       for (let i = 0; i < storeMediaUrls.length; i++) {
         await prisma.mediaAsset.create({
           data: {
@@ -847,11 +848,16 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
         const categoryItems = MENU_ITEMS[category as keyof typeof MENU_ITEMS] || []
         
         for (const itemTemplate of categoryItems) {
+          // Generate item media URLs first to use first one as thumbnail
+          const numItemMedia = Math.floor(Math.random() * 2) + 2 // 2-3 images
+          const itemMediaUrls = generateImageUrls(itemTemplate.title.replace(/\s+/g, ''), numItemMedia, 400, 400)
+          
           const item = await prisma.item.create({
             data: {
               storeId: store.id,
               title: itemTemplate.title,
               description: itemTemplate.desc,
+              imageUrl: itemMediaUrls[0], // Use first item media as thumbnail
               price: itemTemplate.price,
               isActive: true,
               // Keep ≥1 sellable SKU per store so activation `hasActiveProducts` stays true
@@ -877,10 +883,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           itemCount++
           storeItemCount++
           
-          // Add multiple item media images (2-3) using Lorem Picsum
-          const numItemMedia = Math.floor(Math.random() * 2) + 2 // 2-3 images
-          const itemMediaUrls = generateImageUrls(itemTemplate.title.replace(/\s+/g, ''), numItemMedia, 400, 400)
-          
+          // Add multiple item media images using the already generated URLs
           for (let i = 0; i < itemMediaUrls.length; i++) {
             await prisma.mediaAsset.create({
               data: {

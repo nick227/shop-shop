@@ -298,6 +298,11 @@ export function createItemFormSections(
           storeId={options?.storeId}
           itemId={options?.itemId}
           maxFiles={100}
+          thumbnailUrl={formData.imageUrl}
+          onThumbnailChange={(url) =>
+            onChange('imageUrl', url)
+          }
+          thumbnailLabel="Product thumbnail"
         />
       ),
     },

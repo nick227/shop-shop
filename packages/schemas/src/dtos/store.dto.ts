@@ -37,7 +37,8 @@ export const CreateStoreInputSchema = z.object({
   referredByAffiliateId: z.string().optional(),
   stripeAccountId: z.string().optional(),
   stripeOnboarded: z.boolean().optional(),
-  commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional()
+  commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  imageUrl: z.string().optional(),
 })
 
 export const UpdateStoreInputSchema = z.object({
@@ -73,7 +74,8 @@ export const UpdateStoreInputSchema = z.object({
   referredByAffiliateId: z.string().optional(),
   stripeAccountId: z.string().optional(),
   stripeOnboarded: z.boolean().optional(),
-  commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional()
+  commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+  imageUrl: z.string().optional(),
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided')
 
 export const StoreResponseSchema = z.object({

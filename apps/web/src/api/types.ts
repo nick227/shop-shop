@@ -58,6 +58,7 @@ export interface StoreFormData {
   phone: string
   email: string
   website: string
+  imageUrl?: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
   disabledAt?: string | null
@@ -88,6 +89,7 @@ export interface StoreUpdateFormData {
   phone: string
   email: string
   website: string
+  imageUrl?: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
   disabledAt?: string | null

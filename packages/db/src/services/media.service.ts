@@ -224,6 +224,10 @@ export const listMedia = async (input: ListMediaInput) => {
 
   if (input.itemId) {
     where.itemId = input.itemId
+  } else if (input.storeId) {
+    // Store-only query: exclude item-specific media so item images don't bleed
+    // into the store gallery (e.g. on item-create where itemId is not yet known)
+    where.itemId = null
   }
 
   const media = await prisma.mediaAsset.findMany({
