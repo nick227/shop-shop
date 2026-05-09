@@ -1,12 +1,16 @@
 /**
- * PaymentSection - Payment method selection and processing
- * 
- * NOTE: For production Stripe integration, install:
- * npm install @stripe/stripe-js @stripe/react-stripe-js
+ * PaymentSection — COD / Stripe Payment Element checkout.
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Elements } from '@stripe/react-stripe-js'
+import { toast } from 'sonner'
 import { Button, Badge } from '@shared/ui/primitives'
-import { env } from '@/env'
+import {
+  StripePaymentFields,
+  type StripePaymentFieldsHandle,
+} from '@features/checkout/components/StripePaymentFields'
+import { getStripePromise, getStripePublishableKey } from '@features/checkout/lib/stripeClient'
 
 export interface PaymentSectionProps {
   readonly amount: number
@@ -37,8 +41,11 @@ export function PaymentSection({
   const [paymentMethod, setPaymentMethod] = useState<'test' | 'stripe'>('test')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const stripeFieldsRef = useRef<StripePaymentFieldsHandle>(null)
 
-  const hasStripeKey = Boolean(env.VITE_STRIPE_PUBLISHABLE_KEY)
+  const hasStripeKey = Boolean(getStripePublishableKey())
+  const stripePromise = getStripePromise()
+  const amountCents = Math.round(amount * 100)
 
   const handlePay = () => {
     if (!agreedToTerms) {
@@ -47,16 +54,22 @@ export function PaymentSection({
     setShowConfirm(true)
   }
 
-  const handleConfirmPayment = () => {
-    setShowConfirm(false)
-    
+  const handleConfirmPayment = async () => {
     if (paymentMethod === 'test') {
-      // Test mode - proceed without payment method
+      setShowConfirm(false)
       onPaymentReady()
-    } else {
-      // Stripe mode - would integrate Stripe Elements here
-      // For now, show message
-      alert('Stripe payment integration requires @stripe/react-stripe-js library')
+      return
+    }
+
+    const result = await stripeFieldsRef.current?.confirmPayment()
+    if (!result || result.errorMessage) {
+      toast.error(result?.errorMessage ?? 'Payment verification failed')
+      return
+    }
+
+    if (result.paymentMethodId) {
+      setShowConfirm(false)
+      onPaymentReady(result.paymentMethodId)
     }
   }
 
@@ -75,7 +88,6 @@ export function PaymentSection({
       </div>
 
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-        {/* Test Payment Method */}
         <label
           htmlFor="payment-method-test"
           className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40"
@@ -87,7 +99,7 @@ export function PaymentSection({
               type="radio"
               value="test"
               checked={paymentMethod === 'test'}
-              onChange={(e) => setPaymentMethod(e.target.value as 'test')}      
+              onChange={(e) => setPaymentMethod(e.target.value as 'test')}
               className="h-4 w-4 accent-primary"
             />
           </div>
@@ -105,7 +117,6 @@ export function PaymentSection({
           </div>
         </label>
 
-                {/* Stripe Payment Method */}
         {hasStripeKey && (
           <label
             htmlFor="payment-method-stripe"
@@ -118,7 +129,7 @@ export function PaymentSection({
                 type="radio"
                 value="stripe"
                 checked={paymentMethod === 'stripe'}
-                onChange={(e) => setPaymentMethod(e.target.value as 'stripe')}  
+                onChange={(e) => setPaymentMethod(e.target.value as 'stripe')}
                 className="h-4 w-4 accent-primary"
               />
             </div>
@@ -140,27 +151,25 @@ export function PaymentSection({
         {!hasStripeKey && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
             <p className="text-sm text-warning-foreground">
-              ℹ️ Online payment requires VITE_STRIPE_PUBLISHABLE_KEY in .env
+              ℹ️ Online card payment requires VITE_STRIPE_PUBLISHABLE_KEY at build time.
             </p>
           </div>
         )}
       </div>
 
-      {/* Stripe Elements would go here when stripe is selected */}
-      {paymentMethod === 'stripe' && hasStripeKey && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-sm font-medium text-foreground">
-              🔧 Stripe Elements integration ready
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Install @stripe/react-stripe-js to enable card input
-            </p>
-          </div>
-        </div>
+      {paymentMethod === 'stripe' && hasStripeKey && stripePromise && (
+        <Elements
+          stripe={stripePromise}
+          options={{
+            mode: 'payment',
+            amount: amountCents,
+            currency: 'usd',
+          }}
+        >
+          <StripePaymentFields ref={stripeFieldsRef} />
+        </Elements>
       )}
 
-      {/* Terms Agreement */}
       <label className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
         <input
           type="checkbox"
@@ -169,11 +178,18 @@ export function PaymentSection({
           className="h-4 w-4 accent-primary"
         />
         <span className="text-sm text-muted-foreground">
-          I agree to the Terms of Service and Privacy Policy
+          I agree to the{' '}
+          <Link to="/terms" className="text-primary underline underline-offset-2 hover:text-primary/90">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-primary underline underline-offset-2 hover:text-primary/90">
+            Privacy Policy
+          </Link>
+          .
         </span>
       </label>
 
-      {/* Order Summary in Payment */}
       <div className="rounded-xl border border-border bg-card p-4">
         <h3 className="mb-4 text-lg font-bold text-foreground">Order Total</h3>
         <div className="space-y-2">
@@ -203,7 +219,6 @@ export function PaymentSection({
         </div>
       </div>
 
-      {/* Payment Error Display */}
       {paymentError && (
         <div
           className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm"
@@ -217,8 +232,7 @@ export function PaymentSection({
         </div>
       )}
 
-      {/* Payment Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         {onBackToCart && (
           <Button
             variant="outline"
@@ -253,16 +267,15 @@ export function PaymentSection({
               <>
                 <span className="text-base leading-none">⏳</span> Processing...
               </>
-            ) : (paymentError ? (
+            ) : paymentError ? (
               '🔄 Retry Payment'
             ) : (
-              '💳 Pay $' + amount.toFixed(2) + ''
-            ))}
+              '💳 Pay $' + amount.toFixed(2)
+            )}
           </Button>
         )}
       </div>
 
-      {/* Confirmation Dialog */}
       {showConfirm && (
         <button
           type="button"
@@ -277,7 +290,9 @@ export function PaymentSection({
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
           >
-            <h3 id="confirm-title" className="text-lg font-semibold tracking-tight text-foreground">Confirm Payment</h3>
+            <h3 id="confirm-title" className="text-lg font-semibold tracking-tight text-foreground">
+              Confirm Payment
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               You are about to pay <strong>${amount.toFixed(2)}</strong> using{' '}
               {paymentMethod === 'test' ? 'cash on delivery' : 'credit card'}.
@@ -286,7 +301,7 @@ export function PaymentSection({
               <Button variant="ghost" onClick={handleCancelConfirm}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleConfirmPayment}>
+              <Button variant="primary" onClick={() => void handleConfirmPayment()}>
                 Confirm Payment
               </Button>
             </div>
@@ -296,4 +311,3 @@ export function PaymentSection({
     </div>
   )
 }
-

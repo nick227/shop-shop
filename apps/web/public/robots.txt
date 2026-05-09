@@ -1,0 +1,5 @@
+# Replace sitemap URL origin with your production site before launch if needed.
+User-agent: *
+Allow: /
+
+Sitemap: /sitemap.xml

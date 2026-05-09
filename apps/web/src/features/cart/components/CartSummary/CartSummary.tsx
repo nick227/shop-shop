@@ -2,6 +2,7 @@
  * CartSummary - Cart totals and checkout button;
  * Modern implementation with Tailwind;
  */
+import { Link } from 'react-router-dom'
 import { Button } from '@shared/ui/primitives'
 import { CreditCard } from 'lucide-react'
 import { formatCurrency } from '@shared/lib/format'
@@ -57,9 +58,16 @@ export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
         Continue to Payment
       </Button>
 
-      {/* Terms */}
       <p className="text-xs text-center text-muted-foreground">
-        By placing your order, you agree to our Terms of Service and Privacy Policy.
+        By placing your order, you agree to our{' '}
+        <Link to="/terms" className="text-primary underline underline-offset-2">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link to="/privacy" className="text-primary underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </div>
   )

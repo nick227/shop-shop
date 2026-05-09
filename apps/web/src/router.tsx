@@ -21,6 +21,9 @@ const StoreDetailPage = lazy(() => import('./pages/shared/StoreDetail.page'))
 const ItemDetailPage = lazy(() => import('./pages/shared/ItemDetail.page'))
 const CartPage = lazy(() => import('./pages/shared/Cart.page'))
 const CheckoutPage = lazy(() => import('./pages/shared/Checkout.page'))
+const TermsPage = lazy(() => import('./pages/public/Terms.page'))
+const PrivacyPage = lazy(() => import('./pages/public/Privacy.page'))
+const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 
@@ -88,6 +91,21 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           path: '/signup',
           element: lazyRoute(SignupPage),
           handle: { title: 'Sign Up' },
+        },
+        {
+          path: '/terms',
+          element: lazyRoute(TermsPage),
+          handle: { title: 'Terms of Service' },
+        },
+        {
+          path: '/privacy',
+          element: lazyRoute(PrivacyPage),
+          handle: { title: 'Privacy Policy' },
+        },
+        {
+          path: '/refund-policy',
+          element: lazyRoute(RefundPolicyPage),
+          handle: { title: 'Refund Policy' },
         },
         // Vendor application routes;
         {

@@ -260,12 +260,12 @@ Point-in-time audit of the codebase and CI against this list (**not** a substitu
 | # | Status | Notes |
 |---|--------|-------|
 | 71 | Partial | CI runs integration and Playwright E2E; staging smoke external. |
-| 72 | Gap | Checkout payment UI still shows Stripe placeholder path in places—finish before launch browsers. |
+| 72 | Partial | Stripe Payment Element + PaymentMethod → checkout; run real card smoke in staging/prod. |
 | 73 | External | Real small-value prod transaction before cutover. |
 | 74 | External | Search/discovery QA with real catalog. |
 | 75 | Partial | `readHttpError` / summarized messages; spot-check raw errors in UI. |
 | 76 | Partial | Loading states vary by screen; spot-check slow 3G. |
-| 77 | Gap | Terms/Privacy copy referenced; dedicated legal routes/links not found in router review. |
+| 77 | Partial | `/terms`, `/privacy`, `/refund-policy` routes + checkout/cart links; replace placeholder copy with counsel-reviewed text. |
 | 78 | External | Support contact visibility and mailbox/chat monitoring. |
 | 79 | External | Email templates and prod URLs in notifications if sent. |
 | 80 | External | SMS/push only if product uses them. |
@@ -274,7 +274,7 @@ Point-in-time audit of the codebase and CI against this list (**not** a substitu
 
 | # | Status | Notes |
 |---|--------|-------|
-| 81 | Gap | No `robots.txt` / `sitemap.xml` under web `public` as reviewed. |
+| 81 | Partial | `public/robots.txt` + `sitemap.xml` added; replace `YOUR-PRODUCTION-DOMAIN` in sitemap before launch. |
 | 82 | Partial | Basic HTML meta; OG/canonical not verified across marketing/store pages. |
 | 83 | External | Staging `noindex` and robots policy with hosting. |
 | 84 | External | Analytics tags and consent alignment. |
@@ -284,9 +284,9 @@ Point-in-time audit of the codebase and CI against this list (**not** a substitu
 
 | # | Status | Notes |
 |---|--------|-------|
-| 86 | Gap | No Helmet-style security headers package found in server bootstrap. |
+| 86 | Partial | `@fastify/helmet` registered (CSP disabled for JSON API); tune policy with reverse proxy if needed. |
 | 87 | Partial | `pnpm audit` in CI; triage findings explicitly. |
-| 88 | Partial | Swagger UI at `/docs`—consider auth-gating or disabling in prod. |
+| 88 | Partial | Swagger UI served only when `NODE_ENV !== production`. |
 | 89 | Pass | Bearer token API; CSRF not required for same typical SPA model. |
 | 90 | Partial | Media/download paths should be reviewed for auth or signed URLs. |
 
@@ -310,8 +310,8 @@ Point-in-time audit of the codebase and CI against this list (**not** a substitu
 | Status | Count |
 |--------|-------|
 | Pass | 5 |
-| Partial | 36 |
-| Gap | 7 |
+| Partial | 40 |
+| Gap | 3 |
 | External | 52 |
 
 *Treat this list as a gate: anything unchecked is either done before launch or explicitly waived with owner and risk noted.*

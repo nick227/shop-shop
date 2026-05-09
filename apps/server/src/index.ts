@@ -3,6 +3,7 @@ import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fast
 import swagger from '@fastify/swagger'
 import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
+import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import { authRoutes } from './routes/auth.route.js'
 import checkoutRoutes from './routes/checkout.js'
@@ -113,14 +114,23 @@ await app.register(rateLimit, {
   timeWindow: '15 minutes',
 })
 
-await app.register(swagger, {
-  openapi: {
-    openapi: '3.0.3',
-    info: { title: 'Delivery API', version: '0.1.0' }
-  },
-  transform: safeJsonSchemaTransform,
+await app.register(helmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
 })
-await app.register(swaggerUI, { routePrefix: '/docs' })
+
+const serveApiDocs = env.NODE_ENV !== 'production'
+
+if (serveApiDocs) {
+  await app.register(swagger, {
+    openapi: {
+      openapi: '3.0.3',
+      info: { title: 'Delivery API', version: '0.1.0' },
+    },
+    transform: safeJsonSchemaTransform,
+  })
+  await app.register(swaggerUI, { routePrefix: '/docs' })
+}
 
 // Add request ID middleware
 app.addHook('preHandler', requestIdMiddleware)
@@ -191,7 +201,9 @@ const port = env.PORT
 if (process.env.NODE_ENV !== 'test') {
   app.listen({ port, host: '0.0.0.0' }).then(() => {
     app.log.info(`listening on http://localhost:${port}`)
-    app.log.info(`docs at http://localhost:${port}/docs`)
+    if (serveApiDocs) {
+      app.log.info(`docs at http://localhost:${port}/docs`)
+    }
   })
 }
 
