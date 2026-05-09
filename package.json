@@ -49,7 +49,7 @@
         "knip": "knip",
         "madge": "madge --extensions ts,tsx --circular apps packages",
         "test": "pnpm -r run test",
-        "test:stripe-smoke": "pnpm --filter @apps/server run test:stripe-smoke",
+        "test:stripe-smoke": "pnpm --dir apps/server run test:stripe-smoke",
         "test:payments-adapter": "pnpm --filter @packages/db exec vitest run src/adapters/payments.adapter.connect-intent.test.ts",
         "test:billing": "pnpm test:stripe-smoke",
         "verify:payments": "pnpm typecheck && pnpm test:payments-adapter && pnpm test:stripe-smoke",

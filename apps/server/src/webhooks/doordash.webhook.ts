@@ -1,27 +1,16 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { applyDeliveryProviderWebhookEvent, prisma } from '@packages/db'
-import { env } from '../env.js'
-import type { DoordashWebhookAuthConfig } from './doordash-webhook-auth.js'
-import { verifyDoordashWebhookRequest } from './doordash-webhook-auth.js'
+import { verifyDoordashWebhookRequest, buildDoordashWebhookAuthFromEnv } from './doordash-webhook-auth.js'
+import {
+  extractProcessedDoorDashEventIds,
+  mergeDoorDashWebhookAudit,
+} from './doordash-webhook-audit.js'
 import {
   doorDashEventToAdapterType,
   normalizeDoorDashWebhookPayload,
 } from './doordash-webhook-payload.js'
 
 type RequestWithRaw = FastifyRequest & { rawBody?: Buffer }
-
-function buildDoordashWebhookAuth(): DoordashWebhookAuthConfig {
-  const raw = env.DOORDASH_WEBHOOK_AUTH_MODE
-  const mode: DoordashWebhookAuthConfig['mode'] =
-    raw === 'basic' || raw === 'hmac' ? raw : 'none'
-  return {
-    mode,
-    basicUser: env.DOORDASH_WEBHOOK_BASIC_USER,
-    basicPassword: env.DOORDASH_WEBHOOK_BASIC_PASSWORD,
-    hmacSecret: env.DOORDASH_WEBHOOK_SECRET,
-    signatureHeaderLower: (env.DOORDASH_WEBHOOK_SIGNATURE_HEADER ?? 'x-doordash-signature').toLowerCase(),
-  }
-}
 
 export async function doordashWebhookRoutes(parent: FastifyInstance) {
   await parent.register(async (app) => {
@@ -39,10 +28,9 @@ export async function doordashWebhookRoutes(parent: FastifyInstance) {
       },
     )
 
-    const webhookAuth = buildDoordashWebhookAuth()
-
     app.post('/webhooks/doordash', async (req, reply) => {
       const { rawBody } = req as RequestWithRaw
+      const webhookAuth = buildDoordashWebhookAuthFromEnv()
 
       if (!verifyDoordashWebhookRequest(req, reply, webhookAuth, rawBody)) {
         return
@@ -56,15 +44,15 @@ export async function doordashWebhookRoutes(parent: FastifyInstance) {
         })
       }
 
-      const deliveryJob = await prisma.deliveryJob.findFirst({
+      const deliveryRow = await prisma.deliveryJob.findFirst({
         where: {
           providerExternalId: normalized.externalDeliveryId,
           provider: 'DOORDASH_DRIVE',
         },
-        select: { id: true },
+        select: { id: true, providerPayload: true },
       })
 
-      if (!deliveryJob) {
+      if (!deliveryRow) {
         req.log.warn(
           { externalId: normalized.externalDeliveryId },
           'DoorDash webhook: no matching DeliveryJob',
@@ -72,12 +60,34 @@ export async function doordashWebhookRoutes(parent: FastifyInstance) {
         return reply.code(200).send({ message: 'No delivery job for external id' })
       }
 
+      if (normalized.eventId) {
+        const seen = extractProcessedDoorDashEventIds(deliveryRow.providerPayload)
+        if (seen.has(normalized.eventId)) {
+          return reply.code(200).send({
+            duplicate: true,
+            event_id: normalized.eventId,
+            message: 'Event already processed',
+          })
+        }
+      }
+
       const adapterEventType = doorDashEventToAdapterType(normalized.eventName)
 
-      await applyDeliveryProviderWebhookEvent({
-        deliveryJobId: deliveryJob.id,
+      const { deliveryJob } = await applyDeliveryProviderWebhookEvent({
+        deliveryJobId: deliveryRow.id,
         eventType: adapterEventType,
         payload: normalized.raw,
+      })
+
+      const mergedPayload = mergeDoorDashWebhookAudit(
+        deliveryJob.providerPayload,
+        normalized.eventId,
+        normalized.raw,
+      )
+
+      await prisma.deliveryJob.update({
+        where: { id: deliveryJob.id },
+        data: { providerPayload: mergedPayload },
       })
 
       return reply.code(200).send({

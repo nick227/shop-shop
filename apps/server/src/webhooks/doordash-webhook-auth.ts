@@ -84,3 +84,17 @@ export function verifyDoordashWebhookRequest(
 
   return true
 }
+
+/** Reads current process.env — call per request so tests can override DoorDash vars between inject() calls. */
+export function buildDoordashWebhookAuthFromEnv(): DoordashWebhookAuthConfig {
+  const raw = process.env.DOORDASH_WEBHOOK_AUTH_MODE?.trim()
+  const mode: DoordashWebhookAuthConfig['mode'] =
+    raw === 'basic' || raw === 'hmac' ? raw : 'none'
+  return {
+    mode,
+    basicUser: process.env.DOORDASH_WEBHOOK_BASIC_USER,
+    basicPassword: process.env.DOORDASH_WEBHOOK_BASIC_PASSWORD,
+    hmacSecret: process.env.DOORDASH_WEBHOOK_SECRET,
+    signatureHeaderLower: (process.env.DOORDASH_WEBHOOK_SIGNATURE_HEADER ?? 'x-doordash-signature').toLowerCase(),
+  }
+}
