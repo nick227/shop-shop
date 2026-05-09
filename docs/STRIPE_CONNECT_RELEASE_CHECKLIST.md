@@ -7,11 +7,10 @@ Use this in **staging** before production. Card checkout depends on **Stripe Con
 From repo root:
 
 ```powershell
-pnpm typecheck
-pnpm test:stripe-smoke
+pnpm verify:payments
 ```
 
-`test:stripe-smoke` runs Connect gate, webhook signature, PI → PAID/PLACED, and checkout route tests in `@apps/server`.
+Same as `pnpm typecheck` followed by `pnpm test:stripe-smoke` (Connect gate, webhook signature, PI → PAID/PLACED, checkout route tests in `@apps/server`). Alias: `pnpm test:billing`.
 
 All of the above should pass before you treat staging manual steps as authoritative.
 

@@ -21,6 +21,8 @@ process.env.NODE_ENV = 'test'
 process.env.PORT = '0' // Random port for tests
 process.env.WEB_PORT = process.env.WEB_PORT || '5177'
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-min-32-characters-long-for-testing'
+process.env.JWT_REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-key-min-32-characters-long-for-ci'
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 process.env.CORS_ORIGINS = process.env.CORS_ORIGINS || `http://localhost:${process.env.WEB_PORT || '5177'}`
 

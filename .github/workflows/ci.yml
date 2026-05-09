@@ -110,6 +110,56 @@ jobs:
           name: test-results
           path: apps/web/test-results/
 
+  billing-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: shop_shop_billing_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      DATABASE_URL: mysql://root:rootpass@127.0.0.1:3306/shop_shop_billing_ci
+      NODE_ENV: test
+      JWT_SECRET: test-secret-key-min-32-characters-long-for-testing
+      JWT_REFRESH_SECRET: test-refresh-secret-key-min-32-characters-long-for-ci
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder_not_used_by_smoke_tests
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder_not_used_by_smoke_tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate & migrate (billing smoke DB)
+        working-directory: packages/db
+        run: pnpm exec prisma generate && pnpm exec prisma migrate deploy
+
+      - name: Stripe Connect & billing smoke tests
+        run: pnpm test:stripe-smoke
+
   security-audit:
     runs-on: ubuntu-latest
     steps:
