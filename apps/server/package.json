@@ -11,7 +11,7 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "vitest run",
-    "test:stripe-smoke": "vitest run src/__tests__/payment-connect-gate.test.ts src/__tests__/stripe-payment-flow.test.ts src/routes/stripe-webhook.route.test.ts src/routes/checkout.route.test.ts",
+    "test:stripe-smoke": "vitest run src/__tests__/payment-connect-gate.test.ts src/__tests__/stripe-payment-flow.test.ts src/__tests__/affiliate-commission-unpaid.test.ts src/routes/stripe-webhook.route.test.ts src/routes/checkout.route.test.ts src/routes/checkout-card-blocked.test.ts src/services/checkout.service.cod.test.ts",
     "test:river": "vitest run src/routes/river.route.test.ts",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",

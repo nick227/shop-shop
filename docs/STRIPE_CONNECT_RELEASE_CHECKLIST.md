@@ -37,14 +37,18 @@ For step-by-step ordering with extra checks (health, idempotency), see **Staging
 
 ## Automation roadmap (next highest-value tests)
 
-`pnpm verify:payments` already covers Connect gate basics, webhook signature, PI → PAID/PLACED, and checkout route flows. Consider adding tests for:
+`pnpm verify:payments` / `pnpm test:stripe-smoke` currently includes:
 
-- Checkout **blocks non-connected store** with a **clean 402** response (body/code stable for clients).
-- **COD enabled:** order **`PLACED` + `UNPAID`**, **no Stripe PaymentIntent** created for that rail.
-- **COD disabled:** server **rejects** COD rail / invalid rails.
+- Checkout **402** when the store cannot accept cards (`checkout-card-blocked.test.ts`).
+- **COD disabled** → **403** (explicit rail + `cod_test` token); **CARD + `cod_test`** → **400** (`checkout.service.cod.test.ts`).
+- **COD enabled** → **`PLACED` + `UNPAID`**, **`paymentId` null**, **`processOrderPayment` not called** (`checkout.service.cod.test.ts`).
+- **`calculateCommissionForOrder`** skips orders **not `paymentStatus: PAID`** (`affiliate-commission-unpaid.test.ts`).
+- Plus existing Connect gate, webhook signature, PI → PAID/PLACED, checkout route E2E.
+
+Still worth adding later:
+
 - **Connected store:** PI creation includes **`transfer_data.destination`** (mock Stripe client).
 - **Connected store:** PI includes **`application_fee_amount`** when a platform/service fee applies (mock Stripe client).
-- **Payout / affiliate:** logic **ignores** orders that are **not `paymentStatus: PAID`** (e.g. COD until collected).
 
 ## Staging / test-mode environment
 
