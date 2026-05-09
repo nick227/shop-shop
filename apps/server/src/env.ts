@@ -35,6 +35,9 @@ const envSchema = z.object({
     }
   ),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  /** When true, checkout accepts paymentRail COD (cash on pickup/delivery). Default off for production safety. */
+  ENABLE_COD_PAYMENTS: z.enum(['true', 'false']).optional(),
   
   // Geocoding (optional - for location-based features)
   GEOCODING_API_KEY: z.string().optional(),
@@ -42,6 +45,16 @@ const envSchema = z.object({
   // Frontend/CORS
   WEB_PORT: z.string().transform(Number).default(process.env.WEB_PORT ?? '5177'),
   CORS_ORIGINS: z.string().default(process.env.CORS_ORIGINS ?? 'http://localhost:5177,http://localhost:3005'),
+
+  /**
+   * DoorDash Drive webhooks — use Basic Auth or optional HMAC if your tenant supplies a signing header.
+   * Public Drive docs describe HTTPS + Basic or OAuth; default `none` is for local/dev only.
+   */
+  DOORDASH_WEBHOOK_AUTH_MODE: z.enum(['none', 'basic', 'hmac']).optional(),
+  DOORDASH_WEBHOOK_BASIC_USER: z.string().optional(),
+  DOORDASH_WEBHOOK_BASIC_PASSWORD: z.string().optional(),
+  DOORDASH_WEBHOOK_SECRET: z.string().optional(),
+  DOORDASH_WEBHOOK_SIGNATURE_HEADER: z.string().optional(),
 })
 
 export type ServerEnv = z.infer<typeof envSchema>

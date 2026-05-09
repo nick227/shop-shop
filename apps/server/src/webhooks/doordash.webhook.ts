@@ -1,43 +1,25 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify'
-import crypto from 'node:crypto'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { applyDeliveryProviderWebhookEvent, prisma } from '@packages/db'
+import { env } from '../env.js'
+import type { DoordashWebhookAuthConfig } from './doordash-webhook-auth.js'
+import { verifyDoordashWebhookRequest } from './doordash-webhook-auth.js'
+import {
+  doorDashEventToAdapterType,
+  normalizeDoorDashWebhookPayload,
+} from './doordash-webhook-payload.js'
 
 type RequestWithRaw = FastifyRequest & { rawBody?: Buffer }
 
-/** Maps DoorDash Drive webhook names to values understood by `doordashDriveMockAdapter.mapWebhookEvent`. */
-function toAdapterEventType(doorDashType: string): string {
-  switch (doorDashType) {
-    case 'picked_up':
-    case 'delivered':
-    case 'canceled':
-    case 'failed':
-      return doorDashType
-    case 'pickup_ready':
-    case 'dasher_on_the_way':
-    case 'dasher_arrived_at_pickup':
-    case 'dasher_arrived_at_dropoff':
-      return 'picked_up'
-    default:
-      return doorDashType
-  }
-}
-
-export interface DoorDashWebhookEvent {
-  readonly event_id: string
-  readonly event_type: string
-  readonly delivery_external_id: string
-  readonly timestamp: string
-  readonly data?: {
-    readonly dasher?: {
-      readonly name: string
-      readonly phone: string
-      readonly location?: { readonly lat: number; readonly lng: number; readonly updated_at?: string }
-      readonly vehicle_description?: string
-    }
-    readonly dropoff?: {
-      readonly eta?: string
-      readonly estimated_time?: number
-    }
+function buildDoordashWebhookAuth(): DoordashWebhookAuthConfig {
+  const raw = env.DOORDASH_WEBHOOK_AUTH_MODE
+  const mode: DoordashWebhookAuthConfig['mode'] =
+    raw === 'basic' || raw === 'hmac' ? raw : 'none'
+  return {
+    mode,
+    basicUser: env.DOORDASH_WEBHOOK_BASIC_USER,
+    basicPassword: env.DOORDASH_WEBHOOK_BASIC_PASSWORD,
+    hmacSecret: env.DOORDASH_WEBHOOK_SECRET,
+    signatureHeaderLower: (env.DOORDASH_WEBHOOK_SIGNATURE_HEADER ?? 'x-doordash-signature').toLowerCase(),
   }
 }
 
@@ -57,53 +39,51 @@ export async function doordashWebhookRoutes(parent: FastifyInstance) {
       },
     )
 
+    const webhookAuth = buildDoordashWebhookAuth()
+
     app.post('/webhooks/doordash', async (req, reply) => {
-      const secret = process.env.DOORDASH_WEBHOOK_SECRET
-      if (!secret) {
-        return reply.code(500).send({ error: 'DOORDASH_WEBHOOK_SECRET is not configured' })
+      const { rawBody } = req as RequestWithRaw
+
+      if (!verifyDoordashWebhookRequest(req, reply, webhookAuth, rawBody)) {
+        return
       }
 
-      const signature = req.headers['x-doordash-signature']
-      const rawBody = (req as RequestWithRaw).rawBody
-      if (typeof signature !== 'string' || !rawBody?.length) {
-        return reply.code(400).send({ error: 'Missing signature or body' })
-      }
-
-      const expectedSignature = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
-      if (signature !== expectedSignature) {
-        return reply.code(401).send({ error: 'Invalid signature' })
-      }
-
-      const event = req.body as DoorDashWebhookEvent
-      if (!event?.delivery_external_id || !event.event_type) {
-        return reply.code(400).send({ error: 'Invalid webhook payload' })
+      const normalized = normalizeDoorDashWebhookPayload(req.body)
+      if (!normalized) {
+        return reply.code(400).send({
+          error: 'Invalid webhook payload',
+          detail: 'Expected external_delivery_id (or alias) and event_name / event_type',
+        })
       }
 
       const deliveryJob = await prisma.deliveryJob.findFirst({
         where: {
-          providerExternalId: event.delivery_external_id,
+          providerExternalId: normalized.externalDeliveryId,
           provider: 'DOORDASH_DRIVE',
         },
         select: { id: true },
       })
 
       if (!deliveryJob) {
-        req.log.warn({ externalId: event.delivery_external_id }, 'DoorDash webhook: no matching DeliveryJob')
+        req.log.warn(
+          { externalId: normalized.externalDeliveryId },
+          'DoorDash webhook: no matching DeliveryJob',
+        )
         return reply.code(200).send({ message: 'No delivery job for external id' })
       }
 
-      const internalEventType = toAdapterEventType(event.event_type)
+      const adapterEventType = doorDashEventToAdapterType(normalized.eventName)
 
       await applyDeliveryProviderWebhookEvent({
         deliveryJobId: deliveryJob.id,
-        eventType: internalEventType,
-        payload: event,
+        eventType: adapterEventType,
+        payload: normalized.raw,
       })
 
       return reply.code(200).send({
         message: 'Webhook processed',
-        event_id: event.event_id,
-        mapped_event_type: internalEventType,
+        event_id: normalized.eventId,
+        mapped_event_type: adapterEventType,
       })
     })
   })

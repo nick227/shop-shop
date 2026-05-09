@@ -56,14 +56,17 @@ export const doordashDriveMockAdapter: DeliveryProviderAdapter = {
 
   async mapWebhookEvent(input: MapWebhookEventInput): Promise<MapWebhookEventResult> {
     const type = input.eventType.toLowerCase()
-    if (type === 'picked_up') {
+    if (type === 'picked_up' || type === 'dasher_picked_up' || type.startsWith('dasher_enroute')) {
       return { providerStatus: 'picked_up', mappedOrderStatus: 'OUT_FOR_DELIVERY', providerPayload: input.payload }
     }
-    if (type === 'delivered') {
+    if (type === 'delivered' || type === 'dasher_dropped_off') {
       return { providerStatus: 'delivered', mappedOrderStatus: 'DELIVERED', providerPayload: input.payload }
     }
-    if (type === 'canceled' || type === 'failed') {
-      return { providerStatus: type, providerPayload: input.payload }
+    if (type === 'canceled' || type === 'cancelled' || type === 'delivery_cancelled') {
+      return { providerStatus: 'canceled', providerPayload: input.payload }
+    }
+    if (type === 'failed') {
+      return { providerStatus: 'failed', providerPayload: input.payload }
     }
     return { providerStatus: `unhandled:${input.eventType}`, providerPayload: input.payload }
   },
