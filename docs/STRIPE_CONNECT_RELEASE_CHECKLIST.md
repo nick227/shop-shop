@@ -14,6 +14,38 @@ Same as `pnpm typecheck` followed by `pnpm test:stripe-smoke` (Connect gate, web
 
 All of the above should pass before you treat staging manual steps as authoritative.
 
+**Merge discipline (recommended):** Run `pnpm verify:payments` before merging PRs that touch payment/checkout/order code (`packages/db` payment & order services, `apps/server` checkout & payment routes, `apps/web` checkout & payment UI). It is a **billing safety gate**, not a substitute for staging.
+
+**Release discipline:** Keep a **real staging Stripe session** (Connect + test card + webhook) as the **ship gate** before launch or major payment releases.
+
+## Ordering POC checklist (manual / staging)
+
+Use this as the **short proof-of-concept path** for real orders (details below still apply).
+
+- [ ] **1.** Connect Stripe as a **test vendor** (Express onboarding completes).
+- [ ] **2.** Confirm the store is **card-payment eligible** (status sync / UI: charges enabled / ready).
+- [ ] **3.** Place a **customer order with card** (test card).
+- [ ] **4.** Confirm **webhook** marks order **`PAID`** + **`PLACED`** (not sync at checkout alone).
+- [ ] **5.** Confirm **vendor** sees the order (dashboard / order list).
+- [ ] **6.** Confirm **customer** sees receipt / order status.
+- [ ] **7.** In Stripe Dashboard, confirm **platform fee** (if applicable) and **`transfer_data.destination`** (connected account) on the PaymentIntent.
+- [ ] **8.** Confirm a **non-connected** store **blocks card checkout cleanly** (402 + friendly UI, not generic failure only).
+- [ ] **9.** Confirm **COD is hidden/disabled** unless explicitly enabled (`ENABLE_COD_PAYMENTS` / `VITE_ENABLE_COD_PAYMENTS`).
+- [ ] **10.** Confirm **audit/logs**: expected payment events (e.g. OrderEvent / webhook logs / `PaymentWebhook` rows per policy).
+
+For step-by-step ordering with extra checks (health, idempotency), see **Staging smoke run (ordered)** below.
+
+## Automation roadmap (next highest-value tests)
+
+`pnpm verify:payments` already covers Connect gate basics, webhook signature, PI → PAID/PLACED, and checkout route flows. Consider adding tests for:
+
+- Checkout **blocks non-connected store** with a **clean 402** response (body/code stable for clients).
+- **COD enabled:** order **`PLACED` + `UNPAID`**, **no Stripe PaymentIntent** created for that rail.
+- **COD disabled:** server **rejects** COD rail / invalid rails.
+- **Connected store:** PI creation includes **`transfer_data.destination`** (mock Stripe client).
+- **Connected store:** PI includes **`application_fee_amount`** when a platform/service fee applies (mock Stripe client).
+- **Payout / affiliate:** logic **ignores** orders that are **not `paymentStatus: PAID`** (e.g. COD until collected).
+
 ## Staging / test-mode environment
 
 Set on the **API** process (and build-time for web where noted):
@@ -118,3 +150,5 @@ Do this once per staging deploy or before go-live sign-off.
 ## Bottom line
 
 Do **not** add another payment processor abstraction until this lifecycle is **green in staging**: Connect onboarding → status sync → card PI with destination → webhook → PAID + PLACED → vendor visibility.
+
+**Gates:** **`pnpm verify:payments`** before merging risky payment/checkout/order changes; **staging Stripe POC checklist** (above) before release or go-live.
