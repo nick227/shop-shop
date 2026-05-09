@@ -30,6 +30,23 @@ So the smell is **route / plugin / test-app lifecycle**, not the DoorDash mock a
 
 **Updated suspicion focus:** vite-node + Fastify `inject`, auth/`requireAuth` timing, or handles left open — revisit raw JSON serialization only after inject completes reliably.
 
+### Layered inject probes (`apps/server/src/routes/order-dispatch.inject-probe.test.ts`)
+
+Run: `pnpm --dir apps/server exec vitest run src/routes/order-dispatch.inject-probe.test.ts`
+
+| Layer | What runs | Purpose |
+|-------|-----------|---------|
+| 1 | Bare Fastify, `POST /debug-dispatch-test` → 201 `{ ok: true }` | Baseline `inject` |
+| 2 | + `app.decorate('authenticate', authenticate)` | Decoration alone |
+| 3 | Stub `POST /api/v1/orders/:orderId/dispatch` → 201 (no auth) | Same URL shape as dispatch |
+| 3b | + no-op **async `preHandler`** | Async preHandler alone |
+| 3c | **`authenticate(req, reply)` inside route handler** + Bearer | Auth in **handler**, not preHandler |
+| 4–6 | **`preHandler: [requireAuth]`** + Bearer + stub 201 (layer 6 adds Prisma in handler) | Match real dispatch wiring |
+
+**Outcome (local Vitest):** layers **1–3c pass**; layers **4–6 time out**. Failure aligns with **`requireAuth` registered as `preHandler`**, not with dispatch logic, JSON body, Prisma in the route handler (3c proves handler-side auth + inject can work), or the `/dispatch` URL shape.
+
+**Next steps:** Inspect **`requireAuth` + `preHandler` + `inject`** (Fastify version, double-`send`, `reply.sent`); try **`await authenticate` only inside the route handler** for this route as an experiment; compare with production (`inject` vs real HTTP).
+
 ## Likely suspects (check in order)
 
 1. Route **awaits something that never resolves** after sending the response.
