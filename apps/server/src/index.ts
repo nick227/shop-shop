@@ -9,6 +9,9 @@ import { authRoutes } from './routes/auth.route.js'
 import checkoutRoutes from './routes/checkout.js'
 import orderStatusRoutes from './routes/orderStatus.js'
 import { orderDispatchRoutes } from './routes/order-dispatch.route.js'
+import { deliveryCancelRoutes } from './routes/delivery/cancel.route.js'
+import { deliveryStatusRoutes } from './routes/delivery/status.route.js'
+import { doordashWebhookRoutes } from './webhooks/doordash.webhook.js'
 import { driverRoutes } from './routes/driver.route.js'
 import { paymentRoutes } from './routes/payment.route.js'
 import { stripeWebhookRoutes } from './routes/stripe-webhook.route.js'
@@ -145,6 +148,9 @@ await app.register(authRoutes, { prefix: '/auth/v1' })
 await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
 await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
 await app.register(orderDispatchRoutes, { prefix: '/api/v1/orders' })
+await app.register(deliveryCancelRoutes)
+await app.register(deliveryStatusRoutes)
+await app.register(doordashWebhookRoutes)
 await app.register(driverRoutes, { prefix: '/api/v1' })
 await app.register(stripeWebhookRoutes) 
 await app.register(paymentRoutes)  

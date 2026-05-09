@@ -30,6 +30,67 @@ async function assertActiveStoreDriver(userId: string, storeId: string): Promise
   }
 }
 
+export type CancelDeliveryJobInput = Readonly<{
+  deliveryJobId: string
+  reason?: string
+}>
+
+function mergeProviderPayloadForCancel(
+  existing: unknown,
+  cancelPayload: unknown,
+  reason: string | undefined,
+): Record<string, unknown> {
+  const base =
+    existing !== null && typeof existing === 'object' && !Array.isArray(existing)
+      ? (existing as Record<string, unknown>)
+      : {}
+  return {
+    ...base,
+    cancel: cancelPayload,
+    cancelReason: reason ?? null,
+    canceledVia: 'cancelDeliveryJob',
+  }
+}
+
+/**
+ * Cancels a delivery job via the registered provider adapter (sandbox mocks in dev).
+ * Does not change Order status — only the DeliveryJob row.
+ */
+export async function cancelDeliveryJob(input: CancelDeliveryJobInput): Promise<DeliveryJob> {
+  const job = await prisma.deliveryJob.findUnique({
+    where: { id: input.deliveryJobId },
+    select: {
+      id: true,
+      provider: true,
+      providerExternalId: true,
+      status: true,
+      providerPayload: true,
+    },
+  })
+  if (!job) {
+    throw new Error('DeliveryJob not found')
+  }
+  if (job.status === 'COMPLETED' || job.status === 'CANCELED') {
+    throw new Error('Delivery job cannot be canceled in current state')
+  }
+
+  const adapter = getDeliveryProviderAdapter(job.provider)
+  const result = await adapter.cancelDelivery({
+    deliveryJobId: job.id,
+    providerExternalId: job.providerExternalId,
+  })
+
+  return prisma.deliveryJob.update({
+    where: { id: job.id },
+    data: {
+      status: 'CANCELED',
+      canceledAt: new Date(),
+      providerStatus: result.providerStatus,
+      providerPayload: mergeProviderPayloadForCancel(job.providerPayload, result.providerPayload, input.reason),
+    },
+  })
+}
+
 export async function dispatchOrderDelivery(input: DispatchDeliveryInput): Promise<DeliveryJob> {
   const order = await prisma.order.findUnique({
     where: { id: input.orderId },
