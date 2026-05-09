@@ -408,6 +408,27 @@ When exercising **real** DoorDash sandbox credentials (developer dashboard keys,
 | **Vendor dispatch panel** | Status updates after dispatch and after webhook-driven transitions (`DoorDashDispatchPanel` / vendor order UX). |
 | **Failed / canceled** | Provider failure/cancel events map to `DeliveryJob` + UI (destructive state, not stuck “in progress”). |
 
+### Staging delivery runbook pass (environment-only gate)
+
+Everything below requires a **real environment**: staging URL, **DoorDash sandbox** credentials in that env, and a **public HTTPS** webhook endpoint that DoorDash can reach (confirm delivery in their dashboard or your server logs).
+
+Do these in order on staging:
+
+| # | Step | What “good” looks like |
+|---|------|-------------------------|
+| 1 | **Quote** | Delivery quote succeeds for an eligible cart + dropoff address. |
+| 2 | **Checkout** | Order completes and is eligible for provider dispatch (paid/COD per policy). |
+| 3 | **Mark READY** | Order reaches **READY** through normal vendor flow. |
+| 4 | **Dispatch** | Vendor dispatch runs; job has `providerExternalId` and `trackingUrl`. |
+| 5 | **Webhook / status** | Provider sends webhook to your HTTPS URL; order/job status updates match the event. |
+| 6 | **Customer tracking** | Customer tracking UI (and/or API) reflects status after webhook-driven updates. |
+| 7 | **Admin event viewer** | Provider/webhook events appear in the admin delivery event viewer. |
+| 8 | **Failed / canceled** | Run or simulate failure/cancel; UI shows the destructive/canceled path correctly (no fake “still delivering”). |
+
+**Milestone when complete:** **Delivery Provider Platform: staging-proven** — feature correctness for the provider path is validated outside CI.
+
+After staging-proven, remaining **production readiness** is **ops**: repeat credential/URL validation on production, confirm **Delivery monitoring / alerts**, and run the same UI spots once on prod if policy requires it.
+
 ---
 
 ## Production webhook & environment validation
@@ -444,4 +465,4 @@ See `.env.example` for variable names and comments.
 
 ## Manual QA matrix (delivery hardening)
 
-Use **Delivery regression checklist** above for step-by-step scenarios. After DoorDash sandbox smoke passes in CI, remaining delivery work is mostly **ops** (monitoring, dashboards, runbooks) and periodic manual runs of the regression tables—not core product code unless gaps appear.
+Use **Delivery regression checklist** above for step-by-step scenarios. CI smoke (`test:stripe-smoke`) covers correctness in isolation; **staging delivery runbook pass** is the gate for real URLs and sandbox credentials. After **staging-proven**, open questions are **production ops** (webhooks, secrets, monitoring), not feature gaps, unless staging finds a bug.
