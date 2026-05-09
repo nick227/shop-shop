@@ -22,6 +22,26 @@ import {
   BundlesApi,
 } from '@packages/sdk'
 import type { components, paths } from '../types/api'
+
+function assertSdkConstructor(name: string, Ctor: unknown): asserts Ctor is new (config: Configuration) => unknown {
+  if (typeof Ctor !== 'function') {
+    throw new Error(
+      `[api/client] ${name} failed to load from @packages/sdk (got ${typeof Ctor}). Build the SDK: pnpm --filter @packages/sdk build`,
+    )
+  }
+}
+
+assertSdkConstructor('AuthApi', AuthApi)
+assertSdkConstructor('StoresApi', StoresApi)
+assertSdkConstructor('ItemsApi', ItemsApi)
+assertSdkConstructor('CartsApi', CartsApi)
+assertSdkConstructor('OrdersApi', OrdersApi)
+assertSdkConstructor('AddresssApi', AddresssApi)
+assertSdkConstructor('PromotionsApi', PromotionsApi)
+assertSdkConstructor('PaymentsApi', PaymentsApi)
+assertSdkConstructor('UsersApi', UsersApi)
+assertSdkConstructor('MediaApi', MediaApi)
+assertSdkConstructor('BundlesApi', BundlesApi)
 import type { ApiError } from './types/api-contracts'
 import { useAuthStore } from '@stores/authStore'
 
@@ -195,7 +215,11 @@ class ApiClient {
    */
   private getApiInstance<T>(apiType: string, factory: (config: Configuration) => T): T {
     if (!this.apiInstances[apiType]) {
-      this.apiInstances[apiType] = factory(this.getConfig())
+      const created = factory(this.getConfig())
+      if (created === undefined || created === null) {
+        throw new Error(`[api/client] SDK factory for "${apiType}" returned ${String(created)}`)
+      }
+      this.apiInstances[apiType] = created
     }
     return this.apiInstances[apiType] as T
   }

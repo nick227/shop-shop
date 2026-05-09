@@ -57,8 +57,8 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
+    // Alias `@packages/sdk` → packages/sdk/dist — do not also exclude that path or prebundling can split and yield incomplete SDK classes at runtime.
     include: ['@packages/sdk'],
-    exclude: ['@packages/sdk/dist'],
   },
   build: {
     commonjsOptions: {
