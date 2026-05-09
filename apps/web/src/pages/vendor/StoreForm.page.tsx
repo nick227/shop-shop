@@ -3,7 +3,7 @@
  * StoreFormPage - Create or edit a store
  */
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
@@ -13,11 +13,10 @@ import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
 import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData } from '@shared/lib/utils/form-utilities'
+import { DeleteStoreSection } from './components/DeleteStoreSection'
 
 export default function StoreFormPage() {
-  const { storeId: pathStoreId } = useParams<{ storeId?: string }>()
-  const [searchParams] = useSearchParams()
-  const storeId = pathStoreId ?? searchParams.get('storeId') ?? undefined
+  const { storeId } = useParams<{ storeId?: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
@@ -49,11 +48,12 @@ export default function StoreFormPage() {
         createStoreRequest: data,
       })
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       updateUser({ role: 'VENDOR' } as any)
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      toast.success('Store created and live!')
-      navigate('/vendor/dashboard')
+      toast.success('Store created! Add photos below.')
+      const newId = (result as any).id
+      navigate(newId ? `/vendor/stores/${newId}/edit` : '/vendor/dashboard')
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -121,6 +121,20 @@ export default function StoreFormPage() {
       isSubmitting={isSubmitting}
       isLoading={isLoadingStore}
       loadingMessage="Loading store..."
+      belowForm={
+        isEdit && store ? (
+          <DeleteStoreSection
+            storeId={storeId!}
+            storeName={store.name}
+            onDeleted={() => {
+              queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+              queryClient.removeQueries({ queryKey: ['store', storeId] })
+              toast.success('Store deleted')
+              navigate('/vendor/dashboard')
+            }}
+          />
+        ) : undefined
+      }
     />
   )
 }

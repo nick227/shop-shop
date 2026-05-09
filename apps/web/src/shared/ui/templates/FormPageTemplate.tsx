@@ -42,6 +42,8 @@ export interface FormPageTemplateProps {
   isLoading?: boolean;
   /** Loading message (defaults to "Loading...") */
   loadingMessage?: string;
+  /** Content rendered after the form (e.g. danger zone on edit pages) */
+  belowForm?: ReactNode;
 }
 
 export function FormPageTemplate({
@@ -55,7 +57,8 @@ export function FormPageTemplate({
   submitLabel,
   isSubmitting,
   isLoading = false,
-  loadingMessage = 'Loading...'}: FormPageTemplateProps) {
+  loadingMessage = 'Loading...',
+  belowForm}: FormPageTemplateProps) {
   
   if (isLoading) {
     return (
@@ -132,6 +135,8 @@ export function FormPageTemplate({
           </CardContent>
         </Card>
       </form>
+
+      {belowForm}
     </PageShell>
   )
 }
