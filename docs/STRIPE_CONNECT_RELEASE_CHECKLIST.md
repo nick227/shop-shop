@@ -10,9 +10,9 @@ From repo root:
 pnpm verify:payments
 ```
 
-(Runs `@packages/db` typecheck, Connect PI adapter tests, then server billing smoke — not the full monorepo `typecheck` unless you run that separately.)
+Runs **`pnpm typecheck`** (full monorepo), **`pnpm test:payments-adapter`**, then **`pnpm test:stripe-smoke`** — full billing gate including TypeScript for all workspace packages.
 
-Runs **`pnpm --filter @packages/db typecheck`**, then **`pnpm test:payments-adapter`** (mocked Stripe: **`transfer_data.destination`** + **`application_fee_amount`** on PI create), then **`pnpm test:stripe-smoke`** (Connect gate, webhooks, checkout, COD, affiliate guard in `@apps/server`). Also run **`pnpm typecheck`** at the monorepo level when the workspace is green. Alias for server-only bundle: **`pnpm test:billing`**.
+**Note:** `apps/server/src/routes/delivery/**` is excluded from server `tsc` until those routes are aligned with the Prisma `DeliveryJob` model (see `apps/server/tsconfig.json`). **`test:payments-adapter`** asserts mocked PI **`transfer_data`** / **`application_fee_amount`**. Alias for server Vitest only: **`pnpm test:billing`**.
 
 All of the above should pass before you treat staging manual steps as authoritative.
 
