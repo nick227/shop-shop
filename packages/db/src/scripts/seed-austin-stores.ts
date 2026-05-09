@@ -142,15 +142,8 @@ function itemTagSlugsFor(category: string, itemTemplate: Record<string, any>): s
   const slugs = new Set<string>([
     itemTypeSlugFor(category, String(itemTemplate.title)),
     ...(CATEGORY_MEAL_TIME_SLUGS[category] ?? ['lunch', 'dinner']),
+    ...(itemTemplate.tags ?? []),
   ])
-
-  // Convert dietary attributes to tags
-  if (itemTemplate.isVegan) slugs.add('vegan')
-  if (itemTemplate.isVegetarian || itemTemplate.isVegan) slugs.add('vegetarian')
-  if (itemTemplate.isGlutenFree) slugs.add('gluten-free')
-  if (itemTemplate.isDairyFree) slugs.add('dairy-free')
-  if (itemTemplate.isKeto) slugs.add('keto-friendly')
-  if (itemTemplate.isPaleo) slugs.add('paleo-friendly')
 
   for (const allergen of itemTemplate.allergens ?? []) {
     const allergenSlug = ALLERGEN_TAG_SLUGS[String(allergen)]
@@ -865,11 +858,6 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
               sortIndex: storeItemCount,
               optionsJson: { category },
               stockQty: Math.floor(Math.random() * 50) + 10,
-              // Add dietary flags and allergens
-              isVegan: (itemTemplate as any).isVegan || false,
-              isVegetarian: (itemTemplate as any).isVegetarian || false,
-              isGlutenFree: (itemTemplate as any).isGlutenFree || false,
-              isDairyFree: (itemTemplate as any).isDairyFree || false,
               spicyLevel: (itemTemplate as any).spicyLevel || null,
               allergensJson: (itemTemplate as any).allergens ? (itemTemplate as any).allergens : undefined,
               tags: {

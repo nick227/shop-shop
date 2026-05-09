@@ -185,7 +185,7 @@ export class HoursStatusService {
   /**
    * Get day of week string
    */
-  private getDayOfWeek(date: Date): keyof typeof DAY_MAP {
+  private getDayOfWeek(date: Date): string {
     return DAY_MAP[date.getDay() as keyof typeof DAY_MAP]
   }
 

@@ -73,15 +73,7 @@ export interface StoreFormData {
   phone: string
   email: string
   website: string
-  customDomain: string
-  socialYoutube: string
-  socialInstagram: string
-  socialFacebook: string
-  socialTiktok: string
-  socialTwitter: string
-  socialWhatsapp: string
-  socialDiscord: string
-  socialSnapchat: string
+  youtubeChannel?: string
   imageUrl?: string
   isPublished: boolean
   status?: 'ACTIVE' | 'PAUSED' | 'DISABLED'
@@ -101,6 +93,7 @@ export interface StoreFormData {
   addressZip: string
   addressCountry: string
   commissionRate?: string
+  hoursJson?: any // Store hours configuration
 }
 
 export interface StoreUpdateFormData {

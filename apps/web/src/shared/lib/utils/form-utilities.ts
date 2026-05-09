@@ -1,6 +1,7 @@
 // @ts-nocheck
 import type { StoreFormData } from '@shared/types/types/form-types'
 import type { CreateStoreInput, StoreResponse } from '@api/types'
+import { maskEmailInput, maskUsPhoneInput, maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
 
 /** Optional fields omitted from payload when empty */
 const STORE_PAYLOAD_STRIP_IF_EMPTY: (keyof StoreFormData)[] = [
@@ -99,8 +100,8 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     storeType: (store as any).storeType ?? 'RESTAURANT',
     companyName: store.companyName ?? '',
     taxId: store.taxId ?? '',
-    phone: store.phone ?? '',
-    email: store.email ?? '',
+    phone: maskUsPhoneInput(store.phone ?? ''),
+    email: maskEmailInput(store.email ?? ''),
     website: store.website ?? '',
     customDomain: (store as any).customDomain ?? '',
     socialYoutube:   (store as any).socialLinksJson?.youtube   ?? '',
@@ -126,8 +127,8 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     longitude: store.longitude ?? '0',
     addressStreet: store.addressStreet ?? '',
     addressCity: store.addressCity ?? '',
-    addressState: store.addressState ?? '',
-    addressZip: store.addressZip ?? '',
+    addressState: (store.addressState ?? '').toUpperCase(),
+    addressZip: maskUsZipInput(store.addressZip ?? ''),
     addressCountry: store.addressCountry ?? 'US',
     commissionRate: store.commissionRate ?? '0'
   }

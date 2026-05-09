@@ -238,9 +238,6 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       sortIndex: 1,
       optionsJson: { bowl: 'garden' },
       stockQty: 25,
-      isVegan: true,
-      isVegetarian: true,
-      isGlutenFree: true,
       spicyLevel: 0,
       tags: {
         create: ['salad', 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'lunch', 'dinner'].map((slug) => ({
@@ -298,10 +295,6 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       },
       stockQty: 40,
       allergensJson: ['sesame', 'tree nuts'],
-      isVegan: true,
-      isVegetarian: true,
-      isGlutenFree: false,
-      isDairyFree: true,
       spicyLevel: 1,
       tags: {
         create: ['entree', 'vegan', 'vegetarian', 'dairy-free', 'contains-gluten', 'contains-nuts', 'lunch', 'dinner'].map((slug) => ({
@@ -322,10 +315,6 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
       optionsJson: { protein: 'salmon', plateStyle: 'classic' },
       stockQty: 18,
       allergensJson: ['fish', 'dairy'],
-      isVegan: false,
-      isVegetarian: false,
-      isGlutenFree: true,
-      isDairyFree: false,
       spicyLevel: 0,
       tags: {
         create: ['entree', 'gluten-free', 'contains-dairy', 'lunch', 'dinner'].map((slug) => ({

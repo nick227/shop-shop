@@ -123,6 +123,10 @@ enum StoreType {
   BAKERY
   RETAIL
   OTHER
+  MEAL_PREP
+  COFFEE
+  SPECIALTY
+  GENERAL
 }
 
 enum PriceRange {

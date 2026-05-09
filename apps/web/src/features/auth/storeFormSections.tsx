@@ -7,7 +7,9 @@ import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import type { FormSection } from '@shared/ui/templates'
 import type { StoreFormData } from '@api/types'
 import { EnhancedMediaGalleryManager } from '@shared/ui/media'
-import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
+import { maskEmailInput, maskUsPhoneInput, maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
+import { US_STATES } from '@shared/lib/constants/usStates'
+import { StoreHoursEditor } from './components/StoreHoursEditor'
 
 export function createStoreFormSections(
   formData: StoreFormData,
@@ -19,6 +21,10 @@ export function createStoreFormSections(
     onFilesChange: (files: File[]) => void
   },
 ): FormSection[] {
+  const addressStateCode = (formData.addressState ?? '').toUpperCase()
+  const showOrphanStateOption =
+    Boolean(addressStateCode) && !US_STATES.some((s) => s.code === addressStateCode)
+
   const sections: FormSection[] = [
     {
       id: 'basic',
@@ -84,8 +90,10 @@ export function createStoreFormSections(
           <Input
             label="Phone"
             type="tel"
+            inputMode="tel"
+            autoComplete="tel"
             value={formData.phone}
-            onChange={(e) => onChange('phone', e.target.value)}
+            onChange={(e) => onChange('phone', maskUsPhoneInput(e.target.value))}
             placeholder="+1 (555) 123-4567"
           />
 
@@ -93,8 +101,10 @@ export function createStoreFormSections(
             <Input
               label="Email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
               value={formData.email}
-              onChange={(e) => onChange('email', e.target.value)}
+              onChange={(e) => onChange('email', maskEmailInput(e.target.value))}
               placeholder="contact@store.com"
             />
 
@@ -215,21 +225,41 @@ export function createStoreFormSections(
               required
             />
 
-            <Input
-              label="State *"
-              value={formData.addressState}
-              onChange={(e) => onChange('addressState', e.target.value.toUpperCase())}
-              placeholder="NY"
-              maxLength={2}
-              required
-              helperText="2-letter state code"
-            />
+            <div className="w-full space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="store-address-state">
+                State *
+              </label>
+              <Select
+                value={addressStateCode}
+                onValueChange={(value) => onChange('addressState', value)}
+                required
+              >
+                <SelectTrigger id="store-address-state">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {showOrphanStateOption && (
+                    <SelectItem value={addressStateCode}>{addressStateCode}</SelectItem>
+                  )}
+                  {US_STATES.map((s) => (
+                    <SelectItem key={s.code} value={s.code}>
+                      {s.name} ({s.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">2-letter state code</p>
+            </div>
 
             <Input
               label="ZIP Code *"
+              inputMode="numeric"
+              autoComplete="postal-code"
               value={formData.addressZip}
-              onChange={(e) => onChange('addressZip', e.target.value)}
+              onChange={(e) => onChange('addressZip', maskUsZipInput(e.target.value))}
               placeholder="10001"
+              maxLength={10}
+              pattern="\d{5}(-\d{4})?"
               required
             />
 
@@ -296,6 +326,18 @@ export function createStoreFormSections(
           </FormRow>
         </>
       ),
+    },
+    {
+      id: 'hours',
+      icon: '🕐',
+      title: 'Store Hours',
+      description: 'Set your operating hours and delivery schedule',
+      content: (
+        <StoreHoursEditor
+          value={formData.hoursJson as any}
+          onChange={(hours) => onChange('hoursJson', hours)}
+        />
+      )
     },
     {
       id: 'settings',
