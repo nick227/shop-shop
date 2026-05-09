@@ -16,15 +16,19 @@ So the smell is **route / plugin / test-app lifecycle**, not the DoorDash mock a
 
 **Success handler pattern — OK.** The route ends with a single return and no extra awaited work after send:
 
-```69:69:apps/server/src/routes/order-dispatch.route.ts
-      return reply.code(201).send({ deliveryJob })
+```69:70:apps/server/src/routes/order-dispatch.route.ts
+      return reply.code(201).send({ deliveryJob: toDeliveryJobResponse(deliveryJob) })
 ```
+
+**API response:** `deliveryJob` is now an explicit **`DeliveryJobResponse`** (see `apps/server/src/resources/delivery-job.resource.ts`) — plain JSON, ISO date strings, **no `providerPayload`** on this route.
 
 **Dispatch service — no realtime on this path.** `dispatchOrderDelivery` only runs Prisma reads/writes and `getDeliveryProviderAdapter(...).createDelivery`; it does **not** call `OrderService`, `publishOrderStatusChanged`, or `publishOrderCreated` (`packages/db/src/services/delivery-dispatch.service.ts`). So the usual **broadcast / realtime** suspects do not apply *inside* dispatch unless something else hooks Prisma.
 
 **Minimal test app — no full-server hooks.** `order-dispatch.route.test.ts` builds `Fastify()` + `app.decorate('authenticate', authenticate)` + `orderDispatchRoutes` only. It does **not** register `apps/server/src/index.ts` hooks (`requestIdMiddleware`, `optionalAuthenticate`, etc.), so global server plugins are ruled out for that test file.
 
-**Updated suspicion focus:** Fastify `inject` + serialization (`deliveryJob` payload: dates, `Decimal`, JSON fields), Vitest worker / vite-node behavior, Prisma client middleware if any fires on `deliveryJob.update`, or an **auth/`requireAuth`** edge case after the handler returns (less likely given direct DB timing).
+**Serialization / DTO probe:** The route now returns **`toDeliveryJobResponse(deliveryJob)`** instead of the raw Prisma object. If **`inject` still hangs on errors that never build that body** (e.g. 400 for pickup order), the stall is **not** explained by serializing the Prisma `DeliveryJob` alone — treat **`inject`/test-app** as the primary suspect until reproduced otherwise.
+
+**Updated suspicion focus:** vite-node + Fastify `inject`, auth/`requireAuth` timing, or handles left open — revisit raw JSON serialization only after inject completes reliably.
 
 ## Likely suspects (check in order)
 
@@ -40,7 +44,8 @@ So the smell is **route / plugin / test-app lifecycle**, not the DoorDash mock a
 - [x] Trace `order-dispatch.route.ts` success path — uses `return reply.code(201).send(...)`; nothing awaited after.
 - [x] Confirm dispatch service path — no realtime publisher calls in `dispatchOrderDelivery`.
 - [ ] Prisma extension / middleware on `deliveryJob` update (if any beyond coords guard on `Order`).
-- [ ] Serialize payload: try `reply.code(201).send(JSON.parse(JSON.stringify({ deliveryJob })))` or a plain DTO in inject repro.
+- [x] Explicit response DTO — `toDeliveryJobResponse` on **201** (`delivery-job.resource.ts`); omit `providerPayload` from vendor dispatch API.
+- [ ] If `inject` still hangs when returning only `{ ok: true }` on 201, confirm hang is outside response shape.
 - [ ] Run minimal inject repro with Fastify logger + trace; compare `GET` vs `POST` success on same app.
 - [ ] Vitest: try `pool: 'forks'` vs default for this file only; rule out worker deadlock.
 

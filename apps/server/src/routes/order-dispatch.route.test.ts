@@ -153,6 +153,10 @@ describe('Order dispatch route', () => {
 
   it('creates a DeliveryJob for READY delivery order (mock provider)', async () => {
     const order = await createTestOrder(vendor.id, storeId, { status: 'READY', paymentStatus: 'PAID' })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'THIRD_PARTY_PROVIDER' },
+    })
     const res = await app.inject({
       method: 'POST',
       url: `/api/v1/orders/${order.id}/dispatch`,
@@ -169,6 +173,10 @@ describe('Order dispatch route', () => {
 
   it('prevents duplicate active DeliveryJobs', async () => {
     const order = await createTestOrder(vendor.id, storeId, { status: 'READY', paymentStatus: 'PAID' })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'THIRD_PARTY_PROVIDER' },
+    })
     const first = await app.inject({
       method: 'POST',
       url: `/api/v1/orders/${order.id}/dispatch`,

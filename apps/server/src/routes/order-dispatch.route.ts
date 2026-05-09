@@ -4,6 +4,7 @@ import { dispatchOrderDelivery, prisma } from '@packages/db'
 import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 import { VendorErrors } from './vendor/vendorHelpers'
+import { toDeliveryJobResponse } from '../resources/delivery-job.resource.js'
 
 const paramsSchema = z.object({
   orderId: z.string().uuid(),
@@ -66,7 +67,7 @@ export const orderDispatchRoutes = async (app: FastifyInstance) => {
         assignedToUserId: bodyParsed.data.assignedToUserId,
       })
 
-      return reply.code(201).send({ deliveryJob })
+      return reply.code(201).send({ deliveryJob: toDeliveryJobResponse(deliveryJob) })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: 'Validation error', details: error.errors })
