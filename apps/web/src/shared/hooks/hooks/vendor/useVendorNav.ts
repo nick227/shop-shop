@@ -13,7 +13,7 @@ export function useVendorNav() {
     toStoreItems: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items'),
     toCreateItem: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items/new'),
     toEditItem: (storeId: string, itemId: string) => 
-      navigate('/vendor/stores/${storeId}/items/' + itemId + '/edit'),
+      navigate(`/vendor/stores/${storeId}/items/${itemId}/edit`),
     toHome: () => navigate('/')}
 }
 

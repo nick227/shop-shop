@@ -6,13 +6,15 @@ import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTri
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import type { FormSection } from '@shared/ui/templates'
 import type { StoreFormData } from '@api/types'
+import { EnhancedMediaGalleryManager } from '@shared/ui/media'
 
 export function createStoreFormSections(
   formData: StoreFormData,
   onChange: (field: keyof StoreFormData, value: string | number | boolean) => void,
-  isEdit: boolean
+  isEdit: boolean,
+  storeId?: string
 ): FormSection[] {
-  return [
+  const sections: FormSection[] = [
     {
       id: 'basic',
       icon: '📝',
@@ -274,5 +276,22 @@ export function createStoreFormSections(
       ),
     },
   ]
+
+  if (storeId) {
+    sections.push({
+      id: 'media',
+      icon: '📸',
+      title: 'Store Media',
+      description: 'Upload images and videos to showcase your store. The first image will be the primary thumbnail.',
+      content: (
+        <EnhancedMediaGalleryManager
+          storeId={storeId}
+          maxFiles={100}
+        />
+      ),
+    })
+  }
+
+  return sections
 }
 

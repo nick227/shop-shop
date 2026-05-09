@@ -18,21 +18,12 @@ export function VendorSideNav() {
   const activeStoreTitle =
     selectedStoreId && selectedStore?.name?.trim() ? selectedStore.name.trim() : 'Store'
 
-  const peoplePaths = selectedStoreId
-    ? {
-        affiliates: `/vendor/affiliates?storeId=${selectedStoreId}`,
-        team: `/vendor/team?storeId=${selectedStoreId}`,
-        drivers: `/vendor/drivers?storeId=${selectedStoreId}`,
-      }
-    : {
-        affiliates: '/vendor/affiliates',
-        team: '/vendor/team',
-        drivers: '/vendor/drivers',
-      }
+  const scopedPath = (base: string) =>
+    selectedStoreId ? `${base}?storeId=${selectedStoreId}` : base
 
   const navigateScoped = (to: string) => {
     if (!selectedStoreId) return
-    navigate(to)
+    navigate(scopedPath(to))
   }
 
   const navClass = (active: boolean) => `${styles.navItem} ${active ? styles.navItemActive : ''}`
@@ -91,7 +82,7 @@ export function VendorSideNav() {
           type="button"
           disabled={!storeScoped}
           className={navClass(location.pathname === '/vendor/affiliates')}
-          onClick={() => navigateScoped(peoplePaths.affiliates)}
+          onClick={() => navigateScoped('/vendor/affiliates')}
         >
           <span className={styles.navItemText}>Affiliates</span>
         </button>
@@ -99,7 +90,7 @@ export function VendorSideNav() {
           type="button"
           disabled={!storeScoped}
           className={navClass(location.pathname === '/vendor/team')}
-          onClick={() => navigateScoped(peoplePaths.team)}
+          onClick={() => navigateScoped('/vendor/team')}
         >
           <span className={styles.navItemText}>Team</span>
         </button>
@@ -107,7 +98,7 @@ export function VendorSideNav() {
           type="button"
           disabled={!storeScoped}
           className={navClass(location.pathname === '/vendor/drivers')}
-          onClick={() => navigateScoped(peoplePaths.drivers)}
+          onClick={() => navigateScoped('/vendor/drivers')}
         >
           <span className={styles.navItemText}>Drivers</span>
         </button>

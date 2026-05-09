@@ -3,21 +3,21 @@
  * StoreFormPage - Create or edit a store
  */
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { useAuthStore } from '@stores/authStore'
 import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
-import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
-import { MediaGalleryManager } from '@shared/ui/media'
 import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData } from '@shared/lib/utils/form-utilities'
 
 export default function StoreFormPage() {
-  const { storeId } = useParams<{ storeId?: string }>()
+  const { storeId: pathStoreId } = useParams<{ storeId?: string }>()
+  const [searchParams] = useSearchParams()
+  const storeId = pathStoreId ?? searchParams.get('storeId') ?? undefined
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
@@ -108,28 +108,14 @@ export default function StoreFormPage() {
   }
 
   const isSubmitting = createStoreMutation.isPending || updateStoreMutation.isPending
-  const sections = createStoreFormSections(formData, handleChange, isEdit)
-
-  // Add media section if editing (can't upload media until store is created)
-  const sectionsWithMedia: FormSection[] = isEdit && storeId
-    ? [
-        ...sections,
-        {
-          id: 'media',
-          icon: '📸',
-          title: 'Store Media',
-          description: 'Upload images and videos to showcase your store',
-          content: <MediaGalleryManager storeId={storeId} maxFiles={100} />,
-        },
-      ]
-    : sections
+  const sections = createStoreFormSections(formData, handleChange, isEdit, storeId)
 
   return (
     <FormPageTemplate
       title={isEdit ? '✏️ Edit Store' : '+ Create Store'}
       backLabel="← Back to Dashboard"
       onBack={() => navigate('/vendor/dashboard')}
-      sections={sectionsWithMedia}
+      sections={sections}
       onSubmit={handleSubmit}
       submitLabel={isEdit ? 'Update Store' : 'Create Store'}
       isSubmitting={isSubmitting}

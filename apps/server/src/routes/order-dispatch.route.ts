@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { dispatchOrderDelivery, prisma } from '@packages/db'
 import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const paramsSchema = z.object({
   orderId: z.string().uuid(),
@@ -37,7 +38,7 @@ export const orderDispatchRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const { user } = req
-      if (!user) return reply.code(401).send({ error: 'Unauthorized' })
+      if (!user) return VendorErrors.unauthorized(reply)
 
       const paramsParsed = paramsSchema.safeParse(req.params)
       if (!paramsParsed.success) {

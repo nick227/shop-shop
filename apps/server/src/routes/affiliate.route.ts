@@ -14,10 +14,11 @@ import {
   updatePayoutStatus,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 async function requireActiveAffiliate(req: any, reply: any) {
   const userId = req.user?.id as string | undefined
-  if (!userId) return reply.code(401).send({ error: 'Unauthorized' })
+  if (!userId) return VendorErrors.unauthorized(reply)
 
   const affiliate = await getAffiliateByUserId(userId)
   if (!affiliate) return reply.code(404).send({ error: 'Affiliate profile not found' })
@@ -59,7 +60,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN'])],
   }, async (req, reply) => {
     const userId = req.user?.id
-    if (!userId) return reply.code(401).send({ error: 'Unauthorized' })
+    if (!userId) return VendorErrors.unauthorized(reply)
 
     const affiliate = await getAffiliateByUserId(userId)
     return reply.code(200).send({

@@ -11,7 +11,6 @@ import {
   DollarSign,
   ShoppingCart,
   Clock,
-  Eye,
   Edit,
   Trash2
 } from 'lucide-react'
@@ -50,7 +49,7 @@ type SortField = 'revenue' | 'unitsSold' | 'orders' | 'lastSale' | 'title' | 'pr
 type SortOrder = 'asc' | 'desc'
 type Period = '7d' | '30d' | '90d' | 'all'
 
-export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAnalyticsTableProps) {
+export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readonly<ItemAnalyticsTableProps>) {
   const [sortField, setSortField] = useState<SortField>('revenue')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [period, setPeriod] = useState<Period>('30d')
@@ -93,12 +92,12 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="w-3 h-3 ml-1" />
+      return <ArrowUpDown className="ml-1 w-3 h-3" />
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp className="w-3 h-3 ml-1" />
+      <ArrowUp className="ml-1 w-3 h-3" />
     ) : (
-      <ArrowDown className="w-3 h-3 ml-1" />
+      <ArrowDown className="ml-1 w-3 h-3" />
     )
   }
 
@@ -115,7 +114,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-600">
+      <div className="py-8 text-center text-red-600">
         Failed to load analytics data. Please try again.
       </div>
     )
@@ -124,7 +123,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
   return (
     <div className="space-y-4">
       {/* Period Selector & Summary Stats */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+      <div className="flex flex-col gap-4 justify-between items-start lg:flex-row lg:items-center">
         <div className="flex gap-2">
           {(['7d', '30d', '90d', 'all'] as Period[]).map((p) => (
             <Button
@@ -142,15 +141,15 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
         {summary && (
           <div className="flex gap-4 text-sm">
             <div className="text-center">
-              <div className="font-bold text-lg">{summary.totalRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+              <div className="text-lg font-bold">{summary.totalRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
               <div className="text-muted-foreground">Total Revenue</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-lg">{summary.totalUnitsSold}</div>
+              <div className="text-lg font-bold">{summary.totalUnitsSold}</div>
               <div className="text-muted-foreground">Units Sold</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-lg">{summary.totalOrders}</div>
+              <div className="text-lg font-bold">{summary.totalOrders}</div>
               <div className="text-muted-foreground">Orders</div>
             </div>
           </div>
@@ -158,81 +157,81 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
       </div>
 
       {/* Dense Analytics Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/50 border-b">
+            <thead className="border-b bg-muted/50">
               <tr>
-                <th className="text-left p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-left">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('title')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Item
                     {renderSortIcon('title')}
                   </Button>
                 </th>
-                <th className="text-right p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-right">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('price')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Price
                     {renderSortIcon('price')}
                   </Button>
                 </th>
-                <th className="text-right p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-right">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('unitsSold')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Units
                     {renderSortIcon('unitsSold')}
                   </Button>
                 </th>
-                <th className="text-right p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-right">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('revenue')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Revenue
                     {renderSortIcon('revenue')}
                   </Button>
                 </th>
-                <th className="text-right p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-right">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('orders')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Orders
                     {renderSortIcon('orders')}
                   </Button>
                 </th>
-                <th className="text-right p-3 font-medium text-sm">Avg/Order</th>
-                <th className="text-center p-3 font-medium text-sm">
+                <th className="p-3 text-sm font-medium text-right">Avg/Order</th>
+                <th className="p-3 text-sm font-medium text-center">
                   <Button
                     variant="ghost"
                     size="small"
                     onClick={() => handleSort('lastSale')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="p-0 h-auto font-medium hover:bg-transparent"
                   >
                     Last Sale
                     {renderSortIcon('lastSale')}
                   </Button>
                 </th>
-                <th className="text-center p-3 font-medium text-sm">Trend</th>
-                <th className="text-center p-3 font-medium text-sm">Status</th>
-                <th className="p-3 font-medium text-sm text-center">Actions</th>
+                <th className="p-3 text-sm font-medium text-center">Trend</th>
+                <th className="p-3 text-sm font-medium text-center">Status</th>
+                <th className="p-3 text-sm font-medium text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -240,92 +239,92 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
                 Array.from({ length: 10 }).map((_, i) => (
                   <tr key={i} className="border-b">
                     <td className="p-3">
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="w-32 h-4" />
                     </td>
                     <td className="p-3 text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
+                      <Skeleton className="ml-auto w-16 h-4" />
                     </td>
                     <td className="p-3 text-right">
-                      <Skeleton className="h-4 w-12 ml-auto" />
+                      <Skeleton className="ml-auto w-12 h-4" />
                     </td>
                     <td className="p-3 text-right">
-                      <Skeleton className="h-4 w-20 ml-auto" />
+                      <Skeleton className="ml-auto w-20 h-4" />
                     </td>
                     <td className="p-3 text-right">
-                      <Skeleton className="h-4 w-12 ml-auto" />
+                      <Skeleton className="ml-auto w-12 h-4" />
                     </td>
                     <td className="p-3 text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
+                      <Skeleton className="ml-auto w-16 h-4" />
                     </td>
                     <td className="p-3 text-center">
-                      <Skeleton className="h-4 w-16 mx-auto" />
+                      <Skeleton className="mx-auto w-16 h-4" />
                     </td>
                     <td className="p-3 text-center">
-                      <Skeleton className="h-4 w-8 mx-auto" />
+                      <Skeleton className="mx-auto w-8 h-4" />
                     </td>
                     <td className="p-3 text-center">
-                      <Skeleton className="h-6 w-16 mx-auto" />
+                      <Skeleton className="mx-auto w-16 h-6" />
                     </td>
                     <td className="p-3">
-                      <Skeleton className="h-6 w-20 mx-auto" />
+                      <Skeleton className="mx-auto w-20 h-6" />
                     </td>
                   </tr>
                 ))
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
                     No items found for the selected period.
                   </td>
                 </tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item.itemId} className="border-b hover:bg-muted/20 transition-colors">
+                  <tr key={item.itemId} className="border-b transition-colors hover:bg-muted/20">
                     <td className="p-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex gap-3 items-center">
                         {item.imageUrl && (
                           <img
                             src={item.imageUrl}
                             alt={item.title}
-                            className="w-10 h-10 rounded object-cover flex-shrink-0"
+                            className="object-cover flex-shrink-0 w-10 h-10 rounded"
                           />
                         )}
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-sm truncate">{item.title}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{item.title}</div>
                           {item.description && (
-                            <div className="text-xs text-muted-foreground truncate">
+                            <div className="text-xs truncate text-muted-foreground">
                               {item.description}
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-sm font-medium">
+                    <td className="p-3 text-sm font-medium text-right">
                       {formatCurrency(item.price)}
                     </td>
-                    <td className="p-3 text-right text-sm">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="p-3 text-sm text-right">
+                      <div className="flex gap-1 justify-end items-center">
                         <Package className="w-3 h-3 text-muted-foreground" />
                         {item.periodUnitsSold.toLocaleString()}
                       </div>
                     </td>
-                    <td className="p-3 text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="p-3 text-sm font-medium text-right">
+                      <div className="flex gap-1 justify-end items-center">
                         <DollarSign className="w-3 h-3 text-muted-foreground" />
                         {formatCurrency(item.periodRevenue)}
                       </div>
                     </td>
-                    <td className="p-3 text-right text-sm">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="p-3 text-sm text-right">
+                      <div className="flex gap-1 justify-end items-center">
                         <ShoppingCart className="w-3 h-3 text-muted-foreground" />
                         {item.periodOrderCount}
                       </div>
                     </td>
-                    <td className="p-3 text-right text-sm">
+                    <td className="p-3 text-sm text-right">
                       {formatCurrency(item.avgOrderValue)}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-sm text-center">
                       {item.lastSale ? (
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex gap-1 justify-center items-center">
                           <Clock className="w-3 h-3 text-muted-foreground" />
                           <span>{formatRelativeTime(new Date(item.lastSale))}</span>
                         </div>
@@ -348,19 +347,19 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
                       >
                         {item.isActive && !item.isSoldOut
                           ? 'Active'
-                          : item.isSoldOut
+                          : (item.isSoldOut
                           ? 'Sold Out'
-                          : 'Inactive'}
+                          : 'Inactive')}
                       </Badge>
                     </td>
                     <td className="p-3">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex gap-1 justify-center items-center">
                         {onEditItem && (
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => onEditItem(item.itemId)}
-                            className="h-6 w-6"
+                            className="w-6 h-6"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
@@ -370,7 +369,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
                             variant="ghost"
                             size="icon"
                             onClick={() => onDeleteItem(item.itemId, item.title)}
-                            className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                            className="w-6 h-6 text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -386,7 +385,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: ItemAn
       </div>
 
       {!isLoading && items.length > 0 && (
-        <div className="text-xs text-muted-foreground text-center">
+        <div className="text-xs text-center text-muted-foreground">
           Showing {items.length} items • Data refreshes every 30 seconds
         </div>
       )}

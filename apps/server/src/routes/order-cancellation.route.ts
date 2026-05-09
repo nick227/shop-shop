@@ -11,6 +11,7 @@ import {
 import { requireRole } from '../middleware/rbac'
 import { rateLimits } from '../constants/rateLimits.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const CancelOrderSchema = z.object({
   orderId: z.string().uuid(),
@@ -35,7 +36,7 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const input = CancelOrderSchema.parse(req.body)
@@ -71,7 +72,7 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' })
+        return VendorErrors.unauthorized(reply)
       }
 
       const params = req.params as { id: string }

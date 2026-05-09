@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 export interface VendorStorePick {
@@ -31,22 +31,37 @@ export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
     [location.pathname, stores]
   )
 
+  // Stable set of store IDs — prevents effect from firing on refetch when stores haven't changed
+  const storeIdSet = useMemo(() => new Set(stores.map((s) => s.id)), [stores])
+  const storeIdsKey = useMemo(() => [...storeIdSet].sort().join(','), [storeIdSet])
+
+  // Track the last explicitly confirmed selection so we don't fall back to stores[0] on refetch
+  const lastValidSelectionRef = useRef<string>('')
+
   const selectedStoreId = useMemo(() => {
     if (stores.length === 0) return ''
-    if (urlStoreId && stores.some((s) => s.id === urlStoreId)) return urlStoreId
+    if (urlStoreId && storeIdSet.has(urlStoreId)) return urlStoreId
     if (pathStoreId) return pathStoreId
-    const head = stores[0]
-    return head ? head.id : ''
-  }, [stores, urlStoreId, pathStoreId])
+    // Preserve last known selection across refetches before falling back to first store
+    if (lastValidSelectionRef.current && storeIdSet.has(lastValidSelectionRef.current)) {
+      return lastValidSelectionRef.current
+    }
+    return stores[0]?.id ?? ''
+  }, [stores, urlStoreId, pathStoreId, storeIdSet])
+
+  // Keep the ref in sync whenever we have a confirmed valid selection
+  useEffect(() => {
+    if (selectedStoreId) lastValidSelectionRef.current = selectedStoreId
+  }, [selectedStoreId])
 
   useEffect(() => {
     if (stores.length === 0) return
-    const urlValid = urlStoreId && stores.some((s) => s.id === urlStoreId)
+    const urlValid = urlStoreId && storeIdSet.has(urlStoreId)
     if (urlValid) return
     const next = new URLSearchParams(searchParams)
     next.set(STORE_QUERY, selectedStoreId)
     navigate({ pathname: location.pathname, search: `?${next.toString()}` }, { replace: true })
-  }, [stores, urlStoreId, selectedStoreId, searchParams, navigate, location.pathname])
+  }, [storeIdsKey, urlStoreId, selectedStoreId, searchParams, navigate, location.pathname, storeIdSet])
 
   const setSelectedStoreId = useCallback(
     (storeId: string) => {

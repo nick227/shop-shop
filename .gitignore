@@ -17,6 +17,9 @@ build/
 *.tsbuildinfo
 **/dist/
 
+# App public
+uploads/
+
 # Testing
 test-results/
 **/test-results/

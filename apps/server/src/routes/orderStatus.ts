@@ -11,6 +11,7 @@ import { createOrderStatusValidationMiddleware, logOrderStatusChange } from '../
 import { prisma } from '@packages/db'
 import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { VendorErrors } from './vendor/vendorHelpers'
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELED']),
@@ -132,7 +133,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
         const validation = (request as unknown as { orderValidation?: { isValid: boolean; warnings: string[] } }).orderValidation
 
         if (!user) {
-          reply.code(401).send({ error: 'Unauthorized', message: 'Authentication required' })
+          VendorErrors.unauthorized(reply)
           return
         }
 
@@ -182,7 +183,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
         const { orderId } = paramsParsed.data
         const user = request.user
         if (!user) {
-          reply.code(401).send({ error: 'Unauthorized', message: 'Authentication required' })
+          VendorErrors.unauthorized(reply)
           return
         }
 
@@ -226,7 +227,7 @@ export default async function orderStatusRoutes(fastify: FastifyInstance) {
         const { orderId } = paramsParsed.data
         const user = request.user
         if (!user) {
-          reply.code(401).send({ error: 'Unauthorized', message: 'Authentication required' })
+          VendorErrors.unauthorized(reply)
           return
         }
 
