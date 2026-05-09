@@ -8,6 +8,7 @@
 
 import { apiClient } from './client'
 import { readHttpErrorFromResponse } from './readHttpError'
+import { authGet } from '@shared/lib/auth/authFetch'
 import type { 
   StoreResponse as Store,
   ItemResponse as Item,
@@ -609,6 +610,7 @@ export const stores = {
   listPage: async (params?: {
     page?: string
     limit?: string
+    ownerUserId?: string
     latitude?: number
     longitude?: number
     radiusMiles?: number
@@ -620,6 +622,7 @@ export const stores = {
       const searchParams = new URLSearchParams()
       setQueryParam(searchParams, 'page', params?.page)
       setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'ownerUserId', params?.ownerUserId)
       setQueryParam(searchParams, 'latitude', params?.latitude)
       setQueryParam(searchParams, 'longitude', params?.longitude)
       setQueryParam(searchParams, 'radiusMiles', params?.radiusMiles)
@@ -628,19 +631,16 @@ export const stores = {
       setQueryParam(searchParams, 'order', params?.order)
 
       const query = searchParams.toString()
-      const url = `${getApiBaseUrl()}/stores${query ? `?${query}` : ''}`
+      const path = `/stores${query ? `?${query}` : ''}`
+      const fullUrl = `${getApiBaseUrl()}${path}`
       if (import.meta.env.MODE === 'development') {
-        console.log('[API] -> GET ' + url)
+        console.log('[API] -> GET ' + fullUrl)
       }
 
-      const result = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-        },
-      })
+      const result = await authGet(path)
 
       if (import.meta.env.MODE === 'development') {
-        console.log('[API] <- ' + result.status + ' ' + url)
+        console.log('[API] <- ' + result.status + ' ' + fullUrl)
       }
 
       if (!result.ok) {
@@ -667,11 +667,22 @@ export const stores = {
   /**
    * List stores
    */
-  list: async (params?: { page?: string; limit?: string; latitude?: number; longitude?: number; radiusMiles?: number; isPublished?: string; sortBy?: string; order?: string }): Promise<Store[]> => {
+  list: async (params?: {
+    page?: string
+    limit?: string
+    ownerUserId?: string
+    latitude?: number
+    longitude?: number
+    radiusMiles?: number
+    isPublished?: string
+    sortBy?: string
+    order?: string
+  }): Promise<Store[]> => {
     const response = await handleRequest(async () => {
       const searchParams = new URLSearchParams()
       setQueryParam(searchParams, 'page', params?.page)
       setQueryParam(searchParams, 'limit', params?.limit)
+      setQueryParam(searchParams, 'ownerUserId', params?.ownerUserId)
       setQueryParam(searchParams, 'latitude', params?.latitude)
       setQueryParam(searchParams, 'longitude', params?.longitude)
       setQueryParam(searchParams, 'radiusMiles', params?.radiusMiles)
@@ -680,19 +691,16 @@ export const stores = {
       setQueryParam(searchParams, 'order', params?.order)
 
       const query = searchParams.toString()
-      const url = `${getApiBaseUrl()}/stores${query ? `?${query}` : ''}`
+      const path = `/stores${query ? `?${query}` : ''}`
+      const fullUrl = `${getApiBaseUrl()}${path}`
       if (import.meta.env.MODE === 'development') {
-        console.log('[API] -> GET ' + url)
+        console.log('[API] -> GET ' + fullUrl)
       }
 
-      const result = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-        },
-      })
+      const result = await authGet(path)
 
       if (import.meta.env.MODE === 'development') {
-        console.log('[API] <- ' + result.status + ' ' + url)
+        console.log('[API] <- ' + result.status + ' ' + fullUrl)
       }
 
       if (!result.ok) {

@@ -23,8 +23,9 @@ export function useVendorOrders(options: UseVendorOrdersOptions = {}) {
   return useQuery<OrderResponse[]>({
     queryKey: ['vendor-orders', userId, options.status, options.storeId],
     queryFn: async () => {
+      if (!userId) return []
       // Fetch vendor stores once, then fetch orders once. Dedupe by id.
-      const vendorStores = await stores.list()
+      const vendorStores = await stores.list({ ownerUserId: userId })
       
       if (vendorStores.length === 0) {
         return []
@@ -76,7 +77,8 @@ export function usePendingOrderCount(storeId?: string) {
   return useQuery({
     queryKey: ['vendor-pending-orders-count', userId, storeId],
     queryFn: async () => {
-      const vendorStores = await stores.list()
+      if (!userId) return 0
+      const vendorStores = await stores.list({ ownerUserId: userId })
       
       if (vendorStores.length === 0) return 0
 

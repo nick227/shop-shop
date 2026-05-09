@@ -5,7 +5,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores as storesApi } from '@api/apiWrapper'
 import { useAuth } from '@features/auth/hooks/useAuth'
 import { useAuthStore } from '@stores/authStore'
 import { Button, SearchInput, Badge, Spinner } from '@shared/ui/primitives'
@@ -31,7 +31,11 @@ export default function VendorDashboardPage() {
   const { data: storesData, isLoading, error } = useQuery({
     queryKey: ['vendor-stores', currentUser?.id],
     queryFn: async () => {
-      return await apiClient.stores().listStores({ ownerUserId: currentUser?.id } as any)
+      return await storesApi.listPage({
+        ownerUserId: currentUser?.id,
+        page: '1',
+        limit: '100',
+      })
     },
     enabled: !!currentUser?.id,
   })

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores as storesApi } from '@api/apiWrapper'
 import { useAuthStore } from '@stores/authStore'
 
 interface VendorStoreManagerProps {
@@ -15,7 +15,8 @@ export function VendorStoreManager({ onNavigateToVendor, className = '' }: Vendo
 
   const { data: storesData } = useQuery({
     queryKey: ['header-user-stores', user?.id],
-    queryFn: async () => apiClient.stores().listStores({ ownerUserId: user?.id } as any),
+    queryFn: async () =>
+      storesApi.listPage({ ownerUserId: user?.id, page: '1', limit: '50' }),
     enabled: isAuthenticated && !!user?.id && role !== 'VENDOR' && role !== 'ADMIN',
     staleTime: 60_000,
   })

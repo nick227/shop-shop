@@ -1,6 +1,28 @@
 // @ts-nocheck
 import type { StoreFormData } from '@shared/types/types/form-types'
-import type { StoreResponse } from '@api/types'
+import type { CreateStoreInput, StoreResponse } from '@api/types'
+
+/** Optional fields that fail CreateStoreInput regex when sent as "" — omit instead */
+const STORE_PAYLOAD_STRIP_IF_EMPTY: (keyof StoreFormData)[] = [
+  'latitude',
+  'longitude',
+  'deliveryDistance',
+  'deliveryCharge',
+  'commissionRate',
+  'imageUrl',
+]
+
+export function storePayloadFromFormData(formData: StoreFormData): CreateStoreInput {
+  const cleaned = cleanStoreFormData(formData)
+  const payload = { ...cleaned } as Record<string, unknown>
+  for (const key of STORE_PAYLOAD_STRIP_IF_EMPTY) {
+    const v = payload[key]
+    if (typeof v === 'string' && v.trim() === '') {
+      delete payload[key]
+    }
+  }
+  return payload as CreateStoreInput
+}
 
 export function createInitialStoreFormData(): StoreFormData {
   return {
@@ -13,6 +35,7 @@ export function createInitialStoreFormData(): StoreFormData {
     phone: '',
     email: '',
     website: '',
+    imageUrl: '',
     isPublished: false,
     status: 'ACTIVE',
     disabledAt: null,
@@ -45,6 +68,7 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     phone: store.phone ?? '',
     email: store.email ?? '',
     website: store.website ?? '',
+    imageUrl: (store as any).imageUrl ?? '',
     isPublished: store.isPublished ?? false,
     status: (store as any).status ?? 'ACTIVE',
     disabledAt: (store as any).disabledAt ?? null,
@@ -102,7 +126,7 @@ function cleanFormData<T extends Record<string, any>>(
 export function cleanStoreFormData(formData: StoreFormData): StoreFormData {
   return cleanFormData(
     formData,
-    ['name', 'slug', 'description', 'storeType', 'companyName', 'taxId', 'phone', 'email', 'website', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
+    ['name', 'slug', 'description', 'storeType', 'companyName', 'taxId', 'phone', 'email', 'website', 'imageUrl', 'status', 'disabledReason', 'deliveryDistance', 'deliveryCharge', 'latitude', 'longitude', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'addressCountry', 'commissionRate'],
     ['prepTimeMin'],
     ['isPublished', 'deliveryEnabled', 'pickupEnabled']
   )

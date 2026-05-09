@@ -12,7 +12,12 @@ import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
 import type { StoreFormData } from '@api/types'
-import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData } from '@shared/lib/utils/form-utilities'
+import {
+  createInitialStoreFormData,
+  transformStoreToFormData,
+  cleanStoreFormData,
+  storePayloadFromFormData,
+} from '@shared/lib/utils/form-utilities'
 import { authPost } from '@shared/lib/auth/authFetch'
 import { DeleteStoreSection } from './components/DeleteStoreSection'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
@@ -61,7 +66,7 @@ export default function StoreFormPage() {
   const createStoreMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       return await apiClient.stores().createStore({
-        createStoreRequest: data,
+        createStoreRequest: storePayloadFromFormData(data),
       })
     },
     onSuccess: async (result) => {
@@ -104,7 +109,7 @@ export default function StoreFormPage() {
     mutationFn: async (data: typeof formData) => {
       return await apiClient.stores().updateStore({
         id: storeId!,
-        createStoreRequest: data,
+        createStoreRequest: storePayloadFromFormData(data),
       })
     },
     onSuccess: () => {
