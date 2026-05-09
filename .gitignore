@@ -74,6 +74,7 @@ docs/*
 !docs/api/openapi.yaml
 !docs/GO_LIVE_CHECKLIST.md
 !docs/STRIPE_CONNECT_RELEASE_CHECKLIST.md
+!docs/TRACKED_BUGS.md
 src\*.md
 private/
 
