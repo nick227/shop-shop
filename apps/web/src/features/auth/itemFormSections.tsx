@@ -36,6 +36,29 @@ const TAG_SUGGESTIONS = [
   'premium', 'budget-friendly', 'value', 'gourmet'
 ]
 
+function normalizeTags(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return []
+
+  return tags
+    .map((tag) => {
+      if (typeof tag === 'string') return tag
+      if (tag && typeof tag === 'object') {
+        if ('name' in tag && typeof (tag as { name?: unknown }).name === 'string') {
+          return (tag as { name: string }).name
+        }
+        if ('label' in tag && typeof (tag as { label?: unknown }).label === 'string') {
+          return (tag as { label: string }).label
+        }
+        if ('value' in tag && typeof (tag as { value?: unknown }).value === 'string') {
+          return (tag as { value: string }).value
+        }
+      }
+      return ''
+    })
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0)
+}
+
 
 export function createItemFormSections(
   formData: ItemFormData,
@@ -67,6 +90,13 @@ export function createItemFormSections(
                 onChange={(e) => onChange('title', e.target.value)}
                 placeholder="Delicious Menu Item"
                 required
+              />
+              <Input
+                label="Product Thumbnail"
+                value={formData.imageUrl || ''}
+                onChange={(e) => onChange('imageUrl', e.target.value)}
+                placeholder="https://..."
+                helperText="Used as the main item thumbnail (separate from Product Media uploads)"
               />
               
               <Select
@@ -212,13 +242,13 @@ export function createItemFormSections(
                   key={tag}
                   type="button"
                   onClick={() => {
-                    const currentTags = formData.tags || []
+                    const currentTags = normalizeTags(formData.tags)
                     if (!currentTags.includes(tag)) {
                       onChange('tags', [...currentTags, tag])
                     }
                   }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    formData.tags?.includes(tag)
+                    normalizeTags(formData.tags).includes(tag)
                       ? 'bg-blue-500 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
@@ -234,7 +264,7 @@ export function createItemFormSections(
               Custom Tags
             </label>
             <Input
-              value={(formData.tags || []).join(', ')}
+              value={normalizeTags(formData.tags).join(', ')}
               onChange={(e) => {
                 const tags = e.target.value
                   .split(',')

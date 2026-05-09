@@ -31,6 +31,8 @@ export default function ItemFormPage() {
     stockQty: '',
     sortIndex: 0,
     tags: [],
+    imageUrl: '',
+    optionsJson: {},
   })
 
   // Fetch store for context
@@ -65,6 +67,8 @@ export default function ItemFormPage() {
         stockQty: item.stockQty?.toString() || '',
         sortIndex: item.sortIndex ?? 0,
         tags: item.tags || [],
+        imageUrl: item.optionsJson?.imageUrl || item.imageUrl || '',
+        optionsJson: item.optionsJson || {},
       })
     }
   }, [item])
@@ -85,6 +89,7 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
+          optionsJson: { ...(data.optionsJson || {}), imageUrl: data.imageUrl || undefined },
         },
       })
     },
@@ -115,6 +120,7 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
+          optionsJson: { ...(data.optionsJson || {}), imageUrl: data.imageUrl || undefined },
         },
       })
     },
