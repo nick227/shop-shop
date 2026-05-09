@@ -1,18 +1,19 @@
+import { config as loadEnv } from 'dotenv'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../..')
+loadEnv({ path: path.join(repoRoot, '.env') })
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'mysql://root@localhost:3306/delivery_app'
+}
 
 export default defineConfig({
-  // Directory aliases so subpaths work (e.g. @packages/schemas/core, @packages/db/generated/client)
   resolve: {
     alias: {
-      '@packages/db': path.join(repoRoot, 'packages/db/src'),
-      // Directory (not `index.ts`) so subpaths like `@packages/schemas/core` resolve
       '@packages/schemas': path.join(repoRoot, 'packages/schemas/src'),
-      /** Vitest only: barrel `@packages/schemas` drops some named exports; route imports this file */
       '@packages/schemas-river-dto': path.join(
         repoRoot,
         'packages/schemas/src/dtos/river.dto.ts',
@@ -46,4 +47,3 @@ export default defineConfig({
     exclude: ['node_modules/**'],
   },
 })
-
