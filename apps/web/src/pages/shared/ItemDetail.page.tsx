@@ -103,9 +103,9 @@ export default function ItemDetailPage() {
       <div className="flex flex-col gap-5">
 
         {/* Title + Price */}
-        <div className="flex gap-4 justify-between items-start">
+        <div className="flex flex-wrap gap-4 justify-between items-start">
           <div>
-            <h1 className="mb-2 text-2xl font-bold tracking-tight">{item.title}</h1>
+            <h1 className="mb-2 text-6xl font-bold tracking-tight">{item.title}</h1>
             <div className="flex flex-wrap gap-2">
               {item.isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
               {!item.isActive && <Badge variant="warning">Inactive</Badge>}

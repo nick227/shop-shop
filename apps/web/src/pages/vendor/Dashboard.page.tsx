@@ -4,10 +4,7 @@
  */
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { stores as storesApi } from '@api/apiWrapper'
 import { useAuth } from '@features/auth/hooks/useAuth'
-import { useAuthStore } from '@stores/authStore'
 import { Button, SearchInput, Badge, Spinner } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
@@ -18,29 +15,17 @@ import type { StoreResponse } from '@api/types'
 import { useHaptics } from '@shared/hooks/useHaptics'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
+import { useVendorStores } from '@shared/hooks/hooks/vendor'
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const persistedUser = useAuthStore((state) => state.user)
-  const currentUser = user ?? persistedUser
   const [searchQuery, setSearchQuery] = useState('')
   const { selectedStoreId, setSelectedStoreId } = useVendorActiveStore()
 
-  // Fetch stores owned by the signed-in user. Store creation is the vendor conversion event.
-  const { data: storesData, isLoading, error } = useQuery({
-    queryKey: ['vendor-stores', currentUser?.id],
-    queryFn: async () => {
-      return await storesApi.listPage({
-        ownerUserId: currentUser?.id,
-        page: '1',
-        limit: '100',
-      })
-    },
-    enabled: !!currentUser?.id,
-  })
-
-  const stores = (storesData?.data ?? []) as unknown as StoreResponse[]
+  // Uses /team/me/stores which handles all roles: ADMIN gets all stores,
+  // VENDOR gets owned + team-member stores.
+  const { data: stores = [], isLoading, error } = useVendorStores()
 
   // Filter stores by search query, active store floats to first position
   // Must be above early returns to satisfy rules of hooks

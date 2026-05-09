@@ -145,7 +145,7 @@ function KitchenContainer() {
       {menuSections.length > 0 && menuSections.map((section) => (
         <section key={section.label}>
           <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {section.items.map((item) => (
               <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
             ))}

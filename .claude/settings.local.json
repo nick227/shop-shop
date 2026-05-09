@@ -37,7 +37,10 @@
       "Bash(git -C \"c:/wamp64/www/shop-shop\" diff HEAD apps/server/src/routes/store-readiness.route.ts apps/server/src/routes/team.route.ts)",
       "Bash(cd /mnt/c/wamp64/www/shop-shop/packages/db && npx prisma migrate dev --name add_store_youtube_channel 2>&1)",
       "Read(//mnt/c/wamp64/www/shop-shop/packages/**)",
-      "PowerShell(Set-Location \"c:\\\\wamp64\\\\www\\\\shop-shop\\\\packages\\\\db\"; $env:FORCE_COLOR = \"0\"; npx prisma migrate dev --name add_store_youtube_channel --create-only 2>&1)"
+      "PowerShell(Set-Location \"c:\\\\wamp64\\\\www\\\\shop-shop\\\\packages\\\\db\"; $env:FORCE_COLOR = \"0\"; npx prisma migrate dev --name add_store_youtube_channel --create-only 2>&1)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -X POST http://localhost:3005/auth/v1/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@seed.local\\\\\",\\\\\"password\\\\\":\\\\\"Test123456!\\\\\"}\")",
+      "Bash(curl -s http://localhost:3005/team/me/stores -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkNTcwOWYyOS0xN2ViLTRlODUtYWJiOS0xMGY5NzVmZGU0ZmEiLCJlbWFpbCI6ImFkbWluQHNlZWQubG9jYWwiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzgzNDAwMDYsImV4cCI6MTc3ODk0NDgwNn0.dAheDBN5O1m8EyFqz0G9Saz-bwA6kdeK7ClKWYd9bu8')"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"

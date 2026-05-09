@@ -72,20 +72,16 @@ export async function authFetch<T = unknown>(
       const errorMessage = errorResponse.error || errorResponse.message || ''
       
             
-      // Only logout for specific token invalidation errors
       const lower = errorMessage.toLowerCase()
       const isTokenInvalid = lower.includes('invalid token') ||
                          lower.includes('token invalid') ||
                          lower.includes('expired token') ||
                          lower.includes('token expired') ||
                          lower.includes('jwt expired') ||
-                         lower.includes('jwt malformed')
-      
-      // Be more conservative - only logout for clear token invalidation
-      // Also check if error message is not just a generic "Unauthorized"
-      const isGenericUnauthorized = lower === 'unauthorized' || lower === 'authentication required'
-      
-      if (isTokenInvalid && !isGenericUnauthorized) {
+                         lower.includes('jwt malformed') ||
+                         lower.includes('user not found')
+
+      if (isTokenInvalid) {
         useAuthStore.getState().clearAuth()
         window.dispatchEvent(new CustomEvent('auth:logout'))
       }

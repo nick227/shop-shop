@@ -13,7 +13,7 @@ import { StoreHoursEditor } from './components/StoreHoursEditor'
 
 export function createStoreFormSections(
   formData: StoreFormData,
-  onChange: (field: keyof StoreFormData, value: string | number | boolean) => void,
+  onChange: (field: keyof StoreFormData, value: string | number | boolean | any) => void,
   isEdit: boolean,
   storeId?: string,
   scopedMediaQueue?: {
@@ -328,6 +328,61 @@ export function createStoreFormSections(
       ),
     },
     {
+      id: 'delivery',
+      icon: '🚚',
+      title: 'Delivery Capability',
+      description: 'Choose if you offer delivery to customers',
+      content: (
+        <div className="space-y-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-blue-900 mb-2">Delivery Options</h3>
+            <p className="text-sm text-blue-700 mb-4">
+              Select which fulfillment options you offer. Stores without delivery will only appear in pickup searches and won't be included in delivery routing.
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="delivery-enabled"
+                  checked={formData.deliveryEnabled}
+                  onChange={(e) => onChange('deliveryEnabled', e.target.checked)}
+                />
+                <label htmlFor="delivery-enabled" className="text-sm font-medium text-gray-900">
+                  <span className="font-semibold">I offer delivery</span>
+                  <span className="block text-xs text-gray-500 mt-1">
+                    Customers can order delivery from your store
+                  </span>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="pickup-enabled"
+                  checked={formData.pickupEnabled}
+                  onChange={(e) => onChange('pickupEnabled', e.target.checked)}
+                />
+                <label htmlFor="pickup-enabled" className="text-sm font-medium text-gray-900">
+                  <span className="font-semibold">I offer pickup</span>
+                  <span className="block text-xs text-gray-500 mt-1">
+                    Customers can pick up orders from your store
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          {formData.deliveryEnabled && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-yellow-900 mb-2">Delivery Requirements</h4>
+              <p className="text-xs text-yellow-700">
+                To enable delivery, you'll need to set delivery hours, delivery zones, and delivery fees in the next sections.
+              </p>
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
       id: 'hours',
       icon: '🕐',
       title: 'Store Hours',
@@ -336,6 +391,7 @@ export function createStoreFormSections(
         <StoreHoursEditor
           value={formData.hoursJson as any}
           onChange={(hours) => onChange('hoursJson', hours)}
+          deliveryEnabled={formData.deliveryEnabled}
         />
       )
     },

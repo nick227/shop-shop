@@ -314,6 +314,17 @@ export default function CheckoutPage() {
               <p className="text-sm text-muted-foreground text-center">
                 Review your order, then proceed to payment
               </p>
+              {/* Multi-Store Warning */}
+              {cart && cart.items.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-yellow-800">⚠️</span>
+                    <span className="text-sm font-medium text-yellow-800">
+                      Each store fulfills its own order separately. You may receive multiple deliveries.
+                    </span>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>

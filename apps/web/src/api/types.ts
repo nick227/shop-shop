@@ -94,6 +94,16 @@ export interface StoreFormData {
   addressCountry: string
   commissionRate?: string
   hoursJson?: any // Store hours configuration
+  // Social media fields
+  customDomain?: string
+  socialYoutube?: string
+  socialInstagram?: string
+  socialFacebook?: string
+  socialTiktok?: string
+  socialTwitter?: string
+  socialSnapchat?: string
+  socialWhatsapp?: string
+  socialDiscord?: string
 }
 
 export interface StoreUpdateFormData {

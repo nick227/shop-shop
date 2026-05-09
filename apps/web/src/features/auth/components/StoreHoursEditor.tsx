@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Clock, Globe, Package } from 'lucide-react'
+import { Clock, Globe, Store, Truck } from 'lucide-react'
 import { Input, Checkbox } from '@shared/ui/primitives'
+
 // Temporary types until we update the main types file
 interface DayHours {
   open: string
@@ -18,6 +19,7 @@ interface HoursJson {
 interface StoreHoursEditorProps {
   value?: HoursJson
   onChange: (hours: HoursJson) => void
+  deliveryEnabled?: boolean
   className?: string
 }
 
@@ -65,7 +67,8 @@ function parseTimeFromInput(timeStr: string): string {
   return `${hour.toString().padStart(2, '0')}:${minutes}`
 }
 
-export function StoreHoursEditor({ value, onChange, className = '' }: StoreHoursEditorProps) {
+export function StoreHoursEditor({ value, onChange, deliveryEnabled = true, className = '' }: StoreHoursEditorProps) {
+  const [activeTab, setActiveTab] = useState<'store' | 'delivery'>('store')
   const [useSameHours, setUseSameHours] = useState(
     !value?.deliveryHours || JSON.stringify(value?.storeHours) === JSON.stringify(value?.deliveryHours)
   )
@@ -126,6 +129,62 @@ export function StoreHoursEditor({ value, onChange, className = '' }: StoreHours
     updateHours(type, allDays)
   }
 
+  const renderHoursGrid = (type: 'storeHours' | 'deliveryHours') => {
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        {DAYS.map(day => {
+          const hours = value?.[type]?.[day] as DayHours | undefined
+          const isOpen = !hours?.closed
+          
+          return (
+            <div key={day} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <div className="w-16 text-sm font-medium">
+                {DAY_LABELS[day as keyof typeof DAY_LABELS]}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={isOpen}
+                  onChange={() => toggleDay(day, type)}
+                />
+                
+                {isOpen && (
+                  <>
+                    <input
+                      type="text"
+                      value={formatTimeForInput(hours?.open || '09:00')}
+                      onChange={(e) => updateDayHours(day, type, {
+                        open: parseTimeFromInput(e.target.value),
+                        close: hours?.close ?? '17:00',
+                        closed: hours?.closed ?? false,
+                      })}
+                      placeholder="9:00 AM"
+                      className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                    />
+                    
+                    <span className="text-gray-500">to</span>
+                    
+                    <input
+                      type="text"
+                      value={formatTimeForInput(hours?.close || '17:00')}
+                      onChange={(e) => updateDayHours(day, type, {
+                        open: hours?.open ?? '09:00',
+                        close: parseTimeFromInput(e.target.value),
+                        closed: hours?.closed ?? false,
+                      })}
+                      placeholder="5:00 PM"
+                      className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Timezone Selection */}
@@ -147,173 +206,131 @@ export function StoreHoursEditor({ value, onChange, className = '' }: StoreHours
         </select>
       </div>
 
-      {/* Store Hours */}
+      {/* Hours Tabs */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <Clock className="w-4 h-4" />
-          Store Hours
-        </div>
-        
-        <div className="grid grid-cols-1 gap-3">
-          {DAYS.map(day => {
-            const hours = value?.storeHours?.[day] as DayHours | undefined
-            const isOpen = !hours?.closed
-            
-            return (
-              <div key={day} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                <div className="w-16 text-sm font-medium">
-                  {DAY_LABELS[day]}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={isOpen}
-                    onChange={() => toggleDay(day, 'storeHours')}
-                  />
-                  
-                  {isOpen && (
-                    <>
-                      <input
-                        type="text"
-                        value={formatTimeForInput(hours?.open || '09:00')}
-                        onChange={(e) => updateDayHours(day, 'storeHours', {
-                          open: parseTimeFromInput(e.target.value),
-                          close: hours?.close ?? '17:00',
-                          closed: hours?.closed ?? false,
-                        })}
-                        placeholder="9:00 AM"
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                      />
-                      
-                      <span className="text-gray-500">to</span>
-                      
-                      <input
-                        type="text"
-                        value={formatTimeForInput(hours?.close || '17:00')}
-                        onChange={(e) => updateDayHours(day, 'storeHours', {
-                          open: hours?.open ?? '09:00',
-                          close: parseTimeFromInput(e.target.value),
-                          closed: hours?.closed ?? false,
-                        })}
-                        placeholder="5:00 PM"
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                      />
-                    </>
-                  )}
-                </div>
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('store')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'store'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Store className="w-4 h-4" />
+                Store Hours
               </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Delivery Hours */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Package className="w-4 h-4" />
-            Delivery Hours
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={useSameHours}
-                onChange={(e) => {
-                  const checked = e.target.checked
-                  setUseSameHours(checked)
-                  if (checked && value?.storeHours) {
-                    copyStoreToDelivery()
-                  }
-                }}
-              />
-              Same as store hours
-            </label>
+            </button>
             
-            {useSameHours && (
+            {deliveryEnabled && (
               <button
-                type="button"
-                onClick={copyStoreToDelivery}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                onClick={() => setActiveTab('delivery')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'delivery'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
               >
-                Copy from store
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Delivery Hours
+                </div>
               </button>
             )}
-          </div>
+          </nav>
         </div>
-        
-        {!useSameHours && (
-          <div className="grid grid-cols-1 gap-3">
-            {DAYS.map(day => {
-              const hours = value?.deliveryHours?.[day] as DayHours | undefined
-              const isOpen = !hours?.closed
+
+        {/* Store Hours Tab */}
+        {activeTab === 'store' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Clock className="w-4 h-4" />
+              Store Operating Hours
+            </div>
+            
+            {renderHoursGrid('storeHours')}
+            
+            {/* Quick Actions */}
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setAllDays('storeHours', { open: '09:00', close: '17:00', closed: false })}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                Set all weekdays (9-5)
+              </button>
               
-              return (
-                <div key={day} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                  <div className="w-16 text-sm font-medium">
-                    {DAY_LABELS[day]}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={isOpen}
-                      onChange={() => toggleDay(day, 'deliveryHours')}
-                    />
-                    
-                    {isOpen && (
-                      <>
-                        <input
-                          type="text"
-                          value={formatTimeForInput(hours?.open || '10:00')}
-                          onChange={(e) => updateDayHours(day, 'deliveryHours', {
-                            open: parseTimeFromInput(e.target.value),
-                            close: hours?.close ?? '21:00',
-                            closed: hours?.closed ?? false,
-                          })}
-                          placeholder="10:00 AM"
-                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                        />
-                        
-                        <span className="text-gray-500">to</span>
-                        
-                        <input
-                          type="text"
-                          value={formatTimeForInput(hours?.close || '21:00')}
-                          onChange={(e) => updateDayHours(day, 'deliveryHours', {
-                            open: hours?.open ?? '10:00',
-                            close: parseTimeFromInput(e.target.value),
-                            closed: hours?.closed ?? false,
-                          })}
-                          placeholder="9:00 PM"
-                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+              <button
+                type="button"
+                onClick={() => setAllDays('storeHours', { open: '10:00', close: '18:00', closed: false })}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                Set all weekends (10-6)
+              </button>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Quick Actions */}
-      <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={() => setAllDays('storeHours', { open: '09:00', close: '17:00', closed: false })}
-          className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-        >
-          Set all weekdays (9-5)
-        </button>
-        
-        <button
-          type="button"
-          onClick={() => setAllDays('storeHours', { open: '09:00', close: '17:00', closed: false })}
-          className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-        >
-          Set all weekends (10-6)
-        </button>
+        {/* Delivery Hours Tab */}
+        {activeTab === 'delivery' && deliveryEnabled && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Truck className="w-4 h-4" />
+                Delivery Hours
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={useSameHours}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setUseSameHours(checked)
+                      if (checked && value?.storeHours) {
+                        copyStoreToDelivery()
+                      }
+                    }}
+                  />
+                  Same as store hours
+                </label>
+                
+                {useSameHours && (
+                  <button
+                    type="button"
+                    onClick={copyStoreToDelivery}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Copy from store
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {!useSameHours && renderHoursGrid('deliveryHours')}
+            
+            {/* Quick Actions */}
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setAllDays('deliveryHours', { open: '10:00', close: '20:00', closed: false })}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                Set all weekdays (10-8)
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setAllDays('deliveryHours', { open: '11:00', close: '19:00', closed: false })}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                Set all weekends (11-7)
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
