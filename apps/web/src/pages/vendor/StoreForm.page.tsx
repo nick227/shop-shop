@@ -12,12 +12,7 @@ import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
 import type { StoreFormData } from '@api/types'
-import {
-  createInitialStoreFormData,
-  transformStoreToFormData,
-  cleanStoreFormData,
-  storePayloadFromFormData,
-} from '@shared/lib/utils/form-utilities'
+import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData, storePayloadFromFormData } from '@shared/lib/utils/form-utilities'
 import { authPost } from '@shared/lib/auth/authFetch'
 import { DeleteStoreSection } from './components/DeleteStoreSection'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
@@ -127,7 +122,6 @@ export default function StoreFormPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Dynamic form data cleaning - no manual field listing!
     const cleanedData = cleanStoreFormData(formData)
 
     if (isEdit) {
