@@ -8,14 +8,10 @@ From repo root:
 
 ```powershell
 pnpm typecheck
+pnpm test:stripe-smoke
 ```
 
-Stripe-related Vitest bundle (Connect gate, webhook raw body + signature, PI → PAID/PLACED, checkout):
-
-```powershell
-Set-Location apps\server
-pnpm exec vitest run src/__tests__/payment-connect-gate.test.ts src/__tests__/stripe-payment-flow.test.ts src/routes/stripe-webhook.route.test.ts src/routes/checkout.route.test.ts
-```
+`test:stripe-smoke` runs Connect gate, webhook signature, PI → PAID/PLACED, and checkout route tests in `@apps/server`.
 
 All of the above should pass before you treat staging manual steps as authoritative.
 
@@ -48,7 +44,7 @@ Set on the **API** process (and build-time for web where noted):
 
 ## Stripe Dashboard (staging secret key)
 
-- [ ] Webhook endpoint URL is **reachable** (HTTPS, correct path): `POST https://<your-api-host>/webhooks/stripe`.
+- [ ] Webhook endpoint is reachable over **HTTPS**: `POST https://<your-api-host>/webhooks/stripe`
 - [ ] Webhook uses **signing secret** matching `STRIPE_WEBHOOK_SECRET`.
 - [ ] Events subscribed include at least:
   - [ ] `payment_intent.succeeded`
@@ -84,9 +80,9 @@ Do this once per staging deploy or before go-live sign-off.
 6. **Refresh:** If you hit refresh mid-flow, `/vendor/connect/refresh` should load.
 7. **Status sync:** Call or trigger **GET /payments/connect/:storeId/status** (vendor UI usually does this) — confirm in DB or API response: `stripeChargesEnabled` true when Stripe shows charges enabled.
 8. **Customer:** As a **different** user, add cart items from that store and open checkout.
-9. **Blocked path:** Temporarily clear `stripeChargesEnabled` in DB (or use a second store never onboarded) — card flow should return **402** and the web UI should show the friendly “not accepting online card payments yet” style message, not only “Payment failed”.
+9. **Blocked path:** Temporarily clear `stripeChargesEnabled` in DB (or use a second store never onboarded) — card flow should return **402** and the customer UI must explain that **online card payments are not available** (not a generic “Payment failed” only).
 10. **Happy path:** Restore a **ready** store — pay with card (`4242…`). In Stripe Dashboard → PaymentIntent → confirm **`transfer_data.destination`** is the connected account id.
-11. **Webhook:** Within seconds, order is **PAID** + **PLACED**; vendor order list and customer receipt show the order (no reliance on sync PAID at checkout).
+11. **Webhook / order state:** After `payment_intent.succeeded`, confirm in DB or UI: **`paymentStatus` = PAID**, **`status` = PLACED**, **`stripePaymentIntentId`** set; vendor sees the order; customer sees confirmation/receipt (checkout alone does not mark PAID).
 12. **Idempotency:** In Stripe Dashboard → Developers → Events, **resend** the same `payment_intent.succeeded` — order should not duplicate side effects (Vitest also covers this).
 
 ## Vendor flow (one test store)
@@ -99,9 +95,13 @@ Do this once per staging deploy or before go-live sign-off.
 
 ## Customer checkout
 
-- [ ] **Non-connected / charges disabled** store: checkout returns **402**; UI shows a clear message (not generic “Payment failed” only).
+- [ ] **Store without Stripe Connect / card rails not ready:** API returns **402** for card create-intent **and** the customer sees **friendly checkout-blocked copy** (e.g. store not accepting online cards yet), **not** only a generic payment failure.
 - [ ] **Connected + charges enabled** test store: customer completes **card** order; PaymentIntent includes **`transfer_data.destination`** (Stripe Dashboard).
-- [ ] Webhook **`payment_intent.succeeded`**: order becomes **`PAID`** + **`PLACED`**; vendor realtime/order list shows it.
+- [ ] Webhook **`payment_intent.succeeded`** — staging drift check:
+  - [ ] Order **`paymentStatus`** = **PAID**, **`status`** = **PLACED**
+  - [ ] **`stripePaymentIntentId`** saved on the order row
+  - [ ] Vendor sees the order (list / dashboard)
+  - [ ] Customer sees order confirmation / receipt / status
 
 ## Idempotency & duplicates
 
