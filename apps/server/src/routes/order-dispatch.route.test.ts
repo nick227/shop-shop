@@ -129,6 +129,10 @@ describe('Order dispatch route', () => {
 
   it('IN_HOUSE dispatch requires assignedToUserId', async () => {
     const order = await createTestOrder(vendor.id, storeId, { status: 'READY', paymentStatus: 'PAID' })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'STORE_MANAGED_DELIVERY' },
+    })
     const res = await app.inject({
       method: 'POST',
       url: `/api/v1/orders/${order.id}/dispatch`,
@@ -141,6 +145,10 @@ describe('Order dispatch route', () => {
 
   it('IN_HOUSE dispatch rejects non-driver assignee', async () => {
     const order = await createTestOrder(vendor.id, storeId, { status: 'READY', paymentStatus: 'PAID' })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryMode: 'STORE_MANAGED_DELIVERY' },
+    })
     const res = await app.inject({
       method: 'POST',
       url: `/api/v1/orders/${order.id}/dispatch`,

@@ -1,8 +1,16 @@
 # Investigate: Fastify `inject` hang on successful dispatch
 
-**Status:** open  
-**Severity:** test / DX (does not block production dispatch logic)  
-**Bypass:** `apps/server/src/__tests__/delivery-dispatch-lifecycle.test.ts` calls `dispatchOrderDelivery` directly instead of `POST /api/v1/orders/:orderId/dispatch` so the suite stays green.
+**Status:** mitigated for **`POST /api/v1/orders/:orderId/dispatch`** — auth runs **in the route handler** (`await authenticate` + `401` when still unauthenticated), not via **`preHandler: [requireAuth]`**. Vitest `inject` + `requireAuth` preHandler still hangs in this environment (see probes below); other routes are unchanged.
+
+**Severity:** test / DX (dispatch HTTP tests now pass)
+
+**Bypass (still valid for quick service checks):** `apps/server/src/__tests__/delivery-dispatch-lifecycle.test.ts` calls `dispatchOrderDelivery` directly without HTTP.
+
+### Resolution note (order-dispatch only)
+
+- **Resolved for this route** by moving the same behavior as `requireAuth` into the handler: call `authenticate` when `req.user` is missing, then `401 { error: 'Unauthorized' }` if still no user; **`reply.sent`** is respected when `authenticate` already ended the response (missing Bearer, invalid token, etc.).
+- **Root cause** remains likely **`requireAuth` + Fastify `preHandler` + `app.inject`** (vite-node / Windows), not dispatch, Prisma, or `DeliveryJob` serialization.
+- **Do not** globally replace `requireAuth` preHandlers unless the same hang shows up on other routes.
 
 ## Observed behavior
 
@@ -45,7 +53,9 @@ Run: `pnpm --dir apps/server exec vitest run src/routes/order-dispatch.inject-pr
 
 **Outcome (local Vitest):** layers **1–3c pass**; layers **4–6 time out**. Failure aligns with **`requireAuth` registered as `preHandler`**, not with dispatch logic, JSON body, Prisma in the route handler (3c proves handler-side auth + inject can work), or the `/dispatch` URL shape.
 
-**Next steps:** Inspect **`requireAuth` + `preHandler` + `inject`** (Fastify version, double-`send`, `reply.sent`); try **`await authenticate` only inside the route handler** for this route as an experiment; compare with production (`inject` vs real HTTP).
+**Applied:** `order-dispatch.route.ts` uses handler-local auth (same semantics as `requireAuth`), so **`order-dispatch.route.test.ts`** completes under `inject`.
+
+**Still open for other routes:** if **`requireAuth`** stays on `preHandler`, **`inject`** may still hang until upstream Fastify/vite-node behavior is understood.
 
 ## Likely suspects (check in order)
 

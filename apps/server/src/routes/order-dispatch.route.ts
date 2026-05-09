@@ -1,9 +1,8 @@
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { dispatchOrderDelivery, prisma } from '@packages/db'
-import { requireAuth } from '../middleware/rbac.js'
+import { authenticate } from '../middleware/auth.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
-import { VendorErrors } from './vendor/vendorHelpers'
 import { toDeliveryJobResponse } from '../resources/delivery-job.resource.js'
 
 const paramsSchema = z.object({
@@ -34,12 +33,18 @@ async function assertCanDispatchOrder(
 }
 
 export const orderDispatchRoutes = async (app: FastifyInstance) => {
-  app.post('/:orderId/dispatch', {
-    preHandler: [requireAuth],
-  }, async (req, reply) => {
+  app.post('/:orderId/dispatch', async (req, reply) => {
     try {
+      if (!req.user) {
+        await authenticate(req, reply)
+      }
+      if (reply.sent) {
+        return
+      }
+      if (!req.user) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
       const { user } = req
-      if (!user) return VendorErrors.unauthorized(reply)
 
       const paramsParsed = paramsSchema.safeParse(req.params)
       if (!paramsParsed.success) {
