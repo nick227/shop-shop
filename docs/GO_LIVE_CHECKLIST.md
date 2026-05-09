@@ -410,24 +410,25 @@ When exercising **real** DoorDash sandbox credentials (developer dashboard keys,
 
 ### Staging delivery runbook pass (environment-only gate)
 
-Everything below requires a **real environment**: staging URL, **DoorDash sandbox** credentials in that env, and a **public HTTPS** webhook endpoint that DoorDash can reach (confirm delivery in their dashboard or your server logs).
+Requires a **real environment**: deployed **staging** URL, **DoorDash sandbox** credentials on that host, and a **public HTTPS** webhook URL registered with DoorDash (confirm receipt in their dashboard or your server logs).
 
-Do these in order on staging:
+Execute in order:
 
-| # | Step | What “good” looks like |
-|---|------|-------------------------|
-| 1 | **Quote** | Delivery quote succeeds for an eligible cart + dropoff address. |
-| 2 | **Checkout** | Order completes and is eligible for provider dispatch (paid/COD per policy). |
-| 3 | **Mark READY** | Order reaches **READY** through normal vendor flow. |
-| 4 | **Dispatch** | Vendor dispatch runs; job has `providerExternalId` and `trackingUrl`. |
-| 5 | **Webhook / status** | Provider sends webhook to your HTTPS URL; order/job status updates match the event. |
-| 6 | **Customer tracking** | Customer tracking UI (and/or API) reflects status after webhook-driven updates. |
-| 7 | **Admin event viewer** | Provider/webhook events appear in the admin delivery event viewer. |
-| 8 | **Failed / canceled** | Run or simulate failure/cancel; UI shows the destructive/canceled path correctly (no fake “still delivering”). |
+- [ ] **1. Deploy staging** — App and API reachable at the staging hostname you will use for checkout and webhooks.
+- [ ] **2. Set real DoorDash sandbox env vars** — Sandbox client IDs/secrets and related `DOORDASH_*` values on staging (secrets manager or host env; match `.env.example`).
+- [ ] **3. Register public HTTPS DoorDash webhook** — Endpoint URL and auth (Basic or HMAC) match staging config; TLS valid.
+- [ ] **4. Run quote → checkout → READY → dispatch** — Full happy path through vendor flow for a delivery order.
+- [ ] **5. Confirm `providerExternalId` + `trackingUrl`** — Present on the `DeliveryJob` (or equivalent) after dispatch.
+- [ ] **6. Send/receive webhook** — Provider POST returns success; server processes event; order/job status advances as expected.
+- [ ] **7. Confirm customer tracking updates** — Customer tracking UI/API reflects webhook-driven status.
+- [ ] **8. Confirm vendor dispatch panel updates** — Vendor UI reflects dispatch and subsequent provider-driven transitions.
+- [ ] **9. Confirm admin event viewer shows provider event** — Webhook/provider rows visible for the run.
+- [ ] **10. Test failed/canceled state** — Failure or cancel maps to job + UI correctly (no misleading “still active” delivery).
+- [ ] **11. Verify monitoring/alerts checklist** — Complete applicable items under **Delivery monitoring / alerts** for staging (then extend for production).
 
-**Milestone when complete:** **Delivery Provider Platform: staging-proven** — feature correctness for the provider path is validated outside CI.
+**When steps 1–11 pass, label:** **Delivery Provider Platform: staging-proven**.
 
-After staging-proven, remaining **production readiness** is **ops**: repeat credential/URL validation on production, confirm **Delivery monitoring / alerts**, and run the same UI spots once on prod if policy requires it.
+After **staging-proven**, remaining **production readiness** is **ops**: production URLs/credentials, DoorDash production registration, full monitoring rollout, and optional one-time prod verification—not feature development unless staging exposed a gap.
 
 ---
 
