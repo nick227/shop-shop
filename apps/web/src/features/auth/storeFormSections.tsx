@@ -7,12 +7,17 @@ import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import type { FormSection } from '@shared/ui/templates'
 import type { StoreFormData } from '@api/types'
 import { EnhancedMediaGalleryManager } from '@shared/ui/media'
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 
 export function createStoreFormSections(
   formData: StoreFormData,
   onChange: (field: keyof StoreFormData, value: string | number | boolean) => void,
   isEdit: boolean,
-  storeId?: string
+  storeId?: string,
+  scopedMediaQueue?: {
+    readonly files: readonly File[]
+    onFilesChange: (files: File[]) => void
+  },
 ): FormSection[] {
   const sections: FormSection[] = [
     {
@@ -48,6 +53,22 @@ export function createStoreFormSections(
             </SelectContent>
           </Select>
 
+          <Input
+            label="Store Thumbnail"
+            value={formData.imageUrl || ''}
+            onChange={(e) => onChange('imageUrl', e.target.value)}
+            placeholder="https://..."
+            helperText="Used as the main store thumbnail (separate from Store Media uploads)"
+          />
+          {formData.imageUrl?.trim() ? (
+            <div className="overflow-hidden w-32 h-32 rounded-lg border border-gray-200 bg-muted">
+              <img
+                src={resolveBrowserAssetUrl(formData.imageUrl.trim())}
+                alt=""
+                className="object-cover w-full h-full"
+              />
+            </div>
+          ) : null}
 
           <div>
             <TextArea
@@ -203,7 +224,7 @@ export function createStoreFormSections(
                     alert('Geolocation is not supported by your browser.')
                   }
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md transition-colors hover:bg-blue-600"
               >
                 📍 Allow Location
               </button>
@@ -244,8 +265,6 @@ export function createStoreFormSections(
             type="number"
             value={formData.prepTimeMin.toString()}
             onChange={(e) => onChange('prepTimeMin', Number.parseInt(e.target.value) || 15)}
-            min="5"
-            max="120"
             helperText="⏱️ Average time to prepare orders (shown to customers at checkout)"
           />
 
@@ -277,21 +296,30 @@ export function createStoreFormSections(
     },
   ]
 
-  if (storeId) {
-    sections.push({
-      id: 'media',
-      icon: '📸',
-      title: 'Store Media',
-      description: 'Upload images and videos to showcase your store. The first image will be the primary thumbnail.',
-      content: (
-        <EnhancedMediaGalleryManager
-          storeId={storeId}
-          maxFiles={100}
-        />
-      ),
-    })
-  }
+  // Always show media section for both create and edit
+  // For create: queue files locally until store exists, then StoreForm uploads after POST /stores
+  // For edit: storeId exists, uploads go to API immediately
+  sections.push({
+    id: 'media',
+    icon: '📸',
+    title: 'Store Media',
+    description: isEdit 
+      ? 'Upload images and videos to showcase your store. The first image will be primary thumbnail.'
+      : 'Choose images and videos now — they upload automatically right after you create the store. Then pick a thumbnail.',
+    content: (
+      <EnhancedMediaGalleryManager
+        storeId={storeId}
+        maxFiles={100}
+        thumbnailUrl={formData.imageUrl}
+        onThumbnailChange={(url) =>
+          onChange('imageUrl', url)
+        }
+        thumbnailLabel="Store thumbnail"
+        pendingScopedMediaFiles={scopedMediaQueue ? [...scopedMediaQueue.files] : undefined}
+        onPendingScopedMediaFilesChange={scopedMediaQueue?.onFilesChange}
+      />
+    ),
+  })
 
   return sections
 }
-

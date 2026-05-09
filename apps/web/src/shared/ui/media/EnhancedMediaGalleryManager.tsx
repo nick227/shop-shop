@@ -6,11 +6,21 @@ import { authFetch } from '@shared/lib/auth/authFetch'
 import { readHttpErrorFromResponse } from '@api/readHttpError'
 import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 
+type EntityThumbnailMode = 'store' | 'item'
+
 interface EnhancedMediaGalleryManagerProps {
   storeId?: string
   itemId?: string
   disabled?: boolean
   maxFiles?: number
+
+  thumbnailUrl?: string
+  onThumbnailChange?: (url: string) => void
+  thumbnailLabel?: string
+
+  /** Queued files before store/item exists (create flows); paired with onPendingScopedMediaFilesChange */
+  pendingScopedMediaFiles?: File[]
+  onPendingScopedMediaFilesChange?: (files: File[]) => void
 }
 
 interface MediaItem {
@@ -31,7 +41,14 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
   itemId,
   disabled = false,
   maxFiles = 100,
+  thumbnailUrl,
+  onThumbnailChange,
+  thumbnailLabel,
+  pendingScopedMediaFiles,
+  onPendingScopedMediaFilesChange,
 }) => {
+  const pendingScopedCount = pendingScopedMediaFiles?.length ?? 0
+
   const FAILED_TO_DELETE_MEDIA = 'Failed to delete media'
   const readErrorMessage = async (response: Response, fallbackMessage: string): Promise<string> => {
     const { message, body } = await readHttpErrorFromResponse(response.clone())
@@ -48,6 +65,13 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
   const [searchQuery, setSearchQuery] = useState('')
 
   const loadMedia = useCallback(async () => {
+    // Don't load media if we don't have storeId or itemId
+    if (!storeId && !itemId) {
+      setMedia([])
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(undefined)
@@ -148,6 +172,11 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       const selected = media.find(m => m.id === mediaId)
       if (!selected) throw new Error('Media not found')
 
+      // Update thumbnail URL if callback is provided
+      if (onThumbnailChange) {
+        onThumbnailChange(selected.url)
+      }
+
       const ordered = [
         selected,
         ...media
@@ -207,7 +236,7 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
-  const canUploadMore = media.length < maxFiles
+  const canUploadMore = media.length + pendingScopedCount < maxFiles
   const stats = media.reduce((acc, m) => {
     acc.total += 1
     if (m.kind === 'IMAGE') acc.images += 1
@@ -273,11 +302,43 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
           
           {!disabled && canUploadMore && (
             <div className="text-sm text-blue-600 font-medium">
-              ⭐ First image is primary
+              {onThumbnailChange 
+                ? "⭐ Selected thumbnail."
+                : "⭐ First image is primary"
+              }
             </div>
           )}
         </div>
       </div>
+
+      {/* Current Thumbnail Preview */}
+      {thumbnailUrl && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                Current {thumbnailLabel ?? 'thumbnail'}
+              </h4>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <img
+                    src={resolveBrowserAssetUrl(thumbnailUrl)}
+                    alt="Current thumbnail"
+                    className="w-20 h-20 object-cover rounded-lg border-2 border-green-300 shadow-sm"
+                  />
+                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                    Active
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <div className="font-medium">This is the active thumbnail</div>
+                  <div>Used on cards and analytics</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
@@ -359,8 +420,18 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
           itemId={itemId}
           onUploadComplete={handleUploadComplete}
           onError={handleUploadError}
-          maxFiles={maxFiles - media.length}
+          maxFiles={maxFiles - media.length - pendingScopedCount}
           disabled={disabled}
+          pendingUntilScoped={
+            !storeId &&
+            !itemId &&
+            onPendingScopedMediaFilesChange !== undefined
+              ? {
+                  files: pendingScopedMediaFiles ?? [],
+                  onFilesChange: onPendingScopedMediaFilesChange,
+                }
+              : undefined
+          }
         />
       )}
 
@@ -409,11 +480,16 @@ export const EnhancedMediaGalleryManager: React.FC<EnhancedMediaGalleryManagerPr
             >
               <EnhancedMediaPreviewCard
                 media={item}
-                isPrimary={item.sortIndex === 0}
+                isPrimary={
+                  thumbnailUrl
+                    ? resolveBrowserAssetUrl(thumbnailUrl) === item.url
+                    : item.sortIndex === 0
+                }
                 onDelete={() => void handleDelete(item.id)}
                 onPreview={() => handlePreview(item)}
                 onSetPrimary={() => void handleSetPrimary(item.id)}
                 disabled={disabled}
+                setPrimaryLabel={onThumbnailChange ? 'Set as thumbnail' : 'Set as primary'}
               />
             </div>
           ))}

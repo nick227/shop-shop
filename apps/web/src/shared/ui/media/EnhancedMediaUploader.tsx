@@ -11,6 +11,13 @@ interface EnhancedMediaUploaderProps {
   onError?: (error: string) => void
   maxFiles?: number
   disabled?: boolean
+  /**
+   * While store/item id is missing (e.g. new store form), hold File objects locally and upload after save.
+   */
+  pendingUntilScoped?: {
+    readonly files: readonly File[]
+    onFilesChange: (files: File[]) => void
+  }
 }
 
 interface FilePreview {
@@ -37,12 +44,18 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
   onError,
   maxFiles = 10,
   disabled = false,
+  pendingUntilScoped,
 }) => {
   const [filePreviews, setFilePreviews] = useState<FilePreview[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [showCamera, setShowCamera] = useState(false)
   const previewUrlsRef = useRef<Set<string>>(new Set())
+  const [scopedQueuePreviewUrls, setScopedQueuePreviewUrls] = useState<string[]>([])
+
+  const hasScope = Boolean(storeId || itemId)
+  const useScopedQueue =
+    Boolean(pendingUntilScoped) && !hasScope
 
   const readJsonOrThrow = async <T,>(response: Response): Promise<T> => {
     const text = await response.text().catch(() => '')
@@ -71,6 +84,18 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     }
   }, [])
 
+  useEffect(() => {
+    if (!useScopedQueue || !pendingUntilScoped) {
+      setScopedQueuePreviewUrls([])
+      return
+    }
+    const urls = pendingUntilScoped.files.map((f) => URL.createObjectURL(f))
+    setScopedQueuePreviewUrls(urls)
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u))
+    }
+  }, [pendingUntilScoped?.files, useScopedQueue])
+
   const createFilePreview = async (file: File): Promise<FilePreview> => {
     const previewUrl = URL.createObjectURL(file)
     previewUrlsRef.current.add(previewUrl)
@@ -85,7 +110,17 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
   const handleCameraCapture = useCallback(async (capturedFile: File) => {
     setShowCamera(false)
-    
+
+    if (useScopedQueue && pendingUntilScoped) {
+      const room = maxFiles - pendingUntilScoped.files.length
+      if (room <= 0) {
+        onError?.(`Maximum ${maxFiles} files`)
+        return
+      }
+      pendingUntilScoped.onFilesChange([...pendingUntilScoped.files, capturedFile])
+      return
+    }
+
     try {
       
       // Create preview for captured image
@@ -159,11 +194,18 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
       )
       onError?.(error instanceof Error ? error.message : 'Upload failed')
     }
-  }, [storeId, itemId, onUploadComplete, onError])
+  }, [storeId, itemId, onUploadComplete, onError, useScopedQueue, pendingUntilScoped, maxFiles])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!storeId && !itemId) {
-      onError?.('Store ID or Item ID is required')
+    if (!hasScope) {
+      if (useScopedQueue && pendingUntilScoped) {
+        const room = Math.max(0, maxFiles - pendingUntilScoped.files.length)
+        const slice = acceptedFiles.slice(0, room)
+        if (slice.length === 0) return
+        pendingUntilScoped.onFilesChange([...pendingUntilScoped.files, ...slice])
+        return
+      }
+      onError?.('Store ID or Item ID is required for media uploads')
       return
     }
 
@@ -254,7 +296,11 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     if (uploadedResults.length > 0) {
       onUploadComplete?.(uploadedResults)
     }
-  }, [storeId, itemId, onUploadComplete, onError])
+  }, [storeId, itemId, onUploadComplete, onError, hasScope, useScopedQueue, pendingUntilScoped, maxFiles])
+
+  const queueFull =
+    useScopedQueue &&
+    (pendingUntilScoped?.files.length ?? 0) >= maxFiles
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -264,7 +310,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
     },
     maxFiles,
     maxSize: 50 * 1024 * 1024, // 50MB
-    disabled,
+    disabled: disabled || Boolean(queueFull),
     onDragEnter: () => setIsDragging(true),
     onDragLeave: () => setIsDragging(false),
   })
@@ -289,7 +335,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
   const getStatusIcon = (status: FilePreview['status']) => {
     switch (status) {
       case 'uploading':
-        return <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+        return <div className="w-4 h-4 rounded-full border-2 border-blue-500 animate-spin border-t-transparent" />
       case 'success':
         return <Check className="w-4 h-4 text-green-500" />
       case 'error':
@@ -330,10 +376,12 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
               {isDragging ? 'Drop files here' : 'Upload your media'}
             </div>
             <div className="text-sm text-gray-500">
-              Drag & drop images or videos, or click to browse
+              {useScopedQueue
+                ? 'Files are saved with your browser until you create the store — then they upload automatically.'
+                : 'Drag & drop images or videos, or click to browse'}
             </div>
             <div className="text-xs text-gray-400">
-              <div className="flex items-center justify-center space-x-4">
+              <div className="flex justify-center items-center space-x-4">
                 <span>📷 Images (JPG, PNG, WebP)</span>
                 <span>🎥 Videos (MP4, WebM)</span>
               </div>
@@ -347,25 +395,72 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
           <div className="pt-2 border-t">
             <button
               type="button"
+              disabled={disabled || Boolean(queueFull)}
               onClick={() => setShowCamera(true)}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              className="flex justify-center items-center px-4 py-3 space-x-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-md transition-all duration-200 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg"
             >
               <Camera className="w-5 h-5" />
-              <span className="font-medium">📸 Take Photo with Camera</span>
+              <span className="font-medium">📸 Use Camera</span>
             </button>
           </div>
         </div>
 
         {/* Drag Overlay */}
         {isDragging && (
-          <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-xl flex items-center justify-center">
-            <div className="text-blue-600 font-medium">
-              <div className="text-2xl mb-2">📁</div>
+          <div className="flex absolute inset-0 justify-center items-center bg-blue-500 bg-opacity-10 rounded-xl">
+            <div className="font-medium text-blue-600">
+              <div className="mb-2 text-2xl">📁</div>
               Drop to upload
             </div>
           </div>
         )}
       </div>
+
+      {useScopedQueue && pendingUntilScoped && pendingUntilScoped.files.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+          <div className="text-sm font-medium text-amber-900">
+            {pendingUntilScoped.files.length} file{pendingUntilScoped.files.length !== 1 ? 's' : ''} ready — uploads after you save the store
+          </div>
+          <div className="space-y-2">
+            {pendingUntilScoped.files.map((file, index) => (
+              <div
+                key={`${file.name}-${file.size}-${String(index)}`}
+                className="flex items-center gap-3 rounded-lg border border-amber-100 bg-white p-3"
+              >
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                  {scopedQueuePreviewUrls[index] && file.type.startsWith('image/') ? (
+                    <img
+                      src={scopedQueuePreviewUrls[index]}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Video className="h-6 w-6 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-gray-800">{file.name}</div>
+                  <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 p-1 text-gray-400 hover:text-gray-700"
+                  onClick={() =>
+                    pendingUntilScoped.onFilesChange(
+                      pendingUntilScoped.files.filter((f) => f !== file),
+                    )
+                  }
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* File Previews */}
       {filePreviews.length > 0 && (
@@ -378,18 +473,18 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
             {filePreviews.map((preview) => (
               <div
                 key={preview.file.name}
-                className="flex items-center space-x-3 p-3 bg-white border rounded-lg"
+                className="flex items-center p-3 space-x-3 bg-white rounded-lg border"
               >
                 {/* Thumbnail */}
-                <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="overflow-hidden flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg">
                   {preview.type === 'image' ? (
                     <img
                       src={preview.preview}
                       alt={preview.file.name}
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="flex justify-center items-center w-full h-full">
                       <Video className="w-6 h-6 text-gray-400" />
                     </div>
                   )}
@@ -408,15 +503,15 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
                   <div className="text-xs text-gray-500">
                     {preview.size}
                     {preview.status === 'error' && preview.error && (
-                      <span className="text-red-500 ml-2">{preview.error}</span>
+                      <span className="ml-2 text-red-500">{preview.error}</span>
                     )}
                   </div>
 
                   {/* Progress Bar */}
                   {preview.status === 'uploading' && (
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1">
+                    <div className="mt-2 w-full h-1 bg-gray-200 rounded-full">
                       <div
-                        className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                        className="h-1 bg-blue-500 rounded-full transition-all duration-300"
                         style={{ width: `${uploadProgress[preview.file.name] || 0}%` }}
                       />
                     </div>
@@ -427,7 +522,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
                 {preview.status === 'pending' && (
                   <button
                     onClick={() => removeFile(preview.file)}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-1 text-gray-400 transition-colors hover:text-gray-600"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -440,7 +535,7 @@ export const EnhancedMediaUploader: React.FC<EnhancedMediaUploaderProps> = ({
 
       {/* Success Message */}
       {filePreviews.some(p => p.status === 'success') && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
           <div className="flex items-center space-x-2 text-green-700">
             <Check className="w-4 h-4" />
             <span className="text-sm font-medium">

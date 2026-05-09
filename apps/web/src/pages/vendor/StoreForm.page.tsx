@@ -13,7 +13,9 @@ import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import { createStoreFormSections } from '@features/auth'
 import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData } from '@shared/lib/utils/form-utilities'
+import { authPost } from '@shared/lib/auth/authFetch'
 import { DeleteStoreSection } from './components/DeleteStoreSection'
+import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 
 export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
@@ -21,6 +23,9 @@ export default function StoreFormPage() {
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
   const isEdit = Boolean(storeId)
+
+  /** Files picked on create flow — uploaded in createStoreMutation.onSuccess once `id` exists */
+  const [pendingScopedMediaFiles, setPendingScopedMediaFiles] = useState<File[]>([])
 
   // Form state using SDK-derived initialization - no manual field duplication!
   const [formData, setFormData] = useState<StoreFormData>(createInitialStoreFormData())
@@ -34,12 +39,23 @@ export default function StoreFormPage() {
     enabled: isEdit,
   })
 
+  // Fetch store media for edit mode (SDK strips imageUrl, so we fall back to primary media)
+  const { data: storeMedia } = usePublicMediaList({ storeId: isEdit ? storeId! : undefined })
+
   // Populate form when editing - dynamic transformation from SDK data
   useEffect(() => {
     if (store) {
-      setFormData(transformStoreToFormData(store))
+      const base = transformStoreToFormData(store)
+      // SDK strips imageUrl — fall back to the lowest-sortIndex gallery image
+      if (!base.imageUrl) {
+        const primaryImage = storeMedia
+          ?.filter((m) => m.kind === 'IMAGE')
+          ?.sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))[0]?.url
+        if (primaryImage) base.imageUrl = primaryImage
+      }
+      setFormData(base)
     }
-  }, [store])
+  }, [store, storeMedia])
 
   // Create store mutation
   const createStoreMutation = useMutation({
@@ -48,11 +64,33 @@ export default function StoreFormPage() {
         createStoreRequest: data,
       })
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       updateUser({ role: 'VENDOR' } as any)
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      toast.success('Store created! Add photos below.')
-      const newId = (result as any).id
+      const newId = (result as any).id as string | undefined
+
+      if (newId && pendingScopedMediaFiles.length > 0) {
+        try {
+          for (const file of pendingScopedMediaFiles) {
+            const fd = new FormData()
+            fd.append('file', file)
+            fd.append('storeId', newId)
+            const res = await authPost('/api/media/upload', fd)
+            if (!res.ok) {
+              const errBody = (await res.json().catch(() => ({}))) as { error?: string }
+              throw new Error(errBody.error || `Upload failed (${res.status})`)
+            }
+          }
+          setPendingScopedMediaFiles([])
+          queryClient.invalidateQueries({ queryKey: ['media'] })
+          toast.success('Store created and media uploaded.')
+        } catch {
+          toast.error('Store created, but some media failed to upload. You can add them on the edit page.')
+        }
+      } else {
+        toast.success('Store created! Add photos below.')
+      }
+
       navigate(newId ? `/vendor/stores/${newId}/edit` : '/vendor/dashboard')
     },
     onError: async (error) => {
@@ -108,7 +146,15 @@ export default function StoreFormPage() {
   }
 
   const isSubmitting = createStoreMutation.isPending || updateStoreMutation.isPending
-  const sections = createStoreFormSections(formData, handleChange, isEdit, storeId)
+  const sections = createStoreFormSections(
+    formData,
+    handleChange,
+    isEdit,
+    storeId,
+    isEdit
+      ? undefined
+      : { files: pendingScopedMediaFiles, onFilesChange: setPendingScopedMediaFiles },
+  )
 
   return (
     <FormPageTemplate
