@@ -72,6 +72,7 @@ docs/*
 !docs/api/validation-checklist.md
 !docs/api/versioning.md
 !docs/api/openapi.yaml
+!docs/GO_LIVE_CHECKLIST.md
 src\*.md
 private/
 
