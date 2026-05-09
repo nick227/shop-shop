@@ -6,6 +6,7 @@
  * To regenerate: pnpm gen:wrapper
  */
 
+import type { CreateItemRequest, UpdateItemRequest } from '@packages/sdk'
 import { apiClient } from './client'
 import { readHttpErrorFromResponse } from './readHttpError'
 import { authGet } from '@shared/lib/auth/authFetch'
@@ -42,6 +43,24 @@ function setQueryParam(params: URLSearchParams, key: string, value: string | num
   if (value !== undefined) {
     params.set(key, String(value))
   }
+}
+
+/** OpenAPI/SDK expects `stockQty` as string; Zod UI types use number. SDK marks `stockQty` required on create. */
+function toSdkItemCreateBody(input: CreateItemInput): CreateItemRequest {
+  const raw = input as CreateItemInput & { stockQty?: number | string | null }
+  const { stockQty, ...rest } = raw
+  const qty = stockQty === undefined || stockQty === null ? '0' : String(stockQty)
+  return { ...rest, stockQty: qty } as unknown as CreateItemRequest
+}
+
+function toSdkItemUpdateBody(input: UpdateItemInput): UpdateItemRequest {
+  const raw = input as UpdateItemInput & { stockQty?: number | string | null }
+  const { stockQty, ...rest } = raw
+  const payload: Record<string, unknown> = { ...rest }
+  if (stockQty !== undefined && stockQty !== null) {
+    payload.stockQty = String(stockQty)
+  }
+  return payload as unknown as UpdateItemRequest
 }
 
 /**
@@ -446,7 +465,7 @@ export const items = {
   create: async (input: CreateItemInput): Promise<Item> => {
     const result = await handleRequest(() =>
       apiClient.items().createItem({
-        createItemRequest: input,
+        createItemRequest: toSdkItemCreateBody(input),
       })
     )
     return unwrapData<Item>(result)
@@ -459,7 +478,7 @@ export const items = {
     const result = await handleRequest(() =>
       apiClient.items().updateItem({
         id,
-        updateItemRequest: input,
+        updateItemRequest: toSdkItemUpdateBody(input),
       })
     )
     return unwrapData<Item>(result)

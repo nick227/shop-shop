@@ -25,53 +25,58 @@ export default function ApplicationStatusPage() {
 
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['vendor-application-status'],
-    queryFn: async () => {
+    queryFn: async (): Promise<VendorApplication> => {
       const response = await authGet('/vendor/application-status')
       if (!response.ok) {
         throw new Error('Failed to fetch application status')
       }
-      return response.json()
+      return (await response.json()) as VendorApplication
     },
   })
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case 'PENDING': {
         return {
           icon: Clock,
           color: 'warning',
           title: 'Application Draft',
           description: 'Complete your application and submit it for review.'
         }
+      }
       case 'SUBMITTED':
-      case 'UNDER_REVIEW':
+      case 'UNDER_REVIEW': {
         return {
           icon: Clock,
           color: 'info',
           title: 'Under Review',
           description: 'Your application is being reviewed by our team.'
         }
-      case 'APPROVED':
+      }
+      case 'APPROVED': {
         return {
           icon: CheckCircle,
           color: 'success',
           title: 'Approved!',
           description: 'Congratulations! Your vendor application has been approved.'
         }
-      case 'REJECTED':
+      }
+      case 'REJECTED': {
         return {
           icon: XCircle,
           color: 'destructive',
           title: 'Application Rejected',
           description: 'Your application was not approved at this time.'
         }
-      default:
+      }
+      default: {
         return {
           icon: Clock,
           color: 'warning',
           title: 'Unknown Status',
           description: 'Please contact support for assistance.'
         }
+      }
     }
   }
 

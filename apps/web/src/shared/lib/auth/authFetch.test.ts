@@ -7,7 +7,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { authFetch, authGet, authPost, apiPath } from './authFetch'
-import { useAuthStore } from '@stores/authStore'
 
 // Mock useAuthStore as a hook using vi.hoisted
 const mockUseAuthStore = vi.hoisted(() => ({
@@ -23,7 +22,7 @@ describe('authFetch', () => {
   describe('Authorization Header Attachment', () => {
     it('should attach Authorization header when token is present', async () => {
       const mockToken = 'test-token-123'
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: mockToken,
         user: undefined,
         isAuthenticated: true,
@@ -54,7 +53,7 @@ describe('authFetch', () => {
     })
 
     it('should not attach Authorization header when token is absent', async () => {
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: undefined,
         user: undefined,
         isAuthenticated: false,
@@ -100,7 +99,7 @@ describe('authFetch', () => {
       const mockDispatchEvent = vi.fn()
       global.dispatchEvent = mockDispatchEvent
 
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: 'test-token',
         user: { id: '1', email: 'test@example.com' },
         isAuthenticated: true,
@@ -129,7 +128,7 @@ describe('authFetch', () => {
 
   describe('Content-Type Handling', () => {
     it('should set Content-Type for JSON requests', async () => {
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: 'test-token',
         user: undefined,
         isAuthenticated: true,
@@ -152,7 +151,7 @@ describe('authFetch', () => {
     })
 
     it('should not override Content-Type for FormData', async () => {
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: 'test-token',
         user: undefined,
         isAuthenticated: true,
@@ -185,7 +184,7 @@ describe('API Integration Tests', () => {
       const { fetchTeamMeStores } = await import('../../hooks/hooks/vendor/vendorTeamApi')
       
       const mockToken = 'team-test-token'
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: mockToken,
         user: undefined,
         isAuthenticated: true,
@@ -220,7 +219,7 @@ describe('API Integration Tests', () => {
       const { authPost } = await import('./authFetch')
 
       const mockToken = 'media-test-token'
-      vi.mocked(useAuthStore).getState.mockReturnValue({
+      mockUseAuthStore.getState.mockReturnValue({
         token: mockToken,
         user: undefined,
         isAuthenticated: true,

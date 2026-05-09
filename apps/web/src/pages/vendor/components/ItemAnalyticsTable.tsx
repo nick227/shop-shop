@@ -49,6 +49,19 @@ type SortField = 'revenue' | 'unitsSold' | 'orders' | 'lastSale' | 'title' | 'pr
 type SortOrder = 'asc' | 'desc'
 type Period = '7d' | '30d' | '90d' | 'all'
 
+interface ItemAnalyticsSummaryRow {
+  readonly totalRevenue: number
+  readonly totalUnitsSold: number
+  readonly totalOrders: number
+}
+
+interface ItemAnalyticsApiBody {
+  readonly data: {
+    readonly items: ItemAnalytics[]
+    readonly summary: ItemAnalyticsSummaryRow
+  }
+}
+
 export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readonly<ItemAnalyticsTableProps>) {
   const [sortField, setSortField] = useState<SortField>('revenue')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
@@ -66,9 +79,9 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readon
       })
       const response = await authGet(`/api/items/analytics?${qs.toString()}`)
       if (!response.ok) throw new Error('Failed to fetch analytics')
-      return response.json()
+      return response.json() as Promise<ItemAnalyticsApiBody>
     },
-    refetchInterval: 30000, // Refresh every 30 seconds for near-real-time updates
+    refetchInterval: 30_000, // Refresh every 30 seconds for near-real-time updates
   })
 
   const items = useMemo(() => {
@@ -103,12 +116,15 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readon
 
   const renderTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-      case 'up':
+      case 'up': {
         return <TrendingUp className="w-4 h-4 text-green-600" />
-      case 'down':
+      }
+      case 'down': {
         return <TrendingDown className="w-4 h-4 text-red-600" />
-      case 'stable':
+      }
+      case 'stable': {
         return <Minus className="w-4 h-4 text-gray-500" />
+      }
     }
   }
 
@@ -270,7 +286,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readon
                     </td>
                   </tr>
                 ))
-              ) : items.length === 0 ? (
+              ) : (items.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-8 text-center text-muted-foreground">
                     No items found for the selected period.
@@ -340,9 +356,9 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readon
                         variant={
                           item.isActive && !item.isSoldOut
                             ? 'success'
-                            : item.isSoldOut
+                            : (item.isSoldOut
                             ? 'destructive'
-                            : 'warning'
+                            : 'warning')
                         }
                       >
                         {item.isActive && !item.isSoldOut
@@ -378,7 +394,7 @@ export function ItemAnalyticsTable({ storeId, onEditItem, onDeleteItem }: Readon
                     </td>
                   </tr>
                 ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

@@ -15,7 +15,7 @@ import type { AppError } from '@api/errors'
 import { formatUserFacingApiError } from '@api/readHttpError'
 
 export function StoreList() {
-  const { stores, isLoading, error } = useStoreSearchWithTransformers(undefined) // No location constraint
+  const { stores, isLoading, error } = useStoreSearchWithTransformers(undefined)
   const navigate = useNavigate()
 
   const handleStoreClick = (store: StoreResponse | StoreWithDistance) => {
@@ -32,7 +32,7 @@ export function StoreList() {
   }
 
   if (error) {
-    const details = (error as AppError).details as Record<string, unknown> | undefined
+    const details = (error as AppError).details
     const { message, hint } = formatUserFacingApiError(error, details)
     return (
       <div

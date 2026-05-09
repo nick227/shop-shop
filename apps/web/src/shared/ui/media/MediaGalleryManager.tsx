@@ -50,10 +50,10 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
         throw new Error(message || 'Failed to load media')
       }
 
-      const data = await response.json()
-      setMedia(data.data || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load media')
+      const data = (await response.json()) as { data?: MediaItem[] }
+      setMedia(data.data ?? [])
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : 'Failed to load media')
     } finally {
       setLoading(false)
     }
@@ -79,8 +79,8 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
 
       // Remove from local state
       setMedia(prev => prev.filter(item => item.id !== mediaId))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete media')
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : 'Failed to delete media')
     }
   }
 
@@ -104,8 +104,8 @@ export const MediaGalleryManager: React.FC<MediaGalleryManagerProps> = ({
       }).filter(Boolean) as MediaItem[]
 
       setMedia(reorderedMedia)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reorder media')
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : 'Failed to reorder media')
     }
   }
 

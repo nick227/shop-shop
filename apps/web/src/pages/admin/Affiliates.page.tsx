@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@stores/authStore'
 import { authFetch } from '@shared/lib/auth/authFetch'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
@@ -100,7 +101,7 @@ export default function AdminAffiliatesPage() {
         <div className="flex min-h-[300px] items-center justify-center">
           <Spinner size="large" />
         </div>
-      ) : affiliates.length === 0 ? (
+      ) : (affiliates.length === 0 ? (
         <EmptyState
           icon={UserCheck}
           title="No affiliates found"
@@ -171,7 +172,7 @@ export default function AdminAffiliatesPage() {
                     {a.status !== 'TERMINATED' && (
                       <Button
                         size="small"
-                        variant="destructive"
+                        variant="danger"
                         onClick={() =>
                           updateStatusMutation.mutate({ id: a.id as string, status: 'TERMINATED' })
                         }
@@ -185,7 +186,7 @@ export default function AdminAffiliatesPage() {
             )
           })}
         </div>
-      )}
+      ))}
     </PageShell>
   )
 }
