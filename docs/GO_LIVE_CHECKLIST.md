@@ -73,6 +73,9 @@ Each item must be **true** before launch. Short statements only; expand in runbo
 52. Consent banners or marketing opt-in reflect actual email/SMS usage.
 53. Data retention windows are defined for logs, orders, and user profiles.
 54. Database migrations for launch have been applied with a rollback plan.
+    - **Railway MVP policy:** migrations are run manually from Railway shell before/after each deploy.
+      Command: `pnpm --filter @packages/db migrate:deploy`
+      Never use `prisma migrate dev` in Railway/prod.
 55. Seed or demo data is absent from production databases.
 56. Error pages and logs do not expose stack traces or secrets to end users.
 57. Customer-visible URLs do not leak internal IDs unnecessarily (acceptable risk documented).
