@@ -196,7 +196,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         },
         // Affiliate referral redirect (public);
         {
-          path: '/r/:referralCode',
+          path: '/r/:slugOrCode',
           element: lazyRoute(ReferralRedirectPage),
         },
         // Affiliate pending route (outside layout — no sidebar needed for pending state)

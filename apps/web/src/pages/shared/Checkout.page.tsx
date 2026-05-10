@@ -122,6 +122,7 @@ export default function CheckoutPage() {
   const completeCheckoutSession = useCallback(
     async (sessionId: string, payload: CheckoutPaymentPayload): Promise<CompleteCheckoutResponse> => {
       const token = payload.rail === 'COD' ? 'cod' : payload.paymentMethodId
+      const affiliateReferralCode = localStorage.getItem('affiliateReferralCode') || undefined
       return apiClient.checkout.complete({
         sessionId,
         paymentMethod: {
@@ -130,6 +131,7 @@ export default function CheckoutPage() {
         },
         paymentRail: payload.rail,
         ...(tipAmount > 0 ? { tipAmount } : {}),
+        ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
       })
     },
     [tipAmount],
@@ -157,6 +159,10 @@ export default function CheckoutPage() {
       const orderId = completion.order.id
       toast.success('Order placed successfully!')
       finalizeSuccessfulCheckout()
+      // Attribution has now been snapshotted onto the user/order; clear the local cache
+      // so a single referral link only attributes once.
+      localStorage.removeItem('affiliateReferralCode')
+      localStorage.removeItem('affiliateReferralId')
       navigate('/orders/' + orderId)
     } catch (error: unknown) {
       const appError = await handleApiError(error)

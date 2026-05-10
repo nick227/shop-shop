@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { prisma, processOrderPayment, publishOrderCreated } from '@packages/db'
+import { prisma, processOrderPayment, publishOrderCreated, getAffiliateByReferralCode } from '@packages/db'
 import { OrderDomain } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
@@ -69,6 +69,13 @@ export type CompleteCheckoutInput = {
   promoCode?: string
   /** CARD = Stripe; COD = pay at pickup/delivery (requires ENABLE_COD_PAYMENTS). */
   paymentRail?: 'CARD' | 'COD'
+  /**
+   * Optional referral code captured client-side (e.g. from /r/:slugOrCode landing).
+   * If the buyer is currently unattributed, server snaps it onto the user inside
+   * the order tx so all downstream commission paths use the same attribution.
+   * Ignored if the user is already attributed.
+   */
+  affiliateReferralCode?: string
 }
 
 function resolvePaymentRail(input: CompleteCheckoutInput): 'CARD' | 'COD' {
@@ -180,16 +187,48 @@ export async function completeCheckout(userId: string | undefined, input: Comple
 
   const orderStatusInitial = rail === 'COD' ? 'PLACED' : 'PENDING_PAYMENT'
 
+  // Phase 4A — pre-resolve any client-supplied referral code OUTSIDE the tx.
+  // Lookups against unique columns are cheap and let us keep the order tx tight.
+  // We only honor the code if the buyer is currently unattributed (checked in tx).
+  const candidateReferralCode = input.affiliateReferralCode?.trim().toUpperCase()
+  const candidateAffiliate = candidateReferralCode
+    ? await getAffiliateByReferralCode(candidateReferralCode)
+    : null
+  const candidateIsUsable =
+    candidateAffiliate != null && candidateAffiliate.status === 'ACTIVE'
+
   // Phase 1 — atomic: order row + cart state change together.
   // Cart is SUBMITTED only when the order record exists, preventing double-orders.
   const order = await prisma.$transaction(async (tx) => {
-    const customerReferral = await tx.user.findUnique({
+    let customerReferral = await tx.user.findUnique({
       where: { id: checkoutUserId },
       select: {
         referredByAffiliateId: true,
         referredByReferralCode: true,
       },
     })
+
+    // Capture attribution onto unattributed users (Phase 4A step 5).
+    // Snap once and use it for both the user row and the order's customer attribution.
+    if (
+      candidateIsUsable &&
+      candidateAffiliate &&
+      customerReferral != null &&
+      customerReferral.referredByAffiliateId == null
+    ) {
+      await tx.user.update({
+        where: { id: checkoutUserId },
+        data: {
+          referredByAffiliateId: candidateAffiliate.id,
+          referredByReferralCode: candidateAffiliate.referralCode,
+        },
+      })
+      customerReferral = {
+        referredByAffiliateId: candidateAffiliate.id,
+        referredByReferralCode: candidateAffiliate.referralCode,
+      }
+    }
+
     const storeAffiliate = await tx.store.findUnique({
       where: { id: cart.storeId },
       select: {

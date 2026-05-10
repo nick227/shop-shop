@@ -308,6 +308,13 @@ components:
           type: string
           description: CARD uses Stripe; COD is cash on pickup/delivery when ENABLE_COD_PAYMENTS is enabled server-side.
           enum: [CARD, COD]
+        affiliateReferralCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: |
+            Optional referral code captured client-side (e.g. /r/:slugOrCode landing).
+            Server snaps onto the user once if currently unattributed; ignored otherwise.
     CompleteCheckoutResponse:
       type: object
       required: [order, paymentId]

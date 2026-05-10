@@ -36,7 +36,12 @@ export const CreateStoreInputSchema = z.object({
   addressCountry: z.string().optional(),
   geocodedAt: z.string().datetime().optional(),
   geocodeSource: z.string().optional(),
-  referredByAffiliateId: z.string().optional(),
+  /**
+   * Affiliate referral code captured client-side (e.g. /r/:slugOrCode landing).
+   * Server resolves it to the affiliate id; raw `referredByAffiliateId` is intentionally
+   * not accepted to prevent mass-assignment of arbitrary affiliates by the creator.
+   */
+  affiliateReferralCode: z.string().trim().min(1).max(64).optional(),
   stripeAccountId: z.string().optional(),
   stripeOnboarded: z.boolean().optional(),
   commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
@@ -75,7 +80,6 @@ export const UpdateStoreInputSchema = z.object({
   addressCountry: z.string().optional(),
   geocodedAt: z.string().datetime().optional(),
   geocodeSource: z.string().optional(),
-  referredByAffiliateId: z.string().optional(),
   stripeAccountId: z.string().optional(),
   stripeOnboarded: z.boolean().optional(),
   commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),

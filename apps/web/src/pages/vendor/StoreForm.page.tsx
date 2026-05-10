@@ -61,13 +61,21 @@ export default function StoreFormPage() {
   // Create store mutation
   const createStoreMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const affiliateReferralCode = localStorage.getItem('affiliateReferralCode') || undefined
+      const payload = {
+        ...storePayloadFromFormData(data),
+        ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
+      }
       return await apiClient.stores().createStore({
-        createStoreRequest: storePayloadFromFormData(data),
+        createStoreRequest: payload as any,
       })
     },
     onSuccess: async (result) => {
       updateUser({ role: 'VENDOR' } as any)
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+      // Attribution has been snapshotted onto the new store; clear local cache.
+      localStorage.removeItem('affiliateReferralCode')
+      localStorage.removeItem('affiliateReferralId')
       const newId = (result as any).id as string | undefined
 
       if (newId && pendingScopedMediaFiles.length > 0) {

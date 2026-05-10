@@ -3,7 +3,7 @@ import { z } from 'zod'
 import {
   createAffiliate,
   getAffiliateByUserId,
-  getAffiliateByReferralCode,
+  getAffiliateBySlugOrCode,
   updateAffiliate,
   updateAffiliateStatus,
   getAffiliateStats,
@@ -286,27 +286,23 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     return reply.code(200).send(result)
   })
 
-  // GET /affiliates/referral/:code - Get affiliate by referral code (public)
-  app.get('/affiliates/referral/:code', async (req, reply) => {
-    try {
-      const params = req.params as { code: string }
-      const affiliate = await getAffiliateByReferralCode(params.code)
+  // GET /affiliates/referral/:slugOrCode - Public resolver for /r/:slugOrCode landing.
+  // Resolves referralSlug first, then referralCode. Always returns the canonical
+  // referralCode so the frontend can persist it consistently regardless of which
+  // form the URL used.
+  app.get('/affiliates/referral/:slugOrCode', async (req, reply) => {
+    const params = req.params as { slugOrCode: string }
+    const affiliate = await getAffiliateBySlugOrCode(params.slugOrCode)
 
-      if (!affiliate) {
-        return reply.code(404).send({ error: 'Referral code not found' })
-      }
-
-      if (affiliate.status !== 'ACTIVE') {
-        return reply.code(404).send({ error: 'Referral code inactive' })
-      }
-
-      return reply.code(200).send({
-        referralCode: affiliate.referralCode,
-        affiliateId: affiliate.id,
-      })
-    } catch (error) {
-      throw error
+    if (!affiliate || affiliate.status !== 'ACTIVE') {
+      return reply.code(404).send({ error: 'Referral link not found or inactive' })
     }
+
+    return reply.code(200).send({
+      affiliateId: affiliate.id,
+      referralCode: affiliate.referralCode,
+      referralSlug: affiliate.referralSlug ?? null,
+    })
   })
 
   // Admin routes

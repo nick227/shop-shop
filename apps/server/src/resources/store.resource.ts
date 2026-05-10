@@ -7,7 +7,7 @@ import {
   StoreQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
-import { prisma } from '@packages/db'
+import { prisma, getAffiliateByReferralCode } from '@packages/db'
 import { checkStoreActivationRequirements } from '@packages/db/services'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
@@ -165,6 +165,56 @@ async function buildStoreListFilters(filters: Record<string, unknown>): Promise<
   return prismaFilters
 }
 
+/**
+ * Phase 4A — resolve a store's affiliate attribution at create time.
+ * Precedence:
+ *  1. `affiliateReferralCode` provided in the request body (vendor-supplied; e.g.
+ *     captured from /r/:slugOrCode and persisted in localStorage on the client).
+ *     Must resolve to an ACTIVE affiliate.
+ *  2. The creating user's snapshotted `User.referredByAffiliateId` (set at signup).
+ *
+ * Returns `{ affiliateId, referralCode, referralSlug }` or `null` when the store
+ * has no attribution. Raw `referredByAffiliateId` is never trusted from the body.
+ */
+async function resolveStoreReferral(
+  affiliateReferralCode: string | undefined,
+  creatingUserId: string,
+): Promise<{ affiliateId: string; referralCode: string; referralSlug: string | null } | null> {
+  const code = affiliateReferralCode?.trim().toUpperCase()
+  if (code) {
+    const affiliate = await getAffiliateByReferralCode(code)
+    if (affiliate && affiliate.status === 'ACTIVE') {
+      return {
+        affiliateId: affiliate.id,
+        referralCode: affiliate.referralCode,
+        referralSlug: affiliate.referralSlug ?? null,
+      }
+    }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: creatingUserId },
+    select: {
+      referredByAffiliateId: true,
+      referredByAffiliate: { select: { referralCode: true, referralSlug: true, status: true } },
+    },
+  })
+
+  if (
+    user?.referredByAffiliateId &&
+    user.referredByAffiliate &&
+    user.referredByAffiliate.status === 'ACTIVE'
+  ) {
+    return {
+      affiliateId: user.referredByAffiliateId,
+      referralCode: user.referredByAffiliate.referralCode,
+      referralSlug: user.referredByAffiliate.referralSlug ?? null,
+    }
+  }
+
+  return null
+}
+
 export const storeResource = defineResource({
   name: 'store',
   model: 'Store',
@@ -192,9 +242,17 @@ export const storeResource = defineResource({
       if (!['USER', 'VENDOR', 'ADMIN'].includes(context.userRole)) {
         throw new Error('Authenticated users can create stores')
       }
-      
-      // Use domain service for preparation
-      return storeDomain.prepareForCreation(data, context.userId)
+
+      // Phase 4A — strip raw `referredByAffiliateId` (never trust the client) and
+      // resolve attribution server-side from the supplied code (or fall back to
+      // the creator's snapshotted referral).
+      const { affiliateReferralCode, referredByAffiliateId: _ignored, ...rest } = data ?? {}
+      const referral = await resolveStoreReferral(affiliateReferralCode, context.userId)
+
+      const prepared = await storeDomain.prepareForCreation(rest, context.userId)
+      return referral
+        ? { ...prepared, referredByAffiliateId: referral.affiliateId }
+        : prepared
     },
     beforeUpdate: async (id: string, data: any, context: any) => {
       // Enforce ownership: only store owner can update
@@ -233,6 +291,27 @@ export const storeResource = defineResource({
         await prisma.user.update({
           where: { id: context.userId },
           data: { role: 'VENDOR' },
+        })
+      }
+
+      // Phase 4A step 7 — emit a STORE_SIGNUP referral event when the store is
+      // attributed. Snapshot referralCode/referralSlug so the event is meaningful
+      // even if the affiliate later rotates them.
+      const created = result as { id: string; referredByAffiliateId?: string | null }
+      if (created.referredByAffiliateId) {
+        const affiliate = await prisma.affiliate.findUnique({
+          where: { id: created.referredByAffiliateId },
+          select: { referralCode: true, referralSlug: true },
+        })
+        await prisma.referralEvent.create({
+          data: {
+            affiliateId: created.referredByAffiliateId,
+            eventType: 'STORE_SIGNUP',
+            referredStoreId: created.id,
+            referralCode: affiliate?.referralCode ?? null,
+            referralSlug: affiliate?.referralSlug ?? null,
+            metadata: { ownerUserId: context?.userId ?? null },
+          },
         })
       }
 

@@ -48,6 +48,7 @@ const completeCheckoutSchema = z.object({
   paymentMethod: checkoutSchema.shape.paymentMethod,
   tipAmount: z.number().min(0).optional().default(0),
   promoCode: z.string().optional(),
+  affiliateReferralCode: z.string().trim().min(1).max(64).optional(),
 })
 
 const statusParamsSchema = z.object({

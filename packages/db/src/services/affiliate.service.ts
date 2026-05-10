@@ -99,6 +99,20 @@ export async function getAffiliateByReferralCode(referralCode: string): Promise<
   })
 }
 
+/**
+ * Resolves an affiliate from a public referral token.
+ * Tries `referralSlug` first (vanity URL), falls back to `referralCode` (canonical).
+ */
+export async function getAffiliateBySlugOrCode(token: string): Promise<Affiliate | null> {
+  const trimmed = token.trim()
+  if (!trimmed) return null
+
+  const bySlug = await prisma.affiliate.findUnique({ where: { referralSlug: trimmed } })
+  if (bySlug) return bySlug
+
+  return prisma.affiliate.findUnique({ where: { referralCode: trimmed.toUpperCase() } })
+}
+
 export async function updateAffiliate(
   affiliateId: string,
   input: UpdateAffiliateInput

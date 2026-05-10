@@ -113,6 +113,8 @@ export interface components {
             promoCode?: string;
             /** CARD (Stripe) vs COD when enabled server-side */
             paymentRail?: "CARD" | "COD";
+            /** Referral code captured client-side (/r/:slugOrCode); snapped onto the user once when currently unattributed. */
+            affiliateReferralCode?: string;
         };
         CompleteCheckoutResponse: {
             order: components["schemas"]["CheckoutOrderSummary"];

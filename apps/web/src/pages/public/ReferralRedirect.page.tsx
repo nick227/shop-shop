@@ -16,24 +16,27 @@ function getSafeRedirectPath(raw: string | null): string {
 }
 
 export default function ReferralRedirectPage() {
-  const { referralCode } = useParams<{ referralCode: string }>()
+  const { slugOrCode } = useParams<{ slugOrCode: string }>()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!referralCode) {
+    if (!slugOrCode) {
       navigate('/', { replace: true })
       return
     }
 
-    fetch(`${getApiBase()}/api/affiliates/referral/${referralCode}`)
+    fetch(`${getApiBase()}/api/affiliates/referral/${encodeURIComponent(slugOrCode)}`)
       .then((res) => {
-        if (!res.ok) throw new Error('Invalid referral code')
+        if (!res.ok) throw new Error('Invalid referral link')
         return res.json()
       })
       .then((data) => {
-        localStorage.setItem('affiliateReferralCode', referralCode)
-        if (data.affiliateId) {
+        const canonicalCode: string | undefined = data?.referralCode
+        if (canonicalCode) {
+          localStorage.setItem('affiliateReferralCode', canonicalCode)
+        }
+        if (data?.affiliateId) {
           localStorage.setItem('affiliateReferralId', data.affiliateId)
         }
 
@@ -44,7 +47,7 @@ export default function ReferralRedirectPage() {
       .catch(() => {
         setError('This referral link is invalid or expired.')
       })
-  }, [referralCode, navigate])
+  }, [slugOrCode, navigate])
 
   if (error) {
     return (
