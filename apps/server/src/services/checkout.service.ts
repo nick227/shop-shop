@@ -1,5 +1,4 @@
-import { Decimal } from 'decimal.js'
-import { prisma, processOrderPayment, publishOrderCreated, getAffiliateByReferralCode } from '@packages/db'
+import { Decimal, prisma, processOrderPayment, publishOrderCreated, getAffiliateByReferralCode } from '@packages/db'
 import { OrderDomain } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
@@ -15,7 +14,7 @@ const orderDomain = new OrderDomain({
   platformFeePercent: PLATFORM_FEE_PERCENT,
 })
 
-function decimalToPrisma(d: Decimal) {
+function decimalToPrisma(d: InstanceType<typeof Decimal>) {
   return new Decimal(d.toFixed(2))
 }
 

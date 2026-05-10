@@ -51,6 +51,8 @@ const AdminSettingsPage = lazy(() => import('./pages/admin/Settings.page'))
 const AdminAffiliatesPage = lazy(() => import('./pages/admin/Affiliates.page'))
 const AdminAffiliateDetailPage = lazy(() => import('./pages/admin/AffiliateDetail.page'))
 const AdminAffiliatePayoutsPage = lazy(() => import('./pages/admin/AffiliatePayouts.page'))
+const AdminFinancePage = lazy(() => import('./pages/admin/Finance.page'))
+const AdminReferralEventsPage = lazy(() => import('./pages/admin/ReferralEvents.page'))
 const AdminOrdersPage = lazy(() => import('./pages/admin/Orders.page'))
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/OrderDetail.page'))
 const AdminDeliveryPage = lazy(() => import('./pages/admin/DeliveryOperations.page'))
@@ -318,6 +320,16 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               path: 'affiliate-payouts',
               element: lazyRoute(AdminAffiliatePayoutsPage),
               handle: { title: 'Admin - Affiliate Payouts' },
+            },
+            {
+              path: 'finance',
+              element: lazyRoute(AdminFinancePage),
+              handle: { title: 'Admin - Finance' },
+            },
+            {
+              path: 'referral-events',
+              element: lazyRoute(AdminReferralEventsPage),
+              handle: { title: 'Admin - Referral Events' },
             },
             {
               path: 'orders',

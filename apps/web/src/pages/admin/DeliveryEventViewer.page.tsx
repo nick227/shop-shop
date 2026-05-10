@@ -61,6 +61,23 @@ interface DeliveryEvent {
   }
 }
 
+interface PageInfo {
+  page: number
+  limit: number
+  total: number
+  pages: number
+}
+
+interface DeliveryJobsResponse {
+  deliveryJobs: DeliveryJob[]
+  pagination: PageInfo
+}
+
+interface DeliveryEventsResponse {
+  events: DeliveryEvent[]
+  pagination: PageInfo
+}
+
 export default function DeliveryEventViewerPage() {
   const [activeTab, setActiveTab] = useState<'deliveries' | 'events'>('deliveries')
   const [searchTerm, setSearchTerm] = useState('')
@@ -85,10 +102,7 @@ export default function DeliveryEventViewerPage() {
   })
 
   // Fetch delivery jobs
-  const { data: deliveryJobsData, isLoading: isLoadingDeliveries, refetch: refetchDeliveries } = useQuery<{
-    deliveryJobs: DeliveryJob[]
-    pagination: { page: number; limit: number; total: number; pages: number }
-  }>({
+  const { data: deliveryJobsData, isLoading: isLoadingDeliveries, refetch: refetchDeliveries } = useQuery<DeliveryJobsResponse>({
     queryKey: ['admin-delivery-jobs', page, pageSize, statusFilter, providerFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -99,7 +113,7 @@ export default function DeliveryEventViewerPage() {
         ...(searchTerm && { search: searchTerm })
       })
 
-      const response = await authFetch(`/api/admin/delivery/jobs?${params}`)
+      const response = await authFetch<DeliveryJobsResponse>(`/api/admin/delivery/jobs?${params}`)
       if (!response.ok) throw new Error('Failed to fetch delivery jobs')
 
       return await response.json()
@@ -108,10 +122,7 @@ export default function DeliveryEventViewerPage() {
   })
 
   // Fetch delivery events
-  const { data: eventsData, isLoading: isLoadingEvents, refetch: refetchEvents } = useQuery<{
-    events: DeliveryEvent[]
-    pagination: { page: number; limit: number; total: number; pages: number }
-  }>({
+  const { data: eventsData, isLoading: isLoadingEvents, refetch: refetchEvents } = useQuery<DeliveryEventsResponse>({
     queryKey: ['admin-delivery-events', page, pageSize, providerFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -121,9 +132,9 @@ export default function DeliveryEventViewerPage() {
         ...(searchTerm && { search: searchTerm })
       })
 
-      const response = await authFetch(`/api/admin/delivery/events?${params}`)
+      const response = await authFetch<DeliveryEventsResponse>(`/api/admin/delivery/events?${params}`)
       if (!response.ok) throw new Error('Failed to fetch delivery events')
-      
+
       return await response.json()
     },
     refetchInterval: deliveryPolicy.pollIntervalMs,

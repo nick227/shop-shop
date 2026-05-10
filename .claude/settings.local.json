@@ -44,7 +44,8 @@
       "Bash(Get-ChildItem -Directory)",
       "PowerShell(cd C:\\\\wamp64\\\\www\\\\shop-shop\\\\apps\\\\server; \\(npx tsc --noEmit 2>&1\\) | Where-Object { $_ -match \"affiliate|commission|Affiliate|Commission|Payout|ReferralEvent\" }; Write-Host \"Done scanning\")",
       "PowerShell(cd C:\\\\wamp64\\\\www\\\\shop-shop\\\\apps\\\\server; \\(npx tsc --noEmit 2>&1\\) | Where-Object { $_ -match \"affiliate|commission|Affiliate|Commission|Payout|ReferralEvent|backfill\" }; Write-Host \"Affiliate typecheck scan done\")",
-      "Bash(grep -n \"^\\\\s*\\\\],$\\\\|^\\\\s*\\\\]$\\\\|^\\\\s*},$\\\\|^\\\\s*}$\" c:/wamp64/www/shop-shop/apps/web/src/router.tsx)"
+      "Bash(grep -n \"^\\\\s*\\\\],$\\\\|^\\\\s*\\\\]$\\\\|^\\\\s*},$\\\\|^\\\\s*}$\" c:/wamp64/www/shop-shop/apps/web/src/router.tsx)",
+      "PowerShell($env:NODE_ENV = \"development\"; cd \"c:\\\\wamp64\\\\www\\\\shop-shop\"; pnpm add --save-dev @types/ws --filter @apps/server 2>&1 | Select-Object -Last 15)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"
