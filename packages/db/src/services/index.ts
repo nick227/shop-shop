@@ -20,7 +20,22 @@ export * from './delivery-provider.registry.js'
 export * from './delivery-dispatch.service.js'
 export * from './vendor-verification.service.js'
 export * from './vendor-application.service.js'
-export * from './accounting-export.service.js'
+export type {
+  ExportCommissionsOptions,
+  ExportPayoutsOptions,
+  ExportOrdersOptions,
+  ExportTaxesOptions,
+} from './accounting-export.service.js'
+export {
+  exportCommissionsToCSV,
+  exportPayoutsToCSV as exportAccountingPayoutsToCSV,
+  exportOrdersToCSV,
+  streamOrdersToCSV,
+  exportTaxSummaryToCSV,
+  exportServiceFeesToCSV,
+  exportFinancialSummaryToCSV,
+  exportVendorPayoutsToCSV,
+} from './accounting-export.service.js'
 export * from './vendor-payout.service.js'
 export * from './payout-calculation.service.js'
 export * from './team.service.js'

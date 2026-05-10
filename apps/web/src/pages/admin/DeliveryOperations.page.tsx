@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives'
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from '@shared/ui/primitives'
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { formatPriceCurrency } from '@shared/lib/utils/format'
 import { useNavigate } from 'react-router-dom'
+import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
 
 function getApiBase() {
   return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -157,9 +158,25 @@ export default function DeliveryOperationsPage() {
   const [providerFilter, setProviderFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
+  const [liveMode, setLiveMode] = useState(false)
 
   const token = localStorage.getItem('token') || ''
   const apiBase = getApiBase()
+  const adminDeliveryInvalidateKeys = useMemo(() => [
+    ['admin-delivery-stats'],
+    ['admin-delivery-jobs'],
+    ['admin-delivery-events'],
+  ], [])
+  const handleAdminIdle = useCallback(() => {
+    const keepLive = window.confirm('Keep Delivery Operations Live Mode connected?')
+    setLiveMode(keepLive)
+  }, [])
+  const deliveryPolicy = useDeliveryTrackingPolicy({
+    surface: 'admin-delivery',
+    liveMode,
+    invalidateQueryKeys: adminDeliveryInvalidateKeys,
+    onAdminIdle: handleAdminIdle,
+  })
 
   // Fetch delivery stats
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery<DeliveryStats>({
@@ -171,7 +188,7 @@ export default function DeliveryOperationsPage() {
       if (!response.ok) throw new Error('Failed to fetch delivery stats')
       return response.json()
     },
-    refetchInterval: 30000, // 30 seconds
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
 
   // Fetch delivery jobs
@@ -196,7 +213,7 @@ export default function DeliveryOperationsPage() {
       
       return response.json()
     },
-    refetchInterval: 30000 // 30 seconds
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
 
   // Fetch delivery events
@@ -220,7 +237,7 @@ export default function DeliveryOperationsPage() {
       
       return response.json()
     },
-    refetchInterval: 30000 // 30 seconds
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
 
   // Manual refresh mutation
@@ -269,6 +286,7 @@ export default function DeliveryOperationsPage() {
             variant="outline"
             size="small"
             onClick={() => {
+              deliveryPolicy.markMeaningfulInteraction()
               refetchStats()
               refetchDeliveries()
               refetchEvents()
@@ -277,6 +295,21 @@ export default function DeliveryOperationsPage() {
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingStats || isLoadingDeliveries ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+          <Button
+            variant={liveMode ? 'primary' : 'outline'}
+            size="small"
+            onClick={() => {
+              deliveryPolicy.markMeaningfulInteraction()
+              setLiveMode((value) => !value)
+            }}
+          >
+            <Activity className="w-4 h-4 mr-2" />
+            {liveMode
+              ? deliveryPolicy.isRealtimeConnected
+                ? 'Live On'
+                : 'Live Fallback'
+              : 'Live Mode'}
           </Button>
         </div>
       </div>
@@ -345,10 +378,10 @@ export default function DeliveryOperationsPage() {
           type="text"
           placeholder="Search by order ID or tracking..."
           value={searchTerm}
-          onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
+          onChange={(e) => { deliveryPolicy.markMeaningfulInteraction(); setSearchTerm(e.target.value); setPage(1) }}
           className="h-9 w-64"
         />
-        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1) }}>
+        <Select value={statusFilter} onValueChange={(value) => { deliveryPolicy.markMeaningfulInteraction(); setStatusFilter(value); setPage(1) }}>
           <SelectTrigger className="h-9 w-40">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -362,7 +395,7 @@ export default function DeliveryOperationsPage() {
             <SelectItem value="CANCELED">Canceled</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={providerFilter} onValueChange={(value) => { setProviderFilter(value); setPage(1) }}>
+        <Select value={providerFilter} onValueChange={(value) => { deliveryPolicy.markMeaningfulInteraction(); setProviderFilter(value); setPage(1) }}>
           <SelectTrigger className="h-9 w-40">
             <SelectValue placeholder="All Providers" />
           </SelectTrigger>
@@ -422,10 +455,10 @@ export default function DeliveryOperationsPage() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {deliveryJobs.slice(0, 10).map((job) => (
-                        <tr key={job.id} className="hover:bg-muted/30">
+                        <tr key={job.id} className="hover:bg-muted/30" onClick={() => deliveryPolicy.markMeaningfulInteraction()}>
                           <td className="px-4 py-3">
                             <button
-                              onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                               className="font-medium text-primary hover:underline"
                             >
                               {job.order.id}
@@ -448,7 +481,7 @@ export default function DeliveryOperationsPage() {
                               <Button
                                 size="small"
                                 variant="outline"
-                                onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                                onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                               >
                                 <Eye className="w-3 h-3 mr-1" />
                                 Order
@@ -457,7 +490,7 @@ export default function DeliveryOperationsPage() {
                                 <Button
                                   size="small"
                                   variant="outline"
-                                  onClick={() => window.open(job.trackingUrl, '_blank')}
+                                  onClick={() => { deliveryPolicy.markMeaningfulInteraction(); window.open(job.trackingUrl, '_blank') }}
                                 >
                                   <ExternalLink className="w-3 h-3 mr-1" />
                                   Track
@@ -466,7 +499,7 @@ export default function DeliveryOperationsPage() {
                               <Button
                                 size="small"
                                 variant="outline"
-                                onClick={() => refreshDeliveryStatusMutation.mutate(job.id)}
+                                onClick={() => { deliveryPolicy.markMeaningfulInteraction(); refreshDeliveryStatusMutation.mutate(job.id) }}
                                 disabled={refreshDeliveryStatusMutation.isPending}
                               >
                                 <RefreshCw className={`w-3 h-3 mr-1 ${refreshDeliveryStatusMutation.isPending ? 'animate-spin' : ''}`} />
@@ -505,10 +538,10 @@ export default function DeliveryOperationsPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredJobs.map((job) => (
-                      <tr key={job.id} className="hover:bg-muted/30">
+                      <tr key={job.id} className="hover:bg-muted/30" onClick={() => deliveryPolicy.markMeaningfulInteraction()}>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                            onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                             className="font-medium text-primary hover:underline"
                           >
                             {job.order.id}
@@ -531,7 +564,7 @@ export default function DeliveryOperationsPage() {
                             <Button
                               size="small"
                               variant="outline"
-                              onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               Order
@@ -540,7 +573,7 @@ export default function DeliveryOperationsPage() {
                               <Button
                                 size="small"
                                 variant="outline"
-                                onClick={() => window.open(job.trackingUrl, '_blank')}
+                                onClick={() => { deliveryPolicy.markMeaningfulInteraction(); window.open(job.trackingUrl, '_blank') }}
                               >
                                 <ExternalLink className="w-3 h-3 mr-1" />
                                 Track
@@ -578,10 +611,10 @@ export default function DeliveryOperationsPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredJobs.map((job) => (
-                      <tr key={job.id} className="hover:bg-muted/30">
+                      <tr key={job.id} className="hover:bg-muted/30" onClick={() => deliveryPolicy.markMeaningfulInteraction()}>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                            onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                             className="font-medium text-primary hover:underline"
                           >
                             {job.order.id}
@@ -603,7 +636,7 @@ export default function DeliveryOperationsPage() {
                           <Button
                             size="small"
                             variant="outline"
-                            onClick={() => navigate(`/admin/orders/${job.order.id}`)}
+                            onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${job.order.id}`) }}
                           >
                             <Eye className="w-3 h-3 mr-1" />
                             Order
@@ -645,7 +678,7 @@ export default function DeliveryOperationsPage() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {deliveryEvents.map((event) => (
-                        <tr key={event.id} className="hover:bg-muted/30">
+                        <tr key={event.id} className="hover:bg-muted/30" onClick={() => deliveryPolicy.markMeaningfulInteraction()}>
                           <td className="px-4 py-3 font-mono text-xs">
                             {event.eventId}
                           </td>
@@ -657,7 +690,7 @@ export default function DeliveryOperationsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <button
-                              onClick={() => navigate(`/admin/orders/${event.deliveryJob.order.id}`)}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); navigate(`/admin/orders/${event.deliveryJob.order.id}`) }}
                               className="font-medium text-primary hover:underline"
                             >
                               {event.deliveryJobId}

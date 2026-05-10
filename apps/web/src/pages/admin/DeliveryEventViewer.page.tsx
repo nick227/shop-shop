@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives'
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from '@shared/ui/primitives'
@@ -15,9 +15,12 @@ import {
   Eye,
   Download,
   Clock,
-  MapPin
+  MapPin,
+  Activity
 } from 'lucide-react'
 import { formatPriceCurrency } from '@shared/lib/utils/format'
+import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
+import { authFetch } from '@shared/lib/auth/authFetch'
 
 interface DeliveryJob {
   id: string
@@ -65,9 +68,27 @@ export default function DeliveryEventViewerPage() {
   const [providerFilter, setProviderFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [pageSize] = useState(50)
+  const [liveMode, setLiveMode] = useState(false)
+  const adminDeliveryInvalidateKeys = useMemo(() => [
+    ['admin-delivery-jobs'],
+    ['admin-delivery-events'],
+  ], [])
+  const handleAdminIdle = useCallback(() => {
+    const keepLive = window.confirm('Keep Delivery Event Viewer Live Mode connected?')
+    setLiveMode(keepLive)
+  }, [])
+  const deliveryPolicy = useDeliveryTrackingPolicy({
+    surface: 'admin-delivery',
+    liveMode,
+    invalidateQueryKeys: adminDeliveryInvalidateKeys,
+    onAdminIdle: handleAdminIdle,
+  })
 
   // Fetch delivery jobs
-  const { data: deliveryJobsData, isLoading: isLoadingDeliveries, refetch: refetchDeliveries } = useQuery({
+  const { data: deliveryJobsData, isLoading: isLoadingDeliveries, refetch: refetchDeliveries } = useQuery<{
+    deliveryJobs: DeliveryJob[]
+    pagination: { page: number; limit: number; total: number; pages: number }
+  }>({
     queryKey: ['admin-delivery-jobs', page, pageSize, statusFilter, providerFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -78,16 +99,19 @@ export default function DeliveryEventViewerPage() {
         ...(searchTerm && { search: searchTerm })
       })
 
-      const response = await fetch(`/api/admin/delivery/jobs?${params}`)
+      const response = await authFetch(`/api/admin/delivery/jobs?${params}`)
       if (!response.ok) throw new Error('Failed to fetch delivery jobs')
-      
+
       return await response.json()
     },
-    refetchInterval: 30000, // 30 seconds
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
 
   // Fetch delivery events
-  const { data: eventsData, isLoading: isLoadingEvents, refetch: refetchEvents } = useQuery({
+  const { data: eventsData, isLoading: isLoadingEvents, refetch: refetchEvents } = useQuery<{
+    events: DeliveryEvent[]
+    pagination: { page: number; limit: number; total: number; pages: number }
+  }>({
     queryKey: ['admin-delivery-events', page, pageSize, providerFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -97,12 +121,12 @@ export default function DeliveryEventViewerPage() {
         ...(searchTerm && { search: searchTerm })
       })
 
-      const response = await fetch(`/api/admin/delivery/events?${params}`)
+      const response = await authFetch(`/api/admin/delivery/events?${params}`)
       if (!response.ok) throw new Error('Failed to fetch delivery events')
       
       return await response.json()
     },
-    refetchInterval: 30000 // 30 seconds
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
 
   // Manual refresh mutation
@@ -238,7 +262,7 @@ export default function DeliveryEventViewerPage() {
                 <Input
                   placeholder="Search by order ID, provider external ID, or tracking URL..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { deliveryPolicy.markMeaningfulInteraction(); setSearchTerm(e.target.value) }}
                   className="pl-10"
                 />
               </div>
@@ -246,7 +270,7 @@ export default function DeliveryEventViewerPage() {
 
             {/* Filters */}
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => { deliveryPolicy.markMeaningfulInteraction(); setStatusFilter(value) }}>
                 <SelectTrigger className="w-40">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Status" />
@@ -261,7 +285,7 @@ export default function DeliveryEventViewerPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={providerFilter} onValueChange={setProviderFilter}>
+              <Select value={providerFilter} onValueChange={(value) => { deliveryPolicy.markMeaningfulInteraction(); setProviderFilter(value) }}>
                 <SelectTrigger className="w-40">
                   <Truck className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Provider" />
@@ -280,13 +304,31 @@ export default function DeliveryEventViewerPage() {
               <Button
                 variant="outline"
                 size="small"
-                onClick={() => activeTab === 'deliveries' ? refetchDeliveries() : refetchEvents()}
+                onClick={() => {
+                  deliveryPolicy.markMeaningfulInteraction()
+                  return activeTab === 'deliveries' ? refetchDeliveries() : refetchEvents()
+                }}
                 disabled={activeTab === 'deliveries' ? isLoadingDeliveries : isLoadingEvents}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              
+              <Button
+                variant={liveMode ? 'primary' : 'outline'}
+                size="small"
+                onClick={() => {
+                  deliveryPolicy.markMeaningfulInteraction()
+                  setLiveMode((value) => !value)
+                }}
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                {liveMode
+                  ? deliveryPolicy.isRealtimeConnected
+                    ? 'Live On'
+                    : 'Live Fallback'
+                  : 'Live Mode'}
+              </Button>
+
               <Button
                 variant="outline"
                 size="small"
@@ -362,7 +404,7 @@ export default function DeliveryEventViewerPage() {
                   </thead>
                   <tbody>
                     {deliveryJobs.map((job) => (
-                      <tr key={job.id} className="border-b hover:bg-muted/25">
+                      <tr key={job.id} className="border-b hover:bg-muted/25" onClick={() => deliveryPolicy.markMeaningfulInteraction()}>
                         <td className="p-3">
                           <div className="font-mono text-sm">{job.order.id.slice(0, 8).toUpperCase()}</div>
                           <div className="text-xs text-muted-foreground">
@@ -395,7 +437,7 @@ export default function DeliveryEventViewerPage() {
                             <Button
                               variant="outline"
                               size="small"
-                              onClick={() => window.open(job.trackingUrl, '_blank')}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); window.open(job.trackingUrl, '_blank') }}
                             >
                               <ExternalLink className="w-3 h-3 mr-1" />
                               Track
@@ -413,7 +455,7 @@ export default function DeliveryEventViewerPage() {
                             <Button
                               variant="outline"
                               size="small"
-                              onClick={() => refreshDeliveryStatusMutation.mutate(job.id)}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); refreshDeliveryStatusMutation.mutate(job.id) }}
                               disabled={refreshDeliveryStatusMutation.isPending}
                             >
                               <RefreshCw className="w-3 h-3" />
@@ -421,7 +463,7 @@ export default function DeliveryEventViewerPage() {
                             <Button
                               variant="outline"
                               size="small"
-                              onClick={() => window.open(`/orders/${job.order.id}`, '_blank')}
+                              onClick={() => { deliveryPolicy.markMeaningfulInteraction(); window.open(`/orders/${job.order.id}`, '_blank') }}
                             >
                               <Eye className="w-3 h-3" />
                             </Button>

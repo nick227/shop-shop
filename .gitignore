@@ -90,6 +90,11 @@ temp/
 tmp/
 data/
 *.tmp
+*.tmp.ts
+*_HEAD.tmp.ts
+*_BASE.tmp.ts
+*_LOCAL.tmp.ts
+*_REMOTE.tmp.ts
 scripts/
 !scripts/
 scripts/*

@@ -36,6 +36,7 @@ import { useHaptics } from '@shared/hooks/useHaptics'
 import { cn } from '@shared/lib/cn'
 import { Activity, Bell, BellOff, Layers, MousePointer2 } from 'lucide-react'
 import { VendorOrdersEmptyState } from './components/VendorOrdersEmptyState'
+import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
 
 interface DeliveryDriver {
   id: string
@@ -105,7 +106,7 @@ export default function VendorOrdersPage() {
     refetch: refetchOrders,
   } = useVendorOrders({
     status: selectedFilter === 'ALL' ? undefined : selectedFilter,
-    refetchInterval: 3000,
+    refetchInterval: 30_000,
     storeId: selectedStoreId || undefined,
   })
 
@@ -422,6 +423,18 @@ function OrderDetailsModal({ order, onClose }: { order: OrderResponse; onClose: 
   const destLL = useOrderDeliveryLatLng(order)
   const canNavigate = Boolean(storeLL && destLL)
   const distanceMi = storeLL && destLL ? haversineMiles(storeLL, destLL) : undefined
+  const isTerminal = ['COMPLETED', 'DELIVERED', 'CANCELED'].includes(order.status)
+  const trackingPolicy = useDeliveryTrackingPolicy({
+    surface: 'vendor-order-detail',
+    orderId: order.id,
+    storeId: order.storeId,
+    terminal: isTerminal,
+    invalidateQueryKeys: useMemo(() => [
+      ['vendor-orders'],
+      ['vendor-pending-orders-count'],
+      ['delivery-tracking', order.id],
+    ], [order.id]),
+  })
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -435,6 +448,13 @@ function OrderDetailsModal({ order, onClose }: { order: OrderResponse; onClose: 
           <div>
             <CardTitle className="text-xl">Order #{order.id.slice(0, 8).toUpperCase()}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{new Date(order.createdAt).toLocaleTimeString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {trackingPolicy.isRealtimeConnected
+                ? 'Live detail updates connected'
+                : trackingPolicy.pollIntervalMs
+                  ? `Slow fallback every ${Math.round(trackingPolicy.pollIntervalMs / 1000)}s`
+                  : 'Live detail updates paused'}
+            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={() => { haptics.light(); onClose(); }} className="rounded-full">✕</Button>
         </CardHeader>

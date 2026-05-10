@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
   exportCommissionsToCSV,
-  exportPayoutsToCSV,
+  exportAccountingPayoutsToCSV,
   exportOrdersToCSV,
   streamOrdersToCSV,
   exportTaxSummaryToCSV,
@@ -74,7 +74,7 @@ export const exportRoutes = async (app: FastifyInstance) => {
     try {
       const query = PayoutsExportSchema.parse(req.query)
 
-      const csv = await exportPayoutsToCSV({
+      const csv = await exportAccountingPayoutsToCSV({
         startDate: query.startDate ? new Date(query.startDate) : undefined,
         endDate: query.endDate ? new Date(query.endDate) : undefined,
         status: query.status,
@@ -298,4 +298,3 @@ export const exportRoutes = async (app: FastifyInstance) => {
     }
   })
 }
-

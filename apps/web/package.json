@@ -14,6 +14,7 @@
     "test:smoke": "vitest run src/__tests__/smoke",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:delivery": "vitest run src/hooks/__tests__/useDeliveryTrackingPolicy.test.tsx",
     "test:validation": "vitest run src/__tests__/validation",
     "test:validation:ui": "vitest src/__tests__/validation --ui",
     "test:validation:coverage": "vitest run src/__tests__/validation --coverage",

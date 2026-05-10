@@ -18,7 +18,11 @@ import {
   markPayoutAsPaid,
   reversePayout,
   getPayoutAuditLogs,
-  exportPayoutsToCSV,
+  exportAffiliatePayoutsToCSV,
+  getReferralEvents,
+  getReferredUsers,
+  getReferredStores,
+  getReferredOrders,
   prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
@@ -270,6 +274,100 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     }
   })
 
+  // GET /affiliates/me/referral-events
+  app.get('/affiliates/me/referral-events', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+
+      const affiliate = await getAffiliateByUserId(userId)
+      if (!affiliate) {
+        return reply.code(404).send({ error: 'Affiliate profile not found' })
+      }
+
+      const query = req.query as { eventType?: string; limit?: string; offset?: string }
+      const result = await getReferralEvents(affiliate.id, {
+        eventType: query.eventType as 'STORE_SIGNUP' | 'USER_SIGNUP' | undefined,
+        limit: query.limit ? parseInt(query.limit) : undefined,
+        offset: query.offset ? parseInt(query.offset) : undefined,
+      })
+
+      return reply.code(200).send(result)
+    } catch (error) {
+      throw error
+    }
+  })
+
+  // GET /affiliates/me/referred-users
+  app.get('/affiliates/me/referred-users', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+
+      const affiliate = await getAffiliateByUserId(userId)
+      if (!affiliate) {
+        return reply.code(404).send({ error: 'Affiliate profile not found' })
+      }
+
+      const users = await getReferredUsers(affiliate.id)
+      return reply.code(200).send({ users })
+    } catch (error) {
+      throw error
+    }
+  })
+
+  // GET /affiliates/me/referred-stores
+  app.get('/affiliates/me/referred-stores', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+
+      const affiliate = await getAffiliateByUserId(userId)
+      if (!affiliate) {
+        return reply.code(404).send({ error: 'Affiliate profile not found' })
+      }
+
+      const stores = await getReferredStores(affiliate.id)
+      return reply.code(200).send({ stores })
+    } catch (error) {
+      throw error
+    }
+  })
+
+  // GET /affiliates/me/referred-orders
+  app.get('/affiliates/me/referred-orders', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' })
+      }
+
+      const affiliate = await getAffiliateByUserId(userId)
+      if (!affiliate) {
+        return reply.code(404).send({ error: 'Affiliate profile not found' })
+      }
+
+      const orders = await getReferredOrders(affiliate.id)
+      return reply.code(200).send({ orders })
+    } catch (error) {
+      throw error
+    }
+  })
+
   // GET /affiliates/:id - Get full affiliate detail by ID (admin only)
   app.get('/affiliates/:id', {
     preHandler: [requireRole(['ADMIN'])],
@@ -312,6 +410,64 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
       offset: query.offset ? parseInt(query.offset) : undefined,
     })
     return reply.code(200).send(result)
+  })
+
+  // GET /affiliates/:id/referral-events - Referral events for any affiliate (admin only)
+  app.get('/affiliates/:id/referral-events', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const query = req.query as { eventType?: string; limit?: string; offset?: string }
+    const result = await getReferralEvents(id, {
+      eventType: query.eventType as 'STORE_SIGNUP' | 'USER_SIGNUP' | undefined,
+      limit: query.limit ? parseInt(query.limit) : undefined,
+      offset: query.offset ? parseInt(query.offset) : undefined,
+    })
+    return reply.code(200).send(result)
+  })
+
+  // GET /affiliates/:id/referred-users - Referred users for any affiliate (admin only)
+  app.get('/affiliates/:id/referred-users', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const users = await getReferredUsers(id)
+    return reply.code(200).send({ users })
+  })
+
+  // GET /affiliates/:id/referred-stores - Referred stores for any affiliate (admin only)
+  app.get('/affiliates/:id/referred-stores', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const stores = await getReferredStores(id)
+    return reply.code(200).send({ stores })
+  })
+
+  // GET /affiliates/:id/referred-orders - Referred orders for any affiliate (admin only)
+  app.get('/affiliates/:id/referred-orders', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const orders = await getReferredOrders(id)
+    return reply.code(200).send({ orders })
+  })
+
+  // GET /referral-events - Cross-affiliate referral events (admin only)
+  app.get('/referral-events', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    try {
+      const query = req.query as { eventType?: string; limit?: string; offset?: string }
+      const result = await getReferralEvents('', {
+        eventType: query.eventType as 'STORE_SIGNUP' | 'USER_SIGNUP' | undefined,
+        limit: query.limit ? parseInt(query.limit) : undefined,
+        offset: query.offset ? parseInt(query.offset) : undefined,
+      })
+      return reply.code(200).send(result)
+    } catch (error) {
+      throw error
+    }
   })
 
   // GET /affiliates/referral/:slugOrCode - Public resolver for /r/:slugOrCode landing.
@@ -530,7 +686,7 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
         end: new Date(query.endDate),
       } : undefined
 
-      const csvContent = await exportPayoutsToCSV(query.affiliateId, dateRange)
+      const csvContent = await exportAffiliatePayoutsToCSV(query.affiliateId, dateRange)
       
       reply.header('Content-Type', 'text/csv')
       reply.header('Content-Disposition', 'attachment; filename="payouts-export.csv"')

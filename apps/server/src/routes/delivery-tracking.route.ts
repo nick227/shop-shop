@@ -121,17 +121,26 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
         return reply.code(403).send({ error: 'Admin access required' })
       }
 
-      const { page = 1, limit = 50, storeId, status } = req.query as {
+      const { page = 1, limit = 50, storeId, status, provider, search } = req.query as {
         page?: number
         limit?: number
         storeId?: string
         status?: string
+        provider?: string
+        search?: string
       }
 
       const where: any = {}
-      
+
       if (storeId) where.order = { storeId }
-      if (status) where.status = status
+      if (status && status !== 'all') where.status = status
+      if (provider && provider !== 'all') where.provider = provider
+      if (search) {
+        where.OR = [
+          { providerExternalId: { contains: search } },
+          { order: { id: { contains: search } } }
+        ]
+      }
 
       const [deliveryJobs, total] = await Promise.all([
         prisma.deliveryJob.findMany({
@@ -161,7 +170,7 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
+          pages: Math.ceil(total / limit)
         }
       })
 
@@ -182,17 +191,24 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
         return reply.code(403).send({ error: 'Admin access required' })
       }
 
-      const { page = 1, limit = 100, deliveryJobId, provider } = req.query as {
+      const { page = 1, limit = 100, deliveryJobId, provider, search } = req.query as {
         page?: number
         limit?: number
         deliveryJobId?: string
         provider?: string
+        search?: string
       }
 
       const where: any = {}
-      
+
       if (deliveryJobId) where.deliveryJobId = deliveryJobId
-      if (provider) where.provider = provider
+      if (provider && provider !== 'all') where.provider = provider
+      if (search) {
+        where.OR = [
+          { eventId: { contains: search } },
+          { deliveryJobId: { contains: search } }
+        ]
+      }
 
       const [events, total] = await Promise.all([
         prisma.deliveryProviderEvent.findMany({
@@ -225,7 +241,7 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
+          pages: Math.ceil(total / limit)
         }
       })
 

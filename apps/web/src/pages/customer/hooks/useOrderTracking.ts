@@ -13,7 +13,6 @@ import { useTip } from '@shared/hooks/hooks/useTip'
 import { useStore } from '@shared/hooks/generated'
 import { parseOrderData, parseOrderItems, getOrderStatusInfo, getOrderTimeInfo, getOrderProgress } from '../utils/orderTrackingUtils'
 import { mapOrder } from '@api/type-mappers'
-import { useAuthStore } from '@stores/authStore'
 import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
 
 export interface UseOrderTrackingProps {
@@ -57,7 +56,6 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
 
   const orderDeliveryType = (orderData as { deliveryType?: string } | undefined)?.deliveryType
   const order = parseOrderData(orderData)
-  const user = useAuthStore((state) => state.user)
 
   const { data: deliveryJob, refetch: refetchDeliveryJob } = useQuery({
     queryKey: ['delivery-tracking', orderId],
@@ -90,7 +88,6 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
   const deliveryPolicy = useDeliveryTrackingPolicy({
     surface: 'customer-tracking',
     orderId,
-    userId: user?.id,
     terminal: isTerminalDelivery,
     serverNextPollMs: deliveryTrackingState?.nextPollMs,
     enabled: !!orderId && orderDeliveryType === 'DELIVERY',

@@ -20,7 +20,11 @@ interface AuthFetchResponse<T = unknown> extends Response {
  * Get base API URL consistently
  */
 export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || 'http://localhost:3005'
+  const url = import.meta.env.VITE_API_URL
+  if (!url && import.meta.env.PROD) {
+    throw new Error('VITE_API_URL is required in production builds')
+  }
+  return url || 'http://localhost:3005'
 }
 
 /**

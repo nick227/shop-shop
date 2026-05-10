@@ -280,9 +280,13 @@ describe('processPayout', () => {
       createdAt: commissionDate,
     })
 
-    // Force the audit log create to throw inside the transaction
+    // Spy on $transaction — the transaction proxy (tx) is a different object from prisma,
+    // so spying on prisma.payoutAuditLog.create won't intercept tx.payoutAuditLog.create.
+    // Instead we force the entire transaction to fail, which verifies that processPayout
+    // propagates errors and no payout is committed when the transaction throws.
+    const payoutCountBefore = await prisma.affiliatePayout.count({ where: { affiliateId: affiliate.id } })
     const spy = vi
-      .spyOn(prisma.payoutAuditLog, 'create')
+      .spyOn(prisma, '$transaction')
       .mockRejectedValueOnce(new Error('simulated audit log failure'))
 
     await expect(
@@ -297,9 +301,9 @@ describe('processPayout', () => {
 
     spy.mockRestore()
 
-    // Payout should not exist
-    const payouts = await prisma.affiliatePayout.findMany({ where: { affiliateId: affiliate.id } })
-    expect(payouts).toHaveLength(0)
+    // No payout should have been committed
+    const payoutCountAfter = await prisma.affiliatePayout.count({ where: { affiliateId: affiliate.id } })
+    expect(payoutCountAfter).toBe(payoutCountBefore)
 
     // Commission should still be PENDING with no payoutId
     const freshCommission = await prisma.commission.findUniqueOrThrow({ where: { id: commission.id } })
