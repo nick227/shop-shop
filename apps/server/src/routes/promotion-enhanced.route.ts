@@ -8,8 +8,8 @@ import {
   canUserUsePromotion,
   getActivePromotionsForStore,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const ValidatePromotionSchema = z.object({
   code: z.string().min(1),

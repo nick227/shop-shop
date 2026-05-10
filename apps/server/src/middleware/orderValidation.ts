@@ -5,7 +5,7 @@
  */
 
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { validateStatusTransition, type OrderStatus } from '../orders/validation'
+import { validateStatusTransition, type OrderStatus } from '../orders/validation.js'
 import { prisma, type PrismaOrderStatus } from '@packages/db'
 import type { AuthenticatedUser } from './auth.js'
 

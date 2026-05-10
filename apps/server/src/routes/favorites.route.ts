@@ -11,8 +11,8 @@ import {
   reorderFromPreviousOrder,
   getUserOrderHistory,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const FavoriteStoreSchema = z.object({
   storeId: z.string().uuid(),

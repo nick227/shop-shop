@@ -6,12 +6,12 @@
 
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { OrderStatus } from '../orders/validation'
-import { createOrderStatusValidationMiddleware, logOrderStatusChange } from '../middleware/orderValidation'
+import { OrderStatus } from '../orders/validation.js'
+import { createOrderStatusValidationMiddleware, logOrderStatusChange } from '../middleware/orderValidation.js'
 import { prisma } from '@packages/db'
 import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELED']),

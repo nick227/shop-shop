@@ -10,7 +10,7 @@ import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/d
 import { prisma } from '@packages/db'
 import { checkProductActivationRequirements } from '@packages/db/services'
 
-import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters'
+import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.js'
 
 // ========================================
 // Item Resource Definition

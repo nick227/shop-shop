@@ -15,8 +15,8 @@ import {
   removeTeamMember,
 } from '@packages/db'
 import { prisma } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers.js'
 
 const PermissionSchema = z.enum([
   'VIEW_ORDERS',

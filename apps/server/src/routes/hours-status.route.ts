@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import { HoursStatusService } from '../services/hoursStatus.service'
-import { checkoutDeliveryValidationRoute } from './checkoutDeliveryValidation.route'
+import { HoursStatusService } from '../services/hoursStatus.service.js'
+import { checkoutDeliveryValidationRoute } from './checkoutDeliveryValidation.route.js'
 
 export async function hoursStatusRoute(fastify: FastifyInstance) {
   const hoursStatusService = new HoursStatusService()

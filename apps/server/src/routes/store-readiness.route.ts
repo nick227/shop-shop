@@ -1,6 +1,6 @@
 ﻿import type { FastifyInstance } from 'fastify'
-import { requireRole } from '../middleware/rbac'
-import { requireVendorAuth } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { requireVendorAuth } from './vendor/vendorHelpers.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
 export const storeReadinessRoutes = async (app: FastifyInstance) => {

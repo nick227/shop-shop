@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { prisma } from '@packages/db'
 import { Prisma } from '@packages/db/generated/client'
 import { z } from 'zod'
-import { requireRole } from '../middleware/rbac'
+import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 import { VendorErrors } from './vendor/vendorHelpers.js'
 

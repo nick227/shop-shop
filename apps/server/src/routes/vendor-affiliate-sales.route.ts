@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers.js'
 import {
   getStoreAffiliateRecentOrders,
   getStoreAffiliateSalesByAffiliate,

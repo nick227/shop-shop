@@ -1,8 +1,8 @@
 import type { FastifyReply } from 'fastify'
-import { userHasStoreAccess } from '../../middleware/storeAccess'
+import { userHasStoreAccess } from '../../middleware/storeAccess.js'
 
 // Re-export for convenience
-export { userHasStoreAccess } from '../../middleware/storeAccess'
+export { userHasStoreAccess } from '../../middleware/storeAccess.js'
 
 /**
  * Standardized error responses for vendor routes

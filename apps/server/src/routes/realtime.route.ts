@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from 'ws'
 import fastifyWebsocket from '@fastify/websocket'
 import { verifyJWT } from '@packages/db'
-import { realtimeBroker } from '../services/realtime.broker'
+import { realtimeBroker } from '../services/realtime.broker.js'
 
 const PROTOCOL_VERSION = 1
 const PING_INTERVAL = 30000 // 30 seconds

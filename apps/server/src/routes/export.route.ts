@@ -11,9 +11,9 @@ import {
   exportVendorPayoutsToCSV,
   prisma,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
+import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const DateRangeSchema = z.object({
   startDate: z.string().datetime().optional(),

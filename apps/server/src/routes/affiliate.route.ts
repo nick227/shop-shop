@@ -25,8 +25,8 @@ import {
   getReferredOrders,
   prisma,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 async function requireActiveAffiliate(req: any, reply: any) {
   const userId = req.user?.id as string | undefined

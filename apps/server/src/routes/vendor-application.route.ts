@@ -8,8 +8,8 @@ import {
   approveVendorApplication,
   rejectVendorApplication
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 import { prisma } from '@packages/db'
 import type { Role } from '@packages/db/generated/client'
 

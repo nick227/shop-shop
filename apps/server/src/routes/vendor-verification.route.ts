@@ -11,8 +11,8 @@ import {
   getVerificationStats,
   isVendorVerified,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const CreateVerificationSchema = z.object({
   businessName: z.string().min(1),

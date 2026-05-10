@@ -11,8 +11,8 @@ import {
   updateVendorPayoutStatus,
   createPayoutAdjustment,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
-import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers'
+import { requireRole } from '../middleware/rbac.js'
+import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers.js'
 
 const ProcessPayoutSchema = z.object({
   storeId: z.string().uuid(),

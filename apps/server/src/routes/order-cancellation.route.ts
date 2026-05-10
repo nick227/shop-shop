@@ -8,10 +8,10 @@ import {
   CANCELLATION_REASONS,
   prisma,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac'
+import { requireRole } from '../middleware/rbac.js'
 import { rateLimits } from '../constants/rateLimits.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
-import { VendorErrors } from './vendor/vendorHelpers'
+import { VendorErrors } from './vendor/vendorHelpers.js'
 
 const CancelOrderSchema = z.object({
   orderId: z.string().uuid(),

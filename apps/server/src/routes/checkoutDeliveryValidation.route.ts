@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { CheckoutDeliveryValidationService } from '../services/checkoutDeliveryValidation.service'
+import { CheckoutDeliveryValidationService } from '../services/checkoutDeliveryValidation.service.js'
 
 export async function checkoutDeliveryValidationRoute(fastify: FastifyInstance) {
   const validationService = new CheckoutDeliveryValidationService()
