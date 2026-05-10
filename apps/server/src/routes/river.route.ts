@@ -7,7 +7,7 @@ import {
   RiverFeedQuerySchema,
   UpdatePostPrioritySchema,
   type CreateCommentInput,
-} from '@packages/schemas-river-dto'
+} from '@packages/schemas'
 import {
   createPost,
   getPosts,
