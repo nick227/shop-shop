@@ -13,9 +13,6 @@ export function VendorStoreSwitcher() {
 
   return (
     <div className={styles.storeSwitcher}>
-      <label className={styles.storeSwitcherLabel} htmlFor="vendor-active-store">
-        Store
-      </label>
       <select
         id="vendor-active-store"
         className={styles.storeSwitcherSelect}

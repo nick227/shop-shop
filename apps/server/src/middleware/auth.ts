@@ -8,6 +8,7 @@ export interface AuthenticatedUser {
   email: string
   name: string | null
   phone: string | null
+  suspendedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -28,7 +29,7 @@ export const optionalAuthenticate = async (req: FastifyRequest, _reply: FastifyR
     const token = authHeader.substring(7)
     const decoded = verifyJWT(token)
     const user = await getUserById(decoded.userId)
-    if (user) {
+    if (user && !user.suspendedAt) {
       req.user = user as AuthenticatedUser
     }
   } catch {
@@ -54,11 +55,12 @@ export const authenticate = async (req: FastifyRequest, reply: FastifyReply) => 
     // Get user from database
     const user = await getUserById(decoded.userId)
     if (!user) {
-      return reply.code(401).send({
-        error: 'User not found'
-      })
+      return reply.code(401).send({ error: 'User not found' })
     }
-    
+    if (user.suspendedAt) {
+      return reply.code(403).send({ error: 'Account suspended' })
+    }
+
     // Attach user to request
     req.user = user as AuthenticatedUser
   } catch (error) {

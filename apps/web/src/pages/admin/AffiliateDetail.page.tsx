@@ -1,16 +1,45 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { authFetch } from '@shared/lib/auth/authFetch'
-import { PageShell } from '@shared/ui/layout/PageShell'
-import { PageHeader } from '@shared/ui/layout/PageLayout'
-import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives/ui/Card/Card'
+import { useAuthStore } from '@stores/authStore'
+import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button, Input } from '@shared/ui/primitives'
 import { toast } from 'sonner'
+import { ArrowLeft } from 'lucide-react'
+
+function getApiBase() {
+  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+}
+
+function fmt(n: unknown) {
+  return '$' + Number(n ?? 0).toFixed(2)
+}
+
+function fmtDate(s: string | null | undefined) {
+  return s ? new Date(s).toLocaleDateString() : '—'
+}
+
+const PAYOUT_STATUS_COLOR: Record<string, 'default' | 'warning' | 'success' | 'destructive' | 'secondary'> = {
+  PENDING: 'warning',
+  PROCESSING: 'secondary',
+  COMPLETED: 'success',
+  FAILED: 'destructive',
+}
+
+const COMMISSION_STATUS_COLOR: Record<string, 'default' | 'warning' | 'success' | 'destructive' | 'secondary' | 'outline'> = {
+  PENDING: 'warning',
+  APPROVED: 'secondary',
+  PAID: 'success',
+  REVERSED: 'destructive',
+}
 
 export default function AdminAffiliateDetailPage() {
   const { affiliateId } = useParams<{ affiliateId: string }>()
+  const navigate = useNavigate()
+  const token = useAuthStore((s) => s.token)
   const queryClient = useQueryClient()
+  const apiBase = getApiBase()
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -19,12 +48,10 @@ export default function AdminAffiliateDetailPage() {
   const profileQuery = useQuery({
     queryKey: ['admin-affiliate', affiliateId],
     queryFn: async () => {
-      const res = await authFetch('/api/affiliates')
-      if (!res.ok) throw new Error('Failed to load')
-      const data = (await res.json()) as { affiliates: Record<string, unknown>[] }
-      const found = data.affiliates.find((a) => a.id === affiliateId)
-      if (!found) throw new Error('Affiliate not found')
-      return found
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}`, { headers })
+      if (!res.ok) throw new Error('Failed to load affiliate')
+      const data = await res.json()
+      return data.affiliate as Record<string, unknown>
     },
     enabled: !!affiliateId,
   })
@@ -32,17 +59,28 @@ export default function AdminAffiliateDetailPage() {
   const commissionsQuery = useQuery({
     queryKey: ['admin-affiliate-commissions', affiliateId],
     queryFn: async () => {
-      const res = await authFetch('/api/affiliates/me/commissions')
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/commissions?limit=20`, { headers })
       if (!res.ok) throw new Error('Failed to load commissions')
       return res.json() as Promise<{ commissions: Record<string, unknown>[]; total: number }>
     },
-    enabled: false,
+    enabled: !!affiliateId,
+  })
+
+  const payoutsQuery = useQuery({
+    queryKey: ['admin-affiliate-payouts', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/payouts?limit=20`, { headers })
+      if (!res.ok) throw new Error('Failed to load payouts')
+      return res.json() as Promise<{ payouts: Record<string, unknown>[]; total: number }>
+    },
+    enabled: !!affiliateId,
   })
 
   const payoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await authFetch(`/api/affiliates/${affiliateId}/payout`, {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/payout`, {
         method: 'POST',
+        headers,
         body: JSON.stringify({
           periodStart: new Date(periodStart).toISOString(),
           periodEnd: new Date(periodEnd).toISOString(),
@@ -54,124 +92,200 @@ export default function AdminAffiliateDetailPage() {
     },
     onSuccess: () => {
       toast.success('Payout created')
-      queryClient.invalidateQueries({ queryKey: ['admin-affiliate'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-payouts', affiliateId] })
+      queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
+      setPeriodStart('')
+      setPeriodEnd('')
     },
     onError: (err: Error) => toast.error(err.message),
   })
 
-  const affiliate = profileQuery.data
-  const user = affiliate?.user as Record<string, unknown> | undefined
-
   if (profileQuery.isLoading) {
-    return (
-      <PageShell className="bg-background" containerClassName="max-w-3xl" contentClassName="py-6">
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Spinner size="large" />
-        </div>
-      </PageShell>
-    )
+    return <div className="flex min-h-screen items-center justify-center"><Spinner size="large" /></div>
   }
 
-  if (!affiliate) {
-    return (
-      <PageShell className="bg-background" contentClassName="py-6">
-        <p className="text-muted-foreground">Affiliate not found.</p>
-      </PageShell>
-    )
-  }
+  const affiliate = profileQuery.data
+  if (!affiliate) return <div className="p-6 text-sm text-muted-foreground">Affiliate not found.</div>
+
+  const user = affiliate.user as Record<string, unknown> | undefined
+  const counts = affiliate._count as Record<string, unknown> | undefined
+  const commissions = commissionsQuery.data?.commissions ?? []
+  const payouts = payoutsQuery.data?.payouts ?? []
 
   return (
-    <PageShell
-      className="bg-background"
-      containerClassName="max-w-3xl"
-      contentClassName="space-y-5 py-6"
-    >
-      <PageHeader
-        title={`Affiliate: ${(user?.name as string) ?? (user?.email as string)}`}
-        description={`Referral code: ${affiliate.referralCode as string}`}
-      />
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <button
+        onClick={() => navigate('/admin/affiliates')}
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Affiliates
+      </button>
 
+      <div>
+        <h1 className="text-2xl font-bold">{(user?.name as string) ?? (user?.email as string)}</h1>
+        <p className="text-sm text-muted-foreground font-mono">{affiliate.referralCode as string}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Profile</p>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <Badge variant={affiliate.status === 'ACTIVE' ? 'success' : affiliate.status === 'PENDING' ? 'warning' : 'destructive'}>
+                  {affiliate.status as string}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Email</span>
+                <span className="text-right">{user?.email as string}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Commission</span>
+                <span>{affiliate.commissionRate ? `${(Number(affiliate.commissionRate) * 100).toFixed(0)}%` : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">PayPal</span>
+                <span className="text-right truncate max-w-[120px]">{(affiliate.paypalEmail as string) ?? '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Stores referred</span>
+                <span className="tabular-nums">{(counts?.referredStores as number) ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Commissions</span>
+                <span className="tabular-nums">{(counts?.commissions as number) ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payouts</span>
+                <span className="tabular-nums">{(counts?.payouts as number) ?? 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Process Payout</p>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Period Start</label>
+                <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Period End</label>
+                <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+              </div>
+              <select
+                value={payoutMethod}
+                onChange={(e) => setPayoutMethod(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+              >
+                <option value="PAYPAL">PayPal</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+                <option value="CHECK">Check</option>
+                <option value="STRIPE_TRANSFER">Stripe Transfer</option>
+              </select>
+              <Button
+                variant="primary"
+                size="small"
+                className="w-full"
+                onClick={() => payoutMutation.mutate()}
+                disabled={!periodStart || !periodEnd || payoutMutation.isPending}
+              >
+                {payoutMutation.isPending ? 'Processing…' : 'Create Payout'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Commissions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Status</span>
-            <Badge>{affiliate.status as string}</Badge>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Email</span>
-            <span>{user?.email as string}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Referral Code</span>
-            <span className="font-mono">{affiliate.referralCode as string}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Commission Rate</span>
-            <span>
-              {affiliate.commissionRate
-                ? `${(Number(affiliate.commissionRate) * 100).toFixed(0)}%`
-                : '-'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">PayPal</span>
-            <span>{(affiliate.paypalEmail as string) ?? '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Website</span>
-            <span>{(affiliate.website as string) ?? '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Tax ID</span>
-            <span>{(affiliate.taxId as string) ?? '-'}</span>
-          </div>
+        <CardContent className="space-y-3 p-4">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            Recent Commissions {commissionsQuery.data ? `(${commissionsQuery.data.total} total)` : ''}
+          </p>
+          {commissionsQuery.isLoading ? (
+            <div className="flex justify-center py-4"><Spinner /></div>
+          ) : commissions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No commissions yet.</p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <th className="px-3 py-2">Amount</th>
+                    <th className="px-3 py-2">Rate</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2 hidden sm:table-cell">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {commissions.map((c) => (
+                    <tr key={c.id as string} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 tabular-nums">{fmt(c.amount)}</td>
+                      <td className="px-3 py-2 tabular-nums">{(Number(c.rate) * 100).toFixed(0)}%</td>
+                      <td className="px-3 py-2">
+                        <Badge variant={COMMISSION_STATUS_COLOR[c.status as string] ?? 'outline'}>
+                          {c.status as string}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 hidden sm:table-cell text-muted-foreground">
+                        {fmtDate(c.createdAt as string)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Payouts */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Process Payout</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Period Start</label>
-              <Input
-                type="date"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
+        <CardContent className="space-y-3 p-4">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            Payouts {payoutsQuery.data ? `(${payoutsQuery.data.total} total)` : ''}
+          </p>
+          {payoutsQuery.isLoading ? (
+            <div className="flex justify-center py-4"><Spinner /></div>
+          ) : payouts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No payouts yet.</p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <th className="px-3 py-2">Amount</th>
+                    <th className="px-3 py-2">Method</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2 hidden sm:table-cell">Period</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {payouts.map((p) => (
+                    <tr key={p.id as string} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 tabular-nums">{fmt(p.amount)}</td>
+                      <td className="px-3 py-2">{p.method as string}</td>
+                      <td className="px-3 py-2">
+                        <Badge variant={PAYOUT_STATUS_COLOR[p.status as string] ?? 'outline'}>
+                          {p.status as string}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 hidden sm:table-cell text-muted-foreground text-xs">
+                        {fmtDate(p.periodStart as string)} – {fmtDate(p.periodEnd as string)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Period End</label>
-              <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium">Method</label>
-            <select
-              value={payoutMethod}
-              onChange={(e) => setPayoutMethod(e.target.value)}
-              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-            >
-              <option value="PAYPAL">PayPal</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-              <option value="CHECK">Check</option>
-              <option value="STRIPE_TRANSFER">Stripe Transfer</option>
-            </select>
-          </div>
-          <Button
-            variant="primary"
-            onClick={() => payoutMutation.mutate()}
-            disabled={!periodStart || !periodEnd || payoutMutation.isPending}
-          >
-            {payoutMutation.isPending ? 'Processing...' : 'Create Payout'}
-          </Button>
+          )}
         </CardContent>
       </Card>
-    </PageShell>
+    </div>
   )
 }

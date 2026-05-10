@@ -138,9 +138,18 @@ function KitchenContainer() {
     )
   }
 
+  const acceptsOnlineCards = (store as { acceptsOnlineCardPayments?: boolean }).acceptsOnlineCardPayments
+
   return (
     <div className="space-y-8">
       <StoreHeader store={store} />
+
+      {acceptsOnlineCards === false ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+          This store is not accepting online card payments yet (Stripe Connect setup may still be in progress). You can
+          still browse the menu — choose another payment option at checkout if available, or contact the store.
+        </div>
+      ) : null}
 
       {menuSections.length > 0 && menuSections.map((section) => (
         <section key={section.label}>

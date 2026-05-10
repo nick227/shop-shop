@@ -10,6 +10,14 @@ const getIssues = (details?: Record<string, unknown>): ValidationIssue[] | undef
 export const httpErrorHandlers: Record<number, ErrorHandler> = {
   400: (details) => new AppError('Bad request', 'BAD_REQUEST', 400, details, getIssues(details)),
   401: (details) => new AppError('Unauthorized', 'UNAUTHORIZED', 401, details),
+  /** Store cannot route card charges (Stripe Connect not ready). Prefer API body message when present. */
+  402: (details) =>
+    new AppError(
+      'This store is not accepting online card payments yet. Please choose another payment option or contact the store.',
+      'PAYMENT_UNAVAILABLE',
+      402,
+      details,
+    ),
   403: (details) => new AppError('Forbidden', 'FORBIDDEN', 403, details),
   404: (details) => new AppError('Not found', 'NOT_FOUND', 404, details),
   409: (details) => new AppError('Conflict', 'CONFLICT', 409, details),

@@ -23,7 +23,14 @@ import { tipRoutes } from './routes/tip.route.js'
 import { affiliateRoutes } from './routes/affiliate.route.js'
 import { deliveryZoneRoutes } from './routes/delivery-zone.route.js'
 import { storeReadinessRoutes } from './routes/store-readiness.route.js'
+import { storeDeliveryOptionsRoutes } from './routes/store-delivery-options.route.js'
+import { deliveryQuoteRoutes } from './routes/delivery-quote.route.js'
+import { deliveryDispatchRoutes } from './routes/delivery-dispatch.route.js'
 import { deliveryTrackingRoutes } from './routes/delivery-tracking.route.js'
+import { storeDoorDashConfigRoutes } from './routes/store-doordash-config.route.js'
+import { adminDeliveryRefreshRoutes } from './routes/admin-delivery-refresh.route.js'
+import { deliveryRealtimeRoutes } from './routes/delivery-realtime.route.js'
+import { inHouseDeliveryActionsRoutes } from './routes/inhouse-delivery-actions.route.js'
 import { vendorVerificationRoutes } from './routes/vendor-verification.route.js'
 import { exportRoutes } from './routes/export.route.js'
 import { vendorPayoutRoutes } from './routes/vendor-payout.route.js'
@@ -35,6 +42,9 @@ import { favoritesRoutes } from './routes/favorites.route.js'
 import { searchUnifiedRoutes } from './routes/search-unified.route.js'
 import { tagsRoutes } from './routes/tags.route.js'
 import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
+import { adminRoutes } from './routes/admin.route.js'
+import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
+import { settingsPublicRoutes } from './routes/settings-public.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
 import multipart from '@fastify/multipart'
@@ -167,7 +177,14 @@ await app.register(tipRoutes)
 await app.register(affiliateRoutes, { prefix: '/api' }) 
 await app.register(deliveryZoneRoutes) 
 await app.register(storeReadinessRoutes) 
-await app.register(deliveryTrackingRoutes)
+await app.register(storeDeliveryOptionsRoutes) 
+await app.register(deliveryQuoteRoutes) 
+await app.register(deliveryDispatchRoutes) 
+await app.register(deliveryTrackingRoutes) 
+await app.register(storeDoorDashConfigRoutes)
+await app.register(adminDeliveryRefreshRoutes)
+await app.register(deliveryRealtimeRoutes)
+await app.register(inHouseDeliveryActionsRoutes)
 await app.register(vendorVerificationRoutes) 
 await app.register(exportRoutes) 
 await app.register(vendorPayoutRoutes) 
@@ -182,6 +199,12 @@ await app.register(itemAnalyticsRoutes)
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES)
+
+// Admin routes (all protected by requireAdmin inside the route file)
+await app.register(adminRoutes, { prefix: '/api' })
+await app.register(adminCatalogRoutes, { prefix: '/api' })
+// Public settings (no auth)
+await app.register(settingsPublicRoutes, { prefix: '/api' })
 
 // Register search routes at the end to avoid conflicts
 await app.register(searchUnifiedRoutes)

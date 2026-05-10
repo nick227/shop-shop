@@ -1,7 +1,8 @@
 import { Decimal } from 'decimal.js'
-import { prisma, processOrderPayment } from '@packages/db'
+import { prisma, processOrderPayment, publishOrderCreated } from '@packages/db'
 import { OrderDomain } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
+import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
 
 const TAX_RATE = 0.0825
 const DEFAULT_DELIVERY_FEE = 3.99
@@ -66,6 +67,16 @@ export type CompleteCheckoutInput = {
   paymentMethod: { type: string; token: string }
   tipAmount: number
   promoCode?: string
+  /** CARD = Stripe; COD = pay at pickup/delivery (requires ENABLE_COD_PAYMENTS). */
+  paymentRail?: 'CARD' | 'COD'
+}
+
+function resolvePaymentRail(input: CompleteCheckoutInput): 'CARD' | 'COD' {
+  if (input.paymentRail === 'COD' || input.paymentRail === 'CARD') {
+    return input.paymentRail
+  }
+  const t = input.paymentMethod.token
+  return t === 'cod_test' || t === 'cod' ? 'COD' : 'CARD'
 }
 
 export async function createCheckoutSession(userId: string, input: CreateSessionInput) {
@@ -157,6 +168,18 @@ export async function completeCheckout(userId: string | undefined, input: Comple
     input.tipAmount,
   )
 
+  const rail = resolvePaymentRail(input)
+
+  if (rail === 'COD') {
+    if (!isCodPaymentsEnabled()) {
+      throw new AppError(403, 'Cash on delivery payments are not enabled')
+    }
+  } else if (input.paymentMethod.token === 'cod_test' || input.paymentMethod.token.startsWith('cod_')) {
+    throw new AppError(400, 'Invalid Stripe payment method')
+  }
+
+  const orderStatusInitial = rail === 'COD' ? 'PLACED' : 'PENDING_PAYMENT'
+
   // Phase 1 — atomic: order row + cart state change together.
   // Cart is SUBMITTED only when the order record exists, preventing double-orders.
   const order = await prisma.$transaction(async (tx) => {
@@ -195,7 +218,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         userId: checkoutUserId,
         storeId: cart.storeId,
         cartId: input.sessionId,
-        status: 'PENDING_PAYMENT',
+        status: orderStatusInitial,
         deliveryType,
         deliveryMode,
         ...(attribution ?? {}),
@@ -234,8 +257,23 @@ export async function completeCheckout(userId: string | undefined, input: Comple
     return created
   })
 
-  // Phase 2 — external: Stripe call outside the DB transaction so the
-  // connection is not held open during a network round-trip.
+  if (rail === 'COD') {
+    await publishOrderCreated(order.id).catch((err) => {
+      console.error('[Checkout] publishOrderCreated failed:', err)
+    })
+
+    return {
+      order: {
+        id: order.id,
+        status: order.status,
+        total: totals.total.toNumber(),
+        createdAt: order.createdAt.toISOString(),
+      },
+      paymentId: null,
+    }
+  }
+
+  // Phase 2 — Stripe (card): PI created/confirmed here; PAID + vendor notify via webhook (durable).
   let paymentResult
   try {
     paymentResult = await processOrderPayment({
@@ -250,13 +288,17 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       where: { id: order.id },
       data: { paymentStatus: 'UNPAID' },
     }).catch(() => {})
+    if (err.message === 'STORE_CARD_PAYMENTS_UNAVAILABLE') {
+      throw new AppError(
+        402,
+        'This store cannot accept card payments yet. Complete Stripe Connect onboarding or choose another payment option.',
+      )
+    }
+    if (err.message === 'INVALID_STRIPE_PAYMENT_METHOD') {
+      throw new AppError(400, 'A valid Stripe card payment is required')
+    }
     throw err
   }
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { paymentStatus: 'PAID' },
-  })
 
   return {
     order: {

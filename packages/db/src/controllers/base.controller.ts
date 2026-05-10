@@ -14,6 +14,7 @@ export interface AuthenticatedRequest extends FastifyRequest {
     email: string
     name: string | null
     phone: string | null
+    suspendedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }

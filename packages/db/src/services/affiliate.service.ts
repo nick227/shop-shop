@@ -8,6 +8,10 @@ import type {
   CommissionStatus,
   PayoutStatus,
 } from '../generated/client'
+import {
+  buildAffiliateCommissionCandidatesForOrder,
+  upsertCommissionCandidate,
+} from './affiliate-commission.service.js'
 
 export interface CreateAffiliateInput {
   userId: string
@@ -323,38 +327,8 @@ export async function getAffiliatePayouts(
 }
 
 export async function calculateCommissionForOrder(orderId: string): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: {
-      id: true,
-      storeId: true,
-      serviceFeeAmount: true,
-      referredByAffiliateId: true,
-      paymentStatus: true,
-    },
-  })
-
-  if (!order || order.paymentStatus !== 'PAID' || !order.referredByAffiliateId) {
-    return
-  }
-
-  const affiliate = await prisma.affiliate.findUnique({
-    where: { id: order.referredByAffiliateId },
-    select: { id: true, commissionRate: true, status: true },
-  })
-  if (!affiliate || affiliate.status !== 'ACTIVE') return
-
-  const serviceFee = Number(order.serviceFeeAmount)
-  const commissionAmount = serviceFee * Number(affiliate.commissionRate)
-
-  await createCommission({
-    affiliateId: affiliate.id,
-    orderId: order.id,
-    storeId: order.storeId,
-    amount: commissionAmount,
-    rate: Number(affiliate.commissionRate),
-    serviceFeeBase: serviceFee,
-  })
+  const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId)
+  await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
 }
 
 export async function listAffiliates(options?: {

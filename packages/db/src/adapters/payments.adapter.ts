@@ -34,6 +34,8 @@ export interface CreatePaymentIntentParams {
   paymentMethodId?: string
   connectedAccountId?: string
   applicationFeeAmount?: Decimal
+  /** Stripe idempotency key for PaymentIntent create (retries, disconnect safety). */
+  idempotencyKey?: string
 }
 
 export interface CreatePaymentIntentResult {
@@ -111,15 +113,20 @@ export const createPaymentIntent = async (
     paymentIntentParams.confirm = true
   }
 
-  // Add connected account (for marketplace)
-  if (params.connectedAccountId && params.applicationFeeAmount) {
-    paymentIntentParams.application_fee_amount = params.applicationFeeAmount.times(100).toNumber()
+  // Connect destination charges — transfer_data whenever we route to a connected account;
+  // application fee is optional (omit when zero).
+  if (params.connectedAccountId) {
     paymentIntentParams.transfer_data = {
       destination: params.connectedAccountId,
     }
+    if (params.applicationFeeAmount && params.applicationFeeAmount.gt(0)) {
+      paymentIntentParams.application_fee_amount = params.applicationFeeAmount.times(100).toNumber()
+    }
   }
 
-  const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams)
+  const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
+  })
 
   return {
     paymentIntentId: paymentIntent.id,
@@ -237,6 +244,13 @@ export const createAccountLink = async (
 export const retrieveAccount = async (accountId: string): Promise<Stripe.Account> => {
   const stripe = getStripe()
   return stripe.accounts.retrieve(accountId)
+}
+
+/** Express / Connect dashboard — vendor manages payouts and bank details. */
+export const createExpressLoginLink = async (accountId: string): Promise<{ url: string }> => {
+  const stripe = getStripe()
+  const link = await stripe.accounts.createLoginLink(accountId)
+  return { url: link.url }
 }
 
 // ========================================

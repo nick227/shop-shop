@@ -122,6 +122,10 @@ export const createTestStore = async (vendorId: string, overrides?: {
   name?: string
   slug?: string
   isPublished?: boolean
+  stripeAccountId?: string | null
+  stripeOnboarded?: boolean
+  stripeChargesEnabled?: boolean
+  stripePayoutsEnabled?: boolean
 }) => {
   const { randomUUID } = await import('crypto')
   const uniqueId = randomUUID()
@@ -137,6 +141,10 @@ export const createTestStore = async (vendorId: string, overrides?: {
       slug: overrides?.slug || `${TEST_NAMESPACE}-store-${uniqueId}`,
       ownerUserId: owner.id,
       isPublished: overrides?.isPublished ?? true,
+      ...(overrides?.stripeAccountId !== undefined ? { stripeAccountId: overrides.stripeAccountId } : {}),
+      ...(overrides?.stripeOnboarded !== undefined ? { stripeOnboarded: overrides.stripeOnboarded } : {}),
+      ...(overrides?.stripeChargesEnabled !== undefined ? { stripeChargesEnabled: overrides.stripeChargesEnabled } : {}),
+      ...(overrides?.stripePayoutsEnabled !== undefined ? { stripePayoutsEnabled: overrides.stripePayoutsEnabled } : {}),
     },
   })
 }

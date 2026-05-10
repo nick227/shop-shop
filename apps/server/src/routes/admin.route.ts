@@ -325,6 +325,9 @@ export const adminRoutes = async (app: FastifyInstance) => {
     if (!['PENDING', 'SUBMITTED', 'UNDER_REVIEW'].includes(application.status)) {
       return reply.code(400).send({ error: 'Application is not awaiting review' })
     }
+    if (decision === 'reject' && !rejectionReason?.trim()) {
+      return reply.code(400).send({ error: 'A rejection reason is required' })
+    }
 
     await prisma.$transaction(async (tx) => {
       if (decision === 'approve') {
@@ -423,9 +426,133 @@ export const adminRoutes = async (app: FastifyInstance) => {
     settings: z.record(z.string()),
   })
 
+  // ─── Orders ──────────────────────────────────────────────────────────────────
+
+  app.get('/admin/orders', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const status = query.status?.trim() || ''
+    const paymentStatus = query.paymentStatus?.trim() || ''
+    const storeId = query.storeId?.trim() || ''
+    const search = query.search?.trim() || ''
+    const from = query.from ? new Date(query.from) : undefined
+    const to = query.to ? new Date(query.to) : undefined
+
+    const where = {
+      ...(status ? { status: status as never } : {}),
+      ...(paymentStatus ? { paymentStatus: paymentStatus as never } : {}),
+      ...(storeId ? { storeId } : {}),
+      ...((from || to)
+        ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { id: { contains: search } },
+              { user: { email: { contains: search } } },
+              { user: { name: { contains: search } } },
+            ],
+          }
+        : {}),
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        select: {
+          id: true,
+          status: true,
+          paymentStatus: true,
+          deliveryMode: true,
+          total: true,
+          createdAt: true,
+          user: { select: { id: true, name: true, email: true } },
+          store: { select: { id: true, name: true } },
+          _count: { select: { items: true } },
+        },
+      }),
+      prisma.order.count({ where }),
+    ])
+
+    return reply.send({ orders, total, pages: Math.ceil(total / PAGE_SIZE) })
+  })
+
+  app.get('/admin/orders/:orderId', async (req, reply) => {
+    const { orderId } = req.params as { orderId: string }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        store: { select: { id: true, name: true, slug: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
+        items: {
+          select: {
+            id: true,
+            titleSnapshot: true,
+            quantity: true,
+            unitPrice: true,
+            optionsJson: true,
+            notes: true,
+          },
+        },
+        events: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, status: true, note: true, createdAt: true },
+        },
+      },
+    })
+
+    if (!order) return reply.code(404).send({ error: 'Order not found' })
+    return reply.send({ order })
+  })
+
+  // ─── Affiliate Payouts ───────────────────────────────────────────────────────
+
+  app.get('/admin/affiliate-payouts', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const status = query.status?.trim() || ''
+
+    const where = status ? { status: status as never } : {}
+
+    const [payouts, total] = await Promise.all([
+      prisma.affiliatePayout.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        include: {
+          affiliate: {
+            select: {
+              id: true,
+              referralCode: true,
+              user: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      }),
+      prisma.affiliatePayout.count({ where }),
+    ])
+
+    return reply.send({ payouts, total, pages: Math.ceil(total / PAGE_SIZE) })
+  })
+
+  // ─── Settings ─────────────────────────────────────────────────────────────
+
   app.patch('/admin/settings', async (req, reply) => {
     const { settings } = SettingsUpdateSchema.parse(req.body)
     const adminId = req.user!.id
+
+    if ('platform.commission_rate' in settings) {
+      const rate = parseFloat(settings['platform.commission_rate'])
+      if (isNaN(rate) || rate < 0 || rate > 100) {
+        return reply.code(400).send({ error: 'platform.commission_rate must be a number between 0 and 100' })
+      }
+    }
 
     await Promise.all(
       Object.entries(settings).map(([key, value]) =>
@@ -442,5 +569,425 @@ export const adminRoutes = async (app: FastifyInstance) => {
     })
 
     return reply.send({ ok: true })
+  })
+
+  // ─── Delivery Operations ───────────────────────────────────────────────────────
+
+  app.get('/admin/delivery/stats', async (_req, reply) => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    const [
+      activeDeliveries,
+      failedDeliveries,
+      stuckDeliveries,
+      totalDeliveries,
+      doordashDeliveries,
+      inhouseDeliveries,
+      readyNotDispatched,
+      ,
+    ] = await Promise.all([
+      // Active deliveries (dispatched)
+      prisma.deliveryJob.count({
+        where: { status: 'DISPATCHED', createdAt: { gte: today } },
+      }),
+      // Failed deliveries today
+      prisma.deliveryJob.count({
+        where: { status: { in: ['FAILED', 'CANCELED'] }, createdAt: { gte: today } },
+      }),
+      // Stuck deliveries (dispatched > 2 hours ago)
+      prisma.deliveryJob.count({
+        where: {
+          status: 'DISPATCHED',
+          createdAt: { lt: new Date(now.getTime() - 2 * 60 * 60 * 1000) },
+        },
+      }),
+      // Total deliveries today
+      prisma.deliveryJob.count({ where: { createdAt: { gte: today } } }),
+      // DoorDash deliveries
+      prisma.deliveryJob.count({ where: { provider: 'DOORDASH_DRIVE', createdAt: { gte: today } } }),
+      // In-house deliveries
+      prisma.deliveryJob.count({ where: { provider: 'IN_HOUSE', createdAt: { gte: today } } }),
+      // Orders ready for third-party delivery but not dispatched
+      prisma.order.count({
+        where: {
+          status: 'READY',
+          deliveryMode: { in: ['THIRD_PARTY_PROVIDER', 'PLATFORM_DRIVER'] },
+          createdAt: { gte: today },
+        },
+      }),
+      // No numeric aggregate field available on DeliveryJob
+      Promise.resolve(null),
+    ])
+
+    return reply.send({
+      activeDeliveries,
+      failedDeliveries,
+      stuckDeliveries,
+      totalDeliveries,
+      providerSplit: { doordash: doordashDeliveries, inhouse: inhouseDeliveries },
+      readyNotDispatched,
+      avgDeliveryTime: null,
+      avgDeliveryFee: '0.00',
+    })
+  })
+
+  app.get('/admin/delivery/jobs', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const limit = Math.min(50, parseInt(query.limit || '20', 10))
+    const status = query.status?.trim()
+    const provider = query.provider?.trim()
+    const search = query.search?.trim()
+
+    const where = {
+      ...(status && status !== 'all' ? { status: status as never } : {}),
+      ...(provider && provider !== 'all' ? { provider: provider as never } : {}),
+      ...(search ? {
+        OR: [
+          { providerExternalId: { contains: search } },
+          { order: { id: { contains: search } } }
+        ]
+      } : {})
+    }
+
+    const [jobs, total] = await Promise.all([
+      prisma.deliveryJob.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          order: {
+            select: {
+              id: true,
+              status: true,
+              userId: true,
+              storeId: true,
+              total: true,
+              createdAt: true
+            }
+          }
+        }
+      }),
+      prisma.deliveryJob.count({ where })
+    ])
+
+    return reply.send({
+      deliveryJobs: jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    })
+  })
+
+  app.get('/admin/delivery/events', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const limit = Math.min(50, parseInt(query.limit || '20', 10))
+    const provider = query.provider?.trim()
+    const search = query.search?.trim()
+
+    const where = {
+      ...(provider && provider !== 'all' ? { provider: provider as never } : {}),
+      ...(search ? {
+        OR: [
+          { eventId: { contains: search } },
+          { deliveryJobId: { contains: search } }
+        ]
+      } : {})
+    }
+
+    const [events, total] = await Promise.all([
+      prisma.deliveryProviderEvent.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          deliveryJob: {
+            select: {
+              id: true,
+              provider: true,
+              order: {
+                select: {
+                  id: true,
+                  userId: true,
+                  storeId: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.deliveryProviderEvent.count({ where })
+    ])
+
+    return reply.send({
+      events,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    })
+  })
+
+  // ─── Finance Operations ───────────────────────────────────────────────────────
+
+  app.get('/admin/finance/stats', async (_req, reply) => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    const [
+      totalGMV,
+      paidOrders,
+      failedPayments,
+      platformFees,
+      storesMissingStripe,
+      pendingAffiliatePayouts,
+      ,
+      refundsToday,
+      ordersPendingPayment,
+    ] = await Promise.all([
+      // Total GMV today
+      prisma.order.aggregate({
+        where: { 
+          paymentStatus: 'PAID',
+          createdAt: { gte: today }
+        },
+        _sum: { total: true }
+      }),
+      // Paid orders today
+      prisma.order.count({
+        where: { 
+          paymentStatus: 'PAID',
+          createdAt: { gte: today }
+        }
+      }),
+      // Failed payments today
+      prisma.order.count({
+        where: { 
+          paymentStatus: 'REFUNDED',
+          createdAt: { gte: today }
+        }
+      }),
+      // Platform fees today (service fee)
+      prisma.order.aggregate({
+        where: {
+          paymentStatus: 'PAID',
+          createdAt: { gte: today },
+        },
+        _sum: { serviceFeeAmount: true },
+      }),
+      // Stores missing Stripe setup
+      prisma.store.count({
+        where: {
+          stripeAccountId: null,
+          status: 'ACTIVE',
+        },
+      }),
+      // Pending affiliate payouts
+      prisma.affiliatePayout.count({ where: { status: 'PENDING' } }),
+      // Pending affiliate payouts (duplicate slot — vendor payout model not available)
+      Promise.resolve(0),
+      // Refunds today
+      prisma.order.count({
+        where: {
+          paymentStatus: 'REFUNDED',
+          createdAt: { gte: today },
+        },
+      }),
+      // Orders stuck in PENDING_PAYMENT
+      prisma.order.count({
+        where: {
+          status: 'PENDING_PAYMENT',
+          createdAt: { lt: new Date(now.getTime() - 30 * 60 * 1000) },
+        },
+      }),
+    ])
+
+    return reply.send({
+      gmvToday: Number(totalGMV._sum?.total ?? 0),
+      paidOrdersToday: paidOrders,
+      failedPaymentsToday: failedPayments,
+      platformFeesToday: 0,
+      storesMissingStripe,
+      pendingVendorPayouts: 0,
+      pendingAffiliatePayouts,
+      refundsToday,
+      ordersPendingPayment,
+    })
+  })
+
+  app.get('/admin/finance/stripe-connect', async (_req, reply) => {
+    const stores = await prisma.store.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        stripeAccountId: true,
+        stripeChargesEnabled: true,
+        stripePayoutsEnabled: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        _count: {
+          select: {
+            orders: {
+              where: {
+                paymentStatus: 'PAID',
+                createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // last 7 days
+              }
+            }
+          }
+        }
+      }
+    })
+
+    const storesWithStripe = stores.filter(s => s.stripeAccountId)
+    const storesWithoutStripe = stores.filter(s => !s.stripeAccountId)
+
+    return reply.send({
+      storesWithStripe: storesWithStripe.map(s => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        stripeAccountId: s.stripeAccountId,
+        stripeChargesEnabled: s.stripeChargesEnabled,
+        stripePayoutsEnabled: s.stripePayoutsEnabled,
+        owner: s.owner,
+        recentOrders: s._count.orders
+      })),
+      storesWithoutStripe: storesWithoutStripe.map(s => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        owner: s.owner,
+        recentOrders: s._count.orders
+      })),
+      summary: {
+        totalActiveStores: stores.length,
+        withStripeConnect: storesWithStripe.length,
+        missingStripeConnect: storesWithoutStripe.length
+      }
+    })
+  })
+
+  app.get('/admin/finance/payments', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const limit = Math.min(50, parseInt(query.limit || '20', 10))
+    const status = query.status?.trim()
+    const search = query.search?.trim()
+    const from = query.from ? new Date(query.from) : undefined
+    const to = query.to ? new Date(query.to) : undefined
+
+    const where = {
+      ...(status && status !== 'all' ? { paymentStatus: status as never } : {}),
+      ...((from || to)
+        ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { id: { contains: search } },
+              { user: { email: { contains: search } } },
+              { user: { name: { contains: search } } },
+            ],
+          }
+        : {}),
+    }
+
+    const [payments, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          paymentStatus: true,
+          total: true,
+          stripePaymentIntentId: true,
+          createdAt: true,
+          user: { select: { id: true, name: true, email: true } },
+          store: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.order.count({ where }),
+    ])
+
+    return reply.send({ payments, total, pages: Math.ceil(total / limit) })
+  })
+
+  app.get('/admin/finance/payouts', async (req, reply) => {
+    const query = req.query as Record<string, string>
+    const page = Math.max(1, parseInt(query.page || '1', 10))
+    const limit = Math.min(50, parseInt(query.limit || '20', 10))
+    const status = query.status?.trim()
+
+    const where = status ? { status: status as never } : {}
+
+    const [payouts, total] = await Promise.all([
+      prisma.affiliatePayout.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          affiliate: {
+            select: {
+              id: true,
+              referralCode: true,
+              user: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      }),
+      prisma.affiliatePayout.count({ where }),
+    ])
+
+    return reply.send({ payouts, total, pages: Math.ceil(total / limit) })
+  })
+
+  app.post('/admin/finance/stores/:storeId/stripe-refresh', async (req, reply) => {
+    const { storeId } = req.params as { storeId: string }
+    const adminId = req.user!.id
+
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        name: true,
+        stripeAccountId: true,
+        owner: { select: { id: true, name: true, email: true } },
+      },
+    })
+
+    if (!store) {
+      return reply.code(404).send({ error: 'Store not found' })
+    }
+
+    await writeAuditLog(adminId, 'REFRESH_STORE_STRIPE', 'Store', storeId, {
+      storeName: store.name,
+      previousStripeAccount: store.stripeAccountId,
+    })
+
+    return reply.send({
+      success: true,
+      message: 'Stripe refresh action logged',
+      storeId,
+      refreshedAt: new Date().toISOString(),
+    })
   })
 }

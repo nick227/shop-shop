@@ -40,7 +40,10 @@
       "PowerShell(Set-Location \"c:\\\\wamp64\\\\www\\\\shop-shop\\\\packages\\\\db\"; $env:FORCE_COLOR = \"0\"; npx prisma migrate dev --name add_store_youtube_channel --create-only 2>&1)",
       "Bash(node -e ' *)",
       "Bash(curl -s -X POST http://localhost:3005/auth/v1/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@seed.local\\\\\",\\\\\"password\\\\\":\\\\\"Test123456!\\\\\"}\")",
-      "Bash(curl -s http://localhost:3005/team/me/stores -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkNTcwOWYyOS0xN2ViLTRlODUtYWJiOS0xMGY5NzVmZGU0ZmEiLCJlbWFpbCI6ImFkbWluQHNlZWQubG9jYWwiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzgzNDAwMDYsImV4cCI6MTc3ODk0NDgwNn0.dAheDBN5O1m8EyFqz0G9Saz-bwA6kdeK7ClKWYd9bu8')"
+      "Bash(curl -s http://localhost:3005/team/me/stores -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkNTcwOWYyOS0xN2ViLTRlODUtYWJiOS0xMGY5NzVmZGU0ZmEiLCJlbWFpbCI6ImFkbWluQHNlZWQubG9jYWwiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzgzNDAwMDYsImV4cCI6MTc3ODk0NDgwNn0.dAheDBN5O1m8EyFqz0G9Saz-bwA6kdeK7ClKWYd9bu8')",
+      "Bash(Get-ChildItem -Directory)",
+      "PowerShell(cd C:\\\\wamp64\\\\www\\\\shop-shop\\\\apps\\\\server; \\(npx tsc --noEmit 2>&1\\) | Where-Object { $_ -match \"affiliate|commission|Affiliate|Commission|Payout|ReferralEvent\" }; Write-Host \"Done scanning\")",
+      "PowerShell(cd C:\\\\wamp64\\\\www\\\\shop-shop\\\\apps\\\\server; \\(npx tsc --noEmit 2>&1\\) | Where-Object { $_ -match \"affiliate|commission|Affiliate|Commission|Payout|ReferralEvent|backfill\" }; Write-Host \"Affiliate typecheck scan done\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\.claude\\projects\\c--wamp64-www-shop-shop\\memory"

@@ -1,9 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
-import { authFetch } from '@shared/lib/auth/authFetch'
-import { PageShell } from '@shared/ui/layout/PageShell'
-import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button } from '@shared/ui/primitives'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
@@ -36,6 +34,7 @@ const statusColor: Record<
 
 export default function AdminAffiliatesPage() {
   const token = useAuthStore((s) => s.token)
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [filterStatus, setFilterStatus] = useState('')
 
@@ -75,12 +74,11 @@ export default function AdminAffiliatesPage() {
   const affiliates = listQuery.data?.affiliates ?? []
 
   return (
-    <PageShell
-      className="bg-background"
-      containerClassName="max-w-6xl"
-      contentClassName="space-y-5 py-6"
-    >
-      <PageHeader title="Affiliates" description="Monitor affiliates and manage account status." />
+    <div className="mx-auto max-w-5xl space-y-5 p-6">
+      <div>
+        <h1 className="text-2xl font-bold">Affiliates</h1>
+        <p className="text-sm text-muted-foreground">Monitor affiliates and manage account status.</p>
+      </div>
 
       <div className="flex items-center gap-2">
         <label className="text-sm text-muted-foreground">Status:</label>
@@ -136,6 +134,13 @@ export default function AdminAffiliatesPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="small"
+                      variant="outline"
+                      onClick={() => navigate(`/admin/affiliates/${a.id as string}`)}
+                    >
+                      View
+                    </Button>
                     {a.status === 'PENDING' && (
                       <Button
                         size="small"
@@ -187,6 +192,6 @@ export default function AdminAffiliatesPage() {
           })}
         </div>
       ))}
-    </PageShell>
+    </div>
   )
 }

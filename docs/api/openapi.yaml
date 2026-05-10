@@ -304,6 +304,10 @@ components:
           minimum: 0
         promoCode:
           type: string
+        paymentRail:
+          type: string
+          description: CARD uses Stripe; COD is cash on pickup/delivery when ENABLE_COD_PAYMENTS is enabled server-side.
+          enum: [CARD, COD]
     CompleteCheckoutResponse:
       type: object
       required: [order, paymentId]
@@ -313,6 +317,8 @@ components:
           $ref: '#/components/schemas/CheckoutOrderSummary'
         paymentId:
           type: string
+          nullable: true
+          description: Stripe PaymentIntent id for card checkout; null for COD orders.
     CheckoutOrderSummary:
       type: object
       required: [id, status, total, createdAt]

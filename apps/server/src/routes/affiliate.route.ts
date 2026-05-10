@@ -12,6 +12,7 @@ import {
   listAffiliates,
   processPayout,
   updatePayoutStatus,
+  prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac'
 import { VendorErrors } from './vendor/vendorHelpers'
@@ -239,6 +240,50 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       throw error
     }
+  })
+
+  // GET /affiliates/:id - Get full affiliate detail by ID (admin only)
+  app.get('/affiliates/:id', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const affiliate = await prisma.affiliate.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        _count: { select: { commissions: true, payouts: true, referredStores: true } },
+      },
+    })
+    if (!affiliate) return reply.code(404).send({ error: 'Affiliate not found' })
+    return reply.send({ affiliate })
+  })
+
+  // GET /affiliates/:id/commissions - Get commissions for any affiliate (admin only)
+  app.get('/affiliates/:id/commissions', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const query = req.query as { status?: string; limit?: string; offset?: string }
+    const result = await getCommissionsByAffiliate(id, {
+      status: query.status as 'PENDING' | 'APPROVED' | 'PAID' | 'REVERSED' | undefined,
+      limit: query.limit ? parseInt(query.limit) : undefined,
+      offset: query.offset ? parseInt(query.offset) : undefined,
+    })
+    return reply.code(200).send(result)
+  })
+
+  // GET /affiliates/:id/payouts - Get payouts for any affiliate (admin only)
+  app.get('/affiliates/:id/payouts', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const query = req.query as { status?: string; limit?: string; offset?: string }
+    const result = await getAffiliatePayouts(id, {
+      status: query.status as 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | undefined,
+      limit: query.limit ? parseInt(query.limit) : undefined,
+      offset: query.offset ? parseInt(query.offset) : undefined,
+    })
+    return reply.code(200).send(result)
   })
 
   // GET /affiliates/referral/:code - Get affiliate by referral code (public)

@@ -307,9 +307,16 @@ class ApiClient {
     const payload = input.payload && typeof input.payload === 'object'
       ? (input.payload as { error?: string; message?: string; requestId?: string })
       : null
+    const messageFromPayload =
+      typeof payload?.message === 'string'
+        ? payload.message
+        : typeof payload?.error === 'string'
+          ? payload.error
+          : undefined
+
     return {
       error: typeof payload?.error === 'string' ? payload.error : input.fallbackError,
-      message: typeof payload?.message === 'string' ? payload.message : input.fallbackMessage,
+      message: messageFromPayload ?? input.fallbackMessage,
       status: input.status ?? 0,
       requestId: typeof payload?.requestId === 'string' ? payload.requestId : input.requestId,
       payload,

@@ -197,7 +197,7 @@ function VendorStoreCard({ store, isActive, onSelect, onEdit, onViewItems }: Ven
 
   return (
     <Card className={`flex flex-col overflow-hidden transition-colors tap-scale active:scale-[0.98] ${isActive ? 'border-green-500 border-2 ring-2 ring-green-500/20' : 'hover:border-green-500/50'}`}>
-      <div className="border-b border-border/50 h-36 overflow-hidden bg-muted">
+      <div className="border-b border-border/50 h-64 overflow-hidden bg-muted">
         {imageUrl ? (
           <img
             src={imageUrl}

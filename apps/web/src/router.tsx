@@ -6,6 +6,7 @@ import { Layout } from './layouts/MainLayout'
 import { VendorLayout } from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { AffiliateLayout } from './layouts/AffiliateLayout'
+import { AdminLayout } from './layouts/AdminLayout'
 import { ProtectedRoute, lazyRoute } from './router/utils'
 
 // Lazy load pages for code splitting;
@@ -38,9 +39,21 @@ const ReferralRedirectPage = lazy(() => import('./pages/public/ReferralRedirect.
 const AffiliateStatusPage = lazy(() => import('./pages/affiliate/Status.page'))
 
 // Admin pages;
+const AdminDashboardPage = lazy(() => import('./pages/admin/Dashboard.page'))
+const AdminUsersPage = lazy(() => import('./pages/admin/Users.page'))
+const AdminUserDetailPage = lazy(() => import('./pages/admin/UserDetail.page'))
+const AdminVendorsPage = lazy(() => import('./pages/admin/Vendors.page'))
+const AdminVendorApplicationsPage = lazy(() => import('./pages/admin/VendorApplications.page'))
+const AdminVendorDetailPage = lazy(() => import('./pages/admin/VendorDetail.page'))
+const AdminCatalogPage = lazy(() => import('./pages/admin/Catalog.page'))
+const AdminAuditLogPage = lazy(() => import('./pages/admin/AuditLog.page'))
+const AdminSettingsPage = lazy(() => import('./pages/admin/Settings.page'))
 const AdminAffiliatesPage = lazy(() => import('./pages/admin/Affiliates.page'))
 const AdminAffiliateDetailPage = lazy(() => import('./pages/admin/AffiliateDetail.page'))
 const AdminAffiliatePayoutsPage = lazy(() => import('./pages/admin/AffiliatePayouts.page'))
+const AdminOrdersPage = lazy(() => import('./pages/admin/Orders.page'))
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/OrderDetail.page'))
+const AdminDeliveryPage = lazy(() => import('./pages/admin/DeliveryOperations.page'))
 
 // Vendor pages;
 const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
@@ -237,31 +250,91 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
             },
           ],
         },
-        // Admin affiliate management routes (ADMIN role required)
+        // Admin portal (ADMIN role required — single ProtectedRoute at layout level)
         {
-          path: '/admin/affiliates',
-          element: (
-            <ProtectedRoute requiredRole="ADMIN">{lazyRoute(AdminAffiliatesPage)}</ProtectedRoute>
-          ),
-          handle: { title: 'Admin - Affiliates' },
-        },
-        {
-          path: '/admin/affiliates/:affiliateId',
+          path: '/admin',
           element: (
             <ProtectedRoute requiredRole="ADMIN">
-              {lazyRoute(AdminAffiliateDetailPage)}
+              <AdminLayout />
             </ProtectedRoute>
           ),
-          handle: { title: 'Admin - Affiliate Detail' },
-        },
-        {
-          path: '/admin/affiliate-payouts',
-          element: (
-            <ProtectedRoute requiredRole="ADMIN">
-              {lazyRoute(AdminAffiliatePayoutsPage)}
-            </ProtectedRoute>
-          ),
-          handle: { title: 'Admin - Affiliate Payouts' },
+          children: [
+            {
+              index: true,
+              element: lazyRoute(AdminDashboardPage),
+              handle: { title: 'Admin Dashboard' },
+            },
+            {
+              path: 'users',
+              element: lazyRoute(AdminUsersPage),
+              handle: { title: 'Admin - Users' },
+            },
+            {
+              path: 'users/:userId',
+              element: lazyRoute(AdminUserDetailPage),
+              handle: { title: 'Admin - User Detail' },
+            },
+            {
+              path: 'vendors',
+              element: lazyRoute(AdminVendorsPage),
+              handle: { title: 'Admin - Vendors' },
+            },
+            {
+              path: 'vendors/applications',
+              element: lazyRoute(AdminVendorApplicationsPage),
+              handle: { title: 'Admin - Vendor Applications' },
+            },
+            {
+              path: 'vendors/:storeId',
+              element: lazyRoute(AdminVendorDetailPage),
+              handle: { title: 'Admin - Vendor Detail' },
+            },
+            {
+              path: 'catalog',
+              element: lazyRoute(AdminCatalogPage),
+              handle: { title: 'Admin - Catalog' },
+            },
+            {
+              path: 'audit',
+              element: lazyRoute(AdminAuditLogPage),
+              handle: { title: 'Admin - Audit Log' },
+            },
+            {
+              path: 'settings',
+              element: lazyRoute(AdminSettingsPage),
+              handle: { title: 'Admin - Settings' },
+            },
+            {
+              path: 'affiliates',
+              element: lazyRoute(AdminAffiliatesPage),
+              handle: { title: 'Admin - Affiliates' },
+            },
+            {
+              path: 'affiliates/:affiliateId',
+              element: lazyRoute(AdminAffiliateDetailPage),
+              handle: { title: 'Admin - Affiliate Detail' },
+            },
+            {
+              path: 'affiliate-payouts',
+              element: lazyRoute(AdminAffiliatePayoutsPage),
+              handle: { title: 'Admin - Affiliate Payouts' },
+            },
+            {
+              path: 'orders',
+              element: lazyRoute(AdminOrdersPage),
+              handle: { title: 'Admin - Orders' },
+            },
+            {
+              path: 'orders/:orderId',
+              element: lazyRoute(AdminOrderDetailPage),
+              handle: { title: 'Admin - Order Detail' },
+            },
+            {
+              path: 'delivery',
+              element: lazyRoute(AdminDeliveryPage),
+              handle: { title: 'Admin - Delivery' },
+            },
+          ],
         },
         // Vendor routes (wrapped in VendorLayout)
         // Open vendor model: any authenticated user can create or manage their stores.

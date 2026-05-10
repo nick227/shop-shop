@@ -14,6 +14,10 @@ import {
 } from '../adapters/payments.adapter.js'
 import { orderService } from './order.service.js'
 import { publishOrderCreated } from './order-realtime.publisher.js'
+import {
+  buildAffiliateCommissionCandidatesForOrder,
+  upsertCommissionCandidate,
+} from './affiliate-commission.service.js'
 
 function parseTeamPermissionsJson(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -382,6 +386,19 @@ export const refundOrder = async (input: RefundOrderInput) => {
 // Webhook Processing
 // ========================================
 
+/**
+ * Build and persist V2 commission candidates for a paid order.
+ * Errors are swallowed so a commission failure never breaks the payment webhook response.
+ */
+async function runV2Commissions(orderId: string): Promise<void> {
+  try {
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId)
+    await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
+  } catch (err) {
+    console.error('[Payment] Commission creation failed for order', orderId, err)
+  }
+}
+
 export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
   const order = await prisma.order.findUnique({
     where: { stripePaymentIntentId: paymentIntentId },
@@ -399,7 +416,9 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
     return
   }
 
+  // Already fully processed — idempotent path: ensure commissions exist and bail.
   if (order.paymentStatus === 'PAID' && order.status === 'PLACED') {
+    await runV2Commissions(order.id)
     return
   }
 
@@ -431,6 +450,9 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
       console.error('[Payment] publishOrderCreated failed:', err)
     })
   }
+
+  // Create affiliate commissions for this paid order (idempotent upsert).
+  await runV2Commissions(order.id)
 }
 
 export const handlePaymentIntentFailed = async (paymentIntentId: string) => {

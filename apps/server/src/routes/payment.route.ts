@@ -13,6 +13,7 @@ import {
 } from '@packages/db'
 import { requireAuth, requireRole } from '../middleware/rbac.js'
 import { rateLimits } from '../constants/rateLimits.js'
+import { resolveStripeConnectUrls } from '../config/stripeConnectUrls.js'
 import 'dotenv/config'
 
 // ========================================
@@ -62,6 +63,15 @@ export const paymentRoutes = async (app: FastifyInstance) => {
         if (error.message.includes('already paid')) {
           return reply.code(400).send({ error: error.message })
         }
+        if (error.message === 'STORE_CARD_PAYMENTS_UNAVAILABLE') {
+          return reply.code(402).send({
+            error:
+              'This store cannot accept card payments yet. Complete Stripe Connect onboarding first.',
+          })
+        }
+        if (error.message === 'INVALID_STRIPE_PAYMENT_METHOD') {
+          return reply.code(400).send({ error: 'A valid Stripe payment method is required' })
+        }
       }
       throw error
     }
@@ -84,15 +94,15 @@ export const paymentRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const input = CreateConnectAccountInputSchema.parse(req.body) as CreateConnectAccountInput
-      
-      const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3005}`
-      
+
+      const { returnUrl, refreshUrl } = resolveStripeConnectUrls()
+
       const result = await initiateStripeConnect({
         storeId: input.storeId,
         userId: req.user!.id,
         businessType: input.businessType,
-        returnUrl: `${baseUrl}/vendor/connect/success`,
-        refreshUrl: `${baseUrl}/vendor/connect/refresh`,
+        returnUrl,
+        refreshUrl,
       })
 
       req.log.info({
@@ -105,8 +115,11 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       return reply.code(200).send(result)
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
+        if (error.message.includes('Store not found')) {
           return reply.code(404).send({ error: error.message })
+        }
+        if (error.message.includes('Unauthorized')) {
+          return reply.code(403).send({ error: error.message })
         }
       }
       throw error
@@ -136,8 +149,11 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       return reply.code(200).send(status)
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
+        if (error.message.includes('Store not found')) {
           return reply.code(404).send({ error: error.message })
+        }
+        if (error.message.includes('Unauthorized')) {
+          return reply.code(403).send({ error: error.message })
         }
       }
       throw error

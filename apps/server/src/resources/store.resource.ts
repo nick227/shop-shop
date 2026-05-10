@@ -244,7 +244,12 @@ export const storeResource = defineResource({
     },
     afterRead: async (result) => {
       // Include media assets for single store read
-      const store = result as { id: string }
+      const store = result as {
+        id: string
+        stripeAccountId?: string | null
+        stripeOnboarded?: boolean | null
+        stripeChargesEnabled?: boolean | null
+      }
       const mediaAssets = await prisma.mediaAsset.findMany({
         where: { 
           storeId: store.id,
@@ -252,7 +257,16 @@ export const storeResource = defineResource({
         },
         orderBy: { sortIndex: 'asc' }
       })
-      return { ...(result as Record<string, unknown>), mediaAssets }
+      const acceptsOnlineCardPayments = Boolean(
+        store.stripeAccountId &&
+          store.stripeOnboarded &&
+          store.stripeChargesEnabled,
+      )
+      return {
+        ...(result as Record<string, unknown>),
+        mediaAssets,
+        acceptsOnlineCardPayments,
+      }
     },
     afterList: async (result, context) => {
       const listResult = result as { data: Array<{

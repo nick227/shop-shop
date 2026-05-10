@@ -11,14 +11,16 @@ import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { User, BarChart3, MapPin, Settings, Plus } from 'lucide-react'
+import { User, BarChart3, MapPin, Settings, Plus, LogOut } from 'lucide-react'
 import { formatCurrency } from '@shared/lib/format'
+import { useAuth } from '@features/auth/hooks/useAuth'
 
 // Extracted components and hooks
 import { useCustomerProfile } from './hooks/useCustomerProfile'
 import { ProfileField } from './components/ProfileField'
 
 export default function CustomerProfilePage() {
+  const { logout } = useAuth()
   const {
     user,
     stats,
@@ -156,6 +158,12 @@ export default function CustomerProfilePage() {
             <Button variant="ghost" className="w-full justify-start">Notification Settings</Button>
             <Button variant="ghost" className="w-full justify-start">Privacy Settings</Button>
             <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10">Delete Account</Button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
           </div>
         </CardContent>
       </Card>

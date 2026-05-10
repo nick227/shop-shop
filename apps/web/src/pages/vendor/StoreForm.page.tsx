@@ -15,6 +15,7 @@ import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData, storePayloadFromFormData } from '@shared/lib/utils/form-utilities'
 import { authPost } from '@shared/lib/auth/authFetch'
 import { DeleteStoreSection } from './components/DeleteStoreSection'
+import { VendorStripeConnectSection } from './components/VendorStripeConnectSection'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 
 export default function StoreFormPage() {
@@ -168,16 +169,19 @@ export default function StoreFormPage() {
       loadingMessage="Loading store..."
       belowForm={
         isEdit && store ? (
-          <DeleteStoreSection
-            storeId={storeId!}
-            storeName={store.name}
-            onDeleted={() => {
-              queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-              queryClient.removeQueries({ queryKey: ['store', storeId] })
-              toast.success('Store deleted')
-              navigate('/vendor/dashboard')
-            }}
-          />
+          <div className="space-y-8">
+            <VendorStripeConnectSection storeId={storeId!} />
+            <DeleteStoreSection
+              storeId={storeId!}
+              storeName={store.name}
+              onDeleted={() => {
+                queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+                queryClient.removeQueries({ queryKey: ['store', storeId] })
+                toast.success('Store deleted')
+                navigate('/vendor/dashboard')
+              }}
+            />
+          </div>
         ) : undefined
       }
     />

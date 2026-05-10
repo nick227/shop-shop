@@ -32,23 +32,10 @@ function VendorLayoutShell() {
   return (
     <div className={styles.layout}>
       <header className={styles.topBar}>
-        <div className={styles.topLeft}>
-          <button type="button" onClick={() => navigate('/')} className={styles.logo}>
-            🏪 Shop-Shop
-          </button>
-          <span className={styles.vendorBadge}>Vendor Portal</span>
-        </div>
-
         <div className={styles.topRight}>
-          <Button variant="outline" size="small" type="button" onClick={() => navigate('/vendor/store/new')}>
-            Create Store
-          </Button>
+          <span className={styles.vendorBadge}>Vendor Portal</span>
           <VendorStoreSwitcher />
           <OrderCountWidget />
-          <span className={styles.userName}>{user?.name}</span>
-          <Button variant="ghost" size="small" onClick={() => void logout()}>
-            Logout
-          </Button>
         </div>
       </header>
 

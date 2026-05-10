@@ -210,9 +210,6 @@ export const orderResource = defineResource({
       } = {}
       if (body.status !== undefined) {
         prismaData.status = body.status
-        if (body.status === 'PLACED') {
-          prismaData.paymentStatus = 'PAID'
-        }
       }
       if (body.assignedToUserId !== undefined) {
         prismaData.assignedToUserId = body.assignedToUserId

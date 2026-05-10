@@ -111,10 +111,13 @@ export interface components {
             paymentMethod: components["schemas"]["PaymentMethod"];
             tipAmount?: number;
             promoCode?: string;
+            /** CARD (Stripe) vs COD when enabled server-side */
+            paymentRail?: "CARD" | "COD";
         };
         CompleteCheckoutResponse: {
             order: components["schemas"]["CheckoutOrderSummary"];
-            paymentId: string;
+            /** Stripe PI id, or null for COD */
+            paymentId: string | null;
         };
         CheckoutOrderSummary: {
             /** Format: uuid */

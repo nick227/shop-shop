@@ -2,6 +2,7 @@
  * Error Handling - Simplified with handler map pattern
  */
 import { APIError } from '../apiWrapper'
+import { ApiContractError } from '../client'
 import { AppError } from './types'
 import { httpErrorHandlers } from './handlers'
 
@@ -60,6 +61,14 @@ function handleUnknownError(error: unknown): AppError {
  * Main error handler - Routes to appropriate handler
  */
 export async function handleApiError(error: unknown): Promise<AppError> {
+  if (error instanceof ApiContractError) {
+    const handler = httpErrorHandlers[error.status] ?? httpErrorHandlers[500]
+    const mapped = handler(undefined)
+    const message = error.message.trim() !== '' ? error.message : mapped.message
+    const code =
+      error.status === 402 ? 'PAYMENT_UNAVAILABLE' : mapped.code
+    return new AppError(message, code, error.status)
+  }
   if (error instanceof APIError) {
     const status = error.status ?? 500
     const details =
@@ -87,6 +96,7 @@ export async function handleApiError(error: unknown): Promise<AppError> {
  */
 export function getErrorMessage(error: AppError): string {
   const messages: Record<string, string> = {
+    PAYMENT_UNAVAILABLE: error.message,
     VALIDATION_ERROR: 'Please check your input and try again.',
     BAD_REQUEST: 'Invalid request. Please check your input.',
     UNAUTHORIZED: error.message, // Use the actual message from error (context-aware)

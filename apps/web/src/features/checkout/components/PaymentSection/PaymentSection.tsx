@@ -12,18 +12,25 @@ import {
 } from '@features/checkout/components/StripePaymentFields'
 import { getStripePromise, getStripePublishableKey } from '@features/checkout/lib/stripeClient'
 
+export type CheckoutPaymentPayload =
+  | { readonly rail: 'CARD'; readonly paymentMethodId: string }
+  | { readonly rail: 'COD' }
+
 export interface PaymentSectionProps {
   readonly amount: number
   readonly subtotal: number
   readonly deliveryFee: number
   readonly tax: number
   readonly tip: number
-  readonly onPaymentReady: (paymentMethodId?: string) => void
+  /** Stripe card (pm_…) or COD when enabled. */
+  readonly onPaymentReady: (payload: CheckoutPaymentPayload) => void
   readonly onBackToCart?: () => void
   /** Runs Pay flow again after a failure (parent should clear / re-run checkout). */
   readonly onRetryPayment?: () => void
   readonly isProcessing?: boolean
   readonly paymentError?: string
+  /** Mirrors server ENABLE_COD_PAYMENTS — cash on pickup/delivery test flow. */
+  readonly enableCod?: boolean
 }
 
 export function PaymentSection({
@@ -37,13 +44,16 @@ export function PaymentSection({
   onRetryPayment,
   isProcessing = false,
   paymentError,
+  enableCod = false,
 }: PaymentSectionProps) {
-  const [paymentMethod, setPaymentMethod] = useState<'test' | 'stripe'>('test')
+  const hasStripeKey = Boolean(getStripePublishableKey())
+  const [paymentMethod, setPaymentMethod] = useState<'test' | 'stripe'>(() =>
+    hasStripeKey ? 'stripe' : enableCod ? 'test' : 'stripe',
+  )
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const stripeFieldsRef = useRef<StripePaymentFieldsHandle>(null)
 
-  const hasStripeKey = Boolean(getStripePublishableKey())
   const stripePromise = getStripePromise()
   const amountCents = Math.round(amount * 100)
 
@@ -57,7 +67,7 @@ export function PaymentSection({
   const handleConfirmPayment = async () => {
     if (paymentMethod === 'test') {
       setShowConfirm(false)
-      onPaymentReady()
+      onPaymentReady({ rail: 'COD' })
       return
     }
 
@@ -69,7 +79,7 @@ export function PaymentSection({
 
     if (result.paymentMethodId) {
       setShowConfirm(false)
-      onPaymentReady(result.paymentMethodId)
+      onPaymentReady({ rail: 'CARD', paymentMethodId: result.paymentMethodId })
     }
   }
 
@@ -88,34 +98,36 @@ export function PaymentSection({
       </div>
 
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-        <label
-          htmlFor="payment-method-test"
-          className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40"
-          aria-label="Cash on Delivery payment method"
-        >
-          <div className="flex items-center gap-3">
-            <input
-              id="payment-method-test"
-              type="radio"
-              value="test"
-              checked={paymentMethod === 'test'}
-              onChange={(e) => setPaymentMethod(e.target.value as 'test')}
-              className="h-4 w-4 accent-primary"
-            />
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-base leading-none">💵</span>
-              <div>
-                <strong className="text-sm text-foreground">Cash on Delivery</strong>
-                <Badge variant="warning">TEST MODE</Badge>
-              </div>
+        {enableCod ? (
+          <label
+            htmlFor="payment-method-test"
+            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40"
+            aria-label="Cash on Delivery payment method"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                id="payment-method-test"
+                type="radio"
+                value="test"
+                checked={paymentMethod === 'test'}
+                onChange={(e) => setPaymentMethod(e.target.value as 'test')}
+                className="h-4 w-4 accent-primary"
+              />
             </div>
-            <span className="text-xs text-muted-foreground">
-              Pay with cash or card at pickup/delivery
-            </span>
-          </div>
-        </label>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base leading-none">💵</span>
+                <div>
+                  <strong className="text-sm text-foreground">Cash on Delivery</strong>
+                  <Badge variant="warning">COD</Badge>
+                </div>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Pay at pickup or delivery (must be enabled by the platform).
+              </span>
+            </div>
+          </label>
+        ) : null}
 
         {hasStripeKey && (
           <label

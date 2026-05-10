@@ -10,6 +10,7 @@ import { OrderActions } from './OrderActions'
 import { OrderDetails } from './OrderDetails'
 import { useVendorOrderCard } from './hooks/useVendorOrderCard'
 import { Badge } from '@shared/ui/primitives'
+import { DoorDashDispatchPanel } from '@features/delivery/components/DoorDashDispatchPanel'
 import type { OrderResponse } from '@api/types'
 
 export interface DeliveryDriverOption {
@@ -134,6 +135,13 @@ export function VendorOrderCard({
           </select>
         </div>
       )}
+
+      {/* DoorDash Dispatch Panel */}
+      <DoorDashDispatchPanel
+        order={order}
+        onStatusUpdate={onStatusUpdate}
+        className="mt-4"
+      />
 
       {/* Quick Actions */}
       <OrderActions

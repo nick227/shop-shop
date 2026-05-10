@@ -1,0 +1,395 @@
+import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
+import { prisma } from '@packages/db'
+import { authenticate } from '../middleware/auth.js'
+import { realtimeBroker } from '../services/realtime.broker'
+
+// Safe status transitions for in-house delivery
+const SAFE_TRANSITIONS: Record<string, string[]> = {
+  'REQUESTED': ['DISPATCHED', 'CANCELED'],
+  'DISPATCHED': ['OUT_FOR_DELIVERY', 'CANCELED'],
+  'OUT_FOR_DELIVERY': ['COMPLETED', 'CANCELED'],
+  'COMPLETED': [], // Terminal state
+  'CANCELED': [], // Terminal state
+  'FAILED': [] // Terminal state
+}
+
+// Optional rich flow states
+const RICH_FLOW_STATES = ['DRIVER_ASSIGNED', 'PICKED_UP']
+
+// Basic flow states
+const BASIC_FLOW_STATES = ['REQUESTED', 'DISPATCHED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELED']
+
+function isValidTransition(from: string, to: string): boolean {
+  return SAFE_TRANSITIONS[from]?.includes(to) || false
+}
+
+function isRichFlowEnabled(deliveryJob: any): boolean {
+  return RICH_FLOW_STATES.includes(deliveryJob.status)
+}
+
+const markOutForDeliverySchema = z.object({
+  driverId: z.string().uuid().optional(),
+  notes: z.string().optional()
+})
+
+const markDeliveredSchema = z.object({
+  notes: z.string().optional(),
+  customerRating: z.number().min(1).max(5).optional(),
+  customerTip: z.number().min(0).optional()
+})
+
+const createInhouseDeliverySchema = z.object({
+  orderId: z.string().uuid(),
+  driverId: z.string().uuid().optional(),
+  notes: z.string().optional()
+})
+
+export const inhouseDeliveryActionsRoutes = async (app: FastifyInstance) => {
+  // Mark out for delivery
+  app.post('/api/delivery-jobs/:id/mark-out-for-delivery', { preHandler: authenticate }, async (req, reply) => {
+    try {
+      const { id: deliveryJobId } = req.params as { id: string }
+      const validatedData = markOutForDeliverySchema.parse(req.body)
+
+      // Get delivery job with order
+      const deliveryJob = await prisma.deliveryJob.findFirst({
+        where: { 
+          id: deliveryJobId,
+          order: {
+            deliveryMode: 'STORE_MANAGED_DELIVERY'
+          }
+        },
+        include: {
+          order: {
+            select: {
+              id: true,
+              userId: true,
+              storeId: true,
+              status: true
+            }
+          }
+        }
+      })
+
+      if (!deliveryJob) {
+        return reply.code(404).send({ error: 'Delivery job not found' })
+      }
+
+      // Check if user can access this delivery (admin, store owner, or order owner)
+      const canAccess = 
+        req.user?.role === 'ADMIN' ||
+        (await prisma.storeMember.findFirst({
+          where: {
+            userId: req.user!.id,
+            storeId: deliveryJob.order!.storeId,
+            role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
+          }
+        })) ||
+        deliveryJob.order!.userId === req.user!.id
+
+      if (!canAccess) {
+        return reply.code(403).send({ error: 'Access denied' })
+      }
+
+      // Validate safe status transition
+      if (!isValidTransition(deliveryJob.status, 'OUT_FOR_DELIVERY')) {
+        return reply.code(400).send({ 
+          error: 'Invalid status transition', 
+          message: `Cannot transition from ${deliveryJob.status} to OUT_FOR_DELIVERY` 
+        })
+      }
+
+      // For basic flow, only allow from REQUESTED
+      if (!isRichFlowEnabled(deliveryJob) && deliveryJob.status !== 'REQUESTED') {
+        return reply.code(400).send({ error: 'Order must be REQUESTED before marking out for delivery' })
+      }
+
+      // Update delivery job status
+      const updateData: any = {
+        status: 'DISPATCHED',
+        providerStatus: 'out_for_delivery',
+        updatedAt: new Date()
+      }
+
+      if (validatedData.driverId) {
+        updateData.assignedDriverId = validatedData.driverId
+      }
+
+      if (validatedData.notes) {
+        updateData.providerPayload = {
+          ...(deliveryJob.providerPayload as any || {}),
+          notes: validatedData.notes,
+          markedOutForDeliveryAt: new Date().toISOString()
+        }
+      }
+
+      await prisma.deliveryJob.update({
+        where: { id: deliveryJobId },
+        data: updateData
+      })
+
+      // Update order status
+      await prisma.order.update({
+        where: { id: deliveryJob.order!.id },
+        data: {
+          status: 'DISPATCHED'
+        }
+      })
+
+      // Create delivery provider event
+      await prisma.deliveryProviderEvent.create({
+        deliveryJobId,
+        provider: 'IN_HOUSE',
+        eventId: `vendor_mark_out_for_delivery_${deliveryJobId}`,
+        eventType: 'status_updated',
+        timestamp: new Date(),
+        payload: {
+          previousStatus: 'REQUESTED',
+          newStatus: 'DISPATCHED',
+          assignedDriverId: validatedData.driverId || null,
+          notes: validatedData.notes || null,
+          source: 'vendor_action'
+        } as any,
+        processed: true,
+        createdAt: new Date()
+      })
+
+      // Publish realtime event
+      realtimeBroker.publish('delivery.status.updated', {
+        type: 'delivery.status.updated',
+        deliveryJobId,
+        status: 'DISPATCHED',
+        providerStatus: 'out_for_delivery',
+        timestamp: new Date().toISOString()
+      })
+
+      return reply.code(200).send({ success: true })
+    } catch (error) {
+      console.error('Mark out for delivery error:', error)
+      return reply.code(500).send({ error: 'Internal server error' })
+    }
+  })
+
+  // Mark delivered
+  app.post('/api/delivery-jobs/:id/mark-delivered', { preHandler: authenticate }, async (req, reply) => {
+    try {
+      const { id: deliveryJobId } = req.params as { id: string }
+      const validatedData = markDeliveredSchema.parse(req.body)
+
+      // Get delivery job with order
+      const deliveryJob = await prisma.deliveryJob.findFirst({
+        where: { 
+          id: deliveryJobId,
+          order: {
+            deliveryMode: 'STORE_MANAGED_DELIVERY'
+          }
+        },
+        include: {
+          order: {
+            select: {
+              id: true,
+              userId: true,
+              storeId: true,
+              status: true
+            }
+          }
+        }
+      })
+
+      if (!deliveryJob) {
+        return reply.code(404).send({ error: 'Delivery job not found' })
+      }
+
+      // Check if user can access this delivery (admin, store owner, or order owner)
+      const canAccess = 
+        req.user?.role === 'ADMIN' ||
+        (await prisma.storeMember.findFirst({
+          where: {
+            userId: req.user!.id,
+            storeId: deliveryJob.order!.storeId,
+            role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
+          }
+        })) ||
+        deliveryJob.order!.userId === req.user!.id
+
+      if (!canAccess) {
+        return reply.code(403).send({ error: 'Access denied' })
+      }
+
+      // Validate safe status transition
+      if (!isValidTransition(deliveryJob.status, 'COMPLETED')) {
+        return reply.code(400).send({ 
+          error: 'Invalid status transition', 
+          message: `Cannot transition from ${deliveryJob.status} to COMPLETED` 
+        })
+      }
+
+      // For basic flow, only allow from DISPATCHED
+      if (!isRichFlowEnabled(deliveryJob) && deliveryJob.status !== 'DISPATCHED') {
+        return reply.code(400).send({ error: 'Order must be DISPATCHED before marking delivered' })
+      }
+
+      // Prepare update data
+      const updateData: any = {
+        status: 'COMPLETED',
+        providerStatus: 'delivered',
+        updatedAt: new Date()
+      }
+
+      if (validatedData.notes) {
+        updateData.providerPayload = {
+          ...(deliveryJob.providerPayload as any || {}),
+          notes: validatedData.notes,
+          deliveredAt: new Date().toISOString(),
+          customerRating: validatedData.customerRating || null,
+          customerTip: validatedData.customerTip || null
+        }
+      }
+
+      await prisma.deliveryJob.update({
+        where: { id: deliveryJobId },
+        data: updateData
+      })
+
+      // Update order status
+      await prisma.order.update({
+        where: { id: deliveryJob.order!.id },
+        data: {
+          status: 'COMPLETED'
+        }
+      })
+
+      // Create delivery provider event
+      await prisma.deliveryProviderEvent.create({
+        deliveryJobId,
+        provider: 'IN_HOUSE',
+        eventId: `vendor_mark_delivered_${deliveryJobId}`,
+        eventType: 'status_updated',
+        timestamp: new Date(),
+        payload: {
+          previousStatus: 'DISPATCHED',
+          newStatus: 'COMPLETED',
+          notes: validatedData.notes || null,
+          customerRating: validatedData.customerRating || null,
+          customerTip: validatedData.customerTip || null,
+          source: 'vendor_action'
+        } as any,
+        processed: true,
+        createdAt: new Date()
+      })
+
+      // Publish realtime event
+      realtimeBroker.publish('delivery.status.updated', {
+        type: 'delivery.status.updated',
+        deliveryJobId,
+        status: 'COMPLETED',
+        providerStatus: 'delivered',
+        timestamp: new Date().toISOString()
+      })
+
+      return reply.code(200).send({ success: true })
+    } catch (error) {
+      console.error('Mark delivered error:', error)
+      return reply.code(500).send({ error: 'Internal server error' })
+    }
+  })
+
+  // Create in-house delivery job
+  app.post('/api/delivery-jobs/create-inhouse', { preHandler: authenticate }, async (req, reply) => {
+    try {
+      const validatedData = createInhouseDeliverySchema.parse(req.body)
+
+      // Get order
+      const order = await prisma.order.findFirst({
+        where: {
+          id: validatedData.orderId,
+          deliveryMode: 'STORE_MANAGED_DELIVERY',
+          status: 'REQUESTED'
+        },
+        include: {
+          store: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      })
+
+      if (!order) {
+        return reply.code(404).send({ error: 'Order not found or not eligible for in-house delivery' })
+      }
+
+      // Check if user can access this order (admin, store owner, or order owner)
+      const canAccess = 
+        req.user?.role === 'ADMIN' ||
+        (await prisma.storeMember.findFirst({
+          where: {
+            userId: req.user!.id,
+            storeId: order.store!.id,
+            role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
+          }
+        })) ||
+        order.userId === req.user!.id
+
+      if (!canAccess) {
+        return reply.code(403).send({ error: 'Access denied' })
+      }
+
+      // Create in-house delivery job
+      const deliveryJob = await prisma.deliveryJob.create({
+        data: {
+          id: `inhouse_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          orderId: order.id,
+          provider: 'IN_HOUSE',
+          status: 'REQUESTED',
+          providerStatus: 'requested',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+
+      // Create delivery provider event
+      await prisma.deliveryProviderEvent.create({
+        deliveryJobId: deliveryJob.id,
+        provider: 'IN_HOUSE',
+        eventId: `vendor_created_${deliveryJob.id}`,
+        eventType: 'status_updated',
+        timestamp: new Date(),
+        payload: {
+          previousStatus: 'REQUESTED',
+          newStatus: 'REQUESTED',
+          assignedDriverId: validatedData.driverId || null,
+          notes: validatedData.notes || null,
+          source: 'vendor_action'
+        } as any,
+        processed: true,
+        createdAt: new Date()
+      })
+
+      // Publish realtime event
+      realtimeBroker.publish('delivery.status.updated', {
+        type: 'delivery.status.updated',
+        deliveryJobId: deliveryJob.id,
+        status: 'REQUESTED',
+        providerStatus: 'requested',
+        timestamp: new Date().toISOString()
+      })
+
+      return reply.code(201).send({ 
+        success: true, 
+        deliveryJob: {
+          id: deliveryJob.id,
+          orderId: order.id,
+          provider: 'IN_HOUSE',
+          status: 'REQUESTED',
+          providerStatus: 'requested'
+        }
+      })
+    } catch (error) {
+      console.error('Create in-house delivery error:', error)
+      return reply.code(500).send({ error: 'Internal server error' })
+    }
+  })
+}

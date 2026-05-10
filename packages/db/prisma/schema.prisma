@@ -48,6 +48,38 @@ enum PayoutStatus {
   FAILED
 }
 
+enum AffiliatePayoutProvider {
+  MANUAL
+  STRIPE_CONNECT
+  PAYPAL
+  ACH_PROVIDER
+}
+
+enum AffiliateProviderStatus {
+  NOT_SET
+  PENDING
+  ACTIVE
+  SUSPENDED
+  FAILED
+}
+
+enum AffiliateRateSource {
+  PAYOUT_GROUP
+  USER_OVERRIDE
+  PLATFORM_DEFAULT
+}
+
+enum CommissionSourceType {
+  CUSTOMER_PURCHASE
+  STORE_REVENUE
+  MANUAL
+}
+
+enum ReferralEventType {
+  STORE_SIGNUP
+  USER_SIGNUP
+}
+
 enum MediaKind {
   IMAGE
   VIDEO
@@ -219,6 +251,9 @@ model User {
   promotionRedemptions PromotionRedemption[]
   vendorPayouts        Payout[]              @relation("VendorPayouts")
   DeliveryJob          DeliveryJob[]
+  adminAuditLogs       AdminAuditLog[]       @relation("AdminAuditLogs")
+  suspendedAt            DateTime?
+  referralAttributedAt   DateTime?
 
   @@index([referredByAffiliateId])
 }
@@ -285,8 +320,12 @@ model Store {
   referredByAffiliateId String?    @db.Char(36)
   referredByAffiliate   Affiliate? @relation("AffiliateReferrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
 
-  stripeAccountId      String?
+  stripeAccountId      String?         @unique @db.VarChar(191)
   stripeOnboarded      Boolean         @default(false)
+  stripeChargesEnabled Boolean         @default(false)
+  stripePayoutsEnabled Boolean         @default(false)
+  stripeRequirementsJson Json?
+  stripeLastSyncedAt   DateTime?
   commissionRate       Decimal?        @db.Decimal(5, 2)
   tags                 StoreTag[]
   media                MediaAsset[]
@@ -303,6 +342,8 @@ model Store {
   FavoriteStore        FavoriteStore[]
   affiliateCommissions Commission[]    @relation("CommissionStore")
   DeliveryJob          DeliveryJob[]
+  StoreDeliveryProviderConfigs StoreDeliveryProviderConfig[]
+  StoreDeliveryOptions StoreDeliveryOption[]
 
   @@index([ownerUserId])
   @@index([latitude, longitude]) // For distance queries
@@ -355,11 +396,15 @@ model Item {
   description String?
   imageUrl   String? @db.VarChar(191) // Item thumbnail
   price       Decimal @db.Decimal(10, 2)
-  isActive    Boolean @default(true)
-  isSoldOut   Boolean @default(false)
-  sortIndex   Int     @default(0)
-  optionsJson Json?
-  stockQty    Int?
+  isActive         Boolean   @default(true)
+  isSoldOut        Boolean   @default(false)
+  flagged          Boolean   @default(false)
+  flaggedAt        DateTime?
+  flaggedByAdminId String?   @db.Char(36)
+  flaggedReason    String?   @db.Text
+  sortIndex        Int       @default(0)
+  optionsJson      Json?
+  stockQty         Int?
 
   // Allergen Information
   allergensJson Json? // Array of allergen strings
@@ -524,6 +569,8 @@ model DeliveryJob {
   completedAt        DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+  DeliveryProviderEvents DeliveryProviderEvent[]
+  DeliveryTrackingPoints DeliveryTrackingPoint[]
 
   @@index([orderId])
   @@index([storeId])
@@ -846,13 +893,42 @@ model Comment {
 // AFFILIATE SYSTEM MODELS
 // ============================================================================
 
+model AffiliatePayoutGroup {
+  id              String      @id @default(uuid()) @db.Char(36)
+  name            String
+  customerRateBps Int         @default(500)
+  storeRateBps    Int         @default(500)
+  isDefault       Boolean     @default(false)
+  isActive        Boolean     @default(true)
+  affiliates      Affiliate[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([isDefault])
+  @@index([isActive])
+}
+
 model Affiliate {
   id             String          @id @default(uuid()) @db.Char(36)
   userId         String          @unique @db.Char(36)
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   status         AffiliateStatus @default(PENDING)
   referralCode   String          @unique
+  referralSlug   String?         @unique @db.VarChar(100)
+
+  /// Kept for Phase 2 backfill — will be dropped after migration validates.
   commissionRate Decimal         @default(0.10) @db.Decimal(5, 4)
+
+  // Phase 1 additions: rate overrides (null = fall through to group → platform default)
+  payoutGroupId           String?                  @db.Char(36)
+  payoutGroup             AffiliatePayoutGroup?    @relation(fields: [payoutGroupId], references: [id], onDelete: SetNull)
+  customerRateBpsOverride Int?
+  storeRateBpsOverride    Int?
+
+  // Payout provider
+  payoutProvider          AffiliatePayoutProvider  @default(MANUAL)
+  payoutProviderAccountId String?
+  payoutProviderStatus    AffiliateProviderStatus  @default(NOT_SET)
 
   // Payout Information
   paypalEmail     String?
@@ -864,17 +940,20 @@ model Affiliate {
   website String?
 
   // Relationships
-  referredStores Store[]           @relation("AffiliateReferrals")
-  referredUsers  User[]            @relation("AffiliateCustomerReferrals")
-  attributedOrders Order[]         @relation("AffiliateOrderAttribution")
-  commissions    Commission[]
-  payouts        AffiliatePayout[]
+  referredStores   Store[]           @relation("AffiliateReferrals")
+  referredUsers    User[]            @relation("AffiliateCustomerReferrals")
+  attributedOrders Order[]           @relation("AffiliateOrderAttribution")
+  commissions      Commission[]
+  payouts          AffiliatePayout[]
+  referralEvents   ReferralEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([referralCode])
+  @@index([referralSlug])
   @@index([status])
+  @@index([payoutGroupId])
 }
 
 model Commission {
@@ -886,10 +965,18 @@ model Commission {
   storeId     String    @db.Char(36)
   store       Store     @relation("CommissionStore", fields: [storeId], references: [id], onDelete: Cascade)
 
-  // Commission Details
+  // Legacy Decimal fields — kept until Phase 2 backfill validates; will be dropped after.
   amount         Decimal @db.Decimal(10, 2)
   rate           Decimal @db.Decimal(5, 4)
-  serviceFeeBase Decimal @db.Decimal(10, 2) // The service fee this commission is based on
+  serviceFeeBase Decimal @db.Decimal(10, 2)
+
+  // Phase 1 additions: integer-cent / bps fields for new commission records
+  sourceType            CommissionSourceType?
+  commissionBaseCents   Int?
+  rateBps               Int?
+  amountCents           Int?
+  rateSource            AffiliateRateSource?
+  payoutGroupIdSnapshot String?              @db.VarChar(36)
 
   status     CommissionStatus @default(PENDING)
   approvedAt DateTime?
@@ -902,6 +989,9 @@ model Commission {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// MySQL allows multiple NULLs in a unique index, so existing rows (sourceType=NULL)
+  /// coexist freely. New rows with a sourceType set are idempotent per (affiliate, order, type).
+  @@unique([affiliateId, orderId, sourceType])
   @@index([affiliateId, status])
   @@index([orderId])
   @@index([storeId])
@@ -934,6 +1024,23 @@ model AffiliatePayout {
 
   @@index([affiliateId, status])
   @@index([status, periodEnd])
+}
+
+model ReferralEvent {
+  id              String            @id @default(uuid()) @db.Char(36)
+  affiliateId     String            @db.Char(36)
+  affiliate       Affiliate         @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  eventType       ReferralEventType
+  referredUserId  String?           @db.Char(36)
+  referredStoreId String?           @db.Char(36)
+  referralCode    String?
+  referralSlug    String?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+
+  @@index([affiliateId])
+  @@index([eventType])
+  @@index([createdAt])
 }
 
 // ============================================================================
@@ -1231,4 +1338,95 @@ model ItemTag {
   @@id([itemId, tagId])
   @@index([tagId])
   @@index([itemId])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  adminId    String   @db.Char(36)
+  admin      User     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  action     String   @db.VarChar(100)
+  targetType String   @db.VarChar(50)
+  targetId   String?  @db.VarChar(36)
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+}
+
+// ============================================================================
+// DELIVERY PROVIDER CONFIGURATION & TRACKING
+// ============================================================================
+
+model StoreDeliveryProviderConfig {
+  id          String   @id @default(uuid()) @db.Char(36)
+  storeId     String   @db.Char(36)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  provider    String   // 'IN_HOUSE', 'DOORDASH_DRIVE', 'UBER_DIRECT'
+  enabled     Boolean  @default(false)
+  settingsJson Json   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, provider])
+  @@index([storeId])
+  @@index([provider])
+  @@index([enabled])
+}
+
+model StoreDeliveryOption {
+  id               String   @id @default(uuid()) @db.Char(36)
+  storeId          String   @db.Char(36)
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  deliveryMode     String   // 'IN_HOUSE', 'DOORDASH_DRIVE'
+  enabled          Boolean  @default(false)
+  feeDisclosure    String?  @db.Text
+  externalInfoUrl  String?  @db.VarChar(191)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([storeId, deliveryMode])
+  @@index([storeId])
+  @@index([enabled])
+}
+
+model DeliveryProviderEvent {
+  id           String   @id @default(uuid()) @db.Char(36)
+  deliveryJobId String   @db.Char(36)
+  deliveryJob  DeliveryJob @relation(fields: [deliveryJobId], references: [id], onDelete: Cascade)
+  provider     String
+  eventId      String
+  eventType    String
+  timestamp    DateTime
+  payload      Json
+  processed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([provider, eventId, deliveryJobId])
+  @@index([deliveryJobId])
+  @@index([provider])
+  @@index([processed])
+  @@index([timestamp])
+  @@index([eventType])
+}
+
+model DeliveryTrackingPoint {
+  id              String    @id @default(uuid()) @db.Char(36)
+  deliveryJobId   String    @db.Char(36)
+  deliveryJob     DeliveryJob @relation(fields: [deliveryJobId], references: [id], onDelete: Cascade)
+  provider        String
+  latitude        Decimal   @db.Decimal(10, 8)
+  longitude       Decimal   @db.Decimal(11, 8)
+  timestamp       DateTime
+  accuracyMeters  Int?
+  speedMph        Decimal?  @db.Decimal(5, 2)
+  headingDegrees  Int?
+  providerPayload Json?
+  createdAt       DateTime  @default(now())
+
+  @@index([deliveryJobId])
+  @@index([provider])
+  @@index([timestamp])
+  @@index([latitude, longitude])
 }

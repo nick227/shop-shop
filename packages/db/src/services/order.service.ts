@@ -85,7 +85,6 @@ export class OrderService {
       where: { id: orderId },
       data: {
         status: newStatus,
-        ...(newStatus === 'PLACED' ? { paymentStatus: 'PAID' } : {}),
       },
     })
 

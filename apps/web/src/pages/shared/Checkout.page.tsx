@@ -1,7 +1,7 @@
 /**
  * CheckoutPage - Order checkout and placement with payment
  */
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCart } from '@shared/hooks/hooks/useCart'
@@ -15,7 +15,10 @@ import { Button, Spinner } from '@shared/ui/primitives'
 import { TipPrompt } from '@features/checkout/components/TipPrompt'
 import { DeliveryModeSelector, type DeliveryMode } from '@features/checkout/components/DeliveryModeSelector'
 import { CartSummary } from '@features/cart/components/CartSummary/CartSummary'
-import { PaymentSection } from '@features/checkout/components/PaymentSection/PaymentSection'
+import {
+  PaymentSection,
+  type CheckoutPaymentPayload,
+} from '@features/checkout/components/PaymentSection/PaymentSection'
 import { OrderDetailsCard } from '@features/orders/components/OrderDetailsCard'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
@@ -90,46 +93,58 @@ export default function CheckoutPage() {
   
   const { subtotal, deliveryFee, tax, tipAmount, totalAmount } = calculations
 
-  const createCheckoutSession = useCallback(async (paymentToken: string): Promise<CreateCheckoutSessionResponse> => {
-    if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
-      throw new Error('Cart is empty')
-    }
-    return apiClient.checkout.createSession({
-      items: cart.items.map((item) => ({
-        itemId: item.itemId,
-        quantity: item.quantity,
-      })),
-      deliveryType,
-      deliveryMode,
-      paymentMethod: {
-        type: paymentToken === 'cod_test' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
-        token: paymentToken,
-      },
-      ...(tipAmount > 0 ? { tipAmount } : {}),
-    })
-  }, [cart, deliveryType, tipAmount])
+  const enableCod = import.meta.env.VITE_ENABLE_COD_PAYMENTS === 'true'
+  const lastPaymentPayloadRef = useRef<CheckoutPaymentPayload | null>(null)
 
-  const completeCheckoutSession = useCallback(async (sessionId: string, paymentToken: string): Promise<CompleteCheckoutResponse> => {
-    return apiClient.checkout.complete({
-      sessionId,
-      paymentMethod: {
-        type: paymentToken === 'cod_test' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
-        token: paymentToken,
-      },
-      ...(tipAmount > 0 ? { tipAmount } : {}),
-    })
-  }, [tipAmount])
+  const createCheckoutSession = useCallback(
+    async (payload: CheckoutPaymentPayload): Promise<CreateCheckoutSessionResponse> => {
+      if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
+        throw new Error('Cart is empty')
+      }
+      const token = payload.rail === 'COD' ? 'cod' : payload.paymentMethodId
+      return apiClient.checkout.createSession({
+        items: cart.items.map((item) => ({
+          itemId: item.itemId,
+          quantity: item.quantity,
+        })),
+        deliveryType,
+        deliveryMode,
+        paymentMethod: {
+          type: payload.rail === 'COD' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
+          token,
+        },
+        ...(tipAmount > 0 ? { tipAmount } : {}),
+      })
+    },
+    [cart, deliveryType, deliveryMode, tipAmount],
+  )
 
-  const handlePayment = async (paymentMethodId?: string) => {
+  const completeCheckoutSession = useCallback(
+    async (sessionId: string, payload: CheckoutPaymentPayload): Promise<CompleteCheckoutResponse> => {
+      const token = payload.rail === 'COD' ? 'cod' : payload.paymentMethodId
+      return apiClient.checkout.complete({
+        sessionId,
+        paymentMethod: {
+          type: payload.rail === 'COD' ? 'DIGITAL_WALLET' : 'CREDIT_CARD',
+          token,
+        },
+        paymentRail: payload.rail,
+        ...(tipAmount > 0 ? { tipAmount } : {}),
+      })
+    },
+    [tipAmount],
+  )
+
+  const handlePayment = async (payload: CheckoutPaymentPayload) => {
     if (!cart) return
 
     try {
       setIsSubmittingCheckout(true)
-      const paymentToken = paymentMethodId ?? 'cod_test'
+      lastPaymentPayloadRef.current = payload
       let sessionId = getPendingOrderForCart(cart.id)
 
       if (!sessionId) {
-        const session = await createCheckoutSession(paymentToken)
+        const session = await createCheckoutSession(payload)
         sessionId = session.sessionId
         setPendingOrderForCart(cart.id, sessionId)
       }
@@ -138,14 +153,17 @@ export default function CheckoutPage() {
         throw new Error('Checkout session could not be created')
       }
 
-      const completion = await completeCheckoutSession(sessionId, paymentToken)
+      const completion = await completeCheckoutSession(sessionId, payload)
       const orderId = completion.order.id
       toast.success('Order placed successfully!')
       finalizeSuccessfulCheckout()
       navigate('/orders/' + orderId)
     } catch (error: unknown) {
       const appError = await handleApiError(error)
-      const errorMessage = 'Payment failed: ' + appError.message
+      const errorMessage =
+        appError.code === 'PAYMENT_UNAVAILABLE'
+          ? appError.message
+          : 'Payment failed: ' + appError.message
       toast.error(errorMessage)
       setPaymentError(errorMessage)
     } finally {
@@ -155,7 +173,10 @@ export default function CheckoutPage() {
 
   const handleRetryPayment = () => {
     setPaymentError(undefined)
-    void handlePayment()
+    const last = lastPaymentPayloadRef.current
+    if (last) {
+      void handlePayment(last)
+    }
   }
 
   // Early returns AFTER all hooks
@@ -334,11 +355,12 @@ export default function CheckoutPage() {
                 deliveryFee={deliveryFee}
                 tax={tax}
                 tip={tipAmount}
-                onPaymentReady={handlePayment}
+                onPaymentReady={(p) => void handlePayment(p)}
                 onBackToCart={handleBackToCart}
                 onRetryPayment={handleRetryPayment}
                 isProcessing={isSubmittingCheckout}
                 paymentError={paymentError}
+                enableCod={enableCod}
               />
               {isSubmittingCheckout && (
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-4">
