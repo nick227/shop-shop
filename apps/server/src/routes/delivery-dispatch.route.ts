@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { getDeliveryProviderAdapter } from '@packages/db'
-import { prisma } from '@packages/db'
+import { getDeliveryProviderAdapter, prisma, type Prisma } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 const dispatchRequestSchema = z.object({
   orderId: z.string().uuid(),
@@ -40,16 +40,14 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Order not found' })
       }
 
-      // Check if user owns/manages the store
-      const storeMember = await prisma.storeMember.findFirst({
-        where: {
-          userId: req.user!.id,
-          storeId: order.storeId,
-          role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-        }
-      })
+      const hasAccess = await userHasStoreAccess(
+        req.user!.id,
+        req.user!.role,
+        order.storeId,
+        'dispatch',
+      )
 
-      if (!storeMember) {
+      if (!hasAccess) {
         return reply.code(403).send({ error: 'Access denied: You do not manage this store' })
       }
 
@@ -147,6 +145,7 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         select: {
           id: true,
           status: true,
+          storeId: true,
           deliveryMode: true,
           paymentStatus: true,
           deliveryLatitude: true,
@@ -159,7 +158,11 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Order not found' })
       }
 
-      // Validate order is ready for dispatch
+      // Reject mismatched storeId early to prevent dispatching against the wrong tenant
+      if (order.storeId !== storeId) {
+        return reply.code(400).send({ error: 'storeId does not match order' })
+      }
+
       if (order.status !== 'READY') {
         return reply.code(400).send({ error: 'Order must be READY to dispatch' })
       }
@@ -172,16 +175,14 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         return reply.code(400).send({ error: 'Order must be paid to dispatch' })
       }
 
-      // Check if user owns/manages the store
-      const storeMember = await prisma.storeMember.findFirst({
-        where: {
-          userId: req.user!.id,
-          storeId: order.storeId,
-          role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-        }
-      })
+      const hasAccess = await userHasStoreAccess(
+        req.user!.id,
+        req.user!.role,
+        order.storeId,
+        'dispatch',
+      )
 
-      if (!storeMember) {
+      if (!hasAccess) {
         return reply.code(403).send({ error: 'Access denied: You do not manage this store' })
       }
 
@@ -302,16 +303,14 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         return reply.code(400).send({ error: 'Not a DoorDash delivery job' })
       }
 
-      // Check if user owns/manages the store
-      const storeMember = await prisma.storeMember.findFirst({
-        where: {
-          userId: req.user!.id,
-          storeId: deliveryJob.order.storeId,
-          role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-        }
-      })
+      const hasAccess = await userHasStoreAccess(
+        req.user!.id,
+        req.user!.role,
+        deliveryJob.order.storeId,
+        'dispatch',
+      )
 
-      if (!storeMember) {
+      if (!hasAccess) {
         return reply.code(403).send({ error: 'Access denied: You do not manage this store' })
       }
 
@@ -412,16 +411,14 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Order not found' })
       }
 
-      // Check if user owns/manages the store
-      const storeMember = await prisma.storeMember.findFirst({
-        where: {
-          userId: req.user!.id,
-          storeId: order.storeId,
-          role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-        }
-      })
+      const hasAccess = await userHasStoreAccess(
+        req.user!.id,
+        req.user!.role,
+        order.storeId,
+        'deliveries',
+      )
 
-      if (!storeMember) {
+      if (!hasAccess) {
         return reply.code(403).send({ error: 'Access denied: You do not manage this store' })
       }
 

@@ -30,7 +30,6 @@ import { deliveryTrackingRoutes } from './routes/delivery-tracking.route.js'
 import { storeDoorDashConfigRoutes } from './routes/store-doordash-config.route.js'
 import { adminDeliveryRefreshRoutes } from './routes/admin-delivery-refresh.route.js'
 import { deliveryRealtimeRoutes } from './routes/delivery-realtime.route.js'
-import { inHouseDeliveryActionsRoutes } from './routes/inhouse-delivery-actions.route.js'
 import { vendorVerificationRoutes } from './routes/vendor-verification.route.js'
 import { exportRoutes } from './routes/export.route.js'
 import { vendorPayoutRoutes } from './routes/vendor-payout.route.js'
@@ -184,7 +183,6 @@ await app.register(deliveryTrackingRoutes)
 await app.register(storeDoorDashConfigRoutes)
 await app.register(adminDeliveryRefreshRoutes)
 await app.register(deliveryRealtimeRoutes)
-await app.register(inHouseDeliveryActionsRoutes)
 await app.register(vendorVerificationRoutes) 
 await app.register(exportRoutes) 
 await app.register(vendorPayoutRoutes) 

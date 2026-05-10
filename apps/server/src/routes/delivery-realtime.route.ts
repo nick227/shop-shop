@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify'
-import { prisma } from '@packages/db'
+import { prisma, type Prisma } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
-import { realtimeBroker } from '../services/realtime.broker'
+import { realtimeBroker } from '../services/realtime.broker.js'
+import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
   // Internal publish delivery status updates (for trusted services only)
@@ -48,22 +49,21 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         data: updateData
       })
 
-      // Create delivery provider event
       await prisma.deliveryProviderEvent.create({
-        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        deliveryJobId,
-        provider: deliveryJob.provider,
-        eventId: `internal_status_${deliveryJobId}`,
-        eventType: 'status_updated',
-        timestamp: new Date(),
-        payload: {
-          previousStatus: deliveryJob.status,
-          newStatus: status || deliveryJob.status,
-          providerStatus: providerStatus || deliveryJob.providerStatus,
-          source: source || 'internal_service'
-        } as any,
-        processed: true,
-        createdAt: new Date()
+        data: {
+          deliveryJobId,
+          provider: deliveryJob.provider,
+          eventId: `internal_status_${deliveryJobId}_${Date.now()}`,
+          eventType: 'status_updated',
+          timestamp: new Date(),
+          payload: {
+            previousStatus: deliveryJob.status,
+            newStatus: status || deliveryJob.status,
+            providerStatus: providerStatus || deliveryJob.providerStatus,
+            source: source || 'internal_service',
+          } as Prisma.InputJsonValue,
+          processed: true,
+        },
       })
 
       // Publish realtime event
@@ -166,20 +166,19 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         data: locationData
       })
 
-      // Create delivery provider event
       await prisma.deliveryProviderEvent.create({
-        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        deliveryJobId,
-        provider: deliveryJob.provider,
-        eventId: `internal_location_${deliveryJobId}`,
-        eventType: 'location_updated',
-        timestamp: new Date(),
-        payload: {
-          location: { latitude, longitude, address },
-          source: source || 'internal_service'
-        } as any,
-        processed: true,
-        createdAt: new Date()
+        data: {
+          deliveryJobId,
+          provider: deliveryJob.provider,
+          eventId: `internal_location_${deliveryJobId}_${Date.now()}`,
+          eventType: 'location_updated',
+          timestamp: new Date(),
+          payload: {
+            location: { latitude, longitude, address },
+            source: source || 'internal_service',
+          } as Prisma.InputJsonValue,
+          processed: true,
+        },
       })
 
       // Publish realtime event
@@ -258,55 +257,49 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Delivery job not found' })
       }
 
-      // Check if user can access this delivery (admin, store owner, or order owner)
-      const canAccess = 
-        req.user?.role === 'ADMIN' ||
-        (await prisma.storeMember.findFirst({
-          where: {
-            userId: req.user!.id,
-            storeId: deliveryJob.order.storeId,
-            role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-          }
-        })) ||
-        deliveryJob.order.userId === req.user!.id
+      const isOrderOwner = deliveryJob.order.userId === req.user!.id
+      const canAccess =
+        isOrderOwner ||
+        (await userHasStoreAccess(
+          req.user!.id,
+          req.user!.role,
+          deliveryJob.order.storeId,
+          'dispatch',
+        ))
 
       if (!canAccess) {
         return reply.code(403).send({ error: 'Access denied' })
       }
 
-      // Update delivery job status if provided
-      const updateData: any = { updatedAt: new Date() }
-      if (status) updateData.status = status
+      const updateData: Prisma.DeliveryJobUpdateInput = {}
+      if (status) updateData.status = status as Prisma.DeliveryJobUpdateInput['status']
       if (providerStatus) updateData.providerStatus = providerStatus
-      if (providerPayload) updateData.providerPayload = providerPayload
+      if (providerPayload) updateData.providerPayload = providerPayload as Prisma.InputJsonValue
 
       await prisma.deliveryJob.update({
         where: { id: deliveryJobId },
-        data: updateData
+        data: updateData,
       })
 
-      // Create delivery provider event
       await prisma.deliveryProviderEvent.create({
-        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        deliveryJobId,
-        provider: deliveryJob.provider,
-        eventId: `realtime_status_${deliveryJobId}`,
-        eventType: 'status_updated',
-        timestamp: new Date(),
-        payload: {
-          previousStatus: deliveryJob.status,
-          newStatus: status || deliveryJob.status,
-          providerStatus: providerStatus || deliveryJob.providerStatus,
-          source: 'realtime_api'
-        } as any,
-        processed: true,
-        createdAt: new Date()
+        data: {
+          deliveryJobId,
+          provider: deliveryJob.provider,
+          eventId: `realtime_status_${deliveryJobId}_${Date.now()}`,
+          eventType: 'status_updated',
+          timestamp: new Date(),
+          payload: {
+            previousStatus: deliveryJob.status,
+            newStatus: status || deliveryJob.status,
+            providerStatus: providerStatus || deliveryJob.providerStatus,
+            source: 'realtime_api',
+          } as Prisma.InputJsonValue,
+          processed: true,
+        },
       })
 
-      // Publish realtime event
-      realtimeBroker.publish('delivery.status.updated', {
+      realtimeBroker.publish(`delivery.status.updated.${deliveryJob.order.userId}`, {
         type: 'delivery.status.updated',
-        topic: `delivery.status.updated.${deliveryJob.order.userId}`,
         timestamp: new Date().toISOString(),
         payload: {
           deliveryJobId,
@@ -321,10 +314,8 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         }
       })
 
-      // Also publish to admin topic for admin viewers
       realtimeBroker.publish('delivery.status.updated.admin', {
         type: 'delivery.status.updated',
-        topic: `delivery.status.updated.admin`,
         timestamp: new Date().toISOString(),
         payload: {
           deliveryJobId,
@@ -386,17 +377,15 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Delivery job not found' })
       }
 
-      // Check if user can access this delivery
-      const canAccess = 
-        req.user?.role === 'ADMIN' ||
-        (await prisma.storeMember.findFirst({
-          where: {
-            userId: req.user!.id,
-            storeId: deliveryJob.order.storeId,
-            role: { in: ['OWNER', 'MANAGER', 'ADMIN'] }
-          }
-        })) ||
-        deliveryJob.order.userId === req.user!.id
+      const isOrderOwner = deliveryJob.order.userId === req.user!.id
+      const canAccess =
+        isOrderOwner ||
+        (await userHasStoreAccess(
+          req.user!.id,
+          req.user!.role,
+          deliveryJob.order.storeId,
+          'dispatch',
+        ))
 
       if (!canAccess) {
         return reply.code(403).send({ error: 'Access denied' })
@@ -421,26 +410,23 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         data: locationData
       })
 
-      // Create delivery provider event
       await prisma.deliveryProviderEvent.create({
-        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        deliveryJobId,
-        provider: deliveryJob.provider,
-        eventId: `realtime_location_${deliveryJobId}`,
-        eventType: 'location_updated',
-        timestamp: new Date(),
-        payload: {
-          location: { latitude, longitude, address },
-          source: 'realtime_api'
-        } as any,
-        processed: true,
-        createdAt: new Date()
+        data: {
+          deliveryJobId,
+          provider: deliveryJob.provider,
+          eventId: `realtime_location_${deliveryJobId}_${Date.now()}`,
+          eventType: 'location_updated',
+          timestamp: new Date(),
+          payload: {
+            location: { latitude, longitude, address },
+            source: 'realtime_api',
+          } as Prisma.InputJsonValue,
+          processed: true,
+        },
       })
 
-      // Publish realtime event
-      realtimeBroker.publish('delivery.location.updated', {
+      realtimeBroker.publish(`delivery.location.updated.${deliveryJob.order.userId}`, {
         type: 'delivery.location.updated',
-        topic: `delivery.location.updated.${deliveryJob.order.userId}`,
         timestamp: new Date().toISOString(),
         payload: {
           deliveryJobId,
@@ -453,10 +439,8 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         }
       })
 
-      // Also publish to admin topic for admin viewers
       realtimeBroker.publish('delivery.location.updated.admin', {
         type: 'delivery.location.updated',
-        topic: `delivery.location.updated.admin`,
         timestamp: new Date().toISOString(),
         payload: {
           deliveryJobId,
