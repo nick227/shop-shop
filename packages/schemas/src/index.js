@@ -32,18 +32,28 @@ export * from './dtos/index.js';
 // They're only used internally for OpenAPI generation
 // Frontend should only import DTOs and response schemas
 // Export response schemas for frontend validation
-export { StoreResponseSchema, StoreListResponseSchema, StoreWithDistanceSchema } from './dtos/store.dto.js';
-export { ItemResponseSchema, ItemListResponseSchema } from './dtos/item.dto.js';
-export { OrderResponseSchema, OrderListResponseSchema } from './dtos/order.dto.js';
-export { CartResponseSchema } from './dtos/cart.dto.js';
-export { AddressResponseSchema } from './dtos/address.dto.js';
+export { StoreResponseSchema, StoreListResponseSchema, CreateStoreInputSchema, UpdateStoreInputSchema, } from './dtos/store.dto.js';
+export { ItemResponseSchema, ItemListResponseSchema, CreateItemInputSchema, UpdateItemInputSchema, } from './dtos/item.dto.js';
+export { OrderResponseSchema, OrderListResponseSchema, OrderPlacementInputSchema, OrderFullRowCreateInputSchema, CreateOrderInputSchema, UpdateOrderStatusSchema, } from './dtos/order.dto.js';
+export { CartResponseSchema, AddToCartInputSchema, UpdateCartInputSchema, } from './dtos/cart.dto.js';
+// Add missing cart input schemas for UnifiedSchemas
+export { AddToCartInputSchema as AddCartItemInputSchema } from './dtos/cart.dto.js';
+export { UpdateCartInputSchema as UpdateCartItemInputSchema } from './dtos/cart.dto.js';
+export { AddressResponseSchema, CreateAddressInputSchema, UpdateAddressInputSchema, } from './dtos/address.dto.js';
+export { BundleResponseSchema, CreateBundleInputSchema, UpdateBundleInputSchema, } from './dtos/bundle.dto.js';
+export { PromotionResponseSchema, CreatePromotionInputSchema, UpdatePromotionInputSchema, } from './dtos/promotion.dto.js';
+// Bundle exports already added above
+export { LoginInputSchema, SignupInputSchema, AuthResponseSchema, UserPublicResponseSchema, } from './dtos/auth.dto.js';
+export { UploadMediaInputSchema, MediaResponseSchema, MediaListResponseSchema, } from './dtos/media.dto.js';
+export { UpdateMediaSortInputSchema, } from './dtos/mediaasset.dto.js';
+// Promotion exports already added above
 // Import auth schemas for registration
 // Import auth schemas for manual registration (auth has custom logic)
 import { SignupInputSchema, LoginInputSchema, UserPublicResponseSchema, AuthResponseSchema, } from './dtos/auth.dto.js';
 // Import payment schemas for manual registration
 import { CreatePaymentIntentInputSchema, PaymentIntentResponseSchema, CreateConnectAccountInputSchema, ConnectAccountResponseSchema, ConnectAccountStatusSchema, } from './dtos/payment.dto.js';
 // Import tip schemas for manual registration
-import { CreateTipInputSchema, TipResponseSchema, ProcessTipInputSchema, } from './dtos/tip.dto.js';
+import { CreateTipInputSchema, TipResponseSchema, } from './dtos/tip.dto.js';
 // ========================================
 // Auth Schemas & Paths
 // ========================================
@@ -187,7 +197,7 @@ registry.registerPath({
 // ========================================
 registry.register('CreateTipInput', CreateTipInputSchema);
 registry.register('TipResponse', TipResponseSchema);
-registry.register('ProcessTipInput', ProcessTipInputSchema);
+// ProcessTipInputSchema removed - not available in auto-generated tip DTO
 registry.registerPath({
     operationId: 'createTip',
     method: 'post',
@@ -230,7 +240,7 @@ registry.registerPath({
         }),
         body: {
             content: {
-                'application/json': { schema: ProcessTipInputSchema }
+                'application/json': { schema: CreateTipInputSchema }
             }
         }
     },
@@ -273,5 +283,14 @@ registry.registerPath({
 // ========================================
 // NOTE: Resources are now in apps/server/src/resources/
 // They are imported by openapi.ts build script, not at runtime
+// Auth schemas already exported above
+// Export payment schemas and types
+export { CreatePaymentIntentInputSchema, PaymentIntentResponseSchema, CreateConnectAccountInputSchema, ConnectAccountResponseSchema, ConnectAccountStatusSchema, StripeWebhookEventSchema, PaymentMethodResponseSchema, PaymentMethodListResponseSchema, } from './dtos/payment.dto.js';
+// Export tip schemas and types
+export { CreateTipInputSchema, UpdateTipInputSchema, TipResponseSchema, TipListResponseSchema, TipQuerySchema, ProcessTipInputSchema, TipStatusUpdateSchema, } from './dtos/tip.dto.js';
+// Export river schemas and types
+export { CreatePostInputSchema, PostResponseSchema, PostListResponseSchema, PostQuerySchema, RiverFeedQuerySchema, RiverFeedItemSchema, RiverFeedPageSchema, UpdatePostPrioritySchema, CreateCommentInputSchema, CommentResponseSchema, CommentListResponseSchema, CommentQuerySchema, LikePostInputSchema, UnlikePostInputSchema, } from './dtos/river.dto.js';
+// Export post update schema from post.dto.js
+export { UpdatePostInputSchema, } from './dtos/post.dto.js';
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js';

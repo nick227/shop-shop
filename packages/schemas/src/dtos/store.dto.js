@@ -1,103 +1,154 @@
 import { z } from 'zod';
-import { defineFields, generateCreateInputSchema, generateUpdateInputSchema, generateResponseSchema, generateListResponseSchema, generateQuerySchema, } from '../core/dto.generator.js';
 // ========================================
 // Store DTOs (Auto-Generated from Prisma)
 // ========================================
-// Define Store model fields (from Prisma schema)
-const storeFields = defineFields([
-    { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-    { name: 'ownerUserId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'name', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'slug', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'description', type: 'String', isOptional: true, hasDefault: false },
-    // Company Information
-    { name: 'companyName', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'taxId', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'phone', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'email', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'website', type: 'String', isOptional: true, hasDefault: false },
-    // Settings
-    { name: 'isPublished', type: 'Boolean', isOptional: false, hasDefault: true },
-    { name: 'deliveryEnabled', type: 'Boolean', isOptional: false, hasDefault: true },
-    { name: 'pickupEnabled', type: 'Boolean', isOptional: false, hasDefault: true },
-    { name: 'prepTimeMin', type: 'Int', isOptional: false, hasDefault: true },
-    { name: 'feesJson', type: 'Json', isOptional: true, hasDefault: false },
-    { name: 'hoursJson', type: 'Json', isOptional: true, hasDefault: false },
-    // Delivery Settings
-    { name: 'deliveryDistance', type: 'Decimal', isOptional: true, hasDefault: false },
-    { name: 'deliveryCharge', type: 'Decimal', isOptional: true, hasDefault: false },
-    // Geolocation
-    { name: 'latitude', type: 'Decimal', isOptional: true, hasDefault: false },
-    { name: 'longitude', type: 'Decimal', isOptional: true, hasDefault: false },
-    { name: 'addressStreet', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'addressCity', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'addressState', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'addressZip', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'addressCountry', type: 'String', isOptional: true, hasDefault: true },
-    { name: 'geocodedAt', type: 'DateTime', isOptional: true, hasDefault: false },
-    { name: 'geocodeSource', type: 'String', isOptional: true, hasDefault: false },
-    // Stripe
-    { name: 'stripeAccountId', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'stripeOnboarded', type: 'Boolean', isOptional: false, hasDefault: true },
-    { name: 'commissionRate', type: 'Decimal', isOptional: true, hasDefault: false },
-    { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-    { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-]);
-// Auto-generate with custom overrides
-export const CreateStoreInputSchema = generateCreateInputSchema({
-    fields: storeFields,
-    exclude: ['ownerUserId'], // Injected from context
-    overrides: {
-        slug: z.string().min(3).max(50).regex(/^[a-z0-9-]+$/, 'Must be lowercase letters, numbers, and hyphens'),
-        name: z.string().min(1).max(100),
-        description: z.string().max(1000).optional(),
-        companyName: z.string().min(1).max(200).optional(),
-        taxId: z.string().max(50).optional(),
-        phone: z.string().regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/).optional(),
-        email: z.string().email().optional(),
-        website: z.string().url().optional(),
-        deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Delivery distance must be between 0 and 100 miles').optional(),
-        deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0, 'Delivery charge must be non-negative').optional(),
-        latitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
-        longitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
-    },
+export const CreateStoreInputSchema = z.object({
+    name: z.string(),
+    slug: z.string(),
+    description: z.string(),
+    companyName: z.string().optional(),
+    taxId: z.string().optional(),
+    phone: z.string(),
+    email: z.string(),
+    website: z.string(),
+    customDomain: z.string().optional(),
+    socialLinksJson: z.record(z.string()).optional(),
+    isPublished: z.boolean().optional(),
+    status: z.enum(['ACTIVE', 'PAUSED', 'DISABLED']).optional(),
+    disabledAt: z.string().datetime().nullable().optional(),
+    disabledByUserId: z.string().nullable().optional(),
+    disabledReason: z.string().nullable().optional(),
+    deliveryEnabled: z.boolean().optional(),
+    pickupEnabled: z.boolean().optional(),
+    prepTimeMin: z.number().int().optional(),
+    feesJson: z.record(z.unknown()).optional(),
+    hoursJson: z.record(z.unknown()).optional(),
+    deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
+    longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
+    addressStreet: z.string().optional(),
+    addressCity: z.string().optional(),
+    addressState: z.string().optional(),
+    addressZip: z.string().optional(),
+    addressCountry: z.string().optional(),
+    geocodedAt: z.string().datetime().optional(),
+    geocodeSource: z.string().optional(),
+    /**
+     * Affiliate referral code captured client-side (e.g. /r/:slugOrCode landing).
+     * Server resolves it to the affiliate id; raw `referredByAffiliateId` is intentionally
+     * not accepted to prevent mass-assignment of arbitrary affiliates by the creator.
+     */
+    affiliateReferralCode: z.string().trim().min(1).max(64).optional(),
+    stripeAccountId: z.string().optional(),
+    stripeOnboarded: z.boolean().optional(),
+    commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    imageUrl: z.string().optional(),
 });
-export const UpdateStoreInputSchema = generateUpdateInputSchema({
-    fields: storeFields,
-    overrides: {
-        name: z.string().min(1).max(100).optional(),
-        description: z.string().max(1000).optional(),
-        slug: z.string().min(3).max(50).regex(/^[a-z0-9-]+$/).optional(),
-        companyName: z.string().min(1).max(200).optional(),
-        taxId: z.string().max(50).optional(),
-        phone: z.string().regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/).optional(),
-        email: z.string().email().optional(),
-        website: z.string().url().optional(),
-        commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Commission rate must be between 0 and 100').optional(),
-        deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, 'Delivery distance must be between 0 and 100 miles').optional(),
-        deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/).refine(val => parseFloat(val) >= 0, 'Delivery charge must be non-negative').optional(),
-        latitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
-        longitude: z.string().regex(/^-?\d+(\.\d+)?$/).optional(),
-    },
+export const UpdateStoreInputSchema = z.object({
+    name: z.string(),
+    slug: z.string(),
+    description: z.string(),
+    companyName: z.string().optional(),
+    taxId: z.string().optional(),
+    phone: z.string(),
+    email: z.string(),
+    website: z.string(),
+    customDomain: z.string().optional(),
+    socialLinksJson: z.record(z.string()).optional(),
+    isPublished: z.boolean().optional(),
+    status: z.enum(['ACTIVE', 'PAUSED', 'DISABLED']).optional(),
+    disabledAt: z.string().datetime().nullable().optional(),
+    disabledByUserId: z.string().nullable().optional(),
+    disabledReason: z.string().nullable().optional(),
+    deliveryEnabled: z.boolean().optional(),
+    pickupEnabled: z.boolean().optional(),
+    prepTimeMin: z.number().int().optional(),
+    feesJson: z.record(z.unknown()).optional(),
+    hoursJson: z.record(z.unknown()).optional(),
+    deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
+    longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
+    addressStreet: z.string().optional(),
+    addressCity: z.string().optional(),
+    addressState: z.string().optional(),
+    addressZip: z.string().optional(),
+    addressCountry: z.string().optional(),
+    geocodedAt: z.string().datetime().optional(),
+    geocodeSource: z.string().optional(),
+    stripeAccountId: z.string().optional(),
+    stripeOnboarded: z.boolean().optional(),
+    commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    imageUrl: z.string().optional(),
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided');
+export const StoreResponseSchema = z.object({
+    owner: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    description: z.string(),
+    companyName: z.string().nullable(),
+    taxId: z.string().nullable(),
+    phone: z.string(),
+    email: z.string(),
+    website: z.string(),
+    customDomain: z.string().nullable().optional(),
+    socialLinksJson: z.record(z.string()).nullable().optional(),
+    isPublished: z.boolean().nullable(),
+    status: z.enum(['ACTIVE', 'PAUSED', 'DISABLED']).nullable(),
+    disabledAt: z.string().datetime().nullable(),
+    disabledByUserId: z.string().nullable(),
+    disabledReason: z.string().nullable(),
+    deliveryEnabled: z.boolean().nullable(),
+    pickupEnabled: z.boolean().nullable(),
+    prepTimeMin: z.number().int().nullable(),
+    feesJson: z.record(z.unknown()).nullable(),
+    hoursJson: z.record(z.unknown()).nullable(),
+    deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable(),
+    deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable(),
+    deliveryZones: z.string(),
+    latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').nullable(),
+    longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').nullable(),
+    addressStreet: z.string().nullable(),
+    addressCity: z.string().nullable(),
+    addressState: z.string().nullable(),
+    addressZip: z.string().nullable(),
+    addressCountry: z.string().nullable(),
+    geocodedAt: z.string().datetime().nullable(),
+    geocodeSource: z.string().nullable(),
+    referredByAffiliateId: z.string().nullable(),
+    referredByAffiliate: z.string().nullable(),
+    stripeAccountId: z.string().nullable(),
+    stripeOnboarded: z.boolean().nullable(),
+    stripeChargesEnabled: z.boolean().nullable().optional(),
+    stripePayoutsEnabled: z.boolean().nullable().optional(),
+    acceptsOnlineCardPayments: z.boolean().optional(),
+    commissionRate: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable(),
+    media: z.string(),
+    items: z.string(),
+    orders: z.string(),
+    carts: z.string(),
+    posts: z.string(),
+    bundles: z.string(),
+    teamMembers: z.string(),
+    invitations: z.string(),
+    Promotion: z.string(),
+    FavoriteStore: z.string()
 });
-export const StoreResponseSchema = generateResponseSchema({
-    fields: storeFields,
+export const StoreListResponseSchema = z.object({
+    data: z.array(StoreResponseSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
 });
-export const StoreListResponseSchema = generateListResponseSchema(StoreResponseSchema);
-export const StoreQuerySchema = generateQuerySchema({
-    additionalFilters: {
-        isPublished: z.string().transform(val => val === 'true').optional(),
-        ownerUserId: z.string().uuid().optional(),
-        // Location-based filtering
-        latitude: z.string().transform(Number).optional(),
-        longitude: z.string().transform(Number).optional(),
-        radiusMiles: z.string().transform(Number).default('25'), // Default 25 mile radius
-        city: z.string().optional(),
-        state: z.string().optional(),
-        zip: z.string().optional(),
-    },
-});
-// Extended response schema with distance field (computed)
-export const StoreWithDistanceSchema = StoreResponseSchema.extend({
-    distance: z.number().optional(), // Distance in miles from search location
-});
+export const StoreQuerySchema = z.object({
+    page: z.string().transform(Number).default('1'),
+    limit: z.string().transform(Number).default('20'),
+}).passthrough().transform(data => ({
+    page: data.page,
+    limit: data.limit,
+    filters: Object.keys(data)
+        .filter(k => k !== 'page' && k !== 'limit' && data[k] !== undefined)
+        .reduce((acc, k) => ({ ...acc, [k]: data[k] }), {}),
+    orderBy: { createdAt: 'desc' },
+}));

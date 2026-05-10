@@ -27,16 +27,16 @@ export declare const MediaResponseSchema: z.ZodObject<{
     id: string;
     createdAt: string;
     sortIndex: number;
-    kind: "IMAGE" | "VIDEO";
     url: string;
+    kind: "IMAGE" | "VIDEO";
     altText: string | null;
     size: number;
 }, {
     id: string;
     createdAt: string;
     sortIndex: number;
-    kind: "IMAGE" | "VIDEO";
     url: string;
+    kind: "IMAGE" | "VIDEO";
     altText: string | null;
     size: number;
 }>;
@@ -53,52 +53,44 @@ export declare const MediaListResponseSchema: z.ZodObject<{
         id: string;
         createdAt: string;
         sortIndex: number;
-        kind: "IMAGE" | "VIDEO";
         url: string;
+        kind: "IMAGE" | "VIDEO";
         altText: string | null;
         size: number;
     }, {
         id: string;
         createdAt: string;
         sortIndex: number;
-        kind: "IMAGE" | "VIDEO";
         url: string;
+        kind: "IMAGE" | "VIDEO";
         altText: string | null;
         size: number;
     }>, "many">;
     total: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
+    total: number;
     data: {
         id: string;
         createdAt: string;
         sortIndex: number;
-        kind: "IMAGE" | "VIDEO";
         url: string;
+        kind: "IMAGE" | "VIDEO";
         altText: string | null;
         size: number;
     }[];
-    total: number;
 }, {
+    total: number;
     data: {
         id: string;
         createdAt: string;
         sortIndex: number;
-        kind: "IMAGE" | "VIDEO";
         url: string;
+        kind: "IMAGE" | "VIDEO";
         altText: string | null;
         size: number;
     }[];
-    total: number;
-}>;
-export declare const UpdateMediaSortInputSchema: z.ZodObject<{
-    sortIndex: z.ZodNumber;
-}, "strip", z.ZodTypeAny, {
-    sortIndex: number;
-}, {
-    sortIndex: number;
 }>;
 export type UploadMediaInput = z.infer<typeof UploadMediaInputSchema>;
 export type MediaResponse = z.infer<typeof MediaResponseSchema>;
 export type MediaListResponse = z.infer<typeof MediaListResponseSchema>;
-export type UpdateMediaSortInput = z.infer<typeof UpdateMediaSortInputSchema>;
 //# sourceMappingURL=media.dto.d.ts.map

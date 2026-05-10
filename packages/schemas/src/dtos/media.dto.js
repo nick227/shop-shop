@@ -24,7 +24,3 @@ export const MediaListResponseSchema = z.object({
     data: z.array(MediaResponseSchema),
     total: z.number(),
 });
-// Update Media Sort
-export const UpdateMediaSortInputSchema = z.object({
-    sortIndex: z.number().int().min(0).describe('New display order'),
-});

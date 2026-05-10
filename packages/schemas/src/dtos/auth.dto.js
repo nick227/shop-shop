@@ -9,6 +9,7 @@ export const SignupInputSchema = z.object({
     password: z.string().min(8, 'Password must be at least 8 characters'),
     name: z.string().min(1).max(100).trim().optional(),
     phone: z.string().max(20).trim().optional(),
+    affiliateReferralCode: z.string().trim().transform((v) => v.toUpperCase()).optional(),
 });
 export const LoginInputSchema = z.object({
     email: z.string()
@@ -20,7 +21,7 @@ export const UserPublicResponseSchema = z.object({
     id: z.string().uuid(),
     email: z.string().email(),
     name: z.string().nullable(),
-    role: z.enum(['USER', 'VENDOR', 'ADMIN']),
+    role: z.enum(['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'AFFILIATE', 'RIDER', 'STAFF']),
     phone: z.string().nullable(),
     isCompany: z.boolean(),
     companyName: z.string().nullable(),

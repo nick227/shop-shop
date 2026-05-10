@@ -4,7 +4,7 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @apps/server build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @packages/db build && pnpm --filter @packages/domain build && pnpm --filter @packages/realtime build && pnpm --filter @packages/schemas build && pnpm --filter @apps/server build"
 
 [deploy]
 startCommand = "pnpm --filter @apps/server start"

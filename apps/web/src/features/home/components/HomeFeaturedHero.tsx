@@ -1,6 +1,7 @@
 /**
  * Full-width editorial hero spotlight for the featured marketplace kitchen.
  */
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { Flame } from 'lucide-react'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
@@ -13,7 +14,7 @@ interface HomeFeaturedHeroProps {
   readonly isLoading: boolean
 }
 
-export function HomeFeaturedHero({ store, isLoading }: HomeFeaturedHeroProps) {
+function HomeFeaturedHeroComponent({ store, isLoading }: HomeFeaturedHeroProps) {
   if (isLoading) {
     return <div className="relative aspect-[3/2] min-h-[260px] w-full overflow-hidden rounded-2xl border border-border bg-muted animate-pulse sm:aspect-[16/7]" />
   }
@@ -74,3 +75,5 @@ export function HomeFeaturedHero({ store, isLoading }: HomeFeaturedHeroProps) {
     </section>
   )
 }
+
+export const HomeFeaturedHero = React.memo(HomeFeaturedHeroComponent)

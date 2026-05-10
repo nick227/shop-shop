@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {
+      "@packages/db":                    ["./packages/db/dist/db/src"],
+      "@packages/db/*":                  ["./packages/db/dist/db/src/*"],
+      "@packages/domain":                ["./packages/domain/dist"],
+      "@packages/domain/*":              ["./packages/domain/dist/*"],
+      "@packages/schemas":               ["./packages/schemas/dist/packages/schemas/src"],
+      "@packages/schemas/*":             ["./packages/schemas/dist/packages/schemas/src/*"],
+      "@packages/schemas-river-dto":     ["./packages/schemas/dist/packages/schemas/src/dtos/river.dto"],
+      "@packages/realtime":              ["./packages/realtime/dist"],
+      "@packages/realtime/*":            ["./packages/realtime/dist/*"]
+    }
+  }
+}

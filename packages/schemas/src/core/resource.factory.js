@@ -2,10 +2,17 @@
 // Resource Factory
 // Declarative resource definition builder
 // ========================================
+function defaultResourcePath(name) {
+    if (name === 'address') {
+        return '/addresses';
+    }
+    return `/${name}s`;
+}
 export function defineResource(config) {
+    const path = config.path ?? defaultResourcePath(config.name);
     return {
-        path: config.path || `/${config.name}s`,
         ...config,
+        path,
     };
 }
 export function getResourceOperations(resource) {

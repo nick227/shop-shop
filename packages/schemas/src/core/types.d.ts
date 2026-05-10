@@ -1,6 +1,6 @@
 import type { ZodSchema } from 'zod';
 export type CrudOperation = 'create' | 'read' | 'update' | 'delete' | 'list';
-export type Role = 'USER' | 'VENDOR' | 'ADMIN';
+export type Role = 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF';
 export interface ResourceSchemas {
     create?: ZodSchema;
     update?: ZodSchema;
@@ -30,6 +30,8 @@ export interface CustomHooks {
     afterDelete?: (id: string, context?: HookContext) => Promise<void>;
     beforeList?: (filters: unknown, context?: HookContext) => Promise<unknown>;
     afterList?: (result: unknown, context?: HookContext) => Promise<unknown>;
+    /** When set, runs instead of default ownership checks for read/update/delete */
+    authorizeAccess?: (existing: unknown, context: HookContext | undefined, operation: 'read' | 'update' | 'delete') => Promise<void>;
 }
 export interface HookContext {
     userId?: string;

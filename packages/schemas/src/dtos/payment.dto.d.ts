@@ -18,15 +18,15 @@ export declare const PaymentIntentResponseSchema: z.ZodObject<{
     amount: z.ZodNumber;
     status: z.ZodEnum<["requires_payment_method", "requires_confirmation", "requires_action", "processing", "succeeded", "canceled"]>;
 }, "strip", z.ZodTypeAny, {
-    status: "canceled" | "processing" | "requires_action" | "requires_confirmation" | "requires_payment_method" | "succeeded";
-    paymentIntentId: string;
+    status: "requires_payment_method" | "requires_confirmation" | "requires_action" | "processing" | "succeeded" | "canceled";
     amount: number;
     clientSecret: string;
+    paymentIntentId: string;
 }, {
-    status: "canceled" | "processing" | "requires_action" | "requires_confirmation" | "requires_payment_method" | "succeeded";
-    paymentIntentId: string;
+    status: "requires_payment_method" | "requires_confirmation" | "requires_action" | "processing" | "succeeded" | "canceled";
     amount: number;
     clientSecret: string;
+    paymentIntentId: string;
 }>;
 export declare const CreateConnectAccountInputSchema: z.ZodObject<{
     storeId: z.ZodString;
@@ -71,8 +71,8 @@ export declare const ConnectAccountStatusSchema: z.ZodObject<{
     }>>;
 }, "strip", z.ZodTypeAny, {
     accountId: string;
-    chargesEnabled: boolean;
     detailsSubmitted: boolean;
+    chargesEnabled: boolean;
     payoutsEnabled: boolean;
     requirements?: {
         currentlyDue: string[];
@@ -81,8 +81,8 @@ export declare const ConnectAccountStatusSchema: z.ZodObject<{
     } | undefined;
 }, {
     accountId: string;
-    chargesEnabled: boolean;
     detailsSubmitted: boolean;
+    chargesEnabled: boolean;
     payoutsEnabled: boolean;
     requirements?: {
         currentlyDue: string[];
@@ -96,12 +96,12 @@ export declare const StripeWebhookEventSchema: z.ZodObject<{
     data: z.ZodRecord<z.ZodString, z.ZodUnknown>;
 }, "strip", z.ZodTypeAny, {
     type: string;
-    data: Record<string, unknown>;
     id: string;
+    data: Record<string, unknown>;
 }, {
     type: string;
-    data: Record<string, unknown>;
     id: string;
+    data: Record<string, unknown>;
 }>;
 export declare const PaymentMethodResponseSchema: z.ZodObject<{
     id: z.ZodString;
@@ -113,15 +113,15 @@ export declare const PaymentMethodResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     id: string;
     createdAt: string;
-    provider: "TEST" | "STRIPE" | "SQUARE";
     isDefault: boolean;
+    provider: "TEST" | "STRIPE" | "SQUARE";
     brand: string | null;
     last4: string | null;
 }, {
     id: string;
     createdAt: string;
-    provider: "TEST" | "STRIPE" | "SQUARE";
     isDefault: boolean;
+    provider: "TEST" | "STRIPE" | "SQUARE";
     brand: string | null;
     last4: string | null;
 }>;
@@ -136,39 +136,39 @@ export declare const PaymentMethodListResponseSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         id: string;
         createdAt: string;
-        provider: "TEST" | "STRIPE" | "SQUARE";
         isDefault: boolean;
+        provider: "TEST" | "STRIPE" | "SQUARE";
         brand: string | null;
         last4: string | null;
     }, {
         id: string;
         createdAt: string;
-        provider: "TEST" | "STRIPE" | "SQUARE";
         isDefault: boolean;
+        provider: "TEST" | "STRIPE" | "SQUARE";
         brand: string | null;
         last4: string | null;
     }>, "many">;
     total: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
+    total: number;
     data: {
         id: string;
         createdAt: string;
-        provider: "TEST" | "STRIPE" | "SQUARE";
         isDefault: boolean;
+        provider: "TEST" | "STRIPE" | "SQUARE";
         brand: string | null;
         last4: string | null;
     }[];
-    total: number;
 }, {
+    total: number;
     data: {
         id: string;
         createdAt: string;
-        provider: "TEST" | "STRIPE" | "SQUARE";
         isDefault: boolean;
+        provider: "TEST" | "STRIPE" | "SQUARE";
         brand: string | null;
         last4: string | null;
     }[];
-    total: number;
 }>;
 export type CreatePaymentIntentInput = z.infer<typeof CreatePaymentIntentInputSchema>;
 export type PaymentIntentResponse = z.infer<typeof PaymentIntentResponseSchema>;

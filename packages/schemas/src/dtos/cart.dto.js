@@ -1,48 +1,56 @@
 import { z } from 'zod';
-import { defineFields, generateResponseSchema, generateListResponseSchema, } from '../core/dto.generator.js';
 // ========================================
-// Cart DTOs (Aligned with Prisma Schema)
+// Cart DTOs (Auto-Generated from Prisma)
 // ========================================
-const cartFields = defineFields([
-    { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-    { name: 'userId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'storeId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'status', type: 'String', isOptional: false, hasDefault: true },
-    { name: 'note', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-    { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-]);
-const cartItemFields = defineFields([
-    { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-    { name: 'cartId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'itemId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'titleSnapshot', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'unitPrice', type: 'Decimal', isOptional: false, hasDefault: false },
-    { name: 'quantity', type: 'Int', isOptional: false, hasDefault: false },
-    { name: 'optionsJson', type: 'Json', isOptional: true, hasDefault: false },
-    { name: 'notes', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-]);
-// Add item to cart
-export const AddToCartInputSchema = z.object({
-    storeId: z.string().uuid().describe('Store ID'),
-    itemId: z.string().uuid().describe('Item ID to add to cart'),
-    quantity: z.number().int().min(1).max(99).describe('Quantity'),
-    optionsJson: z.record(z.unknown()).optional().describe('Selected options (e.g., size, extras)'),
-    notes: z.string().max(500).optional().describe('Special instructions'),
+export const CreateCartInputSchema = z.object({
+    userId: z.string(),
+    storeId: z.string(),
+    status: z.string().optional(),
+    note: z.string().optional(),
+    order: z.string().optional()
 });
-// Update cart item quantity
-export const UpdateCartItemInputSchema = z.object({
-    quantity: z.number().int().min(0).max(99).describe('Quantity (0 to remove)'),
-    optionsJson: z.record(z.unknown()).optional().describe('Selected options'),
-    notes: z.string().max(500).optional().describe('Special instructions'),
+export const UpdateCartInputSchema = z.object({
+    userId: z.string().optional(),
+    storeId: z.string().optional(),
+    status: z.string().optional(),
+    note: z.string().optional(),
+    order: z.string().optional()
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided');
+export const CartResponseSchema = z.object({
+    userId: z.string(),
+    storeId: z.string(),
+    user: z.string(),
+    store: z.string(),
+    status: z.string().nullable(),
+    note: z.string().nullable(),
+    items: z.string(),
+    order: z.string().nullable()
 });
-// Cart response with items
-export const CartResponseSchema = generateResponseSchema({
-    fields: cartFields,
-}).extend({
-    items: z.array(generateResponseSchema({
-        fields: cartItemFields,
-    })),
+export const CartListResponseSchema = z.object({
+    data: z.array(CartResponseSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
 });
-export const CartListResponseSchema = generateListResponseSchema(CartResponseSchema);
+export const CartQuerySchema = z.object({
+    page: z.string().transform(Number).default('1'),
+    limit: z.string().transform(Number).default('20'),
+}).transform(data => ({
+    page: data.page,
+    limit: data.limit,
+    filters: Object.keys(data)
+        .filter(k => k !== 'page' && k !== 'limit' && data[k] !== undefined)
+        .reduce((acc, k) => ({ ...acc, [k]: data[k] }), {}),
+    orderBy: { createdAt: 'desc' },
+}));
+// Additional schemas
+export const AddToCartInputSchema = z
+    .object({
+    itemId: z.string().optional(),
+    bundleId: z.string().optional(),
+    quantity: z.number().int().min(1).optional(),
+    options: z.record(z.unknown()).optional(),
+    notes: z.string().optional(),
+})
+    .refine((d) => !!(d.itemId ?? d.bundleId), { message: 'Either itemId or bundleId is required' })
+    .refine((d) => !(d.itemId && d.bundleId), { message: 'Provide either itemId or bundleId, not both' });

@@ -1,51 +1,85 @@
 import { z } from 'zod';
-import { defineFields, generateCreateInputSchema, generateUpdateInputSchema, generateResponseSchema, generateListResponseSchema, generateQuerySchema, } from '../core/dto.generator.js';
 // ========================================
-// Item DTOs (Aligned with Prisma Schema)
-// Schema uses: title, isActive, isSoldOut, optionsJson, sortIndex, stockQty
+// Item DTOs (Auto-Generated from Prisma)
 // ========================================
-const itemFields = defineFields([
-    { name: 'id', type: 'String', isOptional: false, hasDefault: true },
-    { name: 'storeId', type: 'String', isOptional: false, hasDefault: false },
-    { name: 'title', type: 'String', isOptional: false, hasDefault: false }, // ← Schema uses "title"
-    { name: 'description', type: 'String', isOptional: true, hasDefault: false },
-    { name: 'price', type: 'Decimal', isOptional: false, hasDefault: false },
-    { name: 'isActive', type: 'Boolean', isOptional: false, hasDefault: true }, // ← Schema uses "isActive"
-    { name: 'isSoldOut', type: 'Boolean', isOptional: false, hasDefault: true },
-    { name: 'sortIndex', type: 'Int', isOptional: false, hasDefault: true },
-    { name: 'optionsJson', type: 'Json', isOptional: true, hasDefault: false }, // ← Schema uses "optionsJson"
-    { name: 'stockQty', type: 'Int', isOptional: true, hasDefault: false },
-    { name: 'createdAt', type: 'DateTime', isOptional: false, hasDefault: true },
-    { name: 'updatedAt', type: 'DateTime', isOptional: false, hasDefault: true },
-]);
-export const CreateItemInputSchema = generateCreateInputSchema({
-    fields: itemFields,
-    overrides: {
-        storeId: z.string().uuid(),
-        title: z.string().min(1).max(200),
-        description: z.string().max(1000).optional(),
-        price: z.string().regex(/^\d+(\.\d{1,2})?$/),
-        stockQty: z.coerce.number().int().min(0).optional(),
-    },
+export const CreateItemInputSchema = z.object({
+    storeId: z.string(),
+    title: z.string(),
+    description: z.string(),
+    price: z.string(),
+    isActive: z.boolean().optional(),
+    isSoldOut: z.boolean().optional(),
+    sortIndex: z.number().int().optional(),
+    optionsJson: z.record(z.unknown()).optional(),
+    stockQty: z.coerce.number().int().min(0).optional(),
+    allergensJson: z.record(z.unknown()).optional(),
+    isVegan: z.boolean().optional(),
+    isVegetarian: z.boolean().optional(),
+    isGlutenFree: z.boolean().optional(),
+    isDairyFree: z.boolean().optional(),
+    spicyLevel: z.number().int().optional()
 });
-export const UpdateItemInputSchema = generateUpdateInputSchema({
-    fields: itemFields,
-    exclude: ['storeId'], // Can't change store
-    overrides: {
-        title: z.string().min(1).max(200).optional(),
-        description: z.string().max(1000).optional(),
-        price: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
-        stockQty: z.coerce.number().int().min(0).optional(),
-    },
+export const UpdateItemInputSchema = z.object({
+    storeId: z.string().optional(),
+    title: z.string(),
+    description: z.string(),
+    price: z.string(),
+    isActive: z.boolean().optional(),
+    isSoldOut: z.boolean().optional(),
+    sortIndex: z.number().int().optional(),
+    optionsJson: z.record(z.unknown()).optional(),
+    stockQty: z.coerce.number().int().min(0).optional(),
+    allergensJson: z.record(z.unknown()).optional(),
+    isVegan: z.boolean().optional(),
+    isVegetarian: z.boolean().optional(),
+    isGlutenFree: z.boolean().optional(),
+    isDairyFree: z.boolean().optional(),
+    spicyLevel: z.number().int().optional()
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided');
+const ItemTagSchema = z.object({
+    slug: z.string(),
+    label: z.string(),
+    category: z.string(),
 });
-export const ItemResponseSchema = generateResponseSchema({
-    fields: itemFields,
+export const ItemResponseSchema = z.object({
+    storeId: z.string(),
+    store: z.string(),
+    title: z.string(),
+    description: z.string(),
+    price: z.string(),
+    isActive: z.boolean().nullable(),
+    isSoldOut: z.boolean().nullable(),
+    sortIndex: z.number().int().nullable(),
+    optionsJson: z.record(z.unknown()).nullable(),
+    stockQty: z.number().int().nullable(),
+    allergensJson: z.record(z.unknown()).nullable(),
+    isVegan: z.boolean().nullable(),
+    isVegetarian: z.boolean().nullable(),
+    isGlutenFree: z.boolean().nullable(),
+    isDairyFree: z.boolean().nullable(),
+    spicyLevel: z.number().int().nullable(),
+    media: z.string(),
+    cartItems: z.string(),
+    orderItems: z.string(),
+    bundleItems: z.string(),
+    FavoriteItem: z.string(),
+    tags: z.array(ItemTagSchema).optional(),
+    mediaAssets: z.array(z.object({ url: z.string(), kind: z.string(), sortIndex: z.number().nullable().optional() })).optional(),
 });
-export const ItemListResponseSchema = generateListResponseSchema(ItemResponseSchema);
-export const ItemQuerySchema = generateQuerySchema({
-    additionalFilters: {
-        storeId: z.string().uuid().optional(),
-        isActive: z.string().transform(val => val === 'true').optional(),
-        isSoldOut: z.string().transform(val => val === 'true').optional(),
-    },
+export const ItemListResponseSchema = z.object({
+    data: z.array(ItemResponseSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
 });
+export const ItemQuerySchema = z.object({
+    page: z.string().transform(Number).default('1'),
+    limit: z.string().transform(Number).default('20'),
+}).passthrough().transform(data => ({
+    page: data.page,
+    limit: data.limit,
+    filters: Object.keys(data)
+        .filter(k => k !== 'page' && k !== 'limit' && data[k] !== undefined)
+        .reduce((acc, k) => ({ ...acc, [k]: data[k] }), {}),
+    orderBy: { createdAt: 'desc' },
+}));
