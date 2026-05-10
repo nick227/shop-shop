@@ -4,6 +4,53 @@ import { authenticate } from '../middleware/auth.js'
 import { realtimeBroker } from '../services/realtime.broker.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
+const LOCATION_PUBLISH_THROTTLE_MS = 5_000
+const lastLocationPublishAtByJob = new Map<string, number>()
+
+interface DeliveryRealtimePayload {
+  deliveryJobId: string
+  orderId: string
+  userId: string
+  storeId: string
+  previousStatus?: string
+  newStatus?: string
+  providerStatus?: string | null
+  provider: string
+  location?: {
+    latitude?: number
+    longitude?: number
+    address?: unknown
+  }
+  source?: string
+}
+
+function publishDeliveryRealtimeEvent(
+  type: 'delivery.status.updated' | 'delivery.location.updated',
+  payload: DeliveryRealtimePayload,
+) {
+  const event = {
+    type,
+    timestamp: new Date().toISOString(),
+    payload: payload as unknown as Record<string, unknown>,
+  }
+
+  realtimeBroker.publish(`order:${payload.orderId}`, event)
+  realtimeBroker.publish(`customer:${payload.userId}`, event)
+  realtimeBroker.publish(`vendor:${payload.storeId}`, event)
+  realtimeBroker.publish('admin:delivery', event)
+}
+
+function shouldPublishLocation(deliveryJobId: string): boolean {
+  const now = Date.now()
+  const lastPublishedAt = lastLocationPublishAtByJob.get(deliveryJobId) ?? 0
+  if (now - lastPublishedAt < LOCATION_PUBLISH_THROTTLE_MS) {
+    return false
+  }
+
+  lastLocationPublishAtByJob.set(deliveryJobId, now)
+  return true
+}
+
 export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
   // Internal publish delivery status updates (for trusted services only)
   app.post('/internal/delivery/status-updated', async (req, reply) => {
@@ -38,6 +85,21 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         return reply.code(404).send({ error: 'Delivery job not found' })
       }
 
+      const nextStatus = status || deliveryJob.status
+      const nextProviderStatus = providerStatus || deliveryJob.providerStatus
+      const hasMeaningfulChange =
+        nextStatus !== deliveryJob.status ||
+        nextProviderStatus !== deliveryJob.providerStatus ||
+        Boolean(providerPayload)
+
+      if (!hasMeaningfulChange) {
+        return reply.code(200).send({
+          success: true,
+          skipped: true,
+          message: 'Delivery status unchanged',
+        })
+      }
+
       // Update delivery job status if provided
       const updateData: any = { updatedAt: new Date() }
       if (status) updateData.status = status
@@ -66,38 +128,16 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         },
       })
 
-      // Publish realtime event
-      realtimeBroker.publish('delivery.status.updated', {
-        type: 'delivery.status.updated',
-        timestamp: new Date().toISOString(),
-        payload: {
-          deliveryJobId,
-          orderId: deliveryJob.order.id,
-          userId: deliveryJob.order.userId,
-          storeId: deliveryJob.order.storeId,
-          previousStatus: deliveryJob.status,
-          newStatus: status || deliveryJob.status,
-          providerStatus: providerStatus || deliveryJob.providerStatus,
-          provider: deliveryJob.provider,
-          source: source || 'internal_service'
-        }
-      })
-
-      // Also publish to admin topic for admin viewers
-      realtimeBroker.publish('delivery.status.updated.admin', {
-        type: 'delivery.status.updated',
-        timestamp: new Date().toISOString(),
-        payload: {
-          deliveryJobId,
-          orderId: deliveryJob.order.id,
-          userId: deliveryJob.order.userId,
-          storeId: deliveryJob.order.storeId,
-          previousStatus: deliveryJob.status,
-          newStatus: status || deliveryJob.status,
-          providerStatus: providerStatus || deliveryJob.providerStatus,
-          provider: deliveryJob.provider,
-          source: source || 'internal_service'
-        }
+      publishDeliveryRealtimeEvent('delivery.status.updated', {
+        deliveryJobId,
+        orderId: deliveryJob.order.id,
+        userId: deliveryJob.order.userId,
+        storeId: deliveryJob.order.storeId,
+        previousStatus: deliveryJob.status,
+        newStatus: nextStatus,
+        providerStatus: nextProviderStatus,
+        provider: deliveryJob.provider,
+        source: source || 'internal_service',
       })
 
       return reply.code(200).send({ 
@@ -181,11 +221,7 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
         },
       })
 
-      // Publish realtime event
-      realtimeBroker.publish('delivery.location.updated', {
-        type: 'delivery.location.updated',
-        timestamp: new Date().toISOString(),
-        payload: {
+      const realtimePayload = {
           deliveryJobId,
           orderId: deliveryJob.order.id,
           userId: deliveryJob.order.userId,
@@ -194,25 +230,15 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
           provider: deliveryJob.provider,
           source: source || 'internal_service'
         }
-      })
 
-      // Also publish to admin topic for admin viewers
-      realtimeBroker.publish('delivery.location.updated.admin', {
-        type: 'delivery.location.updated',
-        timestamp: new Date().toISOString(),
-        payload: {
-          deliveryJobId,
-          orderId: deliveryJob.order.id,
-          userId: deliveryJob.order.userId,
-          storeId: deliveryJob.order.storeId,
-          location: { latitude, longitude, address },
-          provider: deliveryJob.provider,
-          source: source || 'internal_service'
-        }
-      })
+      const published = shouldPublishLocation(deliveryJobId)
+      if (published) {
+        publishDeliveryRealtimeEvent('delivery.location.updated', realtimePayload)
+      }
 
       return reply.code(200).send({ 
         success: true,
+        published,
         message: 'Delivery location updated and published'
       })
 

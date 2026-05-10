@@ -3,6 +3,25 @@ import { prisma } from '@packages/db'
 import { authenticate } from '../middleware/auth.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
+const TERMINAL_ORDER_STATUSES = new Set(['COMPLETED', 'DELIVERED', 'CANCELED'])
+const TERMINAL_DELIVERY_JOB_STATUSES = new Set(['COMPLETED', 'CANCELED', 'FAILED'])
+
+function getNextPollMs(orderStatus?: string, deliveryJobStatus?: string | null): number | null {
+  if (TERMINAL_ORDER_STATUSES.has(orderStatus ?? '')) return null
+  if (TERMINAL_DELIVERY_JOB_STATUSES.has(deliveryJobStatus ?? '')) return null
+
+  if (deliveryJobStatus === 'DISPATCHED') return 15_000
+  if (deliveryJobStatus === 'REQUESTED') return 10_000
+
+  return 30_000
+}
+
+function getLatestLocation(providerPayload: unknown): unknown {
+  if (!providerPayload || typeof providerPayload !== 'object') return null
+  const location = (providerPayload as { location?: unknown }).location
+  return location && typeof location === 'object' ? location : null
+}
+
 export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
   app.get('/api/delivery/tracking/:orderId', { preHandler: authenticate }, async (req, reply) => {
     try {
@@ -13,6 +32,7 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
         select: {
           id: true,
           userId: true,
+          status: true,
           deliveryType: true,
           deliveryMode: true,
           storeId: true,
@@ -31,6 +51,15 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
         }
       }
 
+      if (order.deliveryType !== 'DELIVERY') {
+        return reply.code(200).send({
+          deliveryJob: null,
+          latestLocation: null,
+          terminal: TERMINAL_ORDER_STATUSES.has(order.status),
+          nextPollMs: getNextPollMs(order.status),
+        })
+      }
+
       const deliveryJob = await prisma.deliveryJob.findFirst({
         where: { orderId },
         orderBy: { createdAt: 'desc' },
@@ -41,16 +70,39 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
           providerExternalId: true,
           trackingUrl: true,
           providerStatus: true,
+          providerPayload: true,
+          completedAt: true,
+          canceledAt: true,
           createdAt: true,
           updatedAt: true,
         },
       })
 
-      if (order.deliveryType !== 'DELIVERY') {
-        return reply.code(200).send({ deliveryJob: null })
-      }
+      const terminal =
+        TERMINAL_ORDER_STATUSES.has(order.status) ||
+        TERMINAL_DELIVERY_JOB_STATUSES.has(deliveryJob?.status ?? '')
+      const latestLocation = getLatestLocation(deliveryJob?.providerPayload)
+      const publicDeliveryJob = deliveryJob
+        ? {
+            id: deliveryJob.id,
+            provider: deliveryJob.provider,
+            status: deliveryJob.status,
+            providerExternalId: deliveryJob.providerExternalId,
+            trackingUrl: deliveryJob.trackingUrl,
+            providerStatus: deliveryJob.providerStatus,
+            completedAt: deliveryJob.completedAt,
+            canceledAt: deliveryJob.canceledAt,
+            createdAt: deliveryJob.createdAt,
+            updatedAt: deliveryJob.updatedAt,
+          }
+        : null
 
-      return reply.code(200).send({ deliveryJob })
+      return reply.code(200).send({
+        deliveryJob: publicDeliveryJob,
+        latestLocation,
+        terminal,
+        nextPollMs: terminal ? null : getNextPollMs(order.status, deliveryJob?.status),
+      })
 
     } catch (error) {
       console.error('Error getting delivery tracking:', error)

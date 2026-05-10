@@ -938,7 +938,6 @@ model Affiliate {
   // Metadata
   bio     String? @db.Text
   website String?
-
   // Relationships
   referredStores   Store[]           @relation("AffiliateReferrals")
   referredUsers    User[]            @relation("AffiliateCustomerReferrals")
@@ -946,6 +945,7 @@ model Affiliate {
   commissions      Commission[]
   payouts          AffiliatePayout[]
   referralEvents   ReferralEvent[]
+  payoutAuditLogs  PayoutAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1018,12 +1018,62 @@ model AffiliatePayout {
   paidAt        DateTime?
 
   commissions Commission[]
+  auditLogs   PayoutAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([affiliateId, status])
   @@index([status, periodEnd])
+}
+
+model PayoutAuditLog {
+  id              String            @id @default(uuid()) @db.Char(36)
+  affiliateId      String            @db.Char(36)
+  affiliatePayoutId String            @db.Char(36)
+  affiliate        Affiliate         @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliatePayout AffiliatePayout     @relation(fields: [affiliatePayoutId], references: [id], onDelete: Cascade)
+  action          PayoutAuditAction @default(CREATED)
+  performedBy     String?           @db.Char(36)
+  performedAt     DateTime          @default(now())
+  details         Json?
+  ipAddress       String?
+  createdAt       DateTime          @default(now())
+
+  @@index([affiliateId, performedAt])
+  @@index([affiliatePayoutId, action])
+  @@index([performedAt])
+}
+
+model CommissionAuditLog {
+  id              String            @id @default(uuid()) @db.Char(36)
+  commissionId    String            @db.Char(36)
+  commission      Commission        @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  action          CommissionAuditAction @default(AUTO_APPROVED)
+  performedBy     String?           @db.Char(36)
+  performedAt     DateTime          @default(now())
+  details         Json?
+  ipAddress       String?
+  createdAt       DateTime          @default(now())
+
+  @@index([commissionId, performedAt])
+  @@index([action, performedAt])
+  @@index([performedAt])
+}
+
+enum PayoutAuditAction {
+  CREATED
+  APPROVED
+  PAID
+  REVERSED
+  MODIFIED
+}
+
+enum CommissionAuditAction {
+  AUTO_APPROVED
+  AUTO_REVERSED
+  MANUAL_APPROVED
+  MANUAL_REVERSED
 }
 
 model ReferralEvent {

@@ -55,5 +55,44 @@ export function useAffiliateApi() {
         `/api/affiliates/me/payouts?${q.toString()}`
       )
     },
+
+    getMyReferralEvents: (params?: { eventType?: string; limit?: number; offset?: number }) => {
+      const q = new URLSearchParams()
+      if (params?.eventType) q.set('eventType', params.eventType)
+      if (params?.limit) q.set('limit', String(params.limit))
+      if (params?.offset) q.set('offset', String(params.offset))
+      return request<{ events: Record<string, unknown>[]; total: number }>(
+        `/api/affiliates/me/referral-events?${q.toString()}`
+      )
+    },
+
+    getMyReferredUsers: () => 
+      request<{ users: Record<string, unknown>[] }>('/api/affiliates/me/referred-users'),
+
+    getMyReferredStores: () => 
+      request<{ stores: Record<string, unknown>[] }>('/api/affiliates/me/referred-stores'),
+
+    getMyReferredOrders: () => 
+      request<{ orders: Record<string, unknown>[] }>('/api/affiliates/me/referred-orders'),
+
+    // Admin methods
+    getAffiliateReferralEvents: (affiliateId: string, params?: { eventType?: string; limit?: number; offset?: number }) => {
+      const q = new URLSearchParams()
+      if (params?.eventType) q.set('eventType', params.eventType)
+      if (params?.limit) q.set('limit', String(params.limit))
+      if (params?.offset) q.set('offset', String(params.offset))
+      return request<{ events: Record<string, unknown>[]; total: number }>(
+        `/api/affiliates/${affiliateId}/referral-events?${q.toString()}`
+      )
+    },
+
+    getAffiliateReferredUsers: (affiliateId: string) => 
+      request<{ users: Record<string, unknown>[] }>(`/api/affiliates/${affiliateId}/referred-users`),
+
+    getAffiliateReferredStores: (affiliateId: string) => 
+      request<{ stores: Record<string, unknown>[] }>(`/api/affiliates/${affiliateId}/referred-stores`),
+
+    getAffiliateReferredOrders: (affiliateId: string) => 
+      request<{ orders: Record<string, unknown>[] }>(`/api/affiliates/${affiliateId}/referred-orders`),
   }
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
 import { Spinner, Badge, Button } from '@shared/ui/primitives'
+import { useConfirm } from '@shared/ui/primitives/ui/ConfirmDialog/ConfirmDialog'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { Banknote } from 'lucide-react'
 import { toast } from 'sonner'
@@ -48,6 +49,7 @@ export default function AdminAffiliatePayoutsPage() {
   const queryClient = useQueryClient()
   const apiBase = getApiBase()
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
 
@@ -83,6 +85,7 @@ export default function AdminAffiliatePayoutsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
+      {confirmDialog}
       <div>
         <h1 className="text-2xl font-bold">Affiliate Payouts</h1>
         <p className="text-sm text-muted-foreground">All affiliate payout records across the platform.</p>
@@ -149,7 +152,14 @@ export default function AdminAffiliatePayoutsPage() {
                         <Button
                           size="small"
                           variant="outline"
-                          onClick={() => statusMutation.mutate({ id: p.id, status: 'PROCESSING' })}
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: 'Mark payout as processing?',
+                              description: `Start processing the ${p.method.replace('_', ' ')} payout of ${fmt(p.amount)} for ${p.affiliate.user.name ?? p.affiliate.user.email}.`,
+                              confirmLabel: 'Mark Processing',
+                            })
+                            if (ok) statusMutation.mutate({ id: p.id, status: 'PROCESSING' })
+                          }}
                           disabled={statusMutation.isPending}
                         >
                           Mark Processing
@@ -159,7 +169,14 @@ export default function AdminAffiliatePayoutsPage() {
                         <Button
                           size="small"
                           variant="primary"
-                          onClick={() => statusMutation.mutate({ id: p.id, status: 'COMPLETED' })}
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: 'Mark payout as complete?',
+                              description: `Confirm the ${p.method.replace('_', ' ')} payout of ${fmt(p.amount)} for ${p.affiliate.user.name ?? p.affiliate.user.email} has been sent.`,
+                              confirmLabel: 'Mark Complete',
+                            })
+                            if (ok) statusMutation.mutate({ id: p.id, status: 'COMPLETED' })
+                          }}
                           disabled={statusMutation.isPending}
                         >
                           Mark Complete

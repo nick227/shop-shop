@@ -10,7 +10,7 @@ import type { CommissionSourceType, AffiliateRateSource } from '../generated/cli
 import { prisma } from '../client.js'
 import type { ExtendedPrismaClient } from '../client.js'
 
-// ─── Public types ─────────────────────────────────────────────────────────────
+// ─── Public types ─────────────────────────────────────────────────────
 
 export interface RateResolutionResult {
   rateBps: number
@@ -23,7 +23,7 @@ export interface CommissionCandidate {
   orderId: string
   storeId: string
   sourceType: CommissionSourceType
-  /** Service-fee amount in integer cents — the base the rate is applied to. */
+  /** Service-fee amount in integer cents — base of rate is applied to. */
   commissionBaseCents: number
   rateBps: number
   amountCents: number
@@ -31,7 +31,7 @@ export interface CommissionCandidate {
   payoutGroupIdSnapshot: string | null
 }
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// ─── Internal helpers ─────────────────────────────────────────────────
 
 async function loadAffiliateSettings(db: ExtendedPrismaClient) {
   const keys = [
@@ -48,7 +48,7 @@ async function loadAffiliateSettings(db: ExtendedPrismaClient) {
   }
 }
 
-// ─── Pure helpers (exported for unit tests) ───────────────────────────────────
+// ─── Pure helpers (exported for unit tests) ───────────────────────────
 
 /**
  * 3-tier cascade: user override → payout group → platform system default.
@@ -90,7 +90,7 @@ export function calculateCommissionAmountCents(
 }
 
 /**
- * Cap total affiliate burden to platform.affiliate_max_burden_bps of the service fee.
+ * Cap total affiliate burden to platform.affiliate_max_burden_bps of service fee.
  *
  * Sort order: CUSTOMER_PURCHASE is paid in full first; STORE_REVENUE gets the remainder.
  * Any other source types are treated as lower priority (paid after STORE_REVENUE).
@@ -122,7 +122,7 @@ export function applyDualCommissionCap(
   })
 }
 
-// ─── DB functions ─────────────────────────────────────────────────────────────
+// ─── DB functions ─────────────────────────────────────────────────────
 
 /**
  * Resolve the effective rate bps for one affiliate + source type combination.
@@ -173,6 +173,7 @@ export async function resolveAffiliateRate(
  *   the store owner (self-referral skip), AND must be a different affiliate than
  *   the buyer's (same-affiliate no double-dip rule).
  * - Cap applied via applyDualCommissionCap.
+ * - Duplicate prevention: no commissions if order already has commissions.
  *
  * Returns an empty array when no commissions should be created (unpaid, no attribution,
  * all self-referrals, etc.).
@@ -193,6 +194,17 @@ export async function buildAffiliateCommissionCandidatesForOrder(
     },
   })
   if (!order || order.paymentStatus !== 'PAID') return []
+
+  // Check for existing commissions to prevent duplicates
+  const existingCommissions = await db.commission.findMany({
+    where: {
+      orderId,
+    },
+    select: { id: true, sourceType: true },
+  })
+  
+  // If commissions already exist for this order, don't create new ones
+  if (existingCommissions.length > 0) return []
 
   const store = await db.store.findUnique({
     where: { id: order.storeId },
@@ -223,7 +235,7 @@ export async function buildAffiliateCommissionCandidatesForOrder(
 
   const candidates: CommissionCandidate[] = []
 
-  // ── CUSTOMER_PURCHASE ──────────────────────────────────────────────────────
+  // ── CUSTOMER_PURCHASE ──────────────────────────────────────────────
   const buyerAffiliate =
     rawBuyerAffiliate?.status === 'ACTIVE' &&
     rawBuyerAffiliate.userId !== order.userId // skip self-referral
@@ -249,7 +261,7 @@ export async function buildAffiliateCommissionCandidatesForOrder(
     })
   }
 
-  // ── STORE_REVENUE ──────────────────────────────────────────────────────────
+  // ── STORE_REVENUE ──────────────────────────────────────────────────
   // Blocked when: same affiliate as buyer, store owner self-referral, or inactive.
   const isSameAsBuyer = rawBuyerAffiliate?.id === rawStoreAffiliate?.id
   const storeAffiliate =
@@ -285,7 +297,7 @@ export async function buildAffiliateCommissionCandidatesForOrder(
  * Persist a commission candidate as a Commission row.
  *
  * Idempotent: upserts by (affiliateId, orderId, sourceType). Re-running on the same
- * candidate updates the rate/amount fields but does not change status or paidAt.
+ * candidate updates to rate/amount fields but does not change status or paidAt.
  *
  * Legacy Decimal fields (amount, rate, serviceFeeBase) are kept in sync so existing
  * code that reads them (calculateCommissionForOrder, payout reports) keeps working.
@@ -335,4 +347,76 @@ export async function upsertCommissionCandidate(
       serviceFeeBase: legacyServiceFeeBase,
     },
   })
+}
+
+export async function approveCommission(commissionId: string): Promise<void> {
+  await prisma.commission.update({
+    where: { id: commissionId },
+    data: {
+      status: 'APPROVED',
+      approvedAt: new Date(),
+    },
+  })
+}
+
+export async function markCommissionPaid(commissionId: string): Promise<void> {
+  await prisma.commission.update({
+    where: { id: commissionId },
+    data: {
+      status: 'PAID',
+      paidAt: new Date(),
+    },
+  })
+}
+
+export async function reverseCommission(commissionId: string, reason?: string): Promise<void> {
+  await prisma.commission.update({
+    where: { id: commissionId },
+    data: {
+      status: 'REVERSED',
+      reversedAt: new Date(),
+      reversalReason: reason,
+    },
+  })
+}
+
+export async function getPendingCommissionsForPayout(affiliateId: string): Promise<any[]> {
+  return prisma.commission.findMany({
+    where: {
+      affiliateId,
+      status: 'APPROVED',
+      payoutId: null, // Not already included in a payout
+    },
+    select: {
+      id: true,
+      amount: true,
+      rate: true,
+      serviceFeeBase: true,
+      createdAt: true,
+      order: {
+        select: {
+          id: true,
+          total: true,
+          createdAt: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+}
+
+export async function checkDuplicateCommission(
+  affiliateId: string,
+  orderId: string,
+  sourceType: string
+): Promise<boolean> {
+  const existing = await prisma.commission.findFirst({
+    where: {
+      affiliateId,
+      orderId,
+      sourceType,
+    },
+  })
+  
+  return !!existing
 }

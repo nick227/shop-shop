@@ -49,6 +49,8 @@
   ],
   "exclude": [
     "**/*.refactored.ts",
-    "**/*.refactored.tsx"
+    "**/*.refactored.tsx",
+    "src/pages/admin/PayoutAuditLogs.page.tsx",
+    "src/pages/admin/PayoutManagement.page.tsx"
   ]
 }

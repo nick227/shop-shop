@@ -5,7 +5,7 @@ import { PageShell } from '@shared/ui/layout/PageShell'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button } from '@shared/ui/primitives'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Users, Store, ShoppingCart, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatCurrency(n: unknown): string {
@@ -27,9 +27,27 @@ export default function AffiliateDashboardPage() {
     queryFn: () => api.getMyStats(),
   })
 
+  const referredUsersQuery = useQuery({
+    queryKey: ['affiliate-referred-users'],
+    queryFn: () => api.getMyReferredUsers(),
+  })
+
+  const referredStoresQuery = useQuery({
+    queryKey: ['affiliate-referred-stores'],
+    queryFn: () => api.getMyReferredStores(),
+  })
+
+  const referredOrdersQuery = useQuery({
+    queryKey: ['affiliate-referred-orders'],
+    queryFn: () => api.getMyReferredOrders(),
+  })
+
   const profile = profileQuery.data?.affiliate
   const stats = statsQuery.data
   const statsData = stats?.stats as Record<string, unknown> | undefined
+  const referredUsers = referredUsersQuery.data?.users ?? []
+  const referredStores = referredStoresQuery.data?.stores ?? []
+  const referredOrders = referredOrdersQuery.data?.orders ?? []
 
   const referralCode = profile?.referralCode as string | undefined
   const referralLink = referralCode ? `${window.location.origin}/r/${referralCode}` : ''
@@ -146,6 +164,95 @@ export default function AffiliateDashboardPage() {
         </Card>
       </div>
 
+      {/* Referral Activity */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex justify-center mb-2">
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+            <div className="text-2xl font-bold">{referredUsers.length}</div>
+            <div className="text-xs text-muted-foreground">Referred Users</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex justify-center mb-2">
+              <Store className="w-8 h-8 text-green-600" />
+            </div>
+            <div className="text-2xl font-bold">{referredStores.length}</div>
+            <div className="text-xs text-muted-foreground">Referred Stores</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex justify-center mb-2">
+              <ShoppingCart className="w-8 h-8 text-purple-600" />
+            </div>
+            <div className="text-2xl font-bold">{referredOrders.length}</div>
+            <div className="text-xs text-muted-foreground">Referred Orders</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Referral Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Recent Referral Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {referredStores.length > 0 && (
+            <div>
+              <h4 className="font-medium text-sm mb-2">Recent Store Signups</h4>
+              <div className="space-y-2">
+                {referredStores.slice(0, 3).map((store: any) => (
+                  <div key={store.id} className="flex items-center justify-between text-sm">
+                    <div>
+                      <span className="font-medium">{store.name}</span>
+                      <span className="text-muted-foreground ml-2">by {store.owner?.name || store.owner?.email}</span>
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(store.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {referredOrders.length > 0 && (
+            <div>
+              <h4 className="font-medium text-sm mb-2">Recent Orders</h4>
+              <div className="space-y-2">
+                {referredOrders.slice(0, 3).map((order: any) => (
+                  <div key={order.id} className="flex items-center justify-between text-sm">
+                    <div>
+                      <span className="font-medium">{formatCurrency(order.total)}</span>
+                      <span className="text-muted-foreground ml-2">from {order.store?.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-muted-foreground text-xs">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {order.affiliateAttributionSource}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {referredStores.length === 0 && referredOrders.length === 0 && (
+            <p className="text-sm text-muted-foreground">No referral activity yet. Share your referral link to get started!</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Tips */}
       <Card>
         <CardHeader>
@@ -154,7 +261,7 @@ export default function AffiliateDashboardPage() {
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>Share your referral link on social media, blogs, or with your network.</p>
           <p>You earn commissions when stores you refer generate paid orders.</p>
-          <p>Track your earnings and payouts from the Commissions and Payouts pages.</p>
+          <p>Track your earnings and payouts from Commissions and Payouts pages.</p>
         </CardContent>
       </Card>
     </PageShell>

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button } from '@shared/ui/primitives'
+import { useConfirm } from '@shared/ui/primitives/ui/ConfirmDialog/ConfirmDialog'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 import { UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
@@ -36,6 +37,7 @@ export default function AdminAffiliatesPage() {
   const token = useAuthStore((s) => s.token)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const [filterStatus, setFilterStatus] = useState('')
 
   const apiBase = getApiBase()
@@ -75,6 +77,7 @@ export default function AdminAffiliatesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
+      {confirmDialog}
       <div>
         <h1 className="text-2xl font-bold">Affiliates</h1>
         <p className="text-sm text-muted-foreground">Monitor affiliates and manage account status.</p>
@@ -156,9 +159,15 @@ export default function AdminAffiliatesPage() {
                       <Button
                         size="small"
                         variant="outline"
-                        onClick={() =>
-                          updateStatusMutation.mutate({ id: a.id as string, status: 'SUSPENDED' })
-                        }
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Suspend affiliate?',
+                            description: `${(user?.name as string) ?? (user?.email as string)} will lose access to their affiliate dashboard and stop earning commissions.`,
+                            confirmLabel: 'Suspend',
+                            variant: 'danger',
+                          })
+                          if (ok) updateStatusMutation.mutate({ id: a.id as string, status: 'SUSPENDED' })
+                        }}
                       >
                         Suspend
                       </Button>
@@ -178,9 +187,15 @@ export default function AdminAffiliatesPage() {
                       <Button
                         size="small"
                         variant="danger"
-                        onClick={() =>
-                          updateStatusMutation.mutate({ id: a.id as string, status: 'TERMINATED' })
-                        }
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Terminate affiliate?',
+                            description: `This permanently terminates ${(user?.name as string) ?? (user?.email as string)}'s affiliate account. Existing commissions are preserved but no new ones will be earned. This cannot be undone.`,
+                            confirmLabel: 'Terminate',
+                            variant: 'danger',
+                          })
+                          if (ok) updateStatusMutation.mutate({ id: a.id as string, status: 'TERMINATED' })
+                        }}
                       >
                         Terminate
                       </Button>

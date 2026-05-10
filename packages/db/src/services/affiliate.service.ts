@@ -43,6 +43,7 @@ export interface ProcessPayoutInput {
   periodStart: Date
   periodEnd: Date
   method: string
+  adminUserId?: string
 }
 
 export async function createAffiliate(input: CreateAffiliateInput): Promise<Affiliate> {
@@ -242,68 +243,116 @@ export async function getCommissionsByAffiliate(
 }
 
 export async function processPayout(input: ProcessPayoutInput): Promise<AffiliatePayout> {
-  const pendingCommissions = await prisma.commission.findMany({
-    where: {
-      affiliateId: input.affiliateId,
-      status: 'APPROVED',
-      createdAt: {
-        gte: input.periodStart,
-        lt: input.periodEnd,
+  const affiliate = await prisma.affiliate.findUnique({ where: { id: input.affiliateId } })
+  if (!affiliate) throw new Error('Affiliate not found')
+  if (affiliate.status !== 'ACTIVE') {
+    throw new Error(`Cannot create payout: affiliate status is ${affiliate.status}`)
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Include both PENDING and APPROVED commissions in the period — promotes PENDING in the same txn
+    const eligibleCommissions = await tx.commission.findMany({
+      where: {
+        affiliateId: input.affiliateId,
+        status: { in: ['PENDING', 'APPROVED'] },
+        payoutId: null,
+        createdAt: { gte: input.periodStart, lt: input.periodEnd },
       },
-    },
+    })
+
+    const totalAmount = eligibleCommissions.reduce((sum, c) => sum + Number(c.amount), 0)
+
+    const payout = await tx.affiliatePayout.create({
+      data: {
+        affiliateId: input.affiliateId,
+        amount: totalAmount,
+        method: input.method,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        status: 'PENDING',
+      },
+    })
+
+    if (eligibleCommissions.length > 0) {
+      await tx.commission.updateMany({
+        where: { id: { in: eligibleCommissions.map((c) => c.id) } },
+        data: { status: 'APPROVED', approvedAt: new Date(), payoutId: payout.id },
+      })
+    }
+
+    await tx.payoutAuditLog.create({
+      data: {
+        affiliateId: input.affiliateId,
+        affiliatePayoutId: payout.id,
+        action: 'CREATED',
+        performedBy: input.adminUserId ?? null,
+        details: {
+          method: input.method,
+          commissionCount: eligibleCommissions.length,
+          totalAmount,
+          periodStart: input.periodStart.toISOString(),
+          periodEnd: input.periodEnd.toISOString(),
+        },
+      },
+    })
+
+    return payout
   })
-
-  const totalAmount = pendingCommissions.reduce((sum, c) => sum + Number(c.amount), 0)
-
-  const payout = await prisma.affiliatePayout.create({
-    data: {
-      affiliateId: input.affiliateId,
-      amount: totalAmount,
-      method: input.method,
-      periodStart: input.periodStart,
-      periodEnd: input.periodEnd,
-      status: 'PENDING',
-    },
-  })
-
-  await prisma.commission.updateMany({
-    where: {
-      id: { in: pendingCommissions.map((c) => c.id) },
-    },
-    data: {
-      payoutId: payout.id,
-    },
-  })
-
-  return payout
 }
 
 export async function updatePayoutStatus(
   payoutId: string,
   status: PayoutStatus,
   referenceId?: string,
-  failureReason?: string
+  failureReason?: string,
+  adminUserId?: string,
 ): Promise<AffiliatePayout> {
-  const data: Record<string, unknown> = { status }
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.affiliatePayout.findUniqueOrThrow({ where: { id: payoutId } })
 
-  if (status === 'COMPLETED') {
-    data.paidAt = new Date()
+    const data: Record<string, unknown> = { status }
+    if (referenceId) data.referenceId = referenceId
+    if (failureReason) data.failureReason = failureReason
 
-    await prisma.commission.updateMany({
-      where: { payoutId },
+    if (status === 'COMPLETED') {
+      data.paidAt = new Date()
+      await tx.commission.updateMany({
+        where: { payoutId },
+        data: { status: 'PAID', paidAt: new Date() },
+      })
+    }
+
+    if (status === 'FAILED') {
+      // Release commissions back to APPROVED so they can be included in a future payout
+      await tx.commission.updateMany({
+        where: { payoutId },
+        data: { status: 'APPROVED', payoutId: null },
+      })
+    }
+
+    const payout = await tx.affiliatePayout.update({ where: { id: payoutId }, data })
+
+    const auditAction =
+      status === 'COMPLETED' ? 'PAID' :
+      status === 'FAILED' ? 'REVERSED' :
+      'MODIFIED'
+
+    await tx.payoutAuditLog.create({
       data: {
-        status: 'PAID',
-        paidAt: new Date(),
+        affiliateId: existing.affiliateId,
+        affiliatePayoutId: payoutId,
+        action: auditAction,
+        performedBy: adminUserId ?? null,
+        details: {
+          previousStatus: existing.status,
+          newStatus: status,
+          referenceId: referenceId ?? null,
+          failureReason: failureReason ?? null,
+        },
       },
     })
-  }
 
-  if (referenceId) data.referenceId = referenceId
-  if (failureReason) data.failureReason = failureReason
-
-  return prisma.affiliatePayout.update({
-    where: { id: payoutId },
-    data,
+    return payout
   })
 }
 

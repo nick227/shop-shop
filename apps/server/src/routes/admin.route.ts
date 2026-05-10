@@ -40,6 +40,7 @@ export const adminRoutes = async (app: FastifyInstance) => {
       revenueResult,
       pendingVendorApplications,
       pendingAffiliateApplications,
+      activeDeliveries,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.store.count({ where: { status: 'ACTIVE' } }),
@@ -52,6 +53,7 @@ export const adminRoutes = async (app: FastifyInstance) => {
         where: { status: { in: ['PENDING', 'SUBMITTED', 'UNDER_REVIEW'] } },
       }),
       prisma.affiliate.count({ where: { status: 'PENDING' } }),
+      prisma.deliveryJob.count({ where: { status: { in: ['REQUESTED', 'DISPATCHED'] } } }),
     ])
 
     return reply.send({
@@ -61,6 +63,7 @@ export const adminRoutes = async (app: FastifyInstance) => {
       revenueToday: Number(revenueResult._sum?.total ?? 0),
       pendingVendorApplications,
       pendingAffiliateApplications,
+      activeDeliveries,
     })
   })
 

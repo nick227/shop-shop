@@ -9,12 +9,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiClient } from '@api/client'
 import { authFetch } from '@shared/lib/auth/authFetch'
-import { useCustomerRealtimeOrder } from '@shared/hooks/hooks/useCustomerRealtimeOrder'
 import { useTip } from '@shared/hooks/hooks/useTip'
 import { useStore } from '@shared/hooks/generated'
 import { parseOrderData, parseOrderItems, getOrderStatusInfo, getOrderTimeInfo, getOrderProgress } from '../utils/orderTrackingUtils'
-import type { ParsedOrder } from '../utils/orderTrackingUtils'
 import { mapOrder } from '@api/type-mappers'
+import { useAuthStore } from '@stores/authStore'
+import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
 
 export interface UseOrderTrackingProps {
   onTipSuccess?: () => void
@@ -48,12 +48,16 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
       return mapOrder(rawOrder)
     },
     enabled: !!orderId,
-    refetchInterval: 5000,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      const status = (data as { status?: string } | undefined)?.status
+      return ['COMPLETED', 'DELIVERED', 'CANCELED'].includes(status ?? '') ? false : 10_000
+    },
   })
 
   const orderDeliveryType = (orderData as { deliveryType?: string } | undefined)?.deliveryType
-
-  const deliveryPollMs = 15_000
+  const order = parseOrderData(orderData)
+  const user = useAuthStore((state) => state.user)
 
   const { data: deliveryJob, refetch: refetchDeliveryJob } = useQuery({
     queryKey: ['delivery-tracking', orderId],
@@ -61,14 +65,45 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
       if (!orderId) return null
 
       const response = await authFetch(`delivery/tracking/${orderId}`)
-      if (!response.ok) return null
+      if (response.status === 404) return null
+      if (!response.ok) {
+        throw new Error(`Delivery tracking request failed with ${response.status}`)
+      }
 
-      const data = (await response.json()) as { deliveryJob?: Record<string, unknown> | null }
-      return data.deliveryJob ?? null
+      return await response.json() as {
+        deliveryJob?: Record<string, unknown> | null
+        terminal?: boolean
+        nextPollMs?: number | null
+        latestLocation?: unknown
+      }
     },
     enabled: !!orderId && orderDeliveryType === 'DELIVERY',
-    refetchInterval: deliveryPollMs,
+    refetchInterval: false,
     retry: 3,
+  })
+
+  const deliveryTrackingState = deliveryJob
+  const trackedDeliveryJob = deliveryTrackingState?.deliveryJob ?? null
+  const isTerminalOrder = ['COMPLETED', 'DELIVERED', 'CANCELED'].includes(order?.status ?? '')
+  const isTerminalDelivery = Boolean(deliveryTrackingState?.terminal) || isTerminalOrder
+
+  const deliveryPolicy = useDeliveryTrackingPolicy({
+    surface: 'customer-tracking',
+    orderId,
+    userId: user?.id,
+    terminal: isTerminalDelivery,
+    serverNextPollMs: deliveryTrackingState?.nextPollMs,
+    enabled: !!orderId && orderDeliveryType === 'DELIVERY',
+  })
+
+  useQuery({
+    queryKey: ['delivery-tracking-policy-tick', orderId],
+    queryFn: async () => {
+      await refetchDeliveryJob()
+      return Date.now()
+    },
+    enabled: !!orderId && orderDeliveryType === 'DELIVERY' && deliveryPolicy.pollIntervalMs !== false,
+    refetchInterval: deliveryPolicy.pollIntervalMs,
   })
   
   const { createTip, isLoading: isTipLoading } = useTip()
@@ -77,19 +112,9 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
   const storeQuery = useStore(storeId)
   
   // ========================================
-  // Real-time Updates
-  // ========================================
-  
-  useCustomerRealtimeOrder({
-    orderId: orderId ?? '',
-    enableToast: true,
-  })
-  
-  // ========================================
   // Parsed Data
   // ========================================
   
-  const order = parseOrderData(orderData)
   const store = storeQuery.data as { name?: string } | undefined
   const orderItems = orderData ? parseOrderItems((orderData as unknown as Record<string, unknown>).orderItems as string) : []
   
@@ -162,8 +187,11 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
     order,
     store,
     orderItems,
-    deliveryJob,
-    deliveryPollIntervalMs: deliveryPollMs,
+    deliveryJob: trackedDeliveryJob,
+    deliveryTrackingState,
+    deliveryPollIntervalMs: deliveryPolicy.pollIntervalMs,
+    isDeliveryRealtimeConnected: deliveryPolicy.isRealtimeConnected,
+    lastDeliveryEvent: deliveryPolicy.lastEvent,
     orderStatusInfo,
     orderTimeInfo,
     orderProgress,

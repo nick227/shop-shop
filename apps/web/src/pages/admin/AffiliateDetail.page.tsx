@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button, Input } from '@shared/ui/primitives'
+import { useConfirm } from '@shared/ui/primitives/ui/ConfirmDialog/ConfirmDialog'
 import { toast } from 'sonner'
 import { ArrowLeft } from 'lucide-react'
 
@@ -40,6 +41,7 @@ export default function AdminAffiliateDetailPage() {
   const queryClient = useQueryClient()
   const apiBase = getApiBase()
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const { confirm, dialog: confirmDialog } = useConfirm()
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -72,6 +74,46 @@ export default function AdminAffiliateDetailPage() {
       const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/payouts?limit=20`, { headers })
       if (!res.ok) throw new Error('Failed to load payouts')
       return res.json() as Promise<{ payouts: Record<string, unknown>[]; total: number }>
+    },
+    enabled: !!affiliateId,
+  })
+
+  const referralEventsQuery = useQuery({
+    queryKey: ['admin-affiliate-referral-events', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/referral-events?limit=20`, { headers })
+      if (!res.ok) throw new Error('Failed to load referral events')
+      return res.json() as Promise<{ events: Record<string, unknown>[]; total: number }>
+    },
+    enabled: !!affiliateId,
+  })
+
+  const referredUsersQuery = useQuery({
+    queryKey: ['admin-affiliate-referred-users', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/referred-users`, { headers })
+      if (!res.ok) throw new Error('Failed to load referred users')
+      return res.json() as Promise<{ users: Record<string, unknown>[] }>
+    },
+    enabled: !!affiliateId,
+  })
+
+  const referredStoresQuery = useQuery({
+    queryKey: ['admin-affiliate-referred-stores', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/referred-stores`, { headers })
+      if (!res.ok) throw new Error('Failed to load referred stores')
+      return res.json() as Promise<{ stores: Record<string, unknown>[] }>
+    },
+    enabled: !!affiliateId,
+  })
+
+  const referredOrdersQuery = useQuery({
+    queryKey: ['admin-affiliate-referred-orders', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/referred-orders`, { headers })
+      if (!res.ok) throw new Error('Failed to load referred orders')
+      return res.json() as Promise<{ orders: Record<string, unknown>[] }>
     },
     enabled: !!affiliateId,
   })
@@ -111,9 +153,14 @@ export default function AdminAffiliateDetailPage() {
   const counts = affiliate._count as Record<string, unknown> | undefined
   const commissions = commissionsQuery.data?.commissions ?? []
   const payouts = payoutsQuery.data?.payouts ?? []
+  const referralEvents = referralEventsQuery.data?.events ?? []
+  const referredUsers = referredUsersQuery.data?.users ?? []
+  const referredStores = referredStoresQuery.data?.stores ?? []
+  const referredOrders = referredOrdersQuery.data?.orders ?? []
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
+      {confirmDialog}
       <button
         onClick={() => navigate('/admin/affiliates')}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -191,7 +238,14 @@ export default function AdminAffiliateDetailPage() {
                 variant="primary"
                 size="small"
                 className="w-full"
-                onClick={() => payoutMutation.mutate()}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: 'Create payout?',
+                    description: `Create a ${payoutMethod} payout for ${(user?.name as string) ?? (user?.email as string)} covering ${periodStart} → ${periodEnd}.`,
+                    confirmLabel: 'Create Payout',
+                  })
+                  if (ok) payoutMutation.mutate()
+                }}
                 disabled={!periodStart || !periodEnd || payoutMutation.isPending}
               >
                 {payoutMutation.isPending ? 'Processing…' : 'Create Payout'}
@@ -234,6 +288,98 @@ export default function AdminAffiliateDetailPage() {
                       </td>
                       <td className="px-3 py-2 hidden sm:table-cell text-muted-foreground">
                         {fmtDate(c.createdAt as string)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Referral Activity Summary */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Referred Users</p>
+            <div className="text-2xl font-bold">{referredUsers.length}</div>
+            {referredUsers.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {referredUsers.reduce((sum, user) => sum + Number((user as any)._count?.orders || 0), 0)} total orders
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Referred Stores</p>
+            <div className="text-2xl font-bold">{referredStores.length}</div>
+            {referredStores.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {referredStores.reduce((sum, store) => sum + Number((store as any)._count?.orders || 0), 0)} total orders
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Referred Orders</p>
+            <div className="text-2xl font-bold">{referredOrders.length}</div>
+            {referredOrders.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {fmt(referredOrders.reduce((sum, order) => sum + Number(order.total || 0), 0))} total value
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Referral Events */}
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            Recent Referral Events {referralEventsQuery.data ? `(${referralEventsQuery.data.total} total)` : ''}
+          </p>
+          {referralEventsQuery.isLoading ? (
+            <div className="flex justify-center py-4"><Spinner /></div>
+          ) : referralEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No referral events yet.</p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <th className="px-3 py-2">Type</th>
+                    <th className="px-3 py-2">Target</th>
+                    <th className="px-3 py-2">Code</th>
+                    <th className="px-3 py-2 hidden sm:table-cell">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {referralEvents.slice(0, 10).map((event) => (
+                    <tr key={event.id as string} className="hover:bg-muted/30">
+                      <td className="px-3 py-2">
+                        <Badge variant="outline">{event.eventType as string}</Badge>
+                      </td>
+                      <td className="px-3 py-2">
+                        {event.referredStore ? (
+                          <div>
+                            <div className="font-medium">{(event.referredStore as any).name}</div>
+                            <div className="text-xs text-muted-foreground">Store</div>
+                          </div>
+                        ) : event.referredUser ? (
+                          <div>
+                            <div className="font-medium">{(event.referredUser as any).name || (event.referredUser as any).email}</div>
+                            <div className="text-xs text-muted-foreground">User</div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs">{event.referralCode as string}</td>
+                      <td className="px-3 py-2 hidden sm:table-cell text-muted-foreground text-xs">
+                        {fmtDate(event.createdAt as string)}
                       </td>
                     </tr>
                   ))}

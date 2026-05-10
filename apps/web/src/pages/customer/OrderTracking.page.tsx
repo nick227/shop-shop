@@ -21,8 +21,6 @@ import { OrderStatusCard } from './components/OrderStatusCard'
 import { OrderTrackingLoading } from './components/OrderTrackingLoading'
 import { OrderTrackingError } from './components/OrderTrackingError'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { useAuthStore } from '@stores/authStore'
-import { useRealtimeDelivery } from '@/hooks/useRealtimeDelivery'
 import { DeliveryTrackingMap } from '@features/maps/components/DeliveryTrackingMap'
 import type { DeliveryTrackingMapProps } from '@features/maps/components/DeliveryTrackingMap'
 import { coerceValidLatLng, coerceValidLatLngFromGeo } from '@shared/lib/utils/maps'
@@ -50,6 +48,8 @@ export default function OrderTrackingPage() {
     orderProgress,
     deliveryJob,
     deliveryPollIntervalMs,
+    isDeliveryRealtimeConnected,
+    lastDeliveryEvent,
     isLoadingOrder,
     orderNotFound,
     canShowTipPrompt,
@@ -60,17 +60,11 @@ export default function OrderTrackingPage() {
     refetchDeliveryJob,
   } = useOrderTracking()
 
-  const user = useAuthStore((state) => state.user)
-  const orderId = order?.id
-  const userId = user?.id
-
-  const { isConnected, lastEvent } = useRealtimeDelivery(orderId, userId)
-
   usePageTitle(order ? `Order #${order.id?.slice(-6)}` : 'Order Tracking', 'ShopShop')
 
   const driverLiveLocation =
-    lastEvent?.type === 'delivery.location.updated'
-      ? coerceValidLatLngFromGeo(lastEvent.payload.location)
+    lastDeliveryEvent?.type === 'delivery.location.updated'
+      ? coerceValidLatLngFromGeo(lastDeliveryEvent.payload.location)
       : undefined
 
   if (isLoadingOrder) {
@@ -138,17 +132,19 @@ export default function OrderTrackingPage() {
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span
-            className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+            className={`inline-block h-2 w-2 rounded-full ${isDeliveryRealtimeConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
           />
           <span>
-            {isConnected
+            {isDeliveryRealtimeConnected
               ? 'Live updates connected'
-              : `Polling every ${Math.round(deliveryPollIntervalMs / 1000)}s`}
+              : deliveryPollIntervalMs
+                ? `Polling every ${Math.round(deliveryPollIntervalMs / 1000)}s`
+                : 'Updates paused'}
           </span>
         </div>
-        {lastEvent ? (
+        {lastDeliveryEvent ? (
           <span className="text-xs tabular-nums">
-            Last event: {new Date(lastEvent.timestamp).toLocaleString()}
+            Last event: {new Date(lastDeliveryEvent.timestamp).toLocaleString()}
           </span>
         ) : null}
       </div>
