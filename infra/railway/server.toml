@@ -3,9 +3,10 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @packages/db migrate:deploy && pnpm --filter @apps/server build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @apps/server build"
 
 [deploy]
+preDeployCommand = "pnpm --filter @packages/db migrate:deploy"
 startCommand = "pnpm --filter @apps/server start"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 60
