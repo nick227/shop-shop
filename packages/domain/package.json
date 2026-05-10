@@ -3,24 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/domain/src/index.js",
+  "types": "./dist/domain/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/domain/src/index.d.ts",
+      "import": "./dist/domain/src/index.js"
     },
     "./policies": {
-      "types": "./dist/policies/index.d.ts",
-      "import": "./dist/policies/index.js"
+      "types": "./dist/domain/src/policies/index.d.ts",
+      "import": "./dist/domain/src/policies/index.js"
     },
     "./services": {
-      "types": "./dist/services/index.d.ts",
-      "import": "./dist/services/index.js"
+      "types": "./dist/domain/src/services/index.d.ts",
+      "import": "./dist/domain/src/services/index.js"
     },
     "./events": {
-      "types": "./dist/events/index.d.ts",
-      "import": "./dist/events/index.js"
+      "types": "./dist/domain/src/events/index.d.ts",
+      "import": "./dist/domain/src/events/index.js"
     }
   },
   "scripts": {
