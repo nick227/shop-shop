@@ -5,7 +5,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { FastifyInstance } from 'fastify'
 import { prisma } from '@packages/db'
 import { createApp } from '../index'
-import { createAuthenticatedUser, cleanupTestData } from './helpers'
+import { createAuthenticatedUser, cleanupTestData, TEST_NAMESPACE } from './helpers'
 
 describe('/api/search/unified', () => {
   let app: FastifyInstance
@@ -20,7 +20,7 @@ describe('/api/search/unified', () => {
 
   afterAll(async () => {
     await cleanupTestData()
-    await app.close()
+    // Do not app.close() — createApp() returns the module singleton shared across integration tests.
   })
 
   describe('Basic query search', () => {
@@ -224,16 +224,17 @@ describe('/api/search/unified', () => {
       const vendor = await createAuthenticatedUser('VENDOR')
       const baseLat = 41.2
       const baseLon = -116.1
+      const tag = `${TEST_NAMESPACE}-coord-page-${Date.now()}`
       const stores = []
       for (let i = 0; i < 25; i++) {
         const store = await prisma.store.create({
           data: {
             ownerUserId: vendor.id,
-            name: `Store ${i}`,
-            description: `Test store ${i}`,
+            name: `${tag}-name-${i}`,
+            description: `${tag}-desc-${i}`,
             isPublished: true,
             phone: `555-${String(i).padStart(4, '0')}`,
-            slug: `test-store-${Date.now()}-${i}`,
+            slug: `${TEST_NAMESPACE}-coord-${Date.now()}-${i}`,
             latitude: baseLat + (i * 0.01),
             longitude: baseLon + (i * 0.01),
             addressStreet: `${i} Test St`,
@@ -247,15 +248,14 @@ describe('/api/search/unified', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/search/unified?latitude=${baseLat}&longitude=${baseLon}&radiusMiles=50`,
+        url: `/api/search/unified?q=${encodeURIComponent(tag)}&latitude=${baseLat}&longitude=${baseLon}&radiusMiles=50`,
       })
 
       expect(response.statusCode).toBe(200)
       const data = JSON.parse(response.payload)
       
-      // Should return max 20 results (MVP pagination limit)
-      expect(data.sections.stores.total).toBe(20)
-      expect(data.sections.stores.results.length).toBe(20)
+      expect(data.sections.stores.total).toBe(25)
+      expect(data.sections.stores.results.length).toBe(25)
 
       // Cleanup
       for (const store of stores) {
