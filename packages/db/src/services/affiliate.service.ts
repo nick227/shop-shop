@@ -11,6 +11,7 @@ import type {
 import {
   buildAffiliateCommissionCandidatesForOrder,
   upsertCommissionCandidate,
+  runAffiliateCommissions,
 } from './affiliate-commission.service.js'
 import {
   createAffiliateTransfer,
@@ -297,14 +298,19 @@ export async function processPayout(input: ProcessPayoutInput): Promise<Affiliat
         payoutId: null,
         createdAt: { gte: input.periodStart, lt: input.periodEnd },
       },
+      select: { id: true, amount: true, amountCents: true, status: true, payoutId: true },
     })
 
-    const totalAmount = eligibleCommissions.reduce((sum, c) => sum + Number(c.amount), 0)
+    // Prefer amountCents (integer, exact); fall back to the legacy Decimal for old rows.
+    const totalAmountCents = eligibleCommissions.reduce(
+      (sum, c) => sum + (c.amountCents ?? Math.round(Number(c.amount) * 100)),
+      0,
+    )
 
     const payout = await tx.affiliatePayout.create({
       data: {
         affiliateId: input.affiliateId,
-        amount: totalAmount,
+        amount: totalAmountCents / 100,
         method: input.method,
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
@@ -328,7 +334,7 @@ export async function processPayout(input: ProcessPayoutInput): Promise<Affiliat
         details: {
           method: input.method,
           commissionCount: eligibleCommissions.length,
-          totalAmount,
+          totalAmountCents,
           periodStart: input.periodStart.toISOString(),
           periodEnd: input.periodEnd.toISOString(),
         },
@@ -428,10 +434,8 @@ export async function getAffiliatePayouts(
   return { payouts, total }
 }
 
-export async function calculateCommissionForOrder(orderId: string): Promise<void> {
-  const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId)
-  await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
-}
+// Alias kept for backward compatibility with existing callers and tests.
+export const calculateCommissionForOrder = runAffiliateCommissions
 
 export interface CreatePayoutWithReviewInput {
   affiliateId: string
@@ -458,9 +462,12 @@ export async function checkPayoutEligibility(affiliateId: string): Promise<{
   }
   const commissions = await prisma.commission.findMany({
     where: { affiliateId, status: { in: ['PENDING', 'APPROVED'] }, payoutId: null },
-    select: { amount: true },
+    select: { amount: true, amountCents: true },
   })
-  const estimatedAmount = commissions.reduce((sum, c) => sum + Number(c.amount), 0)
+  const estimatedAmount = commissions.reduce(
+    (sum, c) => sum + (c.amountCents ?? Math.round(Number(c.amount) * 100)) / 100,
+    0,
+  )
   return {
     eligible: commissions.length > 0,
     affiliateStatus: affiliate.status,

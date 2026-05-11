@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
@@ -47,6 +47,11 @@ export default function AdminAffiliateDetailPage() {
   const [periodEnd, setPeriodEnd] = useState('')
   const [payoutMethod, setPayoutMethod] = useState('STRIPE_TRANSFER')
 
+  // Rate override fields — empty string means "inherit" (null in DB)
+  const [customerRatePct, setCustomerRatePct] = useState('')
+  const [storeRatePct, setStoreRatePct] = useState('')
+  const [payoutGroupId, setPayoutGroupId] = useState<string>('')
+
   const profileQuery = useQuery({
     queryKey: ['admin-affiliate', affiliateId],
     queryFn: async () => {
@@ -56,6 +61,73 @@ export default function AdminAffiliateDetailPage() {
       return data.affiliate as Record<string, unknown>
     },
     enabled: !!affiliateId,
+  })
+
+  // Seed rate fields from loaded profile
+  useEffect(() => {
+    if (!profileQuery.data) return
+    const a = profileQuery.data
+    setCustomerRatePct(
+      a.customerRateBpsOverride != null ? String(Number(a.customerRateBpsOverride) / 100) : '',
+    )
+    setStoreRatePct(
+      a.storeRateBpsOverride != null ? String(Number(a.storeRateBpsOverride) / 100) : '',
+    )
+    setPayoutGroupId((a.payoutGroupId as string | null) ?? '')
+  }, [profileQuery.data])
+
+  const payoutGroupsQuery = useQuery({
+    queryKey: ['admin-payout-groups'],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/admin/payout-groups`, { headers })
+      if (!res.ok) return { groups: [] }
+      return res.json() as Promise<{ groups: { id: string; name: string; customerRateBps: number; storeRateBps: number }[] }>
+    },
+  })
+
+  // Effective rates come from the server so the display uses the same resolver as commission creation.
+  const effectiveRatesQuery = useQuery({
+    queryKey: ['admin-affiliate-effective-rates', affiliateId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/effective-rates`, { headers })
+      if (!res.ok) return null
+      const data = await res.json() as {
+        rates: {
+          customer: { rateBps: number; rateSource: string; payoutGroupIdSnapshot: string | null }
+          store: { rateBps: number; rateSource: string; payoutGroupIdSnapshot: string | null }
+          platformCustomerDefaultBps: number
+          platformStoreDefaultBps: number
+          platformMaxBurdenBps: number
+        }
+      }
+      return data.rates
+    },
+    enabled: !!affiliateId,
+  })
+
+  const ratesMutation = useMutation({
+    mutationFn: async (payload: {
+      customerRateBpsOverride: number | null
+      storeRateBpsOverride: number | null
+      payoutGroupId: string | null
+    }) => {
+      const res = await fetch(`${apiBase}/api/affiliates/${affiliateId}/rates`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? 'Failed to save rate overrides')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success('Rate overrides saved')
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate', affiliateId] })
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-effective-rates', affiliateId] })
+    },
+    onError: (e: Error) => toast.error(e.message),
   })
 
   const commissionsQuery = useQuery({
@@ -254,6 +326,138 @@ export default function AdminAffiliateDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Rate Card — rates come from the server so the display uses the same resolver as commission creation */}
+      {(() => {
+        const er = effectiveRatesQuery.data
+        const effectiveCustomerBps = er?.customer.rateBps ?? 500
+        const effectiveStoreBps = er?.store.rateBps ?? 500
+        const platformMaxBps = er?.platformMaxBurdenBps ?? 5000
+
+        const sourceLabel = (src: string | undefined) => {
+          if (src === 'USER_OVERRIDE') return 'Affiliate Override'
+          if (src === 'PAYOUT_GROUP') return 'Payout Group'
+          return 'Platform Default'
+        }
+        const customerSource = sourceLabel(er?.customer.rateSource)
+        const storeSource = sourceLabel(er?.store.rateSource)
+
+        const groups = payoutGroupsQuery.data?.groups ?? []
+
+        function handleSaveRates() {
+          ratesMutation.mutate({
+            customerRateBpsOverride: customerRatePct !== '' ? Math.round(parseFloat(customerRatePct) * 100) : null,
+            storeRateBpsOverride: storeRatePct !== '' ? Math.round(parseFloat(storeRatePct) * 100) : null,
+            payoutGroupId: payoutGroupId !== '' ? payoutGroupId : null,
+          })
+        }
+
+        return (
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Affiliate Rate Card</p>
+
+              {effectiveRatesQuery.isLoading ? (
+                <div className="flex justify-center py-4"><Spinner /></div>
+              ) : (
+              <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-0.5">
+                  <div className="text-xs text-muted-foreground">Customer Referral Rate</div>
+                  <div className="text-lg font-bold tabular-nums">{(effectiveCustomerBps / 100).toFixed(2)}%</div>
+                  <div className="text-xs text-muted-foreground">{customerSource}</div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-0.5">
+                  <div className="text-xs text-muted-foreground">Store Referral Rate</div>
+                  <div className="text-lg font-bold tabular-nums">{(effectiveStoreBps / 100).toFixed(2)}%</div>
+                  <div className="text-xs text-muted-foreground">{storeSource}</div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-0.5">
+                  <div className="text-xs text-muted-foreground">Max Burden Cap</div>
+                  <div className="text-lg font-bold tabular-nums">{(platformMaxBps / 100).toFixed(2)}%</div>
+                  <div className="text-xs text-muted-foreground">Platform Default</div>
+                </div>
+              </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-3 items-end">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Override Customer Rate (%)</label>
+                  <input
+                    type="number"
+                    placeholder="inherit"
+                    value={customerRatePct}
+                    onChange={(e) => setCustomerRatePct(e.target.value)}
+                    min={0}
+                    max={100}
+                    step={0.25}
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Override Store Rate (%)</label>
+                  <input
+                    type="number"
+                    placeholder="inherit"
+                    value={storeRatePct}
+                    onChange={(e) => setStoreRatePct(e.target.value)}
+                    min={0}
+                    max={100}
+                    step={0.25}
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Payout Group</label>
+                  <select
+                    value={payoutGroupId}
+                    onChange={(e) => setPayoutGroupId(e.target.value)}
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    <option value="">No group (platform default)</option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} ({(g.customerRateBps / 100).toFixed(2)}% / {(g.storeRateBps / 100).toFixed(2)}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                <p className="text-xs text-muted-foreground">
+                  Changes affect future commissions only. Existing commission rows keep their snapshotted rate.
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="small"
+                    variant="outline"
+                    onClick={() => {
+                      setCustomerRatePct('')
+                      setStoreRatePct('')
+                      ratesMutation.mutate({
+                        customerRateBpsOverride: null,
+                        storeRateBpsOverride: null,
+                        payoutGroupId: payoutGroupId !== '' ? payoutGroupId : null,
+                      })
+                    }}
+                    disabled={ratesMutation.isPending}
+                  >
+                    Clear Overrides
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="primary"
+                    onClick={handleSaveRates}
+                    disabled={ratesMutation.isPending}
+                  >
+                    {ratesMutation.isPending ? 'Saving…' : 'Save Rate Overrides'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Commissions */}
       <Card>

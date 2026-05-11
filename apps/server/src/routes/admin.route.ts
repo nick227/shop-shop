@@ -557,6 +557,21 @@ export const adminRoutes = async (app: FastifyInstance) => {
       }
     }
 
+    const BPS_KEYS = [
+      'platform.affiliate_customer_rate_bps',
+      'platform.affiliate_store_rate_bps',
+      'platform.affiliate_max_burden_bps',
+    ] as const
+    for (const bpsKey of BPS_KEYS) {
+      if (bpsKey in settings) {
+        const bps = parseInt(settings[bpsKey], 10)
+        if (isNaN(bps) || bps < 0 || bps > 10000) {
+          return reply.code(400).send({ error: `${bpsKey} must be an integer between 0 and 10000 (0–100%)` })
+        }
+        settings[bpsKey] = String(bps)
+      }
+    }
+
     await Promise.all(
       Object.entries(settings).map(([key, value]) =>
         prisma.systemSetting.upsert({
@@ -572,6 +587,105 @@ export const adminRoutes = async (app: FastifyInstance) => {
     })
 
     return reply.send({ ok: true })
+  })
+
+  // ─── Payout Groups ─────────────────────────────────────────────────────────
+
+  app.get('/admin/payout-groups', async (_req, reply) => {
+    const groups = await prisma.affiliatePayoutGroup.findMany({
+      where: { isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        customerRateBps: true,
+        storeRateBps: true,
+        isDefault: true,
+        _count: { select: { affiliates: true } },
+      },
+    })
+    return reply.send({ groups })
+  })
+
+  const PayoutGroupBodySchema = z.object({
+    name: z.string().min(1).max(100),
+    customerRateBps: z.number().int().min(0).max(10000),
+    storeRateBps: z.number().int().min(0).max(10000),
+    isActive: z.boolean().optional(),
+  })
+
+  app.post('/admin/payout-groups', async (req, reply) => {
+    const body = PayoutGroupBodySchema.safeParse(req.body)
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Validation error', details: body.error.errors })
+    }
+    const group = await prisma.affiliatePayoutGroup.create({
+      data: {
+        name: body.data.name,
+        customerRateBps: body.data.customerRateBps,
+        storeRateBps: body.data.storeRateBps,
+        isActive: body.data.isActive ?? true,
+      },
+      select: {
+        id: true,
+        name: true,
+        customerRateBps: true,
+        storeRateBps: true,
+        isDefault: true,
+        isActive: true,
+        _count: { select: { affiliates: true } },
+      },
+    })
+    return reply.code(201).send({ group })
+  })
+
+  app.patch('/admin/payout-groups/:id', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const PatchSchema = z.object({
+      name: z.string().min(1).max(100).optional(),
+      customerRateBps: z.number().int().min(0).max(10000).optional(),
+      storeRateBps: z.number().int().min(0).max(10000).optional(),
+      isActive: z.boolean().optional(),
+    })
+    const body = PatchSchema.safeParse(req.body)
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Validation error', details: body.error.errors })
+    }
+    try {
+      const group = await prisma.affiliatePayoutGroup.update({
+        where: { id },
+        data: body.data,
+        select: {
+          id: true,
+          name: true,
+          customerRateBps: true,
+          storeRateBps: true,
+          isDefault: true,
+          isActive: true,
+          _count: { select: { affiliates: true } },
+        },
+      })
+      return reply.send({ group })
+    } catch (err: any) {
+      if (err?.code === 'P2025') return reply.code(404).send({ error: 'Payout group not found' })
+      throw err
+    }
+  })
+
+  // Deactivate instead of delete — affiliates may still reference the group.
+  app.post('/admin/payout-groups/:id/deactivate', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    try {
+      const group = await prisma.affiliatePayoutGroup.update({
+        where: { id },
+        data: { isActive: false },
+        select: { id: true, name: true, isActive: true, _count: { select: { affiliates: true } } },
+      })
+      return reply.send({ group })
+    } catch (err: any) {
+      if (err?.code === 'P2025') return reply.code(404).send({ error: 'Payout group not found' })
+      throw err
+    }
   })
 
   // ─── Delivery Operations ───────────────────────────────────────────────────────

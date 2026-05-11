@@ -13,7 +13,7 @@ interface SettingRow {
   key: string
   label: string
   description: string
-  type: 'toggle' | 'text' | 'number'
+  type: 'toggle' | 'text' | 'number' | 'bps'
 }
 
 const SETTING_DEFS: SettingRow[] = [
@@ -42,10 +42,22 @@ const SETTING_DEFS: SettingRow[] = [
     type: 'toggle',
   },
   {
-    key: 'platform.affiliate_commission_rate',
-    label: 'Default Commission Rate (%)',
-    description: 'Fallback commission percentage when an affiliate has no custom rate set.',
-    type: 'number',
+    key: 'platform.affiliate_customer_rate_bps',
+    label: 'Affiliate Customer Referral Rate (%)',
+    description: 'Commission rate for affiliates who referred the buying customer. Applies to the platform service fee. Falls through to this default when no group or per-affiliate override is set.',
+    type: 'bps',
+  },
+  {
+    key: 'platform.affiliate_store_rate_bps',
+    label: 'Affiliate Store Referral Rate (%)',
+    description: 'Commission rate for affiliates who referred the store. Applies to the platform service fee. Falls through when no group or per-affiliate override is set.',
+    type: 'bps',
+  },
+  {
+    key: 'platform.affiliate_max_burden_bps',
+    label: 'Max Affiliate Burden Cap (%)',
+    description: 'Total combined affiliate commission cannot exceed this percentage of the service fee. Customer referrals are paid first; store referrals receive the remainder.',
+    type: 'bps',
   },
 ]
 
@@ -54,7 +66,9 @@ const DEFAULTS: Record<string, string> = {
   'platform.maintenance_message': 'We are performing scheduled maintenance. Please check back soon.',
   'platform.new_vendor_signups_enabled': 'true',
   'platform.new_affiliate_signups_enabled': 'true',
-  'platform.affiliate_commission_rate': '10',
+  'platform.affiliate_customer_rate_bps': '500',
+  'platform.affiliate_store_rate_bps': '500',
+  'platform.affiliate_max_burden_bps': '5000',
 }
 
 export default function AdminSettingsPage() {
@@ -103,6 +117,13 @@ export default function AdminSettingsPage() {
 
   function setValue(key: string, value: string) {
     setLocalValues((prev) => ({ ...prev, [key]: value }))
+    setDirty((prev) => new Set(prev).add(key))
+  }
+
+  // BPS fields: localValues holds the raw BPS string; UI input shows percent.
+  function setBpsValue(key: string, pctString: string) {
+    const bps = String(Math.round(parseFloat(pctString || '0') * 100))
+    setLocalValues((prev) => ({ ...prev, [key]: bps }))
     setDirty((prev) => new Set(prev).add(key))
   }
 
@@ -158,6 +179,19 @@ export default function AdminSettingsPage() {
                           }`}
                         />
                       </button>
+                    ) : def.type === 'bps' ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={Number(value || '0') / 100}
+                          onChange={(e) => setBpsValue(def.key, e.target.value)}
+                          min={0}
+                          max={100}
+                          step={0.25}
+                          className="h-9 w-20 rounded-md border border-border bg-background px-3 text-sm tabular-nums"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
                     ) : def.type === 'number' ? (
                       <input
                         type="number"

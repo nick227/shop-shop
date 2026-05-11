@@ -26,6 +26,7 @@ import {
   initiateAffiliatePayoutConnect,
   syncAffiliatePayoutAccountStatus,
   createAffiliateStripeLoginLink,
+  getEffectiveAffiliateRates,
   prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac.js'
@@ -434,6 +435,21 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     })
   })
 
+  // GET /affiliates/:id/effective-rates - Resolved effective rates for an affiliate (admin only)
+  // Uses the same resolver as commission creation so admin UI and service logic never diverge.
+  app.get('/affiliates/:id/effective-rates', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    try {
+      const rates = await getEffectiveAffiliateRates(id)
+      return reply.send({ rates })
+    } catch (err: any) {
+      if (err?.code === 'P2025') return reply.code(404).send({ error: 'Affiliate not found' })
+      throw err
+    }
+  })
+
   // GET /affiliates/:id - Get full affiliate detail by ID (admin only)
   app.get('/affiliates/:id', {
     preHandler: [requireRole(['ADMIN'])],
@@ -572,6 +588,39 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       throw error
     }
+  })
+
+  // PATCH /affiliates/:id/rates - Set per-affiliate rate overrides and/or payout group (admin only)
+  app.patch('/affiliates/:id/rates', {
+    preHandler: [requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const RatesSchema = z.object({
+      customerRateBpsOverride: z.number().int().min(0).max(10000).nullable().optional(),
+      storeRateBpsOverride: z.number().int().min(0).max(10000).nullable().optional(),
+      payoutGroupId: z.string().nullable().optional(),
+    })
+    const body = RatesSchema.safeParse(req.body)
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Validation error', details: body.error.errors })
+    }
+    const data: Record<string, unknown> = {}
+    if ('customerRateBpsOverride' in body.data) data.customerRateBpsOverride = body.data.customerRateBpsOverride
+    if ('storeRateBpsOverride' in body.data) data.storeRateBpsOverride = body.data.storeRateBpsOverride
+    if ('payoutGroupId' in body.data) data.payoutGroupId = body.data.payoutGroupId
+
+    const affiliate = await prisma.affiliate.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        customerRateBpsOverride: true,
+        storeRateBpsOverride: true,
+        payoutGroupId: true,
+        payoutGroup: { select: { id: true, name: true, customerRateBps: true, storeRateBps: true } },
+      },
+    })
+    return reply.send({ affiliate })
   })
 
   // PATCH /affiliates/:id/status - Update affiliate status

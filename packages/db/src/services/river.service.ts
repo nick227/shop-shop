@@ -138,6 +138,22 @@ function mapMediaJsonToRiver(raw: unknown): RiverFeedItem['media'] {
   if (!Array.isArray(raw)) return []
   const out: RiverFeedItem['media'] = []
   for (const entry of raw) {
+    // Handle string URLs (legacy format)
+    if (typeof entry === 'string') {
+      const url = entry
+      if (url) {
+        out.push({
+          type: 'image' as const,
+          url,
+          thumbnailUrl: undefined,
+          width: undefined,
+          height: undefined,
+        })
+      }
+      continue
+    }
+    
+    // Handle object media items
     if (!entry || typeof entry !== 'object') continue
     const o = entry as Record<string, unknown>
     const url = typeof o.url === 'string' ? o.url : ''

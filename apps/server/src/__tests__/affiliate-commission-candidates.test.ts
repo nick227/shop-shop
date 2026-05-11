@@ -5,7 +5,7 @@
  * Each test cleans up its own data.
  */
 import { randomUUID } from 'crypto'
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect, afterAll, afterEach } from 'vitest'
 import { prisma, Decimal } from '@packages/db'
 import {
   buildAffiliateCommissionCandidatesForOrder,
@@ -280,5 +280,208 @@ describe('upsertCommissionCandidate', () => {
     expect(Number(row!.amount)).toBeCloseTo(0.15, 5)
 
     await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+  })
+})
+
+// ─── Rate resolution + snapshot integration tests (targets 1-5) ──────────────
+//
+// These tests verify that buildAffiliateCommissionCandidatesForOrder uses the
+// 3-tier cascade correctly and that the resulting commission row snapshots the
+// exact rateBps and rateSource that were active at creation time.
+
+describe('rate resolution cascade', () => {
+  // SystemSettings are shared state — store keys mutated by each test and
+  // restore them in afterEach so tests don't bleed into each other.
+  const BPS_KEYS = [
+    'platform.affiliate_customer_rate_bps',
+    'platform.affiliate_store_rate_bps',
+    'platform.affiliate_max_burden_bps',
+  ] as const
+
+  const setSettings = async (customerBps: number, storeBps: number, maxBps = 5000) => {
+    await Promise.all([
+      prisma.systemSetting.upsert({ where: { key: BPS_KEYS[0] }, create: { key: BPS_KEYS[0], value: String(customerBps) }, update: { value: String(customerBps) } }),
+      prisma.systemSetting.upsert({ where: { key: BPS_KEYS[1] }, create: { key: BPS_KEYS[1], value: String(storeBps) }, update: { value: String(storeBps) } }),
+      prisma.systemSetting.upsert({ where: { key: BPS_KEYS[2] }, create: { key: BPS_KEYS[2], value: String(maxBps) }, update: { value: String(maxBps) } }),
+    ])
+  }
+
+  afterEach(async () => {
+    await prisma.systemSetting.deleteMany({ where: { key: { in: [...BPS_KEYS] } } })
+  })
+
+  // ── 1. Platform default BPS used when no override/group exists ─────────────
+  it('uses platform default BPS when affiliate has no override and no group', async () => {
+    await setSettings(800, 600)
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const store = await createTestStore(vendor.id)
+    // No override, no group
+    const affiliate = await prisma.affiliate.create({
+      data: {
+        userId: affiliateUser.id,
+        referralCode: `${TEST_NAMESPACE.slice(0, 4)}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        status: 'ACTIVE',
+        commissionRate: new Decimal('0.05'),
+        payoutProvider: 'MANUAL',
+        payoutProviderStatus: 'NOT_SET',
+      },
+    })
+    const order = await makeOrder(buyer.id, store.id, { referredByAffiliateId: affiliate.id })
+
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)
+    const cp = candidates.find((c) => c.sourceType === 'CUSTOMER_PURCHASE')
+    expect(cp).toBeDefined()
+    expect(cp!.rateBps).toBe(800)
+    expect(cp!.rateSource).toBe('PLATFORM_DEFAULT')
+    expect(cp!.payoutGroupIdSnapshot).toBeNull()
+
+    await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+  })
+
+  // ── 2. Group BPS used over platform default ────────────────────────────────
+  it('uses payout group BPS over platform default', async () => {
+    await setSettings(800, 600)
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const store = await createTestStore(vendor.id)
+    const group = await prisma.affiliatePayoutGroup.create({
+      data: { name: `test-group-${randomUUID().slice(0, 8)}`, customerRateBps: 700, storeRateBps: 550 },
+    })
+    const affiliate = await prisma.affiliate.create({
+      data: {
+        userId: affiliateUser.id,
+        referralCode: `${TEST_NAMESPACE.slice(0, 4)}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        status: 'ACTIVE',
+        commissionRate: new Decimal('0.05'),
+        payoutProvider: 'MANUAL',
+        payoutProviderStatus: 'NOT_SET',
+        payoutGroupId: group.id,
+      },
+    })
+    const order = await makeOrder(buyer.id, store.id, { referredByAffiliateId: affiliate.id })
+
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)
+    const cp = candidates.find((c) => c.sourceType === 'CUSTOMER_PURCHASE')
+    expect(cp!.rateBps).toBe(700)
+    expect(cp!.rateSource).toBe('PAYOUT_GROUP')
+    expect(cp!.payoutGroupIdSnapshot).toBe(group.id)
+
+    await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+    await prisma.affiliatePayoutGroup.delete({ where: { id: group.id } })
+  })
+
+  // ── 3. Per-affiliate override used over group ──────────────────────────────
+  it('uses affiliate override over group and platform default', async () => {
+    await setSettings(800, 600)
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const store = await createTestStore(vendor.id)
+    const group = await prisma.affiliatePayoutGroup.create({
+      data: { name: `test-group-${randomUUID().slice(0, 8)}`, customerRateBps: 700, storeRateBps: 550 },
+    })
+    const affiliate = await prisma.affiliate.create({
+      data: {
+        userId: affiliateUser.id,
+        referralCode: `${TEST_NAMESPACE.slice(0, 4)}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        status: 'ACTIVE',
+        commissionRate: new Decimal('0.05'),
+        payoutProvider: 'MANUAL',
+        payoutProviderStatus: 'NOT_SET',
+        payoutGroupId: group.id,
+        customerRateBpsOverride: 600,
+      },
+    })
+    const order = await makeOrder(buyer.id, store.id, { referredByAffiliateId: affiliate.id })
+
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)
+    const cp = candidates.find((c) => c.sourceType === 'CUSTOMER_PURCHASE')
+    expect(cp!.rateBps).toBe(600)
+    expect(cp!.rateSource).toBe('USER_OVERRIDE')
+    // Group id is still snapshotted even when override wins
+    expect(cp!.payoutGroupIdSnapshot).toBe(group.id)
+
+    await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+    await prisma.affiliatePayoutGroup.delete({ where: { id: group.id } })
+  })
+
+  // ── 4. Null override falls through to group then platform default ──────────
+  it('null override falls through to group BPS', async () => {
+    await setSettings(800, 600)
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const store = await createTestStore(vendor.id)
+    const group = await prisma.affiliatePayoutGroup.create({
+      data: { name: `test-group-${randomUUID().slice(0, 8)}`, customerRateBps: 700, storeRateBps: 550 },
+    })
+    const affiliate = await prisma.affiliate.create({
+      data: {
+        userId: affiliateUser.id,
+        referralCode: `${TEST_NAMESPACE.slice(0, 4)}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        status: 'ACTIVE',
+        commissionRate: new Decimal('0.05'),
+        payoutProvider: 'MANUAL',
+        payoutProviderStatus: 'NOT_SET',
+        payoutGroupId: group.id,
+        customerRateBpsOverride: null, // explicitly null
+      },
+    })
+    const order = await makeOrder(buyer.id, store.id, { referredByAffiliateId: affiliate.id })
+
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)
+    const cp = candidates.find((c) => c.sourceType === 'CUSTOMER_PURCHASE')
+    expect(cp!.rateBps).toBe(700)       // group wins
+    expect(cp!.rateSource).toBe('PAYOUT_GROUP')
+
+    await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+    await prisma.affiliatePayoutGroup.delete({ where: { id: group.id } })
+  })
+
+  // ── 5. Commission row snapshots rateBps and rateSource at creation ─────────
+  it('persisted commission row snapshots rateBps, rateSource, and payoutGroupIdSnapshot', async () => {
+    await setSettings(800, 600)
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const store = await createTestStore(vendor.id)
+    const group = await prisma.affiliatePayoutGroup.create({
+      data: { name: `test-group-${randomUUID().slice(0, 8)}`, customerRateBps: 700, storeRateBps: 550 },
+    })
+    const affiliate = await prisma.affiliate.create({
+      data: {
+        userId: affiliateUser.id,
+        referralCode: `${TEST_NAMESPACE.slice(0, 4)}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        status: 'ACTIVE',
+        commissionRate: new Decimal('0.05'),
+        payoutProvider: 'MANUAL',
+        payoutProviderStatus: 'NOT_SET',
+        payoutGroupId: group.id,
+        customerRateBpsOverride: 650,
+      },
+    })
+    const order = await makeOrder(buyer.id, store.id, { referredByAffiliateId: affiliate.id })
+
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)
+    await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
+
+    const row = await prisma.commission.findFirstOrThrow({
+      where: { orderId: order.id, sourceType: 'CUSTOMER_PURCHASE' },
+    })
+    expect(row.rateBps).toBe(650)
+    expect(row.rateSource).toBe('USER_OVERRIDE')
+    expect(row.payoutGroupIdSnapshot).toBe(group.id)
+    // If we later change the group rate, the snapshot stays fixed
+    await prisma.affiliatePayoutGroup.update({ where: { id: group.id }, data: { customerRateBps: 999 } })
+    const rowAfterGroupChange = await prisma.commission.findFirstOrThrow({
+      where: { orderId: order.id, sourceType: 'CUSTOMER_PURCHASE' },
+    })
+    expect(rowAfterGroupChange.rateBps).toBe(650) // unchanged
+
+    await cleanup([vendor.id, buyer.id, affiliateUser.id], [order.id], [affiliate.id])
+    await prisma.affiliatePayoutGroup.delete({ where: { id: group.id } })
   })
 })

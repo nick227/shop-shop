@@ -19,6 +19,14 @@ export interface RateResolutionResult {
   payoutGroupIdSnapshot: string | null
 }
 
+export interface EffectiveRatesResult {
+  customer: RateResolutionResult
+  store: RateResolutionResult
+  platformCustomerDefaultBps: number
+  platformStoreDefaultBps: number
+  platformMaxBurdenBps: number
+}
+
 export interface CommissionCandidate {
   affiliateId: string
   orderId: string
@@ -161,6 +169,52 @@ export async function resolveAffiliateRate(
     : settings.storeRateDefaultBps
 
   return resolveRateFromValues(overrideBps, groupBps, systemDefaultBps, affiliate.payoutGroupId)
+}
+
+/**
+ * Resolve both customer and store rates for an affiliate in one DB round-trip.
+ * This is the single source of truth for rate resolution — used by both commission
+ * creation and the admin effective-rates API so they can never diverge.
+ */
+export async function getEffectiveAffiliateRates(
+  affiliateId: string,
+  db: ExtendedPrismaClient = prisma,
+): Promise<EffectiveRatesResult> {
+  const [affiliate, settings] = await Promise.all([
+    db.affiliate.findUniqueOrThrow({
+      where: { id: affiliateId },
+      select: {
+        customerRateBpsOverride: true,
+        storeRateBpsOverride: true,
+        payoutGroupId: true,
+        payoutGroup: {
+          select: { id: true, customerRateBps: true, storeRateBps: true },
+        },
+      },
+    }),
+    loadAffiliateSettings(db),
+  ])
+
+  const customer = resolveRateFromValues(
+    affiliate.customerRateBpsOverride,
+    affiliate.payoutGroup?.customerRateBps ?? null,
+    settings.customerRateDefaultBps,
+    affiliate.payoutGroupId,
+  )
+  const store = resolveRateFromValues(
+    affiliate.storeRateBpsOverride,
+    affiliate.payoutGroup?.storeRateBps ?? null,
+    settings.storeRateDefaultBps,
+    affiliate.payoutGroupId,
+  )
+
+  return {
+    customer,
+    store,
+    platformCustomerDefaultBps: settings.customerRateDefaultBps,
+    platformStoreDefaultBps: settings.storeRateDefaultBps,
+    platformMaxBurdenBps: settings.maxBurdenBps,
+  }
 }
 
 /**

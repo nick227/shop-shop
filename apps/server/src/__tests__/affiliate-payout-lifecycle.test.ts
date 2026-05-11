@@ -456,6 +456,101 @@ describe('updatePayoutStatus', () => {
   })
 })
 
+// ─── processPayout amountCents tests (targets 6-7) ───────────────────────────
+
+describe('processPayout — amountCents vs legacy amount', () => {
+  const periodStart = new Date('2026-01-01T00:00:00Z')
+  const periodEnd = new Date('2026-02-01T00:00:00Z')
+  const commissionDate = new Date('2026-01-15T00:00:00Z')
+
+  // ── 6. processPayout uses amountCents when present ─────────────────────────
+  it('totals from amountCents when the column is populated', async () => {
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const store = await createTestStore(vendor.id)
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliate = await makeAffiliate(affiliateUser.id)
+    const order = await makeOrder(buyer.id, store.id)
+
+    // Commission with both amount and amountCents — they intentionally disagree
+    // so we can verify which one drives the payout total.
+    await prisma.commission.create({
+      data: {
+        affiliateId: affiliate.id,
+        orderId: order.id,
+        storeId: store.id,
+        status: 'PENDING',
+        amount: new Decimal('5.00'),    // legacy: $5.00
+        rate: new Decimal('0.05'),
+        serviceFeeBase: new Decimal('2.50'),
+        amountCents: 250,              // integer: $2.50 — this should win
+        createdAt: commissionDate,
+      },
+    })
+
+    const payout = await processPayout({
+      affiliateId: affiliate.id,
+      periodStart,
+      periodEnd,
+      method: 'PAYPAL',
+      adminUserId: 'test-admin',
+    })
+
+    // 250 cents → $2.50, not $5.00 from the legacy Decimal
+    expect(Number(payout.amount)).toBeCloseTo(2.50, 5)
+
+    await cleanup({
+      userIds: [affiliateUser.id, vendor.id, buyer.id],
+      orderIds: [order.id],
+      affiliateIds: [affiliate.id],
+      payoutIds: [payout.id],
+    })
+  })
+
+  // ── 7. Legacy commission rows (amountCents null) still pay correctly ────────
+  it('falls back to legacy Decimal amount when amountCents is null', async () => {
+    const affiliateUser = await createAuthenticatedUser('USER')
+    const vendor = await createAuthenticatedUser('VENDOR')
+    const store = await createTestStore(vendor.id)
+    const buyer = await createAuthenticatedUser('USER')
+    const affiliate = await makeAffiliate(affiliateUser.id)
+    const order = await makeOrder(buyer.id, store.id)
+
+    // Old-style commission: only the Decimal amount column, no amountCents
+    await prisma.commission.create({
+      data: {
+        affiliateId: affiliate.id,
+        orderId: order.id,
+        storeId: store.id,
+        status: 'PENDING',
+        amount: new Decimal('7.50'),
+        rate: new Decimal('0.05'),
+        serviceFeeBase: new Decimal('2.50'),
+        // amountCents intentionally omitted (stays null)
+        createdAt: commissionDate,
+      },
+    })
+
+    const payout = await processPayout({
+      affiliateId: affiliate.id,
+      periodStart,
+      periodEnd,
+      method: 'PAYPAL',
+      adminUserId: 'test-admin',
+    })
+
+    // Fallback: Math.round(7.50 * 100) / 100 = $7.50
+    expect(Number(payout.amount)).toBeCloseTo(7.50, 5)
+
+    await cleanup({
+      userIds: [affiliateUser.id, vendor.id, buyer.id],
+      orderIds: [order.id],
+      affiliateIds: [affiliate.id],
+      payoutIds: [payout.id],
+    })
+  })
+})
+
 afterAll(async () => {
   // Belt-and-suspenders namespace cleanup in case individual tests failed mid-cleanup
   const stores = await prisma.store.findMany({
