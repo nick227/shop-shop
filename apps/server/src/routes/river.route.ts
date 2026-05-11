@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify'
+import { ZodError } from 'zod'
+import { Prisma } from '@packages/db/generated/client'
 import {
   CreatePostInputSchema,
   CreateCommentInputSchema,
@@ -25,20 +27,11 @@ import {
   prisma,
   type CreatePostInput,
 } from '@packages/db'
-import { runRiverIngestion } from '@packages/db/services'
-import { requireAuth } from '../middleware/rbac.js'
-import { requireRole } from '../middleware/rbac.js'
+import { requireAuth, requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
-// Type fixes for enhanced river
-interface AuthenticatedUser {
-  id: string
-  role: string
-  preferences?: {
-    categories?: string[]
-    priceRanges?: string[]
-    traits?: string[]
-  }
+function isPrismaUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
 }
 
 export const riverRoutes = async (app: FastifyInstance) => {
@@ -138,10 +131,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
         hasMore: total > query.page * pageSize,
       })
     } catch (error) {
-      if (error instanceof Error && 'issues' in error) {
+      if (error instanceof ZodError) {
         return reply.code(400).send({
           error: 'Validation error',
-          issues: (error as { issues: unknown[] }).issues,
+          issues: error.issues,
         })
       }
       throw error
@@ -230,10 +223,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
         if (error instanceof RiverAutomationRejected) {
           return reply.code(409).send({ error: error.message, code: error.code })
         }
-        if (error instanceof Error && 'issues' in error) {
+        if (error instanceof ZodError) {
           return reply.code(400).send({
             error: 'Validation error',
-            issues: (error as { issues: unknown[] }).issues,
+            issues: error.issues,
           })
         }
         throw error
@@ -314,13 +307,24 @@ export const riverRoutes = async (app: FastifyInstance) => {
       const { id } = req.params as { id: string }
       const userId = req.user!.id
 
-      // Check if already liked
+      const post = await getPostById(id)
+      if (!post) {
+        return reply.code(404).send({ error: 'Post not found' })
+      }
+
       const existingLike = await getUserLike(id, userId)
       if (existingLike) {
         return reply.code(409).send({ error: 'Post already liked' })
       }
 
-      await likePost(id, userId)
+      try {
+        await likePost(id, userId)
+      } catch (error) {
+        if (isPrismaUniqueViolation(error)) {
+          return reply.code(409).send({ error: 'Post already liked' })
+        }
+        throw error
+      }
 
       req.log.info({
         event: 'post_liked',
@@ -342,6 +346,11 @@ export const riverRoutes = async (app: FastifyInstance) => {
       const { id } = req.params as { id: string }
       const userId = req.user!.id
 
+      const post = await getPostById(id)
+      if (!post) {
+        return reply.code(404).send({ error: 'Post not found' })
+      }
+
       await unlikePost(id, userId)
 
       req.log.info({
@@ -362,6 +371,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.get('/river/posts/:id/comments', async (req, reply) => {
     try {
       const { id } = req.params as { id: string }
+      const post = await getPostById(id)
+      if (!post) {
+        return reply.code(404).send({ error: 'Post not found' })
+      }
       const raw: Record<string, string> = {
         ...(req.query as Record<string, string>),
         postId: id,
@@ -396,10 +409,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
         hasMore: total > query.page * query.limit,
       })
     } catch (error) {
-      if (error instanceof Error && 'issues' in error) {
+      if (error instanceof ZodError) {
         return reply.code(400).send({
           error: 'Validation error',
-          issues: (error as { issues: unknown[] }).issues,
+          issues: error.issues,
         })
       }
       throw error
@@ -416,6 +429,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
       try {
         const { id } = req.params as { id: string }
         const userId = req.user!.id
+        const post = await getPostById(id)
+        if (!post) {
+          return reply.code(404).send({ error: 'Post not found' })
+        }
         const input = CreateCommentInputSchema.parse({
           ...(req.body as Record<string, unknown>),
           postId: id,
@@ -436,10 +453,10 @@ export const riverRoutes = async (app: FastifyInstance) => {
 
         return reply.code(201).send(comment)
       } catch (error) {
-        if (error instanceof Error && 'issues' in error) {
+        if (error instanceof ZodError) {
           return reply.code(400).send({
             error: 'Validation error',
-            issues: (error as { issues: unknown[] }).issues,
+            issues: error.issues,
           })
         }
         throw error
@@ -474,38 +491,5 @@ export const riverRoutes = async (app: FastifyInstance) => {
       return reply.code(204).send()
     }
   )
-
-  // ========================================
-  // ADMIN ROUTES
-  // ========================================
-
-  // POST /admin/river/generate-initial - Generate initial river content
-  app.post('/admin/river/generate-initial', {
-    preHandler: [requireAuth, requireRole(['ADMIN'])],
-  }, async (req, reply) => {
-    try {
-      const result = await runRiverIngestion(prisma)
-
-      req.log.info({
-        event: 'river_initial_generation_completed',
-        result
-      })
-
-      return reply.code(200).send({
-        success: true,
-        result
-      })
-    } catch (error) {
-      req.log.error({
-        event: 'river_initial_generation_failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
-
-      return reply.code(500).send({
-        success: false,
-        error: 'Initial river generation failed'
-      })
-    }
-  })
 }
 

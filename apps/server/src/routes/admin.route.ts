@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { prisma } from '@packages/db'
+import { prisma, runRiverIngestion } from '@packages/db'
 import { requireAdmin } from '../middleware/rbac.js'
 
 const PAGE_SIZE = 25
@@ -887,5 +887,22 @@ export const adminRoutes = async (app: FastifyInstance) => {
       storeId,
       refreshedAt: new Date().toISOString(),
     })
+  })
+
+  app.post('/admin/river/generate-initial', async (req, reply) => {
+    try {
+      const result = await runRiverIngestion(prisma)
+      req.log.info({ event: 'river_initial_generation_completed', result })
+      return reply.code(200).send({ success: true, result })
+    } catch (error) {
+      req.log.error({
+        event: 'river_initial_generation_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      return reply.code(500).send({
+        success: false,
+        error: 'Initial river generation failed',
+      })
+    }
   })
 }

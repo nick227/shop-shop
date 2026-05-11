@@ -244,7 +244,10 @@ export const getPostById = async (id: string): Promise<PostWithDetails | null> =
   return prisma.post.findFirst({
     where: {
       id,
-      OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }],
+      AND: [
+        { OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }] },
+        { store: { isPublished: true } },
+      ],
     },
     include: {
       store: {
@@ -495,18 +498,14 @@ export const likePost = async (postId: string, userId: string): Promise<PostLike
 }
 
 export const unlikePost = async (postId: string, userId: string): Promise<void> => {
-  await prisma.postLike.delete({
-    where: {
-      postId_userId: {
-        postId,
-        userId,
-      },
-    },
-  })
-
-  await prisma.post.update({
-    where: { id: postId },
-    data: { likesCount: { decrement: 1 } },
+  await prisma.$transaction(async (tx) => {
+    const removed = await tx.postLike.deleteMany({ where: { postId, userId } })
+    if (removed.count > 0) {
+      await tx.post.updateMany({
+        where: { id: postId },
+        data: { likesCount: { decrement: 1 } },
+      })
+    }
   })
 }
 
