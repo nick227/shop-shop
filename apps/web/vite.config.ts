@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [react()],
   // Load `VITE_*` from monorepo root so PORT / VITE_API_URL stay aligned with apps/server
   envDir: path.resolve(__dirname, '../..'),
+  preview: {
+    allowedHosts: ['shop-shop.up.railway.app'],
+  },
   server: { 
     port: Number(process.env.VITE_PORT) || 5177,
     headers: {
