@@ -340,6 +340,9 @@ importers:
       '@asteasolutions/zod-to-openapi':
         specifier: ^7.2.0
         version: 7.3.4(zod@3.23.8)
+      '@aws-sdk/client-s3':
+        specifier: ^3.913.0
+        version: 3.913.0
       '@google/generative-ai':
         specifier: ^0.21.0
         version: 0.21.0
@@ -349,15 +352,30 @@ importers:
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
+      '@types/bcrypt':
+        specifier: ^6.0.0
+        version: 6.0.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       axios:
         specifier: ^1.12.2
         version: 1.12.2
+      bcrypt:
+        specifier: ^6.0.0
+        version: 6.0.0
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
       decimal.js:
         specifier: ^10.4.3
         version: 10.6.0
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
+      fastify:
+        specifier: ^4.29.1
+        version: 4.29.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -373,22 +391,16 @@ importers:
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
     devDependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.913.0
-        version: 3.913.0
-      '@types/bcrypt':
-        specifier: ^6.0.0
-        version: 6.0.0
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
       '@types/dotenv':
         specifier: ^8.2.3
         version: 8.2.3
-      '@types/jsonwebtoken':
-        specifier: ^9.0.10
-        version: 9.0.10
       '@types/node':
         specifier: ^20.11.30
         version: 20.19.22
@@ -398,30 +410,18 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^7.18.0
         version: 7.18.0(eslint@8.57.1)(typescript@5.9.3)
-      bcrypt:
-        specifier: ^6.0.0
-        version: 6.0.0
       csv-parse:
         specifier: ^5.5.6
         version: 5.6.0
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
       eslint:
         specifier: ^8.57.0
         version: 8.57.1
-      fastify:
-        specifier: ^4.29.1
-        version: 4.29.1
       tsx:
         specifier: ^4.19.1
         version: 4.20.6
       vitest:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@20.19.22)(@vitest/ui@2.1.9)(jsdom@25.0.1)(msw@2.11.5(@types/node@20.19.22)(typescript@5.9.3))
-      zod:
-        specifier: ^3.23.8
-        version: 3.23.8
       zod-prisma-types:
         specifier: ^3.3.5
         version: 3.3.5(@prisma/client@5.22.0(prisma@5.22.0))(prisma@5.22.0)(zod@3.23.8)

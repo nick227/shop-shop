@@ -11,9 +11,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/controllers/base.controller.ts",
-    "src/scripts/geocode-stores.ts",
-    "src/scripts/verify-seed.ts",
+    "src/__tests__/**",
+    "src/**/*.test.ts",
+    "src/scripts/**",
     "src/generated/zod/index.ts",
     "src/**/*.fixed.ts",
     "src/services/affiliate-payout-hardening.service.ts",
