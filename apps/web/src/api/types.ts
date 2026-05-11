@@ -305,6 +305,9 @@ export interface RiverPost {
   store?: import('./backend-types').StoreResponse
   storeName?: string
   storeImage?: string
+  storeVerified?: boolean
+  storeCategory?: string
+  storeDistance?: number
 }
 
 export interface RiverComment {
@@ -399,6 +402,10 @@ export interface RiverFilters {
   // Additional properties for compatibility
   sortBy?: string
   hasMedia?: boolean
+  // Location-based filtering
+  lat?: number
+  lng?: number
+  radiusMiles?: number
 }
 
 // ============================================
