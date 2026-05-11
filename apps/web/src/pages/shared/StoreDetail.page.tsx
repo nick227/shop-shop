@@ -13,6 +13,7 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { bundles as bundlesApi } from '@api/apiWrapper'
 import type { Bundle, ItemResponse } from '@api/backend-types'
 import { ItemCard } from '@features/products/components/ItemCard'
+import { StoreFeedSection } from '@/features/river/components/StoreFeedSection/StoreFeedSection'
 
 // Canonical display order for ITEM_TYPE tag sections
 const ITEM_TYPE_ORDER = [
@@ -126,41 +127,46 @@ function KitchenContainer() {
   }
 
   const hasContent = (items?.length ?? 0) > 0 || bundles.length > 0
-
-  if (!hasContent) {
-    return (
-      <StateBlock
-        title="No items yet"
-        message="This kitchen has no active menu items right now."
-        actionLabel="Back to search"
-        onAction={() => navigate('/search')}
-      />
-    )
-  }
-
   const acceptsOnlineCards = (store as { acceptsOnlineCardPayments?: boolean }).acceptsOnlineCardPayments
 
   return (
     <div className="space-y-8">
       <StoreHeader store={store} />
 
-      {acceptsOnlineCards === false ? (
+      <StoreFeedSection storeId={store.id} storeName={store.name} />
+
+      {!hasContent ? (
+        <p className="text-sm text-muted-foreground">
+          No active menu items right now.{' '}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => navigate('/search')}
+          >
+            Back to search
+          </button>
+        </p>
+      ) : null}
+
+      {hasContent && acceptsOnlineCards === false ? (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
           This store is not accepting online card payments yet (Stripe Connect setup may still be in progress). You can
           still browse the menu — choose another payment option at checkout if available, or contact the store.
         </div>
       ) : null}
 
-      {menuSections.length > 0 && menuSections.map((section) => (
-        <section key={section.label}>
-          <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {section.items.map((item) => (
-              <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {hasContent && menuSections.length > 0
+        ? menuSections.map((section) => (
+            <section key={section.label}>
+              <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {section.items.map((item) => (
+                  <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
+                ))}
+              </div>
+            </section>
+          ))
+        : null}
 
       <aside className="sticky bottom-4 z-20 p-4 rounded-xl border shadow-lg backdrop-blur border-border bg-background/95">
         <div className="flex gap-3 justify-between items-center">
