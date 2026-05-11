@@ -3,7 +3,9 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm gen:sdk && pnpm --filter @packages/realtime build && pnpm --filter @packages/sdk build && pnpm --filter @apps/web build"
+# Railway/Nixpacks build sets NODE_ENV=production, which makes pnpm skip devDependencies.
+# OpenAPI Generator lives in @packages/sdk devDependencies — install must see NODE_ENV=development.
+buildCommand = "env NODE_ENV=development pnpm install --frozen-lockfile && pnpm gen:sdk && pnpm --filter @packages/realtime build && pnpm --filter @packages/sdk build && pnpm --filter @apps/web build"
 
 [deploy]
 startCommand = "pnpm --filter @apps/web exec vite preview --host 0.0.0.0 --port $PORT"
