@@ -8,18 +8,18 @@
 
 */
 -- DropIndex
-DROP INDEX `Item_isVegan_isVegetarian_isGlutenFree_idx` ON `item`;
+DROP INDEX `Item_isVegan_isVegetarian_isGlutenFree_idx` ON `Item`;
 
 -- DropIndex
-DROP INDEX `Store_timezone_index` ON `store`;
+DROP INDEX `Store_timezone_index` ON `Store`;
 
 -- AlterTable
-ALTER TABLE `item` DROP COLUMN `isDairyFree`,
+ALTER TABLE `Item` DROP COLUMN `isDairyFree`,
     DROP COLUMN `isGlutenFree`,
     DROP COLUMN `isVegan`,
     DROP COLUMN `isVegetarian`;
 
 -- AlterTable
-ALTER TABLE `store` ADD COLUMN `customDomain` VARCHAR(191) NULL,
+ALTER TABLE `Store` ADD COLUMN `customDomain` VARCHAR(191) NULL,
     ADD COLUMN `socialLinksJson` JSON NULL,
     MODIFY `storeType` ENUM('RESTAURANT', 'CONVENIENCE', 'GROCERY', 'HOME_KITCHEN', 'BAKERY', 'RETAIL', 'OTHER', 'MEAL_PREP', 'COFFEE', 'SPECIALTY', 'GENERAL') NULL;

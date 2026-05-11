@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `order` ADD COLUMN `referredByAffiliateId` CHAR(36) NULL,
+ALTER TABLE `Order` ADD COLUMN `referredByAffiliateId` CHAR(36) NULL,
     ADD COLUMN `referredByReferralCode` VARCHAR(191) NULL;
 
 -- CreateIndex

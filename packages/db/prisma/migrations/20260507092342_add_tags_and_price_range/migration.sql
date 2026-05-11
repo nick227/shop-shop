@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `store` ADD COLUMN `priceRange` ENUM('BUDGET', 'MODERATE', 'PREMIUM') NULL;
+ALTER TABLE `Store` ADD COLUMN `priceRange` ENUM('BUDGET', 'MODERATE', 'PREMIUM') NULL;
 
 -- CreateTable
 CREATE TABLE `Tag` (

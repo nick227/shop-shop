@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `suspendedAt` DATETIME(3) NULL;
+ALTER TABLE `User` ADD COLUMN `suspendedAt` DATETIME(3) NULL;

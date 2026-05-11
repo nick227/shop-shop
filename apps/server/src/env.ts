@@ -3,8 +3,9 @@ import { resolve } from 'path'
 import { parseEnv } from './env.schema.js'
 import type { ServerEnv } from './env.schema.js'
 
-// Load .env from project root (2 levels up from this file)
-config({ path: resolve(process.cwd(), '../../.env') })
+// Load .env from project root (2 levels up from this file).
+// override:false ensures Railway/container-injected vars are never clobbered by a missing or empty .env.
+config({ path: resolve(process.cwd(), '../../.env'), override: false })
 
 export type { ServerEnv } from './env.schema.js'
 export { parseEnv } from './env.schema.js'

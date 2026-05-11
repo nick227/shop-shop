@@ -9,16 +9,23 @@
 import { config } from 'dotenv'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { prisma } from '../client.js'
-import { runRiverIngestion } from '../services/river-ingest.runner.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 config({ path: resolve(__dirname, '../../../../.env') })
 
 async function main(): Promise<void> {
-  const result = await runRiverIngestion(prisma)
-  // eslint-disable-next-line no-console -- CLI output
-  console.log(JSON.stringify({ ok: true, ...result }))
+  const [{ prisma }, { runRiverIngestion }] = await Promise.all([
+    import('../client.js'),
+    import('../services/river-ingest.runner.js'),
+  ])
+
+  try {
+    const result = await runRiverIngestion(prisma)
+    // eslint-disable-next-line no-console -- CLI output
+    console.log(JSON.stringify({ ok: true, ...result }))
+  } finally {
+    await prisma.$disconnect()
+  }
 }
 
 main()
@@ -26,7 +33,4 @@ main()
     // eslint-disable-next-line no-console -- CLI errors
     console.error(err)
     process.exitCode = 1
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
   })

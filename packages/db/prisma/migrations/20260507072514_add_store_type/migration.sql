@@ -1,8 +1,8 @@
 -- DropIndex
-DROP INDEX `Store_disabledByUserId_idx` ON `store`;
+DROP INDEX `Store_disabledByUserId_idx` ON `Store`;
 
 -- DropIndex
-DROP INDEX `Store_status_idx` ON `store`;
+DROP INDEX `Store_status_idx` ON `Store`;
 
 -- AlterTable
-ALTER TABLE `store` ADD COLUMN `storeType` ENUM('MEAL_PREP', 'BAKERY', 'COFFEE', 'SPECIALTY', 'GENERAL') NULL;
+ALTER TABLE `Store` ADD COLUMN `storeType` ENUM('MEAL_PREP', 'BAKERY', 'COFFEE', 'SPECIALTY', 'GENERAL') NULL;

@@ -4,7 +4,11 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate"
+# `prisma generate` validates that DATABASE_URL is nonempty even though it does
+# not connect to the database. Railway can provide empty service references
+# during build, so use a generate-only fallback here; runtime still requires the
+# real DATABASE_URL on the cron service.
+buildCommand = "pnpm install --frozen-lockfile && DATABASE_URL=\"${DATABASE_URL:-mysql://user:password@localhost:3306/prisma_generate}\" pnpm db:generate"
 
 [deploy]
 startCommand = "pnpm ingest:river"
