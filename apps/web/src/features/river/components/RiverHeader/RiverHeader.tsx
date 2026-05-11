@@ -56,7 +56,7 @@ export function RiverHeader({ filters, onFiltersChange }: RiverHeaderProps) {
           
           <div className="flex items-center gap-2">
             <Button
-              variant={showLocation ? "default" : "outline"}
+              variant={showLocation ? "primary" : "outline"}
               size="small"
               onClick={handleLocationToggle}
               className="flex items-center gap-2"

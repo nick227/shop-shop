@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { RiverFeed } from '@/features/river/components/RiverFeed/RiverFeed'
-import { PostGrid } from '@/features/river/components/PostGrid/PostGrid'
 import { RiverHeader } from '@/features/river/components/RiverHeader/RiverHeader'
 import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
-import { RiverFilters as RiverFiltersType, RiverPost, type RiverFeedQuery } from '@api/types'
-import { getRiverFeed } from '@api/river'
+import { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-react'
+import { apiClient } from '@api/client'
 
 interface LayoutBreaker {
   type: 'grid-2x2' | 'grid-3x3' | 'featured'
@@ -90,7 +89,7 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
 
   const handleLike = useCallback(() => {
     setIsLiked(!isLiked)
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
+    setLikeCount(prev => prev !== undefined ? (isLiked ? prev - 1 : prev + 1) : 1)
     onLike?.(post.id)
   }, [isLiked, onLike, post.id])
 
@@ -216,11 +215,11 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
 
         {/* Engagement Stats */}
         <div className="text-xs text-gray-500">
-          {likeCount > 0 && (
+          {likeCount !== undefined && likeCount > 0 && (
             <span className="font-semibold text-gray-900">{likeCount} likes</span>
           )}
-          {likeCount > 0 && post.commentsCount > 0 && ' • '}
-          {post.commentsCount > 0 && (
+          {likeCount !== undefined && likeCount > 0 && post.commentsCount !== undefined && post.commentsCount > 0 && ' • '}
+          {post.commentsCount !== undefined && post.commentsCount > 0 && (
             <span>{post.commentsCount} comments</span>
           )}
         </div>
@@ -246,14 +245,14 @@ export default function RiverPage() {
     error,
   } = useInfiniteQuery({
     queryKey: ['river-feed', filters],
-    queryFn: ({ pageParam }) => getRiverFeed({
+    queryFn: ({ pageParam }: { pageParam?: string }) => apiClient.river.getFeed({
       cursor: pageParam,
       limit: 20,
       storeId: filters.storeId,
       near: filters.lat && filters.lng ? {
         lat: filters.lat,
         lng: filters.lng,
-        radiusMiles: filters.radiusMiles,
+        radiusMiles: filters.radiusMiles || 25,
       } : undefined,
       allowEmptyMedia: false,
     }),
@@ -262,7 +261,7 @@ export default function RiverPage() {
   })
 
   const posts = useMemo(() => {
-    return data?.pages.flatMap(page => page.items) ?? []
+    return data?.pages.flatMap((page: any) => page.items ?? []) ?? []
   }, [data])
 
   const layoutedPosts = useMemo(() => {

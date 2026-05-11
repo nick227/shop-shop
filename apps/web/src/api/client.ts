@@ -720,6 +720,63 @@ class ApiClient {
         `/checkout/status/${encodeURIComponent(sessionId)}` as CheckoutPath,
       ),
   }
+
+  river = {
+    getFeed: async (params: {
+      cursor?: string
+      limit?: number
+      storeId?: string
+      near?: {
+        lat: number
+        lng: number
+        radiusMiles: number
+      }
+      allowEmptyMedia?: boolean
+    }): Promise<{
+      items: any[]
+      nextCursor: string | null
+    }> => {
+      const searchParams = new URLSearchParams()
+      
+      if (params.cursor) searchParams.append('cursor', params.cursor)
+      if (params.limit) searchParams.append('limit', params.limit.toString())
+      if (params.storeId) searchParams.append('storeId', params.storeId)
+      if (params.near) {
+        searchParams.append('lat', params.near.lat.toString())
+        searchParams.append('lng', params.near.lng.toString())
+        searchParams.append('radiusMiles', params.near.radiusMiles.toString())
+      }
+      if (params.allowEmptyMedia !== undefined) {
+        searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
+      }
+
+      return this.requestContract(`/river/feed?${searchParams.toString()}`)
+    },
+
+    likePost: async (postId: string): Promise<void> => {
+      await this.requestContract(`/river/posts/${postId}/like`, {
+        method: 'POST',
+      })
+    },
+
+    unlikePost: async (postId: string): Promise<void> => {
+      await this.requestContract(`/river/posts/${postId}/like`, {
+        method: 'DELETE',
+      })
+    },
+
+    savePost: async (postId: string): Promise<void> => {
+      await this.requestContract(`/river/posts/${postId}/save`, {
+        method: 'POST',
+      })
+    },
+
+    unsavePost: async (postId: string): Promise<void> => {
+      await this.requestContract(`/river/posts/${postId}/save`, {
+        method: 'DELETE',
+      })
+    },
+  }
   
   /**
    * Clear all cached API instances
