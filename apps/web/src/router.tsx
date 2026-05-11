@@ -27,6 +27,7 @@ const PrivacyPage = lazy(() => import('./pages/public/Privacy.page'))
 const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
+const RiverPage = lazy(() => import('./pages/public/River.page'))
 
 // Affiliate pages;
 const BecomeAffiliatePage = lazy(() => import('./pages/public/BecomeAffiliate.page'))
@@ -185,10 +186,10 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           element: <ProtectedRoute>{lazyRoute(StoreDetailPage)}</ProtectedRoute>,
           handle: { title: 'Store menu' },
         },
-        { path: '/river', element: <Navigate to="/menu" replace /> },
         {
-          path: '/river/:storeId',
-          element: <LegacyRiverToMenuRedirect />,
+          path: '/river',
+          element: lazyRoute(RiverPage),
+          handle: { title: 'River' },
         },
         // Become an affiliate (public, no auth required — form handles login check);
         {
