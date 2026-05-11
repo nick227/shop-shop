@@ -80,23 +80,43 @@ export function useRiverPostActions({ storeId, onOpenComments }: UseRiverPostAct
   const share = useCallback(
     async (postId: string) => {
       const url = `${window.location.origin}/river?post=${encodeURIComponent(postId)}`
+      let delivered = false
+
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: 'Shop River', url })
+          delivered = true
+        } catch (e) {
+          const name = e instanceof Error ? e.name : ''
+          if (name === 'AbortError') {
+            return
+          }
+        }
+      }
+
+      if (
+        !delivered &&
+        typeof navigator !== 'undefined' &&
+        typeof navigator.clipboard?.writeText === 'function'
+      ) {
+        try {
+          await navigator.clipboard.writeText(url)
+          delivered = true
+        } catch {
+          // non-secure context or permission denied
+        }
+      }
+
+      if (!delivered) {
+        return
+      }
+
       try {
         await apiClient.river.recordShare(postId)
       } catch {
-        // still offer copy / Web Share
+        // count may drift; still refresh lists
       }
       invalidate()
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        try {
-          await navigator.share({ title: 'Shop River', url })
-          return
-        } catch {
-          // dismissed or unsupported path
-        }
-      }
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url)
-      }
     },
     [invalidate],
   )

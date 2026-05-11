@@ -1,6 +1,8 @@
-import { useState, useMemo, memo } from 'react'
+import { useCallback, useMemo, useState, memo } from 'react'
 import type { RiverPost, RiverFilters as RiverFiltersType } from '@api/types'
 import { PostCard } from '../PostCard/PostCard'
+import { RiverCommentsPanel } from '../RiverCommentsPanel/RiverCommentsPanel'
+import { useRiverPostActions } from '../../hooks/useRiverPostActions'
 import { Skeleton, Button } from '@shared/ui/primitives'
 import { RiverFilters } from '../RiverFilters'
 import { RiverHero } from '../RiverHero/RiverHero'
@@ -12,10 +14,9 @@ interface RiverFeedProps {
   readonly error: Error | null
   readonly hasMore: boolean
   readonly onLoadMore: () => void
+  /** When set, `store-feed` queries for this store are invalidated after mutations. */
+  readonly storeId?: string
   readonly onPostClick?: (postId: string) => void
-  readonly onLike?: (postId: string) => void
-  readonly onComment?: (postId: string) => void
-  readonly onShare?: (postId: string) => void
   readonly onFiltersChange?: (filters: RiverFiltersType) => void
 }
 
@@ -46,56 +47,81 @@ export const RiverFeed = memo(function RiverFeed({
   error,
   hasMore,
   onLoadMore,
+  storeId,
   onPostClick,
-  onLike,
-  onComment,
-  onShare,
   onFiltersChange,
 }: RiverFeedProps) {
   const [filters, setFilters] = useState<RiverFiltersType>({ sortBy: 'recent' })
+  const [commentsPostId, setCommentsPostId] = useState<string | undefined>()
+
+  const postsById = useMemo(() => new Map(posts.map((p) => [p.id, p])), [posts])
+
+  const actions = useRiverPostActions({
+    storeId,
+    onOpenComments: (id) => setCommentsPostId(id),
+  })
 
   const handleFiltersChange = (newFilters: RiverFiltersType) => {
     setFilters(newFilters)
     onFiltersChange?.(newFilters)
   }
 
+  const handleLike = useCallback(
+    (postId: string) => {
+      const p = postsById.get(postId)
+      if (!p) return
+      void actions.like(postId, Boolean(p.isLiked))
+    },
+    [actions, postsById],
+  )
+
+  const handleSave = useCallback(
+    (postId: string) => {
+      const p = postsById.get(postId)
+      if (!p) return
+      void actions.save(postId, Boolean(p.isSaved))
+    },
+    [actions, postsById],
+  )
+
+  const handleComment = useCallback(
+    (postId: string) => {
+      actions.comment(postId)
+    },
+    [actions],
+  )
+
+  const handleShare = useCallback(
+    (postId: string) => {
+      void actions.share(postId)
+    },
+    [actions],
+  )
+
   const memoizedPosts = useMemo(
     () =>
       posts.map((post, index) => {
-        // Insert RiverHero every 3rd post (index 2, 5, 8, etc.)
         const shouldShowHero = (index + 1) % 3 === 0
-        
-        // Insert RiverDiscovery every 6th post (index 5, 11, 17, etc.)
         const shouldShowDiscovery = (index + 1) % 6 === 0
-        
+
         return (
-          <>
-            {shouldShowHero && post.store && (
-              <RiverHero 
-                key={`hero-${post.id}`}
-                store={post.store} 
-                isLoading={isLoading} 
-              />
-            )}
-            
-            {shouldShowDiscovery && (
-              <RiverDiscovery 
-                key={`discovery-${post.id}`}
-              />
-            )}
-            
+          <div key={post.id ?? `post-${index}`} className="space-y-3">
+            {shouldShowHero && post.store && <RiverHero store={post.store} isLoading={isLoading} />}
+
+            {shouldShowDiscovery && <RiverDiscovery />}
+
             <PostCard
-              key={post.id ?? `post-${index}`}
               post={post}
               onPostClick={onPostClick}
-              onLike={onLike}
-              onComment={onComment}
-              onShare={onShare}
+              onLike={handleLike}
+              onComment={handleComment}
+              onShare={handleShare}
+              onSave={handleSave}
             />
-          </>
+          </div>
         )
       }),
-    [posts, onPostClick, onLike, onComment, onShare]
+    [posts, isLoading, onPostClick, handleLike, handleComment, handleShare, handleSave],
   )
 
   if (error && posts.length === 0) {
@@ -133,20 +159,22 @@ export const RiverFeed = memo(function RiverFeed({
 
   return (
     <div className="space-y-4">
+      {commentsPostId && (
+        <RiverCommentsPanel
+          postId={commentsPostId}
+          onClose={() => setCommentsPostId(undefined)}
+          isAuthenticated={actions.isAuthenticated}
+          onRequireLogin={actions.redirectToLogin}
+        />
+      )}
+
       <RiverFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <div className="space-y-3">
-        {memoizedPosts}
-      </div>
+      <div className="space-y-3">{memoizedPosts}</div>
 
       {hasMore && (
         <div className="text-center pt-2">
-          <Button
-            variant="outline"
-            size="small"
-            onClick={onLoadMore}
-            isLoading={isLoading}
-          >
+          <Button variant="outline" size="small" onClick={onLoadMore} isLoading={isLoading}>
             Load more
           </Button>
         </div>

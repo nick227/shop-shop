@@ -46,8 +46,10 @@ export const PostComposer = ({
 }: PostComposerProps) => {
   const [content, setContent] = useState('')
   const [isPosting, setIsPosting] = useState(false)
+  const [showMediaUploader, setShowMediaUploader] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
 
-  const { detectedMedia, removeMedia, clearMedia } = useMediaDetection(content)
+  const { detectedMedia, removeMedia, clearMedia, addMedia } = useMediaDetection(content)
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -74,9 +76,105 @@ export const PostComposer = ({
     }
   }
 
+  const handleCameraCapture = () => {
+    setShowCamera(true)
+  }
+
+  const handleCameraFileCapture = (file: File) => {
+    const mediaItem: MediaItem = {
+      type: 'image',
+      url: URL.createObjectURL(file),
+      thumbnail: URL.createObjectURL(file),
+    }
+    addMedia(mediaItem)
+    setShowCamera(false)
+  }
+
+  const handleMediaSelect = (file: File) => {
+    const mediaItem: MediaItem = {
+      type: file.type.startsWith('image/') ? 'image' : 'video',
+      url: URL.createObjectURL(file),
+      thumbnail: file.type.startsWith('video/') ? undefined : URL.createObjectURL(file),
+    }
+    addMedia(mediaItem)
+  }
+
+  const closeCamera = () => {
+    setShowCamera(false)
+  }
+
+  const handleMediaUpload = () => {
+    setShowMediaUploader(true)
+  }
+
+  const closeMediaUploader = () => {
+    setShowMediaUploader(false)
+  }
+
   const isValid = content.trim().length > 0 || detectedMedia.length > 0
   const charsLeft = MAX_CHARS - content.length
   const showCounter = content.length >= COUNTER_WARN_AT
+
+  if (showMediaUploader) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-semibold">Upload Media</h2>
+            <button
+              onClick={closeMediaUploader}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-4">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Choose files
+            </label>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="w-full text-sm"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                for (const file of files) {
+                  handleMediaSelect(file)
+                }
+                setShowMediaUploader(false)
+                e.target.value = ''
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (showCamera) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+          <h2 className="text-lg font-semibold">Take photo</h2>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="w-full text-sm"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleCameraFileCapture(file)
+              e.target.value = ''
+            }}
+          />
+          <Button type="button" variant="outline" size="small" onClick={closeCamera}>
+            Close
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -129,6 +227,30 @@ export const PostComposer = ({
             )}
           </p>
           <div className="flex gap-2">
+            {/* Media Upload Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="small"
+              onClick={handleMediaUpload}
+              disabled={isPosting}
+              title="Upload media"
+            >
+              📎 Upload
+            </Button>
+            
+            {/* Camera Capture Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="small"
+              onClick={handleCameraCapture}
+              disabled={isPosting}
+              title="Take photo"
+            >
+              📷 Camera
+            </Button>
+            
             {onCancel && (
               <Button
                 type="button"
@@ -140,6 +262,7 @@ export const PostComposer = ({
                 Cancel
               </Button>
             )}
+            
             <Button
               type="submit"
               variant="primary"
