@@ -54,7 +54,7 @@
     "validate:browser": "tsx scripts/validate-browser-compatibility.ts",
     "snapshot": "tsx scripts/snapshot-test.ts",
     "snapshot:update": "tsx scripts/snapshot-test.ts update",
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm exec tsc -p tsconfig.json",
     "typecheck": "echo 'SDK is generated - skipping typecheck'",
     "lint": "echo 'SDK is generated - skipping lint'",
     "test": "tsx scripts/snapshot-test.ts"

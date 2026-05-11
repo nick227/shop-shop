@@ -58,7 +58,7 @@
     "backfill:affiliate": "node --import tsx prisma/backfill-affiliate-phase2.ts",
     "ingest:river": "node --import tsx src/cli/river-ingest-run.ts",
     "import-zips": "node --import tsx import-us-zips.ts",
-    "build": "tsc -p tsconfig.json && node scripts/sync-generated-to-dist.mjs",
+    "build": "pnpm exec tsc -p tsconfig.json && node scripts/sync-generated-to-dist.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",
     "lint": "eslint src",
