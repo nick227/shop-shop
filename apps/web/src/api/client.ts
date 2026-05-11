@@ -149,8 +149,9 @@ class ApiClient {
       throw new Error('VITE_API_URL environment variable is required in production')
     }
     
-    // Fallback for test environment
-    return baseUrl || 'http://localhost:3005'
+    // Fallback for test environment; strip trailing /api/v1 so buildContractUrl does not double-prefix
+    const origin = (baseUrl || 'http://localhost:3005').replace(/\/$/, '')
+    return origin.replace(/\/api\/v1\/?$/i, '')
   }
 
   /**
@@ -750,29 +751,29 @@ class ApiClient {
         searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
       }
 
-      return this.requestContract(`/river/feed?${searchParams.toString()}` as CheckoutPath)
+      return this.requestContract(`/api/v1/river/feed?${searchParams.toString()}` as CheckoutPath)
     },
 
     likePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
+      await this.requestContract(`/api/v1/river/posts/${postId}/like` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unlikePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
+      await this.requestContract(`/api/v1/river/posts/${postId}/like` as CheckoutPath, {
         method: 'DELETE',
       })
     },
 
     savePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
+      await this.requestContract(`/api/v1/river/posts/${postId}/save` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unsavePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
+      await this.requestContract(`/api/v1/river/posts/${postId}/save` as CheckoutPath, {
         method: 'DELETE',
       })
     },

@@ -32,10 +32,18 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/team/, '/team'),
       },
-      '/api': {
+      // River is registered on the API at /api/v1/river/* — forward unchanged.
+      '/api/v1/river': {
         target: 'http://localhost:3005',
         changeOrigin: true,
         secure: false,
+      },
+      // All other /api/* routes (excluding /api/v1/river which is handled above)
+      '^/api(?!/v1/river)': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       }
     }
   },
