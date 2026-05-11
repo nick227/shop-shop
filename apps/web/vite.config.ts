@@ -50,7 +50,7 @@ export default defineConfig({
       '@packages/realtime': path.resolve(__dirname, '../../packages/realtime/src'),
       '@packages/schemas': path.resolve(__dirname, '../../packages/schemas/src'),
       '@packages/sdk': path.resolve(__dirname, '../../packages/sdk/dist/src'),
-      '@packages/shared': path.resolve(__dirname, '../../packages/shared/dist'),
+      '@packages/shared': path.resolve(__dirname, '../../packages/shared/src'),
     },
   },
   define: {
