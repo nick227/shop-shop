@@ -233,6 +233,7 @@ model User {
   paymentMethods       PaymentMethod[]
   promotionsCreated    Promotion[]           @relation("PromotionCreator")
   postLikes            PostLike[]
+  riverPostSeens      RiverPostSeen[]
   comments             Comment[]
   affiliate            Affiliate?
   /// Customer-level affiliate referral attribution (for analytics).
@@ -853,6 +854,7 @@ model Post {
   /// If set, post is hidden from public feed / list until this time (UTC). Null = visible immediately.
   publishAt     DateTime?
   likes         PostLike[]
+  riverPostSeens RiverPostSeen[]
   comments      Comment[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -901,11 +903,12 @@ model Comment {
 }
 
 model RiverPostSeen {
-  userId    String   @db.Char(36)
-  postId    String   @id @default(uuid()) @db.Char(36)
-  seenAt    DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id     String   @id @default(uuid()) @db.Char(36)
+  userId String   @db.Char(36)
+  postId String   @db.Char(36)
+  seenAt DateTime @default(now())
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@index([userId, seenAt])
