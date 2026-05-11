@@ -115,3 +115,11 @@ scripts/*
 # Prisma
 packages/db/migrations/
 .fallow/
+
+# TypeScript emit artifacts next to sources (do not commit)
+packages/db/src/**/*.js
+packages/db/src/**/*.js.map
+packages/db/src/**/*.d.ts
+apps/server/src/**/*.js
+apps/server/src/**/*.js.map
+apps/server/src/**/*.d.ts

@@ -3,8 +3,8 @@ import type { RiverPost, RiverFilters as RiverFiltersType } from '@api/types'
 import { PostCard } from '../PostCard/PostCard'
 import { Skeleton, Button } from '@shared/ui/primitives'
 import { RiverFilters } from '../RiverFilters'
-import { RiverHero } from './RiverHero/RiverHero'
-import { RiverDiscovery } from './RiverDiscovery/RiverDiscovery'
+import { RiverHero } from '../RiverHero/RiverHero'
+import { RiverDiscovery } from '../RiverDiscovery/RiverDiscovery'
 
 interface RiverFeedProps {
   readonly posts: RiverPost[]
