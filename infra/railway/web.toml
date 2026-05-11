@@ -5,6 +5,9 @@
 builder = "NIXPACKS"
 buildCommand = "pnpm install --frozen-lockfile && pnpm gen:sdk && pnpm --filter @packages/realtime build && pnpm --filter @packages/sdk build && pnpm --filter @apps/web build"
 
+[phases.setup]
+nixPkgs = ["...", "jdk17"]
+
 [deploy]
 startCommand = "pnpm --filter @apps/web exec vite preview --host 0.0.0.0 --port $PORT"
 restartPolicyType = "ON_FAILURE"
