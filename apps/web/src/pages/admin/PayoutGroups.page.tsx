@@ -173,7 +173,7 @@ export default function AdminPayoutGroupsPage() {
       title: 'Deactivate payout group?',
       description: `Affiliates assigned to "${g.name}" will fall back to platform defaults unless they have a personal rate override.`,
       confirmLabel: 'Deactivate',
-      variant: 'destructive',
+      variant: 'danger',
     })
     if (ok) deactivateMutation.mutate(g.id)
   }
@@ -189,7 +189,7 @@ export default function AdminPayoutGroupsPage() {
           </p>
         </div>
         {!showCreate && (
-          <Button size="sm" onClick={() => { setShowCreate(true); setCreateForm(EMPTY_FORM) }}>
+          <Button size="small" onClick={() => { setShowCreate(true); setCreateForm(EMPTY_FORM) }}>
             New Group
           </Button>
         )}
@@ -240,11 +240,11 @@ export default function AdminPayoutGroupsPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={submitCreate} disabled={createMutation.isPending}>
+            <Button size="small" onClick={submitCreate} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Spinner className="mr-1 h-3 w-3" /> : null}
               Create
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>
+            <Button size="small" variant="outline" onClick={() => setShowCreate(false)}>
               Cancel
             </Button>
           </div>
@@ -319,14 +319,14 @@ export default function AdminPayoutGroupsPage() {
                       <td className="px-4 py-2 text-right">
                         <div className="flex justify-end gap-2">
                           <Button
-                            size="sm"
+                            size="small"
                             onClick={() => commitEdit(g.id)}
                             disabled={updateMutation.isPending}
                           >
                             {updateMutation.isPending ? <Spinner className="mr-1 h-3 w-3" /> : null}
                             Save
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                          <Button size="small" variant="outline" onClick={() => setEditingId(null)}>
                             Cancel
                           </Button>
                         </div>
@@ -351,13 +351,13 @@ export default function AdminPayoutGroupsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => startEdit(g)}>
+                          <Button size="small" variant="outline" onClick={() => startEdit(g)}>
                             Edit
                           </Button>
                           {g.isActive && (
                             <Button
-                              size="sm"
-                              variant="destructive"
+                              size="small"
+                              variant="danger"
                               onClick={() => handleDeactivate(g)}
                               disabled={deactivateMutation.isPending}
                             >
