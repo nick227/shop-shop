@@ -61,7 +61,7 @@ export default function StoreItemsPage() {
     },
   })
 
-  const items = (itemsData?.data ?? []) as ItemResponse[]
+  const items = (itemsData?.data ?? []) as unknown as ItemResponse[]
 
   const paginatedList = usePaginatedList({
     items: items,
