@@ -170,7 +170,9 @@ await app.register(paymentRoutes)
 await app.register(mediaRoutes)
 await app.register(mediaRoutes, { prefix: '/api' })
 await app.register(realtimeRoutes) 
-await app.register(riverRoutes)    
+
+await app.register(riverRoutes, { prefix: '/api/v1' })
+
 await app.register(geocodingRoutes) 
 await app.register(tipRoutes)      
 await app.register(affiliateRoutes, { prefix: '/api' }) 
