@@ -53,7 +53,7 @@ interface ApiErrorResponse {
 }
 
 type ContractRequestInit = Omit<RequestInit, 'method'> & {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'DELETE'
   idempotencyKey?: string
   timeoutMs?: number
   enableAutoRetry?: boolean // Opt-in for automatic retry behavior
@@ -750,29 +750,29 @@ class ApiClient {
         searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
       }
 
-      return this.requestContract(`/river/feed?${searchParams.toString()}`)
+      return this.requestContract(`/river/feed?${searchParams.toString()}` as CheckoutPath)
     },
 
     likePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/like`, {
+      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unlikePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/like`, {
+      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
         method: 'DELETE',
       })
     },
 
     savePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/save`, {
+      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unsavePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/river/posts/${postId}/save`, {
+      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
         method: 'DELETE',
       })
     },
