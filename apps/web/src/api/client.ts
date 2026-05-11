@@ -272,7 +272,10 @@ class ApiClient {
   }
 
   private buildContractUrl(apiPath: CheckoutPath): string {
-    return `${this.baseUrl.replace(/\/$/, '')}/api/v1${apiPath}`
+    const origin = this.baseUrl.replace(/\/$/, '')
+    // Paths are contract-relative (/checkout/..., /river/...); strip accidental /api/v1 prefix.
+    const path = String(apiPath).replace(/^\/api\/v1(?=\/)/i, '')
+    return `${origin}/api/v1${path.startsWith('/') ? path : `/${path}`}`
   }
 
   private delay(ms: number): Promise<void> {
@@ -751,29 +754,29 @@ class ApiClient {
         searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
       }
 
-      return this.requestContract(`/api/v1/river/feed?${searchParams.toString()}` as CheckoutPath)
+      return this.requestContract(`/river/feed?${searchParams.toString()}` as CheckoutPath)
     },
 
     likePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/api/v1/river/posts/${postId}/like` as CheckoutPath, {
+      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unlikePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/api/v1/river/posts/${postId}/like` as CheckoutPath, {
+      await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
         method: 'DELETE',
       })
     },
 
     savePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/api/v1/river/posts/${postId}/save` as CheckoutPath, {
+      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
         method: 'POST',
       })
     },
 
     unsavePost: async (postId: string): Promise<void> => {
-      await this.requestContract(`/api/v1/river/posts/${postId}/save` as CheckoutPath, {
+      await this.requestContract(`/river/posts/${postId}/save` as CheckoutPath, {
         method: 'DELETE',
       })
     },
