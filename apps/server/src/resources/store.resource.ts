@@ -7,7 +7,7 @@ import {
   StoreQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
-import { prisma, getAffiliateByReferralCode } from '@packages/db'
+import { prisma, getAffiliateByReferralCode, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION } from '@packages/db'
 import { checkStoreActivationRequirements } from '@packages/db/services'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
@@ -124,6 +124,10 @@ async function buildStoreListFilters(filters: Record<string, unknown>): Promise<
   }
   if (typeof prismaFilters.isPublished === 'string') {
     prismaFilters.isPublished = prismaFilters.isPublished === 'true'
+  }
+
+  if (!prismaFilters.ownerUserId) {
+    addAndFilter(prismaFilters, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION as Record<string, unknown>)
   }
 
   if (typeof city === 'string' && city.trim()) {

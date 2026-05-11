@@ -1,7 +1,38 @@
 import type { PrismaClient } from '../generated/client/index.js'
+import { OFFICIAL_PLATFORM_STORE_SLUG } from '../constants/platform-store.js'
 
-/** Editorial / platform identity in River — normal Store row, posts use this storeId. */
-export const OFFICIAL_PLATFORM_STORE_SLUG = 'official'
+async function resolvePlatformStoreOwnerUserId(prisma: PrismaClient): Promise<string> {
+  const envEmail = process.env.PLATFORM_STORE_OWNER_EMAIL?.trim()
+  if (envEmail) {
+    const user = await prisma.user.findUnique({
+      where: { email: envEmail },
+      select: { id: true },
+    })
+    if (!user) {
+      throw new Error(
+        `[seed] PLATFORM_STORE_OWNER_EMAIL=${envEmail} — user does not exist. Create that user or unset the variable.`,
+      )
+    }
+    return user.id
+  }
+
+  const seedAdmin = await prisma.user.findUnique({
+    where: { email: 'admin@seed.local' },
+    select: { id: true },
+  })
+  if (seedAdmin) return seedAdmin.id
+
+  const anyAdmin = await prisma.user.findFirst({
+    where: { role: 'ADMIN' },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  })
+  if (anyAdmin) return anyAdmin.id
+
+  throw new Error(
+    '[seed] Cannot create official platform store: no owner (admin@seed.local, ADMIN role, or PLATFORM_STORE_OWNER_EMAIL).',
+  )
+}
 
 export async function ensureOfficialPlatformStore(prisma: PrismaClient): Promise<void> {
   const existing = await prisma.store.findUnique({
@@ -10,18 +41,11 @@ export async function ensureOfficialPlatformStore(prisma: PrismaClient): Promise
   })
   if (existing) return
 
-  const admin = await prisma.user.findFirst({
-    where: { email: 'admin@seed.local', role: 'ADMIN' },
-    select: { id: true },
-  })
-  if (!admin) {
-    console.warn('[seed] Official platform store skipped: admin@seed.local not found')
-    return
-  }
+  const ownerUserId = await resolvePlatformStoreOwnerUserId(prisma)
 
   await prisma.store.create({
     data: {
-      ownerUserId: admin.id,
+      ownerUserId,
       name: 'Shop Shop',
       slug: OFFICIAL_PLATFORM_STORE_SLUG,
       description:

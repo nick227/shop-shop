@@ -7,6 +7,7 @@ import {
   type Prisma,
   haversineMiles,
   prisma,
+  PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
 } from '@packages/db'
 
 // MVP DTOs
@@ -198,7 +199,10 @@ export class MarketplaceSearchService {
     priceRange?: string,
   ): Promise<StoreSearchResult[]> {
     try {
-      const where: Prisma.StoreWhereInput = { isPublished: true }
+      const where: Prisma.StoreWhereInput = {
+        isPublished: true,
+        ...PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
+      }
       if (storeType) where.storeType = storeType as any
       if (priceRange) where.priceRange = priceRange as any
 
@@ -293,7 +297,10 @@ export class MarketplaceSearchService {
     tags?: string[],
   ): Promise<ProductSearchResult[]> {
     try {
-      const storeWhere: Prisma.StoreWhereInput = { isPublished: true }
+      const storeWhere: Prisma.StoreWhereInput = {
+        isPublished: true,
+        ...PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
+      }
       if (locationFilter.city) storeWhere.addressCity = { contains: locationFilter.city }
       else if (locationFilter.state) storeWhere.addressState = locationFilter.state
       else if (locationFilter.zip) storeWhere.addressZip = locationFilter.zip

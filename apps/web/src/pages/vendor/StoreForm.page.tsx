@@ -3,7 +3,7 @@
  * StoreFormPage - Create or edit a store
  */
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
@@ -178,6 +178,14 @@ export default function StoreFormPage() {
       belowForm={
         isEdit && store ? (
           <div className="space-y-8">
+            <div className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+              <Link
+                to={`/vendor/stores/${storeId}/river`}
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Manage Store → River Posts
+              </Link>
+            </div>
             <VendorStripeConnectSection storeId={storeId!} />
             <DeleteStoreSection
               storeId={storeId!}

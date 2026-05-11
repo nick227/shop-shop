@@ -118,11 +118,25 @@ export default function AdminRiverComposerPage() {
       )}
 
       {selectedId && selected ? (
-        <PostComposer
-          storeId={selectedId}
-          storeName={selected.name}
-          onPost={handlePost}
-        />
+        <>
+          <div
+            role="status"
+            className={
+              selected.slug === OFFICIAL_PLATFORM_STORE_SLUG
+                ? 'rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100'
+                : 'rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
+            }
+          >
+            {selected.slug === OFFICIAL_PLATFORM_STORE_SLUG ? (
+              <span>Posting as Shop Shop official editorial account</span>
+            ) : (
+              <span>
+                Posting on behalf of vendor: <span className="font-medium text-foreground">{selected.name}</span>
+              </span>
+            )}
+          </div>
+          <PostComposer storeId={selectedId} storeName={selected.name} onPost={handlePost} />
+        </>
       ) : null}
 
       <section className="space-y-3">

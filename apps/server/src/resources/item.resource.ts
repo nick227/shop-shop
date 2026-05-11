@@ -7,7 +7,7 @@ import {
   ItemQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
-import { prisma } from '@packages/db'
+import { prisma, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION } from '@packages/db'
 import { checkProductActivationRequirements } from '@packages/db/services'
 
 import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.js'
@@ -114,6 +114,7 @@ export const itemResource = defineResource({
       const nextFilters = sanitizeItemListWhere(filters as Record<string, unknown>)
       // Apply activation requirements for public listings
       if (!nextFilters.storeId) {
+        nextFilters.store = PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION
         // For public listings without store filter, check product activation
         const itemList = await prisma.item.findMany({
           where: nextFilters,

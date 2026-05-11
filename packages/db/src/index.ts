@@ -31,3 +31,8 @@ export type { ExtendedPrismaClient } from './client.js'
 export { haversineMiles } from './geo/haversine.js'
 export type { GeoPoint } from './geo/haversine.js'
 
+export {
+  OFFICIAL_PLATFORM_STORE_SLUG,
+  PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
+} from './constants/platform-store.js'
+
