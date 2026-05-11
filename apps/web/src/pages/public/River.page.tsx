@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { RiverFeed } from '@/features/river/components/RiverFeed/RiverFeed'
 import { RiverHeader } from '@/features/river/components/RiverHeader/RiverHeader'
 import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
+import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-react'
@@ -106,7 +107,7 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
           <div className="relative">
             <img
               src={post.storeImage || '/api/placeholder/40/40'}
-              alt={post.storeName}
+              alt={post.storeName ?? 'Store'}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
             />
             {post.storeVerified && (
@@ -119,8 +120,10 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 text-sm">{post.storeName}</h3>
-              <span className="text-xs text-gray-500">• {post.storeCategory}</span>
+              <h3 className="font-semibold text-gray-900 text-sm">{post.storeName ?? 'Store'}</h3>
+              {post.storeCategory != null && post.storeCategory !== '' ? (
+                <span className="text-xs text-gray-500">• {post.storeCategory}</span>
+              ) : null}
             </div>
             {post.storeDistance && (
               <p className="text-xs text-gray-500">{post.storeDistance} miles away</p>
@@ -261,7 +264,11 @@ export default function RiverPage() {
   })
 
   const posts = useMemo(() => {
-    return data?.pages.flatMap((page: any) => page.items ?? []) ?? []
+    return (
+      data?.pages.flatMap((page: { items?: RiverFeedItemWire[] }) =>
+        (page.items ?? []).map((row) => mapFeedItemToRiverPost(row)),
+      ) ?? []
+    )
   }, [data])
 
   const layoutedPosts = useMemo(() => {
