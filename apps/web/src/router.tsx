@@ -57,6 +57,7 @@ const AdminReferralEventsPage = lazy(() => import('./pages/admin/ReferralEvents.
 const AdminOrdersPage = lazy(() => import('./pages/admin/Orders.page'))
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/OrderDetail.page'))
 const AdminDeliveryPage = lazy(() => import('./pages/admin/DeliveryOperations.page'))
+const AdminRiverComposerPage = lazy(() => import('./pages/admin/RiverComposer.page'))
 
 // Vendor pages;
 const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
@@ -70,6 +71,7 @@ const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
 const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
 const VendorDriversPage = lazy(() => import('./pages/vendor/Drivers.page'))
 const VendorAffiliatesPage = lazy(() => import('./pages/vendor/Affiliates.page'))
+const StoreRiverPage = lazy(() => import('./pages/vendor/StoreRiver.page'))
 import VendorTeamStoreRedirectPage from './pages/vendor/VendorTeamStoreRedirect.page'
 
 // Customer account pages;
@@ -298,6 +300,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               handle: { title: 'Admin - Catalog' },
             },
             {
+              path: 'river',
+              element: lazyRoute(AdminRiverComposerPage),
+              handle: { title: 'Admin - River' },
+            },
+            {
               path: 'audit',
               element: lazyRoute(AdminAuditLogPage),
               handle: { title: 'Admin - Audit Log' },
@@ -392,6 +399,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               path: 'stores/:storeId/items',
               element: lazyRoute(StoreItemsPage),
               handle: { title: 'Store Items' },
+            },
+            {
+              path: 'stores/:storeId/river',
+              element: lazyRoute(StoreRiverPage),
+              handle: { title: 'River' },
             },
             {
               path: 'stores/:storeId/items/new',

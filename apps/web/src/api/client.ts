@@ -43,6 +43,7 @@ assertSdkConstructor('UsersApi', UsersApi)
 assertSdkConstructor('MediaApi', MediaApi)
 assertSdkConstructor('BundlesApi', BundlesApi)
 import type { ApiError } from './types/api-contracts'
+import type { MediaItem } from '@api/types'
 import { useAuthStore } from '@stores/authStore'
 
 interface ApiErrorResponse {
@@ -723,27 +724,20 @@ class ApiClient {
       this.requestContract<CheckoutStatusResponse>(
         `/checkout/status/${encodeURIComponent(sessionId)}` as CheckoutPath,
       ),
-  }
+  };
 
   river = {
+    /** Cursor-based home feed (`GET /river/feed`). */
     getFeed: async (params: {
       cursor?: string
-      limit?: number
+      limit: number
       storeId?: string
-      near?: {
-        lat: number
-        lng: number
-        radiusMiles: number
-      }
+      near?: { lat: number; lng: number; radiusMiles: number }
       allowEmptyMedia?: boolean
-    }): Promise<{
-      items: any[]
-      nextCursor: string | null
-    }> => {
+    }): Promise<{ items: unknown[]; nextCursor: string | null }> => {
       const searchParams = new URLSearchParams()
-      
       if (params.cursor) searchParams.append('cursor', params.cursor)
-      if (params.limit) searchParams.append('limit', params.limit.toString())
+      searchParams.append('limit', params.limit.toString())
       if (params.storeId) searchParams.append('storeId', params.storeId)
       if (params.near) {
         searchParams.append('lat', params.near.lat.toString())
@@ -753,9 +747,44 @@ class ApiClient {
       if (params.allowEmptyMedia !== undefined) {
         searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
       }
+      return this.requestContract(`/river/feed?${searchParams.toString()}` as CheckoutPath)
+    },
 
+    /** Page-based list (`GET /river/posts`) — use for recent posts by store. */
+    listPosts: async (params: {
+      storeId?: string
+      page?: number
+      limit?: number
+    }): Promise<{
+      data: unknown[]
+      total: number
+      page: number
+      pageSize: number
+      hasMore: boolean
+    }> => {
+      const searchParams = new URLSearchParams()
+      searchParams.append('page', String(params.page ?? 1))
+      searchParams.append('limit', String(params.limit ?? 20))
+      if (params.storeId) searchParams.append('storeId', params.storeId)
       return this.requestContract(`/river/posts?${searchParams.toString()}` as CheckoutPath)
     },
+
+    createPost: async (input: {
+      storeId: string
+      content?: string
+      mediaUrls: MediaItem[]
+      source?: 'MANUAL'
+    }): Promise<unknown> =>
+      this.requestContract(`/river/posts` as CheckoutPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: input.storeId,
+          content: input.content,
+          mediaUrls: input.mediaUrls,
+          source: input.source ?? 'MANUAL',
+        }),
+      }),
 
     likePost: async (postId: string): Promise<void> => {
       await this.requestContract(`/river/posts/${postId}/like` as CheckoutPath, {
@@ -780,7 +809,7 @@ class ApiClient {
         method: 'DELETE',
       })
     },
-  }
+  };
   
   /**
    * Clear all cached API instances
@@ -788,7 +817,7 @@ class ApiClient {
   clearCache(): void {
     this.apiInstances = {}
   }
-}
+};
 
 // Singleton instance
 export const apiClient = new ApiClient()

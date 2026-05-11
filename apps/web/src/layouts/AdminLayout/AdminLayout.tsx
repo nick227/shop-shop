@@ -14,10 +14,12 @@ import {
   ShoppingBag,
   Truck,
   DollarSign,
+  Newspaper,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { path: '/admin/river', label: 'River', icon: Newspaper },
   { path: '/admin/users', label: 'Users', icon: Users },
   { path: '/admin/vendors', label: 'Vendors', icon: Store },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },

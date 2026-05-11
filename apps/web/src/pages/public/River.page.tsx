@@ -259,14 +259,14 @@ export default function RiverPage() {
       } : undefined,
       allowEmptyMedia: false,
     }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     initialPageParam: undefined,
   })
 
   const posts = useMemo(() => {
     return (
-      data?.pages.flatMap((page: { items?: RiverFeedItemWire[] }) =>
-        (page.items ?? []).map((row) => mapFeedItemToRiverPost(row)),
+      data?.pages.flatMap((page) =>
+        (page.items ?? []).map((row) => mapFeedItemToRiverPost(row as RiverFeedItemWire)),
       ) ?? []
     )
   }, [data])

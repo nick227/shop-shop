@@ -6,6 +6,7 @@ import { seedUsers } from '../src/scripts/seed-users.js'
 import { seedCanonicalTags } from '../src/scripts/seed-tags.js'
 import { seedGeocodingCache } from '../seed-geocoding-cache.js'
 import { seedCityCache } from '../seed-city-cache.js'
+import { ensureOfficialPlatformStore } from '../src/scripts/seed-official-platform-store.js'
 
 const prisma = new PrismaClient()
 
@@ -20,6 +21,9 @@ async function main(): Promise<void> {
 
   console.log('[3/7] Comprehensive user accounts...')
   await seedUsers(prisma)
+
+  console.log('[3b/7] Official platform store (River editorial)...')
+  await ensureOfficialPlatformStore(prisma)
 
   console.log('[4/7] Core demo accounts + schema coverage...')
   await seedFullDemo(prisma)
