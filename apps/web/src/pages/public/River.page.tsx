@@ -1,15 +1,19 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { RiverHeader } from '@/features/river/components/RiverHeader/RiverHeader'
 import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
 import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
 import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
+import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
+import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
 import { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-react'
 import { apiClient } from '@api/client'
 import { useHeroStore } from '@shared/hooks/hooks/store'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 
 function RiverTileCard({ post }: { post: RiverPost }) {
   return (
@@ -105,27 +109,26 @@ function groupPostsByLayout(posts: RiverPost[]): (RiverPost | LayoutBreaker)[] {
   return result
 }
 
-function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
-  post: RiverPost
-  onLike?: (postId: string) => void
-  onComment?: (postId: string) => void
-  onShare?: (postId: string) => void
-  onSave?: (postId: string) => void
+function EnhancedPostCard({
+  post,
+  onLike,
+  onComment,
+  onShare,
+  onSave,
+}: {
+  readonly post: RiverPost
+  readonly onLike?: () => void
+  readonly onComment?: () => void
+  readonly onShare?: () => void
+  readonly onSave?: () => void
 }) {
-  const [isLiked, setIsLiked] = useState(post.isLiked)
-  const [isSaved, setIsSaved] = useState(false)
-  const [likeCount, setLikeCount] = useState(post.likesCount)
-
   const handleLike = useCallback(() => {
-    setIsLiked(!isLiked)
-    setLikeCount(prev => prev !== undefined ? (isLiked ? prev - 1 : prev + 1) : 1)
-    onLike?.(post.id)
-  }, [isLiked, onLike, post.id])
+    onLike?.()
+  }, [onLike])
 
   const handleSave = useCallback(() => {
-    setIsSaved(!isSaved)
-    onSave?.(post.id)
-  }, [isSaved, onSave, post.id])
+    onSave?.()
+  }, [onSave])
 
   return (
     <article className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -148,7 +151,12 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 text-sm">{post.storeName ?? 'Store'}</h3>
+              <Link 
+                to={post.storeId ? getStoreRoute({ id: post.storeId, name: post.storeName ?? 'Store' }) : '#'}
+                className="font-semibold text-gray-900 text-sm hover:text-blue-600 transition-colors"
+              >
+                {post.storeName ?? 'Store'}
+              </Link>
               {post.storeCategory != null && post.storeCategory !== '' ? (
                 <span className="text-xs text-gray-500">• {post.storeCategory}</span>
               ) : null}
@@ -212,21 +220,21 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
             <button
               onClick={handleLike}
               className={`p-2 rounded-lg transition-all ${
-                isLiked 
-                  ? 'text-red-500 bg-red-50 hover:bg-red-100' 
+                post.isLiked
+                  ? 'text-red-500 bg-red-50 hover:bg-red-100'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-current' : ''}`} />
             </button>
             <button
-              onClick={() => onComment?.(post.id)}
+              onClick={() => onComment?.()}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <MessageCircle className="w-5 h-5" />
             </button>
             <button
-              onClick={() => onShare?.(post.id)}
+              onClick={() => onShare?.()}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Share2 className="w-5 h-5" />
@@ -235,21 +243,21 @@ function EnhancedPostCard({ post, onLike, onComment, onShare, onSave }: {
           <button
             onClick={handleSave}
             className={`p-2 rounded-lg transition-all ${
-              isSaved 
-                ? 'text-blue-500 bg-blue-50 hover:bg-blue-100' 
+              post.isSaved
+                ? 'text-blue-500 bg-blue-50 hover:bg-blue-100'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
+            <Bookmark className={`w-5 h-5 ${post.isSaved ? 'fill-current' : ''}`} />
           </button>
         </div>
 
         {/* Engagement Stats */}
         <div className="text-xs text-gray-500">
-          {likeCount !== undefined && likeCount > 0 && (
-            <span className="font-semibold text-gray-900">{likeCount} likes</span>
+          {post.likesCount !== undefined && post.likesCount > 0 && (
+            <span className="font-semibold text-gray-900">{post.likesCount} likes</span>
           )}
-          {likeCount !== undefined && likeCount > 0 && post.commentsCount !== undefined && post.commentsCount > 0 && ' • '}
+          {post.likesCount !== undefined && post.likesCount > 0 && post.commentsCount !== undefined && post.commentsCount > 0 && ' • '}
           {post.commentsCount !== undefined && post.commentsCount > 0 && (
             <span>{post.commentsCount} comments</span>
           )}
@@ -266,6 +274,7 @@ export default function RiverPage() {
     lng: undefined,
     radiusMiles: 25,
   })
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null)
 
   const { data: heroStore, isLoading: heroLoading } = useHeroStore()
 
@@ -301,6 +310,11 @@ export default function RiverPage() {
     )
   }, [data])
 
+  const actions = useRiverPostActions({
+    storeId: undefined,
+    onOpenComments: (id) => setCommentsPostId(id),
+  })
+
   const layoutedPosts = useMemo(() => {
     return groupPostsByLayout(posts)
   }, [posts])
@@ -309,21 +323,25 @@ export default function RiverPage() {
     setFilters(newFilters)
   }, [])
 
-  const handlePostInteraction = useCallback((type: 'like' | 'comment' | 'share' | 'save', postId: string) => {
-    console.log(`${type} interaction on post:`, postId)
-    // TODO: Implement actual interaction logic
-  }, [])
-
   const renderPostItem = (item: RiverPost | LayoutBreaker, index: number) => {
     if (!('kind' in item)) {
+      const p = item
       return (
         <div key={item.id} className="max-w-2xl mx-auto">
           <EnhancedPostCard
-            post={item}
-            onLike={(id) => handlePostInteraction('like', id)}
-            onComment={(id) => handlePostInteraction('comment', id)}
-            onShare={(id) => handlePostInteraction('share', id)}
-            onSave={(id) => handlePostInteraction('save', id)}
+            post={p}
+            onLike={() => {
+              void actions.like(p.id, Boolean(p.isLiked))
+            }}
+            onComment={() => {
+              actions.comment(p.id)
+            }}
+            onShare={() => {
+              void actions.share(p.id)
+            }}
+            onSave={() => {
+              void actions.save(p.id, Boolean(p.isSaved))
+            }}
           />
         </div>
       )
@@ -337,10 +355,18 @@ export default function RiverPage() {
               <EnhancedPostCard
                 key={post.id}
                 post={post}
-                onLike={(id) => handlePostInteraction('like', id)}
-                onComment={(id) => handlePostInteraction('comment', id)}
-                onShare={(id) => handlePostInteraction('share', id)}
-                onSave={(id) => handlePostInteraction('save', id)}
+                onLike={() => {
+                  void actions.like(post.id, Boolean(post.isLiked))
+                }}
+                onComment={() => {
+                  actions.comment(post.id)
+                }}
+                onShare={() => {
+                  void actions.share(post.id)
+                }}
+                onSave={() => {
+                  void actions.save(post.id, Boolean(post.isSaved))
+                }}
               />
             ))}
           </div>
@@ -369,10 +395,18 @@ export default function RiverPage() {
               <EnhancedPostCard
                 key={post.id}
                 post={post}
-                onLike={(id) => handlePostInteraction('like', id)}
-                onComment={(id) => handlePostInteraction('comment', id)}
-                onShare={(id) => handlePostInteraction('share', id)}
-                onSave={(id) => handlePostInteraction('save', id)}
+                onLike={() => {
+                  void actions.like(post.id, Boolean(post.isLiked))
+                }}
+                onComment={() => {
+                  actions.comment(post.id)
+                }}
+                onShare={() => {
+                  void actions.share(post.id)
+                }}
+                onSave={() => {
+                  void actions.save(post.id, Boolean(post.isSaved))
+                }}
               />
             ))}
           </div>
@@ -398,6 +432,14 @@ export default function RiverPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {commentsPostId ? (
+        <RiverCommentsPanel
+          postId={commentsPostId}
+          onClose={() => setCommentsPostId(null)}
+          isAuthenticated={actions.isAuthenticated}
+          onRequireLogin={actions.redirectToLogin}
+        />
+      ) : null}
       <RiverHeader filters={filters} onFiltersChange={handleFiltersChange} />
       
       <main className="container mx-auto px-4 py-6">

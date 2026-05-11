@@ -20,6 +20,10 @@ import {
   likePost,
   unlikePost,
   getUserLike,
+  savePostForUser,
+  unsavePostForUser,
+  getUserSave,
+  incrementPostShareCount,
   createComment,
   getCommentsByPostId,
   deleteComment,
@@ -62,6 +66,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
         storeId: q.storeId,
         near: q.near,
         requireMedia: !q.allowEmptyMedia,
+        userId: req.user?.id,
       })
       
       return reply.code(200).send({
@@ -367,6 +372,69 @@ export const riverRoutes = async (app: FastifyInstance) => {
       return reply.code(204).send()
     }
   )
+
+  // POST /river/posts/:id/save — bookmark (authenticated)
+  app.post(
+    '/river/posts/:id/save',
+    {
+      preHandler: [requireAuth],
+    },
+    async (req, reply) => {
+      const { id } = req.params as { id: string }
+      const userId = req.user!.id
+
+      const post = await getPostById(id)
+      if (!post) {
+        return reply.code(404).send({ error: 'Post not found' })
+      }
+
+      const existing = await getUserSave(id, userId)
+      if (existing) {
+        return reply.code(409).send({ error: 'Post already saved' })
+      }
+
+      try {
+        await savePostForUser(id, userId)
+      } catch (error) {
+        if (isPrismaUniqueViolation(error)) {
+          return reply.code(409).send({ error: 'Post already saved' })
+        }
+        throw error
+      }
+
+      return reply.code(201).send({ success: true })
+    },
+  )
+
+  app.delete(
+    '/river/posts/:id/save',
+    {
+      preHandler: [requireAuth],
+    },
+    async (req, reply) => {
+      const { id } = req.params as { id: string }
+      const userId = req.user!.id
+
+      const post = await getPostById(id)
+      if (!post) {
+        return reply.code(404).send({ error: 'Post not found' })
+      }
+
+      await unsavePostForUser(id, userId)
+      return reply.code(204).send()
+    },
+  )
+
+  // POST /river/posts/:id/share — increment share counter (public)
+  app.post('/river/posts/:id/share', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const post = await getPostById(id)
+    if (!post) {
+      return reply.code(404).send({ error: 'Post not found' })
+    }
+    await incrementPostShareCount(id)
+    return reply.code(200).send({ success: true })
+  })
 
   // ========================================
   // COMMENT ROUTES

@@ -302,6 +302,7 @@ export interface RiverPost {
   commentsCount?: number
   sharesCount?: number
   isLiked?: boolean
+  isSaved?: boolean
   store?: import('./backend-types').StoreResponse
   storeName?: string
   storeImage?: string

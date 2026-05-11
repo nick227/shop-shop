@@ -809,6 +809,46 @@ class ApiClient {
         method: 'DELETE',
       })
     },
+
+    recordShare: async (postId: string): Promise<void> => {
+      await this.requestContract(`/river/posts/${postId}/share` as CheckoutPath, {
+        method: 'POST',
+      })
+    },
+
+    listComments: async (
+      postId: string,
+      params?: Readonly<{ page?: number; limit?: number }>,
+    ): Promise<{
+      data: ReadonlyArray<{
+        id: string
+        postId: string
+        userId: string
+        userName: string
+        userImage?: string
+        content: string
+        createdAt: string
+        updatedAt: string
+      }>
+      total: number
+      page: number
+      pageSize: number
+      hasMore: boolean
+    }> => {
+      const searchParams = new URLSearchParams()
+      searchParams.append('page', String(params?.page ?? 1))
+      searchParams.append('limit', String(params?.limit ?? 50))
+      return this.requestContract(
+        `/river/posts/${postId}/comments?${searchParams.toString()}` as CheckoutPath,
+      )
+    },
+
+    createComment: async (postId: string, content: string): Promise<unknown> =>
+      this.requestContract(`/river/posts/${postId}/comments` as CheckoutPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      }),
   };
   
   /**

@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import type { RiverPost } from '@api/types'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { PostCard } from '@/features/river/components/PostCard/PostCard'
+import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
+import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
 import { Button, Skeleton } from '@shared/ui/primitives'
 
 interface StoreFeedSectionProps {
@@ -14,6 +16,8 @@ interface StoreFeedSectionProps {
 
 /** Store-scoped River slice: same `getFeed` + mapping as global River; posts rank in Shop River too. */
 export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) {
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null)
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
     queryKey: ['store-feed', storeId],
     queryFn: ({ pageParam }: { pageParam?: string }) =>
@@ -34,6 +38,45 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
         (page.items ?? []).map((row) => mapFeedItemToRiverPost(row as RiverFeedItemWire)),
       ) ?? [],
     [data],
+  )
+
+  const postsById = useMemo(() => new Map(posts.map((p) => [p.id, p])), [posts])
+
+  const actions = useRiverPostActions({
+    storeId,
+    onOpenComments: (id) => setCommentsPostId(id),
+  })
+
+  const handleLike = useCallback(
+    (postId: string) => {
+      const p = postsById.get(postId)
+      if (!p) return
+      void actions.like(postId, Boolean(p.isLiked))
+    },
+    [actions, postsById],
+  )
+
+  const handleSave = useCallback(
+    (postId: string) => {
+      const p = postsById.get(postId)
+      if (!p) return
+      void actions.save(postId, Boolean(p.isSaved))
+    },
+    [actions, postsById],
+  )
+
+  const handleComment = useCallback(
+    (postId: string) => {
+      actions.comment(postId)
+    },
+    [actions],
+  )
+
+  const handleShare = useCallback(
+    (postId: string) => {
+      void actions.share(postId)
+    },
+    [actions],
   )
 
   if (error) {
@@ -60,6 +103,15 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
 
   return (
     <section className="max-w-2xl space-y-4">
+      {commentsPostId ? (
+        <RiverCommentsPanel
+          postId={commentsPostId}
+          onClose={() => setCommentsPostId(null)}
+          isAuthenticated={actions.isAuthenticated}
+          onRequireLogin={actions.redirectToLogin}
+        />
+      ) : null}
+
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold text-foreground">Feed</h2>
@@ -78,7 +130,13 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
         <ul className="m-0 list-none space-y-3 p-0">
           {posts.map((post: RiverPost) => (
             <li key={post.id}>
-              <PostCard post={post} />
+              <PostCard
+                post={post}
+                onLike={handleLike}
+                onComment={handleComment}
+                onShare={handleShare}
+                onSave={handleSave}
+              />
             </li>
           ))}
         </ul>

@@ -9,6 +9,7 @@ interface PostCardProps {
   readonly onLike?: (postId: string) => void
   readonly onComment?: (postId: string) => void
   readonly onShare?: (postId: string) => void
+  readonly onSave?: (postId: string) => void
   readonly onPostClick?: (postId: string) => void
 }
 
@@ -34,7 +35,7 @@ function StoreAvatar({ src, name }: { src?: string; name: string }) {
   )
 }
 
-export function PostCard({ post, onLike, onComment, onShare, onPostClick }: PostCardProps) {
+export function PostCard({ post, onLike, onComment, onShare, onSave, onPostClick }: PostCardProps) {
   const handleCardClick = () => {
     if (onPostClick && post.id) onPostClick(String(post.id))
   }
@@ -71,7 +72,7 @@ export function PostCard({ post, onLike, onComment, onShare, onPostClick }: Post
       )}
 
       <div className="px-3 sm:px-4 border-t border-border">
-        <PostActions post={post} onLike={onLike} onComment={onComment} onShare={onShare} />
+        <PostActions post={post} onLike={onLike} onComment={onComment} onShare={onShare} onSave={onSave} />
       </div>
     </Card>
   )

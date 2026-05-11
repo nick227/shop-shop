@@ -6,9 +6,10 @@ interface PostActionsProps {
   readonly onLike?: (postId: string) => void
   readonly onComment?: (postId: string) => void
   readonly onShare?: (postId: string) => void
+  readonly onSave?: (postId: string) => void
 }
 
-export const PostActions = ({ post, onLike, onComment, onShare }: PostActionsProps) => {
+export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostActionsProps) => {
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (onLike && post.id) onLike(String(post.id))
@@ -22,6 +23,11 @@ export const PostActions = ({ post, onLike, onComment, onShare }: PostActionsPro
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (onShare && post.id) onShare(String(post.id))
+  }
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onSave && post.id) onSave(String(post.id))
   }
 
   return (
@@ -69,6 +75,32 @@ export const PostActions = ({ post, onLike, onComment, onShare }: PostActionsPro
         </svg>
         <span>{formatCount(Number(post.commentsCount ?? 0))}</span>
       </button>
+
+      {onSave ? (
+        <button
+          onClick={handleSave}
+          aria-label={post.isSaved ? 'Remove saved post' : 'Save post'}
+          aria-pressed={post.isSaved}
+          className={[
+            'flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium transition-all duration-150 tap-scale',
+            post.isSaved
+              ? 'text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+          ].join(' ')}
+        >
+          <svg
+            className="w-[18px] h-[18px] flex-shrink-0"
+            viewBox="0 0 24 24"
+            fill={post.isSaved ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      ) : null}
 
       <button
         onClick={handleShare}

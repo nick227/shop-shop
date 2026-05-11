@@ -194,6 +194,7 @@ const FEED_DIVERSITY_MAX_CANDIDATES = 120
 async function buildRiverFeedResponseFromCandidateIds(
   candidateIdsOrdered: string[],
   userLimit: number,
+  userId?: string,
 ): Promise<{ items: RiverFeedItem[]; nextCursor: string | null }> {
   if (candidateIdsOrdered.length === 0) {
     return { items: [], nextCursor: null }
@@ -240,13 +241,39 @@ async function buildRiverFeedResponseFromCandidateIds(
         })
       : null
 
+  let likedIds = new Set<string>()
+  let savedIds = new Set<string>()
+  if (userId && pageRows.length > 0) {
+    const ids = pageRows.map((r) => r.id)
+    const [likes, saves] = await Promise.all([
+      prisma.postLike.findMany({
+        where: { userId, postId: { in: ids } },
+        select: { postId: true },
+      }),
+      prisma.postSave.findMany({
+        where: { userId, postId: { in: ids } },
+        select: { postId: true },
+      }),
+    ])
+    likedIds = new Set(likes.map((l) => l.postId))
+    savedIds = new Set(saves.map((s) => s.postId))
+  }
+
   return {
-    items: pageRows.map(mapPostToRiverFeedItem),
+    items: pageRows.map((p) =>
+      mapPostToRiverFeedItem(p, {
+        isLiked: likedIds.has(p.id),
+        isSaved: savedIds.has(p.id),
+      }),
+    ),
     nextCursor,
   }
 }
 
-function mapPostToRiverFeedItem(post: PostRowForRiver): RiverFeedItem {
+function mapPostToRiverFeedItem(
+  post: PostRowForRiver,
+  engagement: Readonly<{ isLiked: boolean; isSaved: boolean }>,
+): RiverFeedItem {
   return {
     id: post.id,
     createdAt: post.createdAt.toISOString(),
@@ -266,6 +293,11 @@ function mapPostToRiverFeedItem(post: PostRowForRiver): RiverFeedItem {
       storeId: post.storeId,
       ...(post.linkedItemId ? { itemId: post.linkedItemId } : {}),
     },
+    likesCount: post.likesCount,
+    commentsCount: post.commentsCount,
+    sharesCount: post.sharesCount,
+    isLiked: engagement.isLiked,
+    isSaved: engagement.isSaved,
   }
 }
 
@@ -459,8 +491,9 @@ export const getRiverFeed = async (options: {
   near?: { lat: number; lng: number; radiusMiles: number }
   /** When true (default), exclude rows with empty mediaUrls JSON array */
   requireMedia?: boolean
+  userId?: string
 }): Promise<{ items: RiverFeedItem[]; nextCursor: string | null }> => {
-  const { cursor, limit, storeId, near } = options
+  const { cursor, limit, storeId, near, userId } = options
   const requireMedia = options.requireMedia ?? true
   const decoded = cursor ? parseRiverCursor(cursor) : undefined
 
@@ -477,7 +510,7 @@ export const getRiverFeed = async (options: {
       near,
       requireMedia,
     })
-    return buildRiverFeedResponseFromCandidateIds(ids, limit)
+    return buildRiverFeedResponseFromCandidateIds(ids, limit, userId)
   }
 
   const ids = await queryRiverFeedIdsStandard(prisma, {
@@ -486,7 +519,7 @@ export const getRiverFeed = async (options: {
     storeId,
     requireMedia,
   })
-  return buildRiverFeedResponseFromCandidateIds(ids, limit)
+  return buildRiverFeedResponseFromCandidateIds(ids, limit, userId)
 }
 
 export const deletePost = async (id: string): Promise<Post> => {
@@ -535,6 +568,33 @@ export const getUserLike = async (
         userId,
       },
     },
+  })
+}
+
+// ========================================
+// Save (bookmark) — same auth pattern as likes
+// ========================================
+
+export const savePostForUser = async (postId: string, userId: string): Promise<void> => {
+  await prisma.postSave.create({
+    data: { postId, userId },
+  })
+}
+
+export const unsavePostForUser = async (postId: string, userId: string): Promise<void> => {
+  await prisma.postSave.deleteMany({ where: { postId, userId } })
+}
+
+export const getUserSave = async (postId: string, userId: string) => {
+  return prisma.postSave.findUnique({
+    where: { postId_userId: { postId, userId } },
+  })
+}
+
+export const incrementPostShareCount = async (postId: string): Promise<void> => {
+  await prisma.post.update({
+    where: { id: postId },
+    data: { sharesCount: { increment: 1 } },
   })
 }
 

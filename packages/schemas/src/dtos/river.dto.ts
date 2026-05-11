@@ -161,6 +161,11 @@ export const RiverFeedItemSchema = z.object({
       itemId: z.string().optional(),
     })
     .optional(),
+  likesCount: z.number().int().nonnegative(),
+  commentsCount: z.number().int().nonnegative(),
+  sharesCount: z.number().int().nonnegative(),
+  isLiked: z.boolean(),
+  isSaved: z.boolean(),
 })
 
 export const RiverFeedPageSchema = z.object({

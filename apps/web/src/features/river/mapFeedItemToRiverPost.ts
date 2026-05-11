@@ -32,6 +32,13 @@ export interface RiverFeedItemWire {
     readonly storeId: string
     readonly itemId?: string
   }
+  readonly likesCount?: number
+  readonly commentsCount?: number
+  readonly sharesCount?: number
+  readonly isLiked?: boolean
+  readonly isSaved?: boolean
+  readonly createdAt?: string
+  readonly priority?: number
 }
 
 function mapFeedMediaToMediaItems(
@@ -68,6 +75,11 @@ export function mapFeedItemToRiverPost(item: RiverFeedItemWire): RiverPost {
     storeName,
     storeImage,
     media,
-    // Feed payload does not include counts yet; card hides stats when absent.
+    createdAt: item.createdAt,
+    likesCount: item.likesCount,
+    commentsCount: item.commentsCount,
+    sharesCount: item.sharesCount,
+    isLiked: item.isLiked,
+    isSaved: item.isSaved,
   }
 }
