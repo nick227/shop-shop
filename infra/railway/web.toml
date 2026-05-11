@@ -3,9 +3,10 @@
 
 [build]
 builder = "NIXPACKS"
-# Railway/Nixpacks build sets NODE_ENV=production, which makes pnpm skip devDependencies.
-# OpenAPI Generator lives in @packages/sdk devDependencies — install must see NODE_ENV=development.
-buildCommand = "env NODE_ENV=development pnpm install --frozen-lockfile && pnpm gen:sdk && pnpm --filter @packages/realtime build && pnpm --filter @packages/sdk build && pnpm --filter @apps/web build"
+# Railway/Nixpacks sets NODE_ENV=production so pnpm skips devDependencies. `env VAR= cmd` only applies
+# to that one command — later `pnpm gen:sdk` still saw production. Export for install+gen+package builds;
+# restore production for the Vite app build. CI=true avoids interactive "reinstall from scratch?" prompts.
+buildCommand = "export NODE_ENV=development CI=true && pnpm install --frozen-lockfile && pnpm gen:sdk && pnpm --filter @packages/realtime build && pnpm --filter @packages/sdk build && NODE_ENV=production pnpm --filter @apps/web build"
 
 [deploy]
 startCommand = "pnpm --filter @apps/web exec vite preview --host 0.0.0.0 --port $PORT"

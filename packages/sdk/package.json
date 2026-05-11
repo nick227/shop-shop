@@ -36,7 +36,7 @@
     }
   },
   "scripts": {
-    "gen": "openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./generated/sdk --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
+    "gen": "pnpm exec openapi-generator-cli generate -i ../openapi/openapi.json -g typescript-fetch -o ./generated/sdk --additional-properties=supportsES6=true,importFileExtension=.js,useSingleRequestParameter=true,withoutRuntimeChecks=true",
     "gen:wrapper": "tsx scripts/generate-api-wrapper.ts",
     "gen:types": "tsx scripts/typegen/cli.ts",
     "gen:frontend-types": "tsx scripts/generate-frontend-types.ts",
@@ -60,12 +60,12 @@
     "test": "tsx scripts/snapshot-test.ts"
   },
   "dependencies": {
+    "@openapitools/openapi-generator-cli": "^2.13.4",
     "@packages/realtime": "workspace:*",
     "@packages/schemas": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "^2.13.4",
     "@types/node": "^20.11.30",
     "eslint": "^9.9.0",
     "tsx": "^4.19.0",
