@@ -202,8 +202,10 @@ async function buildRiverFeedResponseFromCandidateIds(
 
   const diversified = diversifyRiverFeedCandidates(diversifyInput)
   if (process.env.RIVER_FEED_DIVERSITY_DEBUG === 'true') {
-    const window = diversified.slice(0, userLimit + 1)
-    console.debug('[river-feed] diversity stats', riverFeedDiversityStats(window))
+    console.debug('[river diversity]', {
+      before: riverFeedDiversityStats(diversifyInput.slice(0, userLimit)),
+      after: riverFeedDiversityStats(diversified.slice(0, userLimit)),
+    })
   }
 
   const diversifiedPosts = diversified
