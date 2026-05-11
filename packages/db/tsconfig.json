@@ -16,6 +16,10 @@
     "src/scripts/verify-seed.ts",
     "src/generated/zod/index.ts",
     "src/**/*.fixed.ts",
-    "src/services/affiliate-payout-hardening.service.ts"
+    "src/services/affiliate-payout-hardening.service.ts",
+    "src/services/river-content-generation.service.ts",
+    "src/services/river-ingest-enhanced.service.ts",
+    "src/services/river-scoring.service.ts",
+    "src/cli/river-initial-generation.ts"
   ]
 }

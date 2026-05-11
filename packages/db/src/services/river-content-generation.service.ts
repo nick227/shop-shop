@@ -294,7 +294,7 @@ export const generateCategoryCollection = async (
   }
   
   // Collect media from all stores in collection
-  const media: await Promise.all(
+  const media = await Promise.all(
     categoryStores.map(async store => {
       const storeMedia = await db.mediaAsset.findMany({
         where: { 

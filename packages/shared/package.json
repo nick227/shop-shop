@@ -22,11 +22,11 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
-    "decimal.js": "^10.4.3"
+    "decimal.js": "^10.4.3",
+    "typescript": "^5.6.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "typescript": "^5.6.2",
     "eslint": "^8.57.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0"

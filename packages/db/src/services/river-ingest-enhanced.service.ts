@@ -81,7 +81,7 @@ export async function runEnhancedRiverIngestion(
       where: { isPublished: true },
       include: { 
         items: { where: { isActive: true } },
-        media: { where: { kind: { in: ['IMAGE', 'VIDEO'] } }
+        media: { where: { kind: { in: ['IMAGE', 'VIDEO'] } } }
       }
     })
     

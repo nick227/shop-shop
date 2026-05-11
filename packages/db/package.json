@@ -75,7 +75,8 @@
     "decimal.js": "^10.4.3",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.1.6",
-    "stripe": "^16.12.0"
+    "stripe": "^16.12.0",
+    "typescript": "^5.6.2"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.913.0",
@@ -92,7 +93,6 @@
     "eslint": "^8.57.0",
     "fastify": "^4.29.1",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
     "vitest": "^2.1.1",
     "zod": "^3.23.8",
     "zod-prisma-types": "^3.3.5"
