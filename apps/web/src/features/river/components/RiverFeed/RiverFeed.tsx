@@ -3,6 +3,8 @@ import type { RiverPost, RiverFilters as RiverFiltersType } from '@api/types'
 import { PostCard } from '../PostCard/PostCard'
 import { Skeleton, Button } from '@shared/ui/primitives'
 import { RiverFilters } from '../RiverFilters'
+import { RiverHero } from './RiverHero/RiverHero'
+import { RiverDiscovery } from './RiverDiscovery/RiverDiscovery'
 
 interface RiverFeedProps {
   readonly posts: RiverPost[]
@@ -59,16 +61,40 @@ export const RiverFeed = memo(function RiverFeed({
 
   const memoizedPosts = useMemo(
     () =>
-      posts.map((post, index) => (
-        <PostCard
-          key={post.id ?? `post-${index}`}
-          post={post}
-          onPostClick={onPostClick}
-          onLike={onLike}
-          onComment={onComment}
-          onShare={onShare}
-        />
-      )),
+      posts.map((post, index) => {
+        // Insert RiverHero every 3rd post (index 2, 5, 8, etc.)
+        const shouldShowHero = (index + 1) % 3 === 0
+        
+        // Insert RiverDiscovery every 6th post (index 5, 11, 17, etc.)
+        const shouldShowDiscovery = (index + 1) % 6 === 0
+        
+        return (
+          <>
+            {shouldShowHero && post.store && (
+              <RiverHero 
+                key={`hero-${post.id}`}
+                store={post.store} 
+                isLoading={isLoading} 
+              />
+            )}
+            
+            {shouldShowDiscovery && (
+              <RiverDiscovery 
+                key={`discovery-${post.id}`}
+              />
+            )}
+            
+            <PostCard
+              key={post.id ?? `post-${index}`}
+              post={post}
+              onPostClick={onPostClick}
+              onLike={onLike}
+              onComment={onComment}
+              onShare={onShare}
+            />
+          </>
+        )
+      }),
     [posts, onPostClick, onLike, onComment, onShare]
   )
 

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { prisma } from '../client.js';
-import { buildAffiliateCommissionCandidatesForOrder, upsertCommissionCandidate, } from './affiliate-commission.service.js';
+import { buildAffiliateCommissionCandidatesForOrder, upsertCommissionCandidate, runAffiliateCommissions, } from './affiliate-commission.service.js';
 export async function createAffiliate(input) {
     const referralCode = `${nanoid(8).toUpperCase()}`;
     return prisma.$transaction(async (tx) => {
@@ -181,12 +181,16 @@ export async function processPayout(input) {
                 payoutId: null,
                 createdAt: { gte: input.periodStart, lt: input.periodEnd },
             },
+            select: { id: true, amount: true, amountCents: true, status: true, payoutId: true },
         });
-        const totalAmount = eligibleCommissions.reduce((sum, c) => sum + Number(c.amount), 0);
+        const totalAmountCents = eligibleCommissions.reduce(
+            (sum, c) => sum + (c.amountCents ?? Math.round(Number(c.amount) * 100)),
+            0,
+        );
         const payout = await tx.affiliatePayout.create({
             data: {
                 affiliateId: input.affiliateId,
-                amount: totalAmount,
+                amount: totalAmountCents / 100,
                 method: input.method,
                 periodStart: input.periodStart,
                 periodEnd: input.periodEnd,
@@ -208,7 +212,7 @@ export async function processPayout(input) {
                 details: {
                     method: input.method,
                     commissionCount: eligibleCommissions.length,
-                    totalAmount,
+                    totalAmountCents,
                     periodStart: input.periodStart.toISOString(),
                     periodEnd: input.periodEnd.toISOString(),
                 },
@@ -283,10 +287,8 @@ export async function getAffiliatePayouts(affiliateId, options) {
     ]);
     return { payouts, total };
 }
-export async function calculateCommissionForOrder(orderId) {
-    const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId);
-    await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)));
-}
+// Alias kept for backward compatibility with existing callers and tests.
+export const calculateCommissionForOrder = runAffiliateCommissions;
 export async function checkPayoutEligibility(affiliateId) {
     const affiliate = await prisma.affiliate.findUnique({ where: { id: affiliateId } });
     if (!affiliate) {
@@ -297,9 +299,12 @@ export async function checkPayoutEligibility(affiliateId) {
     }
     const commissions = await prisma.commission.findMany({
         where: { affiliateId, status: { in: ['PENDING', 'APPROVED'] }, payoutId: null },
-        select: { amount: true },
+        select: { amount: true, amountCents: true },
     });
-    const estimatedAmount = commissions.reduce((sum, c) => sum + Number(c.amount), 0);
+    const estimatedAmount = commissions.reduce(
+        (sum, c) => sum + (c.amountCents ?? Math.round(Number(c.amount) * 100)) / 100,
+        0,
+    );
     return {
         eligible: commissions.length > 0,
         affiliateStatus: affiliate.status,

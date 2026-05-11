@@ -13,7 +13,7 @@ import {
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { Wrench } from 'lucide-react'
 
-function getApiBase() {
+function getApiBase() { 
   return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 }
 
