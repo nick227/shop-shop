@@ -5,6 +5,11 @@
     "packageManager": "pnpm@9.0.0",
     "scripts": {
         "build": "pnpm -r run build",
+        "prod:check": "pnpm install --frozen-lockfile && pnpm db:generate && pnpm gen:sdk && pnpm build",
+        "prod:server": "pnpm --filter @apps/server start",
+        "prod:web": "pnpm --filter @apps/web build",
+        "prod:web:preview": "pnpm --filter @apps/web preview",
+        "db:deploy": "pnpm --filter @packages/db migrate:deploy",
         "dev": "pnpm dev:all",
         "dev:all": "pnpm --filter @apps/server --filter @apps/web dev",
         "dev:server": "pnpm --filter @apps/server dev",
