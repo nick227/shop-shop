@@ -41,6 +41,7 @@
     "analyze:full": "npm run analyze && npm run madge && npm run ts-unused-exports"
   },
   "dependencies": {
+    "@packages/sdk": "workspace:*",
     "@packages/realtime": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-select": "^2.1.2",

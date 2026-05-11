@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./realtime": {
-      "types": "./dist/realtime/index.d.ts",
-      "import": "./dist/realtime/index.js"
+      "types": "./dist/src/realtime/index.d.ts",
+      "import": "./dist/src/realtime/index.js"
     },
     "./generated/frontend/api/apiWrapper": {
       "types": "./generated/frontend/api/apiWrapper.ts",

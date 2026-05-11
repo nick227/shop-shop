@@ -460,7 +460,7 @@ export type {
   ListItems200ResponseDataInner as ItemListItem,
   ListOrders200ResponseDataInner as OrderListItem,
   ListCarts200ResponseDataInner as CartListItem,
-  ListAddresss200ResponseDataInner as AddressListItem,
+  ListAddresses200ResponseDataInner as AddressListItem,
   ListPromotions200ResponseDataInner as PromotionListItem,
   // Additional list types for missing core types
   ListUsers200ResponseDataInner as UserListItem,

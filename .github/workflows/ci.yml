@@ -58,7 +58,7 @@ jobs:
           test -f packages/domain/dist/index.js
           test -f packages/schemas/dist/index.js
           test -f packages/realtime/dist/index.js
-          test -f packages/sdk/dist/index.js
+          test -f packages/sdk/dist/src/index.js
 
       # PHASE 3: Backend Validation
       - name: Lint backend

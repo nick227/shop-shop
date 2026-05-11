@@ -49,7 +49,7 @@ export default defineConfig({
       '@components': path.resolve(__dirname, './src/components'),
       '@packages/realtime': path.resolve(__dirname, '../../packages/realtime/src'),
       '@packages/schemas': path.resolve(__dirname, '../../packages/schemas/src'),
-      '@packages/sdk': path.resolve(__dirname, '../../packages/sdk/dist'),
+      '@packages/sdk': path.resolve(__dirname, '../../packages/sdk/dist/src'),
       '@packages/shared': path.resolve(__dirname, '../../packages/shared/dist'),
     },
   },
@@ -57,7 +57,7 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
-    // Alias `@packages/sdk` → packages/sdk/dist — do not also exclude that path or prebundling can split and yield incomplete SDK classes at runtime.
+    // Alias `@packages/sdk` → compiled SDK entry (matches packages/sdk package.json after tsc emit).
     include: ['@packages/sdk'],
   },
   build: {

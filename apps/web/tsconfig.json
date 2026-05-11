@@ -33,8 +33,6 @@
       "@services/*": ["./src/services/*"],
       "@components": ["./src/components"],
       "@components/*": ["./src/components/*"],
-      "@packages/sdk": ["../../packages/sdk/dist"],
-      "@packages/sdk/*": ["../../packages/sdk/dist/*"],
       "@packages/schemas": ["../../packages/schemas/src"],
       "@packages/realtime": ["../../packages/realtime/src"],
       "@packages/shared": ["../../packages/shared/src"],
@@ -51,6 +49,11 @@
     "**/*.refactored.ts",
     "**/*.refactored.tsx",
     "src/pages/admin/PayoutAuditLogs.page.tsx",
-    "src/pages/admin/PayoutManagement.page.tsx"
+    "src/pages/admin/PayoutManagement.page.tsx",
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx"
   ]
 }

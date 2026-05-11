@@ -14,7 +14,7 @@ import {
   ItemsApi,
   CartsApi,
   OrdersApi,
-  AddresssApi,
+  AddressesApi,
   PromotionsApi,
   PaymentsApi,
   UsersApi,
@@ -36,7 +36,7 @@ assertSdkConstructor('StoresApi', StoresApi)
 assertSdkConstructor('ItemsApi', ItemsApi)
 assertSdkConstructor('CartsApi', CartsApi)
 assertSdkConstructor('OrdersApi', OrdersApi)
-assertSdkConstructor('AddresssApi', AddresssApi)
+assertSdkConstructor('AddressesApi', AddressesApi)
 assertSdkConstructor('PromotionsApi', PromotionsApi)
 assertSdkConstructor('PaymentsApi', PaymentsApi)
 assertSdkConstructor('UsersApi', UsersApi)
@@ -685,7 +685,7 @@ class ApiClient {
   items = (): ItemsApi => this.getApiInstance('items', (config) => new ItemsApi(config))
   carts = (): CartsApi => this.getApiInstance('carts', (config) => new CartsApi(config))
   orders = (): OrdersApi => this.getApiInstance('orders', (config) => new OrdersApi(config))
-  addresses = (): AddresssApi => this.getApiInstance('addresses', (config) => new AddresssApi(config))
+  addresses = (): AddressesApi => this.getApiInstance('addresses', (config) => new AddressesApi(config))
   promotions = (): PromotionsApi => this.getApiInstance('promotions', (config) => new PromotionsApi(config))
   payments = (): PaymentsApi => this.getApiInstance('payments', (config) => new PaymentsApi(config))
   users = (): UsersApi => this.getApiInstance('users', (config) => new UsersApi(config))

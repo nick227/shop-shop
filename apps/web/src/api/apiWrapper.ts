@@ -192,7 +192,7 @@ export const addresses = {
    */
   list: async (): Promise<Address[]> => {
     const response = await handleRequest(() =>
-      apiClient.addresses().listAddresss()
+      apiClient.addresses().listAddresses()
     )
     return unwrapData<Address[]>(response)
   },
@@ -250,9 +250,16 @@ export const bundles = {
    * List bundles
    */
   list: async (params?: { page?: string; limit?: string; storeId?: string; isActive?: boolean }): Promise<Bundle[]> => {
-    const response = await handleRequest(() =>
-      apiClient.bundles().listBundles(params)
-    )
+    const query =
+      params === undefined
+        ? undefined
+        : {
+            page: params.page,
+            limit: params.limit,
+            storeId: params.storeId,
+            ...(params.isActive === undefined ? {} : { isActive: params.isActive ? 'true' : 'false' }),
+          }
+    const response = await handleRequest(() => apiClient.bundles().listBundles(query))
     return unwrapData<Bundle[]>(response)
   },
 
@@ -761,7 +768,7 @@ export const stores = {
     const result = await handleRequest(() =>
       apiClient.stores().updateStore({
         id,
-        createStoreRequest: input,
+        updateStoreRequest: input,
       })
     )
     return unwrapData<Store>(result)
