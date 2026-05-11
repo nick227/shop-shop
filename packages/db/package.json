@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "prisma": {
-    "seed": "node --import tsx prisma/seed.ts"
+    "seed": "node --import tsx prisma/seed.ts",
+    "river-initial": "node --import ./src/cli/river-initial-generation.ts"
   },
   "main": "./dist/db/src/index.js",
   "types": "./dist/db/src/index.d.ts",
@@ -46,12 +47,12 @@
     }
   },
   "scripts": {
-    "generate": "prisma generate",
-    "migrate": "prisma migrate dev --name auto_migration",
-    "migrate:deploy": "prisma migrate deploy",
-    "format": "prisma format",
-    "studio": "prisma studio",
-    "reset": "prisma migrate reset",
+    "generate": "pnpm exec prisma generate",
+    "migrate": "pnpm exec prisma migrate dev --name auto_migration",
+    "migrate:deploy": "pnpm exec prisma migrate deploy",
+    "format": "pnpm exec prisma format",
+    "studio": "pnpm exec prisma studio",
+    "reset": "pnpm exec prisma migrate reset",
     "seed": "node --import tsx prisma/seed.ts",
     "seed:reference": "node --import tsx prisma/seed-reference-data.ts",
     "backfill:affiliate": "node --import tsx prisma/backfill-affiliate-phase2.ts",
@@ -68,6 +69,7 @@
     "@google/generative-ai": "^0.21.0",
     "@packages/schemas": "workspace:*",
     "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0",
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "decimal.js": "^10.4.3",
@@ -89,7 +91,6 @@
     "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "fastify": "^4.29.1",
-    "prisma": "^5.22.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1",

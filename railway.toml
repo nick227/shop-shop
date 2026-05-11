@@ -4,7 +4,9 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @packages/db build && pnpm --filter @packages/domain build && pnpm --filter @packages/realtime build && pnpm --filter @packages/schemas build && pnpm --filter @apps/server build"
+# Match web service: production install skips devDependencies (Prisma CLI lived there). Install+generate
+# with NODE_ENV=development; compile server with NODE_ENV=production. CI=true avoids pnpm prompts.
+buildCommand = "export NODE_ENV=development CI=true && pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @packages/db build && pnpm --filter @packages/domain build && pnpm --filter @packages/realtime build && pnpm --filter @packages/schemas build && NODE_ENV=production pnpm --filter @apps/server build"
 
 [deploy]
 startCommand = "pnpm --filter @apps/server start"
