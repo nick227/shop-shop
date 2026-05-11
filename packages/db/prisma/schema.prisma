@@ -857,10 +857,21 @@ model Post {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  // River Feed Engine Enhancements
+  freshnessKind   String?   @db.VarChar(50) // NEW_SOURCE, RECENT_SOURCE, REPACKAGED, EVERGREEN
+  freshnessScore Int        @default(100) // 0-100 based on age and type
+  contentType    String?   @db.VarChar(50) // STORE_SPOTLIGHT, ITEM_FEATURE, CATEGORY_COLLECTION, TRAIT_MATCH, NEW_STORE
+  storeCategory Json?       // { primary, secondary, tags, traits }
+  packageId     String?    @db.VarChar(128) // Links related content packages
+  duplicateKey   String?    @unique @db.VarChar(255) // Prevents overexposure
+
   @@index([storeId])
   @@index([createdAt])
   @@index([priority, createdAt, id])
   @@index([publishAt])
+  @@index([freshnessKind, freshnessScore])
+  @@index([contentType])
+  @@index([duplicateKey])
 }
 
 model PostLike {
@@ -887,6 +898,18 @@ model Comment {
 
   @@index([postId])
   @@index([userId])
+}
+
+model RiverPostSeen {
+  userId    String   @db.Char(36)
+  postId    String   @id @default(uuid()) @db.Char(36)
+  seenAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, seenAt])
+  @@index([postId])
 }
 
 // ============================================================================
