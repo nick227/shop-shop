@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
@@ -25,11 +25,11 @@ export function RiverDiscovery() {
         latitude: geo.latitude,
         longitude: geo.longitude,
         radiusMiles: DEFAULT_RADIUS_MILES,
-        source: 'manual'
+        source: 'city'
       }
 
       setLocation({
-        type: 'city',
+        ...loc,
         city: entry.city,
         state: entry.state,
         zip: primaryZip,
@@ -42,13 +42,11 @@ export function RiverDiscovery() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <AvailableLocations />
-        <NewestStores />
-        <HomeVendorTypes />
-        <HomeNewestProducts />
-        <HomeSellSection />
-      </div>
+      <AvailableLocations />
+      <NewestStores />
+      <HomeVendorTypes />
+      <HomeNewestProducts />
+      <HomeSellSection />
     </div>
   )
 }

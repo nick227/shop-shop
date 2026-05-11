@@ -39,6 +39,7 @@ async function makeOrder(
   overrides: {
     paymentStatus?: 'PAID' | 'UNPAID' | 'REFUNDED'
     referredByAffiliateId?: string | null
+    stripePaymentIntentId?: string | null
   } = {},
 ) {
   return prisma.order.create({
@@ -59,6 +60,9 @@ async function makeOrder(
       netToVendor: new Decimal('47.50'),
       ...(overrides.referredByAffiliateId !== undefined
         ? { referredByAffiliateId: overrides.referredByAffiliateId }
+        : {}),
+      ...(overrides.stripePaymentIntentId !== undefined
+        ? { stripePaymentIntentId: overrides.stripePaymentIntentId }
         : {}),
     },
   })
@@ -85,6 +89,7 @@ describe('buildAffiliateCommissionCandidatesForOrder', () => {
     const order = await makeOrder(buyer.id, store.id, {
       paymentStatus: 'UNPAID',
       referredByAffiliateId: affiliate.id,
+      stripePaymentIntentId: 'pi_test_pending_intent',
     })
 
     const candidates = await buildAffiliateCommissionCandidatesForOrder(order.id)

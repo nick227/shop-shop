@@ -38,12 +38,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // All other /api/* (excluding /api/v1/river, matched above)
-      '^/api(?!/v1/river)': {
+      // All other /api/* (excluding /api/v1/river and /api/search, matched above)
+      '^/api(?!/v1/river|/search)': {
         target: 'http://localhost:3005',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // Search routes - forward unchanged
+      '/api/search': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
       },
     }
   },

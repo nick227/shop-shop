@@ -1,16 +1,44 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { RiverFeed } from '@/features/river/components/RiverFeed/RiverFeed'
 import { RiverHeader } from '@/features/river/components/RiverHeader/RiverHeader'
 import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
+import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
+import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-react'
 import { apiClient } from '@api/client'
+import { useHeroStore } from '@shared/hooks/hooks/store'
+
+function RiverTileCard({ post }: { post: RiverPost }) {
+  return (
+    <article className="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
+      {post.media?.[0]?.url ? (
+        <img
+          src={post.media[0].url}
+          alt={post.media[0].title || post.storeName || 'River post'}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center text-xs text-gray-400">
+          No media
+        </div>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 bg-black/50 p-2">
+        <p className="truncate text-xs font-medium text-white">
+          {post.storeName ?? 'Store'}
+        </p>
+      </div>
+    </article>
+  )
+}
 
 interface LayoutBreaker {
-  type: 'grid-2x2' | 'grid-3x3' | 'featured'
+  kind: 'layout-breaker'
+  layout: 'grid-2x2' | 'grid-3x3' | 'featured'
   posts: RiverPost[]
 }
 
@@ -35,7 +63,7 @@ function groupPostsByLayout(posts: RiverPost[]): (RiverPost | LayoutBreaker)[] {
     if (layout === 'feed') {
       // Flush any pending grid
       if (currentGridPosts.length > 0 && currentGridType) {
-        result.push({ type: currentGridType, posts: currentGridPosts })
+        result.push({ kind: 'layout-breaker', layout: currentGridType, posts: currentGridPosts })
         currentGridPosts = []
         currentGridType = null
       }
@@ -44,7 +72,7 @@ function groupPostsByLayout(posts: RiverPost[]): (RiverPost | LayoutBreaker)[] {
       if (currentGridType !== layout) {
         // Flush previous grid if different type
         if (currentGridPosts.length > 0 && currentGridType) {
-          result.push({ type: currentGridType, posts: currentGridPosts })
+          result.push({ kind: 'layout-breaker', layout: currentGridType, posts: currentGridPosts })
         }
         currentGridPosts = []
         currentGridType = layout
@@ -54,24 +82,24 @@ function groupPostsByLayout(posts: RiverPost[]): (RiverPost | LayoutBreaker)[] {
       // Complete grid when we have enough posts
       const maxPosts = layout === 'grid-2x2' ? 4 : 9
       if (currentGridPosts.length === maxPosts) {
-        result.push({ type: currentGridType, posts: currentGridPosts })
+        result.push({ kind: 'layout-breaker', layout: currentGridType, posts: currentGridPosts })
         currentGridPosts = []
         currentGridType = null
       }
     } else if (layout === 'featured') {
       // Flush any pending grid
       if (currentGridPosts.length > 0 && currentGridType) {
-        result.push({ type: currentGridType, posts: currentGridPosts })
+        result.push({ kind: 'layout-breaker', layout: currentGridType, posts: currentGridPosts })
         currentGridPosts = []
         currentGridType = null
       }
-      result.push({ type: 'featured', posts: [post] })
+      result.push({ kind: 'layout-breaker', layout: 'featured', posts: [post] })
     }
   })
 
   // Flush remaining grid posts
   if (currentGridPosts.length > 0 && currentGridType) {
-    result.push({ type: currentGridType, posts: currentGridPosts })
+    result.push({ kind: 'layout-breaker', layout: currentGridType, posts: currentGridPosts })
   }
 
   return result
@@ -239,6 +267,8 @@ export default function RiverPage() {
     radiusMiles: 25,
   })
 
+  const { data: heroStore, isLoading: heroLoading } = useHeroStore()
+
   const {
     data,
     fetchNextPage,
@@ -257,7 +287,7 @@ export default function RiverPage() {
         lng: filters.lng,
         radiusMiles: filters.radiusMiles || 25,
       } : undefined,
-      allowEmptyMedia: false,
+      allowEmptyMedia: true,
     }),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     initialPageParam: undefined,
@@ -285,64 +315,7 @@ export default function RiverPage() {
   }, [])
 
   const renderPostItem = (item: RiverPost | LayoutBreaker, index: number) => {
-    if ('type' in item) {
-      // Layout breaker
-      if (item.type === 'grid-2x2') {
-        return (
-          <div key={`grid-2x2-${index}`} className="my-8">
-            <div className="grid grid-cols-2 gap-4">
-              {item.posts.map((post, postIndex) => (
-                <EnhancedPostCard
-                  key={post.id}
-                  post={post}
-                  onLike={(id) => handlePostInteraction('like', id)}
-                  onComment={(id) => handlePostInteraction('comment', id)}
-                  onShare={(id) => handlePostInteraction('share', id)}
-                  onSave={(id) => handlePostInteraction('save', id)}
-                />
-              ))}
-            </div>
-          </div>
-        )
-      } else if (item.type === 'grid-3x3') {
-        return (
-          <div key={`grid-3x3-${index}`} className="my-8">
-            <div className="grid grid-cols-3 gap-3">
-              {item.posts.map((post, postIndex) => (
-                <div key={post.id} className="aspect-square">
-                  <EnhancedPostCard
-                    post={post}
-                    onLike={(id) => handlePostInteraction('like', id)}
-                    onComment={(id) => handlePostInteraction('comment', id)}
-                    onShare={(id) => handlePostInteraction('share', id)}
-                    onSave={(id) => handlePostInteraction('save', id)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      } else if (item.type === 'featured') {
-        return (
-          <div key={`featured-${index}`} className="my-8">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Featured Post</h2>
-              {item.posts.map((post) => (
-                <EnhancedPostCard
-                  key={post.id}
-                  post={post}
-                  onLike={(id) => handlePostInteraction('like', id)}
-                  onComment={(id) => handlePostInteraction('comment', id)}
-                  onShare={(id) => handlePostInteraction('share', id)}
-                  onSave={(id) => handlePostInteraction('save', id)}
-                />
-              ))}
-            </div>
-          </div>
-        )
-      }
-    } else {
-      // Regular post
+    if (!('kind' in item)) {
       return (
         <div key={item.id} className="max-w-2xl mx-auto">
           <EnhancedPostCard
@@ -352,6 +325,57 @@ export default function RiverPage() {
             onShare={(id) => handlePostInteraction('share', id)}
             onSave={(id) => handlePostInteraction('save', id)}
           />
+        </div>
+      )
+    }
+
+    if (item.layout === 'grid-2x2') {
+      return (
+        <div key={`grid-2x2-${index}`} className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-2 gap-4">
+            {item.posts.map((post) => (
+              <EnhancedPostCard
+                key={post.id}
+                post={post}
+                onLike={(id) => handlePostInteraction('like', id)}
+                onComment={(id) => handlePostInteraction('comment', id)}
+                onShare={(id) => handlePostInteraction('share', id)}
+                onSave={(id) => handlePostInteraction('save', id)}
+              />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (item.layout === 'grid-3x3') {
+      return (
+        <div key={`grid-3x3-${index}`} className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-3 gap-3">
+            {item.posts.map((post) => (
+              <RiverTileCard key={post.id} post={post} />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (item.layout === 'featured') {
+      return (
+        <div key={`featured-${index}`} className="max-w-2xl mx-auto">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Featured Post</h2>
+            {item.posts.map((post) => (
+              <EnhancedPostCard
+                key={post.id}
+                post={post}
+                onLike={(id) => handlePostInteraction('like', id)}
+                onComment={(id) => handlePostInteraction('comment', id)}
+                onShare={(id) => handlePostInteraction('share', id)}
+                onSave={(id) => handlePostInteraction('save', id)}
+              />
+            ))}
+          </div>
         </div>
       )
     }
@@ -378,6 +402,12 @@ export default function RiverPage() {
       
       <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
+          {/* Hero and Discovery sections - show once at top */}
+          <div className="max-w-2xl mx-auto space-y-6">
+            <RiverHero store={heroStore} isLoading={heroLoading} />
+            <RiverDiscovery />
+          </div>
+          
           {layoutedPosts.map((item, index) => renderPostItem(item, index))}
         </div>
 

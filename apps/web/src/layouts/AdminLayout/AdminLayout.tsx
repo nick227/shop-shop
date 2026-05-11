@@ -15,6 +15,7 @@ import {
   Truck,
   DollarSign,
   Newspaper,
+  Layers,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { path: '/admin/delivery', label: 'Delivery', icon: Truck },
   { path: '/admin/catalog', label: 'Catalog', icon: Package },
   { path: '/admin/affiliates', label: 'Affiliates', icon: Handshake },
+  { path: '/admin/payout-groups', label: 'Payout Groups', icon: Layers },
   { path: '/admin/finance', label: 'Finance', icon: DollarSign },
   { path: '/admin/audit', label: 'Audit Log', icon: FileText },
   { path: '/admin/settings', label: 'Settings', icon: Settings },

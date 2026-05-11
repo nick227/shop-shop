@@ -111,7 +111,7 @@ describe('processPayout', () => {
         affiliateId: affiliate.id,
         periodStart,
         periodEnd,
-        method: 'PAYPAL',
+        method: 'MANUAL',
       }),
     ).rejects.toThrow('affiliate status is SUSPENDED')
 
@@ -136,7 +136,7 @@ describe('processPayout', () => {
       affiliateId: affiliate.id,
       periodStart,
       periodEnd,
-      method: 'PAYPAL',
+      method: 'MANUAL',
       adminUserId: 'test-admin',
     })
 
@@ -199,7 +199,7 @@ describe('processPayout', () => {
       data: {
         affiliateId: affiliate.id,
         amount: new Decimal('5.00'),
-        method: 'PAYPAL',
+        method: 'MANUAL',
         periodStart,
         periodEnd,
         status: 'PENDING',
@@ -218,7 +218,7 @@ describe('processPayout', () => {
       affiliateId: affiliate.id,
       periodStart,
       periodEnd,
-      method: 'PAYPAL',
+      method: 'MANUAL',
       adminUserId: 'test-admin',
     })
 
@@ -294,7 +294,7 @@ describe('processPayout', () => {
         affiliateId: affiliate.id,
         periodStart,
         periodEnd,
-        method: 'PAYPAL',
+        method: 'MANUAL',
         adminUserId: 'test-admin',
       }),
     ).rejects.toThrow('simulated audit log failure')
@@ -339,7 +339,7 @@ describe('updatePayoutStatus', () => {
       affiliateId: affiliate.id,
       periodStart,
       periodEnd,
-      method: 'PAYPAL',
+      method: 'MANUAL',
       adminUserId: 'test-admin',
     })
 
@@ -492,7 +492,7 @@ describe('processPayout — amountCents vs legacy amount', () => {
       affiliateId: affiliate.id,
       periodStart,
       periodEnd,
-      method: 'PAYPAL',
+      method: 'MANUAL',
       adminUserId: 'test-admin',
     })
 
@@ -535,7 +535,7 @@ describe('processPayout — amountCents vs legacy amount', () => {
       affiliateId: affiliate.id,
       periodStart,
       periodEnd,
-      method: 'PAYPAL',
+      method: 'MANUAL',
       adminUserId: 'test-admin',
     })
 
