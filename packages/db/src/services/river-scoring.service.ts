@@ -1,5 +1,5 @@
-import { ExtendedPrismaClient } from '@packages/db'
-import type { RiverPost, RiverPostSeen } from '@prisma/client'
+import { ExtendedPrismaClient, prisma } from '@packages/db'
+import type { Post, RiverPostSeen } from '@packages/db/generated/client'
 
 // ========================================
 // Scoring & Ranking System
@@ -46,7 +46,7 @@ export interface ScoringOptions {
 
 export const calculatePostScore = async (
   db: ExtendedPrismaClient,
-  post: RiverPost,
+  post: Post,
   userContext: UserContext,
   options: ScoringOptions = {}
 ): Promise<PostScore> => {
@@ -92,7 +92,7 @@ export const calculatePostScore = async (
 // Individual Scoring Components
 // ========================================
 
-const calculateFreshnessScore = (post: RiverPost): number => {
+const calculateFreshnessScore = (post: Post): number => {
   const age = Date.now() - new Date(post.createdAt).getTime()
   const ageHours = age / (1000 * 60 * 60)
   
@@ -127,7 +127,7 @@ const calculateTypeBoost = (contentType: string | null): number => {
 
 const calculateCategoryRelevance = async (
   db: ExtendedPrismaClient,
-  post: RiverPost,
+  post: Post,
   userContext: UserContext,
   options: ScoringOptions
 ): Promise<number> => {
@@ -149,7 +149,7 @@ const calculateCategoryRelevance = async (
   
   // Check if any tags match
   if (postCategory?.tags) {
-    const tagMatch = postCategory.tags.some(tag => userCategories.includes(tag))
+    const tagMatch = postCategory.tags.some((tag: string) => userCategories.includes(tag))
     if (tagMatch) return 5
   }
   
@@ -204,14 +204,14 @@ const calculateRandomness = (contentType: string | null, factor: number): number
 
 export const rankRiverFeed = async (
   db: ExtendedPrismaClient,
-  posts: RiverPost[],
+  posts: Post[],
   userContext: UserContext,
   options: ScoringOptions = {}
-): Promise<RiverPost[]> => {
+): Promise<Post[]> => {
   
   // 1. Score all posts
   const scoredPosts = await Promise.all(
-    posts.map(post => ({
+    posts.map(async (post) => ({
       post,
       score: await calculatePostScore(db, post, userContext, options)
     }))
@@ -232,7 +232,7 @@ export const rankRiverFeed = async (
 // ========================================
 
 interface ScoredPost {
-  post: RiverPost
+  post: Post
   score: PostScore
 }
 
@@ -278,9 +278,17 @@ export const markContentAsSeen = async (
   postId: string
 ): Promise<void> => {
   await db.riverPostSeen.upsert({
-    where: { userId_postId: { userId, postId } },
-    update: { seenAt: new Date() },
-    create: { userId, postId, seenAt: new Date() }
+    where: {
+      userId_postId: {
+        userId,
+        postId
+      }
+    },
+    update: {},
+    create: {
+      userId,
+      postId
+    }
   })
 }
 

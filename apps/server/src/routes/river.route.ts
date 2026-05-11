@@ -36,6 +36,11 @@ function isPrismaUniqueViolation(error: unknown): boolean {
 
 export const riverRoutes = async (app: FastifyInstance) => {
   // ========================================
+  // BASE ROUTE
+  // ========================================
+
+  
+  // ========================================
   // POST ROUTES
   // ========================================
 

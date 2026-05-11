@@ -1,9 +1,10 @@
 /**
- * Affiliate commission service — Phase 3A: rate resolution and candidate building.
+ * Affiliate commission service — rate resolution, candidate building, and persistence.
  *
- * NOT wired into checkout, webhooks, or payout routes yet.
- * Call buildAffiliateCommissionCandidatesForOrder + upsertCommissionCandidate
- * from the stripe webhook / order-paid handler in Phase 3B.
+ * Entry points:
+ *  - runAffiliateCommissions(orderId): called by order.service on DELIVERED/COMPLETED,
+ *    and by payment.service on Stripe payment_intent.succeeded.
+ *  - buildAffiliateCommissionCandidatesForOrder: pure candidate builder (also used in tests).
  */
 
 import type { CommissionSourceType, AffiliateRateSource } from '../generated/client/index.js'
@@ -163,10 +164,14 @@ export async function resolveAffiliateRate(
 }
 
 /**
- * Build commission candidates for a PAID order.
+ * Build commission candidates for a paid or COD-fulfilled order.
  *
- * Rules enforced here:
- * - Order must have paymentStatus === 'PAID'.
+ * Eligibility:
+ * - STRIPE: paymentStatus === 'PAID'.
+ * - COD: stripePaymentIntentId is null + paymentStatus === 'UNPAID' +
+ *   status is DELIVERED or COMPLETED (cash collected at delivery).
+ *
+ * Other rules:
  * - CUSTOMER_PURCHASE: buyer must be attributed to an active affiliate that is NOT
  *   the buyer themselves (self-referral skip).
  * - STORE_REVENUE: store must be attributed to an active affiliate that is NOT
@@ -174,8 +179,7 @@ export async function resolveAffiliateRate(
  *   the buyer's (same-affiliate no double-dip rule).
  * - Cap applied via applyDualCommissionCap.
  *
- * Returns an empty array when no commissions should be created (unpaid, no attribution,
- * all self-referrals, etc.).
+ * Returns an empty array when the order is not eligible or has no attribution.
  */
 export async function buildAffiliateCommissionCandidatesForOrder(
   orderId: string,
@@ -187,12 +191,22 @@ export async function buildAffiliateCommissionCandidatesForOrder(
       id: true,
       userId: true,
       storeId: true,
+      status: true,
       paymentStatus: true,
+      stripePaymentIntentId: true,
       serviceFeeAmount: true,
       referredByAffiliateId: true,
     },
   })
-  if (!order || order.paymentStatus !== 'PAID') return []
+  if (!order) return []
+
+  const isStripePaid = order.paymentStatus === 'PAID'
+  const isCodFulfilled =
+    order.stripePaymentIntentId == null &&
+    order.paymentStatus === 'UNPAID' &&
+    (order.status === 'DELIVERED' || order.status === 'COMPLETED')
+
+  if (!isStripePaid && !isCodFulfilled) return []
 
   const store = await db.store.findUnique({
     where: { id: order.storeId },
@@ -335,4 +349,18 @@ export async function upsertCommissionCandidate(
       serviceFeeBase: legacyServiceFeeBase,
     },
   })
+}
+
+/**
+ * Build and persist V2 commission candidates for a paid/COD-fulfilled order.
+ * Errors are swallowed so a commission failure never breaks the caller's response.
+ * Idempotent: safe to call multiple times for the same order.
+ */
+export async function runAffiliateCommissions(orderId: string): Promise<void> {
+  try {
+    const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId)
+    await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
+  } catch (err) {
+    console.error('[Commission] runAffiliateCommissions failed for order', orderId, err)
+  }
 }

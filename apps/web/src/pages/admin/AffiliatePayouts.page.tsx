@@ -64,6 +64,7 @@ export default function AdminAffiliatePayoutsPage() {
     },
   })
 
+  // PATCH /status is used only for PENDING → PROCESSING (bookkeeping transition, no money movement).
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const res = await fetch(`${apiBase}/api/payouts/${id}/status`, {
@@ -75,7 +76,28 @@ export default function AdminAffiliatePayoutsPage() {
       return res.json()
     },
     onSuccess: () => {
-      toast.success('Payout status updated')
+      toast.success('Payout marked as processing')
+      queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  // POST /mark-paid triggers the actual transfer (Stripe or records manual payment).
+  const markPaidMutation = useMutation({
+    mutationFn: async ({ id, paymentReference }: { id: string; paymentReference?: string }) => {
+      const res = await fetch(`${apiBase}/api/payouts/${id}/mark-paid`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ paymentReference }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? 'Failed to mark payout as paid')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success('Payout marked as paid')
       queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
     },
     onError: (e: Error) => toast.error(e.message),
@@ -171,15 +193,15 @@ export default function AdminAffiliatePayoutsPage() {
                           variant="primary"
                           onClick={async () => {
                             const ok = await confirm({
-                              title: 'Mark payout as complete?',
-                              description: `Confirm the ${p.method.replace('_', ' ')} payout of ${fmt(p.amount)} for ${p.affiliate.user.name ?? p.affiliate.user.email} has been sent.`,
-                              confirmLabel: 'Mark Complete',
+                              title: 'Mark payout as paid?',
+                              description: `This will trigger the ${p.method.replace(/_/g, ' ')} transfer of ${fmt(p.amount)} to ${p.affiliate.user.name ?? p.affiliate.user.email}. For Stripe payouts the transfer fires automatically.`,
+                              confirmLabel: 'Mark Paid',
                             })
-                            if (ok) statusMutation.mutate({ id: p.id, status: 'COMPLETED' })
+                            if (ok) markPaidMutation.mutate({ id: p.id })
                           }}
-                          disabled={statusMutation.isPending}
+                          disabled={markPaidMutation.isPending}
                         >
-                          Mark Complete
+                          Mark Paid
                         </Button>
                       )}
                     </td>

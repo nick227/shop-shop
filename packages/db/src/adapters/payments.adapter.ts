@@ -175,6 +175,37 @@ export const createRefund = async (
 // Transfer Operations (for marketplace payouts)
 // ========================================
 
+export interface CreateAffiliateTransferParams {
+  /** Amount in integer cents to transfer. */
+  amountCents: number
+  /** Stripe Connect account ID of the affiliate (acct_xxx). */
+  destinationAccountId: string
+  /** AffiliatePayout.id — used in metadata and as idempotency key basis. */
+  payoutId: string
+  /** Full idempotency key for the Stripe request. */
+  idempotencyKey: string
+}
+
+/**
+ * Transfer from the platform's available Stripe balance to an affiliate's
+ * Stripe Connect account. No source_transaction needed — draws from platform balance.
+ */
+export const createAffiliateTransfer = async (
+  params: CreateAffiliateTransferParams
+): Promise<{ transferId: string }> => {
+  const stripe = getStripe()
+  const transfer = await stripe.transfers.create(
+    {
+      amount: params.amountCents,
+      currency: 'usd',
+      destination: params.destinationAccountId,
+      metadata: { payoutId: params.payoutId },
+    },
+    { idempotencyKey: params.idempotencyKey }
+  )
+  return { transferId: transfer.id }
+}
+
 export const createTransfer = async (
   params: CreateTransferParams
 ): Promise<CreateTransferResult> => {
@@ -207,7 +238,7 @@ export const createConnectAccount = async (
   params: CreateConnectAccountParams
 ): Promise<CreateConnectAccountResult> => {
   const stripe = getStripe()
-  
+
   const account = await stripe.accounts.create({
     type: 'express',
     country: params.country || 'US',
@@ -222,6 +253,26 @@ export const createConnectAccount = async (
   return {
     accountId: account.id,
   }
+}
+
+/**
+ * Create a Stripe Express account for an affiliate who only needs to receive
+ * transfers (no card_payments capability required).
+ */
+export const createAffiliateConnectAccount = async (params: {
+  email: string
+  country?: string
+}): Promise<{ accountId: string }> => {
+  const stripe = getStripe()
+  const account = await stripe.accounts.create({
+    type: 'express',
+    country: params.country ?? 'US',
+    email: params.email,
+    capabilities: {
+      transfers: { requested: true },
+    },
+  })
+  return { accountId: account.id }
 }
 
 export const createAccountLink = async (

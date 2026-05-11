@@ -27,8 +27,8 @@ export default function BecomeAffiliatePage() {
     setSubmitting(true)
     try {
       await api.signup({ bio, website, paypalEmail })
-      toast.success('You are now an affiliate!')
-      navigate('/affiliate/dashboard')
+      toast.success("Application submitted! We'll review it shortly.")
+      navigate('/affiliate/pending')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to submit application')
     } finally {

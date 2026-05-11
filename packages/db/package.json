@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "prisma": {
-    "seed": "node --import tsx prisma/seed.ts",
-    "river-initial": "node --import ./src/cli/river-initial-generation.ts"
+    "seed": "node --import tsx prisma/seed.ts"
   },
   "main": "./dist/db/src/index.js",
   "types": "./dist/db/src/index.d.ts",
@@ -57,6 +56,7 @@
     "seed:reference": "node --import tsx prisma/seed-reference-data.ts",
     "backfill:affiliate": "node --import tsx prisma/backfill-affiliate-phase2.ts",
     "ingest:river": "node --import tsx src/cli/river-ingest-run.ts",
+    "river-initial": "node --import tsx src/cli/river-initial-generation.ts",
     "import-zips": "node --import tsx import-us-zips.ts",
     "build": "pnpm exec tsc -p tsconfig.json && node scripts/sync-generated-to-dist.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",

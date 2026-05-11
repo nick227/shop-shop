@@ -115,6 +115,7 @@ export interface MediaItem {
   type: 'youtube' | 'image' | 'video' | 'link'
   url: string
   thumbnail?: string
+  thumbnailUrl?: string
   title?: string
   provider?: string
   width?: number

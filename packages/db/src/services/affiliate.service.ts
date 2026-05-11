@@ -12,6 +12,13 @@ import {
   buildAffiliateCommissionCandidatesForOrder,
   upsertCommissionCandidate,
 } from './affiliate-commission.service.js'
+import {
+  createAffiliateTransfer,
+  createAffiliateConnectAccount,
+  createAccountLink,
+  createExpressLoginLink,
+  retrieveAccount,
+} from '../adapters/payments.adapter.js'
 
 export interface CreateAffiliateInput {
   userId: string
@@ -146,24 +153,28 @@ export async function updateAffiliateStatus(
 }
 
 export async function getAffiliateStats(affiliateId: string) {
-  const [affiliate, totalCommissions, paidCommissions, pendingCommissions, referredStores] =
+  const [affiliate, totalCommissions, paidCommissions, unpaidCommissions, referredStores] =
     await Promise.all([
       prisma.affiliate.findUnique({
         where: { id: affiliateId },
+        select: { commissionRate: true, customerRateBpsOverride: true, storeRateBpsOverride: true },
       }),
+      // Total excludes REVERSED so reversed commissions don't inflate the number
       prisma.commission.aggregate({
-        where: { affiliateId },
-        _sum: { amount: true },
+        where: { affiliateId, status: { not: 'REVERSED' } },
+        _sum: { amount: true, amountCents: true },
         _count: true,
       }),
       prisma.commission.aggregate({
         where: { affiliateId, status: 'PAID' },
-        _sum: { amount: true },
+        _sum: { amount: true, amountCents: true },
         _count: true,
       }),
+      // PENDING = created but not yet approved; APPROVED = committed to next payout batch
+      // Both are "unpaid" from the affiliate's perspective
       prisma.commission.aggregate({
-        where: { affiliateId, status: 'PENDING' },
-        _sum: { amount: true },
+        where: { affiliateId, status: { in: ['PENDING', 'APPROVED'] } },
+        _sum: { amount: true, amountCents: true },
         _count: true,
       }),
       prisma.store.count({
@@ -171,12 +182,19 @@ export async function getAffiliateStats(affiliateId: string) {
       }),
     ])
 
+  const toAmount = (decimal: any, cents: any) =>
+    cents != null ? cents / 100 : Number(decimal || 0)
+
   return {
     affiliate,
+    // Top-level commissionRate for quick display (decimal form, e.g. 0.05 = 5%)
+    commissionRate: affiliate?.commissionRate ?? null,
     stats: {
-      totalEarnings: totalCommissions._sum.amount || 0,
-      paidEarnings: paidCommissions._sum.amount || 0,
-      pendingEarnings: pendingCommissions._sum.amount || 0,
+      totalEarnings: toAmount(totalCommissions._sum.amount, totalCommissions._sum.amountCents),
+      paidEarnings: toAmount(paidCommissions._sum.amount, paidCommissions._sum.amountCents),
+      // "pendingEarnings" kept for backwards compat; now correctly includes APPROVED
+      pendingEarnings: toAmount(unpaidCommissions._sum.amount, unpaidCommissions._sum.amountCents),
+      unpaidEarnings: toAmount(unpaidCommissions._sum.amount, unpaidCommissions._sum.amountCents),
       totalCommissions: totalCommissions._count,
       referredStores,
     },
@@ -247,6 +265,27 @@ export async function processPayout(input: ProcessPayoutInput): Promise<Affiliat
   if (!affiliate) throw new Error('Affiliate not found')
   if (affiliate.status !== 'ACTIVE') {
     throw new Error(`Cannot create payout: affiliate status is ${affiliate.status}`)
+  }
+
+  // PayPal is not automated — no server-side transfer logic exists yet.
+  if (input.method === 'PAYPAL') {
+    throw new Error(
+      'PayPal payouts are not automated. Use MANUAL or STRIPE_TRANSFER instead.',
+    )
+  }
+
+  // Validate provider readiness before creating the payout record so we never
+  // create a PENDING payout that markPayoutAsPaid will immediately fail.
+  if (
+    input.method === 'STRIPE_TRANSFER' &&
+    (affiliate.payoutProvider !== 'STRIPE_CONNECT' ||
+      !affiliate.payoutProviderAccountId ||
+      affiliate.payoutProviderStatus !== 'ACTIVE')
+  ) {
+    throw new Error(
+      'Affiliate is not ready for Stripe payouts. ' +
+      'Ensure the affiliate has connected their Stripe account and onboarding is complete.'
+    )
   }
 
   return prisma.$transaction(async (tx) => {
@@ -484,6 +523,44 @@ export async function markPayoutAsPaid(
   adminUserId: string,
   paymentReference?: string,
 ): Promise<AffiliatePayout> {
+  // Load payout + affiliate provider config in one query.
+  const payout = await prisma.affiliatePayout.findUniqueOrThrow({
+    where: { id: payoutId },
+    include: {
+      affiliate: {
+        select: { payoutProvider: true, payoutProviderAccountId: true },
+      },
+    },
+  })
+
+  // Fire a Stripe transfer when the payout is configured for Stripe Connect and
+  // no external reference was already supplied by the admin (manual override).
+  if (
+    !paymentReference &&
+    payout.method === 'STRIPE_TRANSFER' &&
+    payout.affiliate.payoutProvider === 'STRIPE_CONNECT' &&
+    payout.affiliate.payoutProviderAccountId
+  ) {
+    const amountCents = Math.round(Number(payout.amount) * 100)
+    if (amountCents <= 0) {
+      throw new Error('Cannot issue Stripe transfer: payout amount is $0.00')
+    }
+    try {
+      const { transferId } = await createAffiliateTransfer({
+        amountCents,
+        destinationAccountId: payout.affiliate.payoutProviderAccountId,
+        payoutId,
+        idempotencyKey: `affiliate-payout-${payoutId}`,
+      })
+      paymentReference = transferId
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'Stripe transfer failed'
+      // Release commissions back to APPROVED so a retry payout can recapture them.
+      await updatePayoutStatus(payoutId, 'FAILED', undefined, reason, adminUserId)
+      throw new Error(`Stripe transfer failed: ${reason}`)
+    }
+  }
+
   return updatePayoutStatus(payoutId, 'COMPLETED', paymentReference, undefined, adminUserId)
 }
 
@@ -655,4 +732,105 @@ export async function getReferredOrders(affiliateId: string) {
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
+}
+
+// ========================================
+// Stripe Connect Onboarding
+// ========================================
+
+/**
+ * Start or resume Stripe Connect Express onboarding for an affiliate.
+ * - Creates a new Express account if the affiliate has none yet.
+ * - Generates a fresh account link every time (links expire after a few minutes).
+ * Returns the Stripe-hosted onboarding URL.
+ */
+export async function initiateAffiliatePayoutConnect(
+  affiliateId: string,
+  returnUrl: string,
+  refreshUrl: string,
+): Promise<{ url: string; accountId: string }> {
+  const affiliate = await prisma.affiliate.findUnique({
+    where: { id: affiliateId },
+    select: {
+      id: true,
+      payoutProvider: true,
+      payoutProviderAccountId: true,
+      payoutProviderStatus: true,
+      user: { select: { email: true } },
+    },
+  })
+
+  if (!affiliate) throw new Error('Affiliate not found')
+
+  let accountId = affiliate.payoutProviderAccountId
+
+  if (!accountId) {
+    const result = await createAffiliateConnectAccount({ email: affiliate.user.email })
+    accountId = result.accountId
+
+    await prisma.affiliate.update({
+      where: { id: affiliateId },
+      data: {
+        payoutProvider: 'STRIPE_CONNECT',
+        payoutProviderAccountId: accountId,
+        payoutProviderStatus: 'PENDING',
+      },
+    })
+  }
+
+  const { url } = await createAccountLink({ accountId, returnUrl, refreshUrl })
+  return { url, accountId }
+}
+
+/**
+ * Generate a Stripe Express dashboard login link for an already-active affiliate Connect account.
+ * Use this for affiliates whose `payoutsEnabled === true`; use `initiateAffiliatePayoutConnect`
+ * for affiliates who are still completing onboarding.
+ */
+export async function createAffiliateStripeLoginLink(
+  affiliateId: string,
+): Promise<{ url: string }> {
+  const affiliate = await prisma.affiliate.findUnique({
+    where: { id: affiliateId },
+    select: { payoutProviderAccountId: true, payoutProvider: true, payoutProviderStatus: true },
+  })
+
+  if (!affiliate?.payoutProviderAccountId || affiliate.payoutProvider !== 'STRIPE_CONNECT') {
+    throw new Error('Affiliate does not have a connected Stripe account')
+  }
+
+  return createExpressLoginLink(affiliate.payoutProviderAccountId)
+}
+
+/**
+ * Sync the affiliate's Stripe Connect account status from Stripe.
+ * Called by the webhook handler when Stripe fires account.updated,
+ * and can also be called on-demand (e.g. user returns from onboarding).
+ */
+export async function syncAffiliatePayoutAccountStatus(affiliateId: string): Promise<{
+  payoutProviderStatus: string
+  payoutsEnabled: boolean
+  detailsSubmitted: boolean
+}> {
+  const affiliate = await prisma.affiliate.findUnique({
+    where: { id: affiliateId },
+    select: { payoutProviderAccountId: true, payoutProvider: true },
+  })
+
+  if (!affiliate?.payoutProviderAccountId || affiliate.payoutProvider !== 'STRIPE_CONNECT') {
+    return { payoutProviderStatus: 'NOT_SET', payoutsEnabled: false, detailsSubmitted: false }
+  }
+
+  const account = await retrieveAccount(affiliate.payoutProviderAccountId)
+  const payoutsEnabled = account.payouts_enabled ?? false
+  const detailsSubmitted = account.details_submitted ?? false
+
+  const newStatus = payoutsEnabled ? 'ACTIVE' : detailsSubmitted ? 'PENDING' : 'NOT_SET'
+
+  await prisma.affiliate.update({
+    where: { id: affiliateId },
+    data: { payoutProviderStatus: newStatus as any },
+  })
+
+  return { payoutProviderStatus: newStatus, payoutsEnabled, detailsSubmitted }
 }

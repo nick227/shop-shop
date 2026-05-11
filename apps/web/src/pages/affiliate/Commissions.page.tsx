@@ -18,6 +18,41 @@ function formatDate(s: string | undefined | null): string {
   return new Date(s).toLocaleDateString()
 }
 
+/** Prefer integer-cent fields (Phase 1+); fall back to legacy Decimal fields. */
+function resolveAmount(c: any): number {
+  return c.amountCents != null ? c.amountCents / 100 : Number(c.amount ?? 0)
+}
+
+function resolveRatePct(c: any): string {
+  if (c.rateBps != null) return (c.rateBps / 100).toFixed(0) + '%'
+  if (c.rate != null) return (Number(c.rate) * 100).toFixed(0) + '%'
+  return '-'
+}
+
+function resolveServiceFee(c: any): string {
+  if (c.commissionBaseCents != null) return formatCurrency(c.commissionBaseCents / 100)
+  if (c.serviceFeeBase != null) return formatCurrency(Number(c.serviceFeeBase))
+  return '-'
+}
+
+function sourceLabel(sourceType: string | null | undefined): string {
+  switch (sourceType) {
+    case 'CUSTOMER_PURCHASE': return 'Customer referral'
+    case 'STORE_REVENUE': return 'Store referral'
+    case 'MANUAL': return 'Manual'
+    default: return ''
+  }
+}
+
+function rateSourceLabel(rateSource: string | null | undefined): string {
+  switch (rateSource) {
+    case 'USER_OVERRIDE': return 'custom rate'
+    case 'PAYOUT_GROUP': return 'group rate'
+    case 'PLATFORM_DEFAULT': return 'default rate'
+    default: return ''
+  }
+}
+
 const statusColor: Record<
   string,
   'default' | 'warning' | 'success' | 'destructive' | 'outline' | 'secondary'
@@ -32,12 +67,19 @@ export default function AffiliateCommissionsPage() {
   const api = useAffiliateApi()
   const [status, setStatus] = useState<string>('')
 
+  // Fetch all when using the composite "awaiting-payout" filter; otherwise use the single status.
+  const apiStatus = status === 'AWAITING_PAYOUT' ? undefined : (status || undefined)
+
   const query = useQuery({
-    queryKey: ['affiliate-commissions', status],
-    queryFn: () => api.getMyCommissions(status ? { status } : undefined),
+    queryKey: ['affiliate-commissions', apiStatus],
+    queryFn: () => api.getMyCommissions(apiStatus ? { status: apiStatus } : undefined),
+    refetchInterval: 30_000,
   })
 
-  const commissions = (query.data?.commissions ?? [])
+  const allCommissions = query.data?.commissions ?? []
+  const commissions = status === 'AWAITING_PAYOUT'
+    ? allCommissions.filter((c: any) => c.status === 'PENDING' || c.status === 'APPROVED')
+    : allCommissions
 
   return (
     <PageShell
@@ -56,6 +98,7 @@ export default function AffiliateCommissionsPage() {
           className="h-9 rounded-md border border-border bg-background px-3 text-sm"
         >
           <option value="">All</option>
+          <option value="AWAITING_PAYOUT">Awaiting Payout</option>
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
           <option value="PAID">Paid</option>
@@ -75,29 +118,59 @@ export default function AffiliateCommissionsPage() {
         />
       ) : (
         <div className="space-y-2">
-          {commissions.map((c, i) => (
-            <Card key={(c.id as string) ?? i}>
-              <CardContent className="flex items-center justify-between gap-4 p-4">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={statusColor[(c.status as string) ?? ''] ?? 'outline'}>
-                      {c.status as string}
-                    </Badge>
-                    <span className="text-sm font-medium">{formatCurrency(c.amount)}</span>
+          {commissions.map((c, i) => {
+            const amount = resolveAmount(c)
+            const ratePct = resolveRatePct(c)
+            const serviceFee = resolveServiceFee(c)
+            const src = sourceLabel(c.sourceType as string)
+            const rateSrc = rateSourceLabel(c.rateSource as string)
+
+            return (
+              <Card key={(c.id as string) ?? i}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left: amount + source */}
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={statusColor[(c.status as string) ?? ''] ?? 'outline'}>
+                          {c.status as string}
+                        </Badge>
+                        <span className="text-base font-semibold">{formatCurrency(amount)}</span>
+                        {src && (
+                          <span className="text-xs text-muted-foreground">{src}</span>
+                        )}
+                      </div>
+
+                      {/* Rate + service fee breakdown */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                        <span>
+                          Rate: <span className="font-medium text-foreground">{ratePct}</span>
+                          {rateSrc && <span className="ml-1 opacity-60">({rateSrc})</span>}
+                        </span>
+                        <span>
+                          Service fee: <span className="font-medium text-foreground">{serviceFee}</span>
+                        </span>
+                        <span>
+                          Order: <span className="font-mono">{(c.orderId as string)?.slice(0, 8).toUpperCase()}</span>
+                        </span>
+                        <span>{formatDate(c.createdAt as string)}</span>
+                      </div>
+                    </div>
+
+                    {/* Right: paid date */}
+                    <div className="shrink-0 text-right text-xs text-muted-foreground">
+                      {c.paidAt
+                        ? <span>Paid {formatDate(c.paidAt as string)}</span>
+                        : c.approvedAt
+                          ? <span>Approved {formatDate(c.approvedAt as string)}</span>
+                          : null
+                      }
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Rate: {c.rate ? `${(Number(c.rate) * 100).toFixed(0)}%` : '-'}
-                    {' · '}Order: {(c.orderId as string)?.slice(0, 8).toUpperCase()}
-                    {' · '}
-                    {formatDate(c.createdAt as string)}
-                  </div>
-                </div>
-                <div className="text-right text-xs text-muted-foreground">
-                  {c.paidAt ? `Paid ${formatDate(c.paidAt as string)}` : ''}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       ))}
     </PageShell>

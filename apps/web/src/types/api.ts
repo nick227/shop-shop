@@ -120,6 +120,8 @@ export interface components {
             order: components["schemas"]["CheckoutOrderSummary"];
             /** Stripe PI id, or null for COD */
             paymentId: string | null;
+            /** True when an affiliate referral attribution was applied to this order. */
+            referralCodeApplied?: boolean;
         };
         CheckoutOrderSummary: {
             /** Format: uuid */

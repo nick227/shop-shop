@@ -47,6 +47,7 @@ function MediaCell({
         src={item.url ?? ''}
         alt={`Post ${postId} media ${index + 1}`}
         className="absolute inset-0 w-full h-full object-cover"
+        fallbackSeed={item.url}
       />
     </div>
   )
@@ -55,9 +56,12 @@ function MediaCell({
 export const PostMedia = ({ media, postId }: PostMediaProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
-  if (media.length === 0) return null
+  // Handle both media array and string formats
+  const normalizedMedia = Array.isArray(media) ? media : media ? [{ url: media, type: 'image' as const }] : []
 
-  const safeIndex = Math.min(selectedIndex, media.length - 1)
+  if (normalizedMedia.length === 0) return null
+
+  const safeIndex = Math.min(selectedIndex, normalizedMedia.length - 1)
 
   const handleThumbnailClick = (index: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -65,8 +69,8 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
   }
 
   // Single item
-  if (media.length === 1) {
-    const item = media[0]
+  if (normalizedMedia.length === 1) {
+    const item = normalizedMedia[0]
     return (
       <div className="mb-3">
         <MediaCell
@@ -80,10 +84,10 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
   }
 
   // Two items side by side
-  if (media.length === 2) {
+  if (normalizedMedia.length === 2) {
     return (
       <div className="mb-3 grid grid-cols-2 gap-1">
-        {media.map((item, index) => (
+        {normalizedMedia.map((item, index) => (
           <MediaCell
             key={item.url ?? `${item.type}-${index}`}
             item={item}
@@ -100,13 +104,13 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
   return (
     <div className="mb-3 space-y-1.5">
       <MediaCell
-        item={media[safeIndex]}
+        item={normalizedMedia[safeIndex]}
         index={safeIndex}
         postId={postId}
         className="aspect-video"
       />
       <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-        {media.map((item, index) => (
+        {normalizedMedia.map((item, index) => (
           <button
             key={item.url ?? `${item.type}-${index}`}
             type="button"
@@ -118,9 +122,9 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
                 : 'opacity-60 hover:opacity-100',
             ].join(' ')}
           >
-            {item.thumbnail ? (
+            {item.thumbnailUrl || item.thumbnail ? (
               <img
-                src={item.thumbnail}
+                src={item.thumbnailUrl || item.thumbnail}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />

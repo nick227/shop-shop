@@ -159,10 +159,10 @@ export default function CheckoutPage() {
       const orderId = completion.order.id
       toast.success('Order placed successfully!')
       finalizeSuccessfulCheckout()
-      // Attribution has now been snapshotted onto the user/order; clear the local cache
-      // so a single referral link only attributes once.
-      localStorage.removeItem('affiliateReferralCode')
-      localStorage.removeItem('affiliateReferralId')
+      if (completion.referralCodeApplied) {
+        localStorage.removeItem('affiliateReferralCode')
+        localStorage.removeItem('affiliateReferralId')
+      }
       navigate('/orders/' + orderId)
     } catch (error: unknown) {
       const appError = await handleApiError(error)

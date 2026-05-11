@@ -56,11 +56,13 @@ export default function AffiliatePayoutsPage() {
   const query = useQuery({
     queryKey: ['affiliate-payouts', status],
     queryFn: () => api.getMyPayouts(status ? { status } : undefined),
+    refetchInterval: 30_000,
   })
 
   const statsQuery = useQuery({
     queryKey: ['affiliate-payout-stats'],
     queryFn: () => api.getMyStats(),
+    refetchInterval: 30_000,
   })
 
   const payouts = (query.data?.payouts ?? [])
@@ -160,7 +162,7 @@ export default function AffiliatePayoutsPage() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Banknote className="h-4 w-4 text-blue-600" />
-              <span className="text-2xl font-bold">{stats?.commissionRate ? `${(Number(stats.commissionRate) * 100).toFixed(1)}%` : 'N/A'}</span>
+              <span className="text-2xl font-bold">{stats?.commissionRate != null ? `${(Number(stats.commissionRate) * 100).toFixed(1)}%` : 'N/A'}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Current rate

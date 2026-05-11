@@ -264,10 +264,10 @@ export default function PayoutManagementPage() {
                       <SelectValue placeholder="Select method" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PAYPAL">PayPal</SelectItem>
+                      <SelectItem value="STRIPE_TRANSFER">Stripe Transfer</SelectItem>
+                      <SelectItem value="MANUAL">Manual</SelectItem>
                       <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
                       <SelectItem value="CHECK">Check</SelectItem>
-                      <SelectItem value="STRIPE_TRANSFER">Stripe Transfer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

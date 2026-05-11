@@ -20,26 +20,31 @@ export default function AffiliateDashboardPage() {
   const profileQuery = useQuery({
     queryKey: ['affiliate-profile'],
     queryFn: () => api.getMyProfile(),
+    refetchInterval: 30_000,
   })
 
   const statsQuery = useQuery({
     queryKey: ['affiliate-stats'],
     queryFn: () => api.getMyStats(),
+    refetchInterval: 30_000,
   })
 
   const referredUsersQuery = useQuery({
     queryKey: ['affiliate-referred-users'],
     queryFn: () => api.getMyReferredUsers(),
+    refetchInterval: 60_000,
   })
 
   const referredStoresQuery = useQuery({
     queryKey: ['affiliate-referred-stores'],
     queryFn: () => api.getMyReferredStores(),
+    refetchInterval: 60_000,
   })
 
   const referredOrdersQuery = useQuery({
     queryKey: ['affiliate-referred-orders'],
     queryFn: () => api.getMyReferredOrders(),
+    refetchInterval: 30_000,
   })
 
   const profile = profileQuery.data?.affiliate
@@ -137,15 +142,15 @@ export default function AffiliateDashboardPage() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold">{formatCurrency(statsData?.totalEarnings)}</div>
-            <div className="text-xs text-muted-foreground">Total Earnings</div>
+            <div className="text-xs text-muted-foreground">Total Earned</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-amber-600">
-              {formatCurrency(statsData?.pendingEarnings)}
+              {formatCurrency(statsData?.unpaidEarnings ?? statsData?.pendingEarnings)}
             </div>
-            <div className="text-xs text-muted-foreground">Pending</div>
+            <div className="text-xs text-muted-foreground">Awaiting Payout</div>
           </CardContent>
         </Card>
         <Card>
@@ -153,7 +158,7 @@ export default function AffiliateDashboardPage() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(statsData?.paidEarnings)}
             </div>
-            <div className="text-xs text-muted-foreground">Paid</div>
+            <div className="text-xs text-muted-foreground">Paid Out</div>
           </CardContent>
         </Card>
         <Card>

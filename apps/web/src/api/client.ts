@@ -754,7 +754,7 @@ class ApiClient {
         searchParams.append('allowEmptyMedia', params.allowEmptyMedia.toString())
       }
 
-      return this.requestContract(`/river/feed?${searchParams.toString()}` as CheckoutPath)
+      return this.requestContract(`/river/posts?${searchParams.toString()}` as CheckoutPath)
     },
 
     likePost: async (postId: string): Promise<void> => {

@@ -47,14 +47,13 @@ export function AffiliateStatusGate() {
       })
       .catch((error: unknown) => {
         if (cancelled) return
-        if (error instanceof AffiliateApiError && error.httpStatus === 404) {
+        if (error instanceof AffiliateApiError && (error.httpStatus === 404 || error.httpStatus === 403)) {
           navigate('/affiliate/unavailable', { replace: true })
           return
         }
-        if (error instanceof AffiliateApiError && error.httpStatus === 403) {
-          navigate('/affiliate/unavailable', { replace: true })
-          return
-        }
+        // Non-auth errors: stop the spinner and let the user retry
+        console.error('AffiliateStatusGate: unexpected error', error)
+        setReady(true)
       })
 
     return () => {

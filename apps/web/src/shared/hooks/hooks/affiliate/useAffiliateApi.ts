@@ -72,8 +72,27 @@ export function useAffiliateApi() {
     getMyReferredStores: () => 
       request<{ stores: Record<string, unknown>[] }>('/api/affiliates/me/referred-stores'),
 
-    getMyReferredOrders: () => 
+    getMyReferredOrders: () =>
       request<{ orders: Record<string, unknown>[] }>('/api/affiliates/me/referred-orders'),
+
+    // Stripe Connect payout account
+    initiateStripeOnboarding: (body?: { returnUrl?: string; refreshUrl?: string }) =>
+      request<{ url: string; accountId: string }>('/api/affiliates/me/payout-account/stripe', {
+        method: 'POST',
+        body: JSON.stringify(body ?? {}),
+      }),
+
+    getPayoutAccountStatus: () =>
+      request<{
+        payoutProvider: string | null
+        payoutProviderAccountId: string | null
+        payoutProviderStatus: string
+        payoutsEnabled: boolean
+        detailsSubmitted: boolean
+      }>('/api/affiliates/me/payout-account'),
+
+    getStripeLoginLink: () =>
+      request<{ url: string }>('/api/affiliates/me/payout-account/stripe/login'),
 
     // Admin methods
     getAffiliateReferralEvents: (affiliateId: string, params?: { eventType?: string; limit?: number; offset?: number }) => {

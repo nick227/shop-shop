@@ -198,7 +198,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
 
   // Phase 1 — atomic: order row + cart state change together.
   // Cart is SUBMITTED only when the order record exists, preventing double-orders.
-  const order = await prisma.$transaction(async (tx) => {
+  const { order, attributionApplied } = await prisma.$transaction(async (tx) => {
     let customerReferral = await tx.user.findUnique({
       where: { id: checkoutUserId },
       select: {
@@ -292,7 +292,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       data: { status: 'SUBMITTED' },
     })
 
-    return created
+    return { order: created, attributionApplied: attribution != null }
   })
 
   if (rail === 'COD') {
@@ -308,6 +308,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         createdAt: order.createdAt.toISOString(),
       },
       paymentId: null,
+      referralCodeApplied: attributionApplied,
     }
   }
 
@@ -346,6 +347,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       createdAt: order.createdAt.toISOString(),
     },
     paymentId: paymentResult.paymentIntentId,
+    referralCodeApplied: attributionApplied,
   }
 }
 

@@ -14,10 +14,7 @@ import {
 } from '../adapters/payments.adapter.js'
 import { orderService } from './order.service.js'
 import { publishOrderCreated } from './order-realtime.publisher.js'
-import {
-  buildAffiliateCommissionCandidatesForOrder,
-  upsertCommissionCandidate,
-} from './affiliate-commission.service.js'
+import { runAffiliateCommissions } from './affiliate-commission.service.js'
 
 function parseTeamPermissionsJson(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -386,18 +383,6 @@ export const refundOrder = async (input: RefundOrderInput) => {
 // Webhook Processing
 // ========================================
 
-/**
- * Build and persist V2 commission candidates for a paid order.
- * Errors are swallowed so a commission failure never breaks the payment webhook response.
- */
-async function runV2Commissions(orderId: string): Promise<void> {
-  try {
-    const candidates = await buildAffiliateCommissionCandidatesForOrder(orderId)
-    await Promise.all(candidates.map((c) => upsertCommissionCandidate(c)))
-  } catch (err) {
-    console.error('[Payment] Commission creation failed for order', orderId, err)
-  }
-}
 
 export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
   const order = await prisma.order.findUnique({
@@ -418,7 +403,7 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
 
   // Already fully processed — idempotent path: ensure commissions exist and bail.
   if (order.paymentStatus === 'PAID' && order.status === 'PLACED') {
-    await runV2Commissions(order.id)
+    await runAffiliateCommissions(order.id)
     return
   }
 
@@ -452,7 +437,7 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
   }
 
   // Create affiliate commissions for this paid order (idempotent upsert).
-  await runV2Commissions(order.id)
+  await runAffiliateCommissions(order.id)
 }
 
 export const handlePaymentIntentFailed = async (paymentIntentId: string) => {
@@ -493,16 +478,47 @@ export const handlePaymentIntentFailed = async (paymentIntentId: string) => {
 }
 
 export const handleAccountUpdated = async (accountId: string) => {
+  // Check store first
   const store = await prisma.store.findFirst({
     where: { stripeAccountId: accountId },
   })
 
-  if (!store) {
-    console.warn(`Store not found for account: ${accountId}`)
+  if (store) {
+    const account = await stripeRetrieveAccount(accountId)
+    await persistStripeAccountSnapshotOnStore(store.id, account)
     return
   }
 
-  const account = await stripeRetrieveAccount(accountId)
-  await persistStripeAccountSnapshotOnStore(store.id, account)
+  // Check affiliate Connect account
+  const affiliate = await prisma.affiliate.findFirst({
+    where: { payoutProviderAccountId: accountId },
+    select: { id: true },
+  })
+
+  if (affiliate) {
+    const account = await stripeRetrieveAccount(accountId)
+    const payoutsEnabled = account.payouts_enabled ?? false
+    const detailsSubmitted = account.details_submitted ?? false
+    const newStatus = payoutsEnabled ? 'ACTIVE' : detailsSubmitted ? 'PENDING' : 'NOT_SET'
+
+    await prisma.affiliate.update({
+      where: { id: affiliate.id },
+      data: { payoutProviderStatus: newStatus as any },
+    })
+
+    console.log(
+      JSON.stringify({
+        event: 'affiliate.connect.account_updated',
+        affiliateId: affiliate.id,
+        accountId,
+        payoutsEnabled,
+        newStatus,
+        timestamp: new Date().toISOString(),
+      }),
+    )
+    return
+  }
+
+  console.warn(`No store or affiliate found for Stripe account: ${accountId}`)
 }
 

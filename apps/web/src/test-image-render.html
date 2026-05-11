@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Rendering Test</title>
+</head>
+<body>
+    <h1>Image Rendering Test</h1>
+    <p>Testing if the placeholder images from the API are accessible:</p>
+    
+    <h2>Direct Image Test:</h2>
+    <img src="https://placehold.co/1080x1080/533483/ffffff?text=North+Post" alt="Test Image 1" style="width: 200px; height: 200px; object-fit: cover;">
+    
+    <h2>Thumbnail Test:</h2>
+    <img src="https://placehold.co/300x300/533483/ffffff?text=Thumb" alt="Test Thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+    
+    <h2>API Response Structure Test:</h2>
+    <div id="api-test"></div>
+    
+    <script>
+        // Test API call to verify the data structure
+        fetch('http://localhost:3005/api/v1/river/feed?limit=1&allowEmptyMedia=false')
+            .then(response => response.json())
+            .then(data => {
+                const post = data.items[0];
+                const media = post.media[0];
+                
+                document.getElementById('api-test').innerHTML = `
+                    <h3>Post Data:</h3>
+                    <p><strong>ID:</strong> ${post.id}</p>
+                    <p><strong>Store:</strong> ${post.actor.displayName}</p>
+                    <p><strong>Content:</strong> ${post.body}</p>
+                    
+                    <h3>Media Data:</h3>
+                    <p><strong>Type:</strong> ${media.type}</p>
+                    <p><strong>URL:</strong> ${media.url}</p>
+                    <p><strong>Thumbnail URL:</strong> ${media.thumbnailUrl}</p>
+                    <p><strong>Width:</strong> ${media.width}</p>
+                    <p><strong>Height:</strong> ${media.height}</p>
+                    
+                    <h3>Rendered Image from API:</h3>
+                    <img src="${media.url}" alt="API Image" style="width: 200px; height: 200px; object-fit: cover;">
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('api-test').innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 
 import { prisma } from '../client.js'
 import type { Order, OrderStatus, OrderEvent } from '../generated/client/index.js'
-import { calculateCommissionForOrder } from './affiliate.service.js'
+import { runAffiliateCommissions } from './affiliate-commission.service.js'
 import {
   configureOrderRealtimePublisher,
   publishOrderCreated,
@@ -81,25 +81,23 @@ export class OrderService {
       }),
     )
 
+    // Commission fires on the first transition to DELIVERED or COMPLETED.
+    // The commission builder handles both Stripe-paid and COD-fulfilled eligibility.
+    const isDeliveryMilestone =
+      (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') &&
+      oldStatus !== 'DELIVERED' &&
+      oldStatus !== 'COMPLETED'
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: {
-        status: newStatus,
-      },
+      data: { status: newStatus },
     })
 
     // Audit trail
     await this.createOrderEvent({ orderId, status: newStatus, note })
 
-    // Commission calculation fires on delivery (DELIVERED) or legacy COMPLETED
-    if (
-      (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') &&
-      oldStatus !== 'DELIVERED' &&
-      oldStatus !== 'COMPLETED'
-    ) {
-      await calculateCommissionForOrder(orderId).catch((err) => {
-        console.error('Failed to calculate commission for order:', orderId, err)
-      })
+    if (isDeliveryMilestone) {
+      await runAffiliateCommissions(orderId)
     }
 
     await publishOrderStatusChanged(orderId, oldStatus, newStatus, { note, changedBy })

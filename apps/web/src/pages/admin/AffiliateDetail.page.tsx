@@ -45,7 +45,7 @@ export default function AdminAffiliateDetailPage() {
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
-  const [payoutMethod, setPayoutMethod] = useState('PAYPAL')
+  const [payoutMethod, setPayoutMethod] = useState('STRIPE_TRANSFER')
 
   const profileQuery = useQuery({
     queryKey: ['admin-affiliate', affiliateId],
@@ -229,10 +229,10 @@ export default function AdminAffiliateDetailPage() {
                 onChange={(e) => setPayoutMethod(e.target.value)}
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
               >
-                <option value="PAYPAL">PayPal</option>
+                <option value="STRIPE_TRANSFER">Stripe Transfer</option>
+                <option value="MANUAL">Manual</option>
                 <option value="BANK_TRANSFER">Bank Transfer</option>
                 <option value="CHECK">Check</option>
-                <option value="STRIPE_TRANSFER">Stripe Transfer</option>
               </select>
               <Button
                 variant="primary"

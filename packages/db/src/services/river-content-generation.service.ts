@@ -469,11 +469,9 @@ const inferItemFeatureType = (item: Item, store: Store): string => {
 
 const getCurrentSeason = (): string => {
   const month = new Date().getMonth()
-  const seasons = {
-    [11, 0, 1]: 'winter',
-    [2, 3, 4]: 'spring',
-    [5, 6, 7]: 'summer',
-    [8, 9, 10]: 'fall'
-  }
-  return seasons[month as keyof typeof seasons] || 'all-season'
+  if (month === 11 || month === 0 || month === 1) return 'winter'
+  if (month >= 2 && month <= 4) return 'spring'
+  if (month >= 5 && month <= 7) return 'summer'
+  if (month >= 8 && month <= 10) return 'fall'
+  return 'all-season'
 }

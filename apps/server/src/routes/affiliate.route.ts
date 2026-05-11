@@ -23,6 +23,9 @@ import {
   getReferredUsers,
   getReferredStores,
   getReferredOrders,
+  initiateAffiliatePayoutConnect,
+  syncAffiliatePayoutAccountStatus,
+  createAffiliateStripeLoginLink,
   prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac.js'
@@ -366,6 +369,69 @@ export const affiliateRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       throw error
     }
+  })
+
+  // POST /affiliates/me/payout-account/stripe - Start or resume Stripe Connect onboarding
+  app.post('/affiliates/me/payout-account/stripe', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    const userId = req.user?.id
+    if (!userId) return VendorErrors.unauthorized(reply)
+
+    const affiliate = await getAffiliateByUserId(userId)
+    if (!affiliate) return reply.code(404).send({ error: 'Affiliate profile not found' })
+
+    const body = req.body as { returnUrl?: string; refreshUrl?: string }
+    const origin = req.headers.origin ?? req.headers.referer ?? 'http://localhost:3000'
+    const returnUrl = body.returnUrl ?? `${origin}/affiliate/settings?stripe=success`
+    const refreshUrl = body.refreshUrl ?? `${origin}/affiliate/settings?stripe=refresh`
+
+    try {
+      const { url, accountId } = await initiateAffiliatePayoutConnect(
+        affiliate.id,
+        returnUrl,
+        refreshUrl,
+      )
+      return reply.code(200).send({ url, accountId })
+    } catch (err: any) {
+      return reply.code(500).send({ error: err.message ?? 'Failed to start Stripe onboarding' })
+    }
+  })
+
+  // GET /affiliates/me/payout-account/stripe/login - Express dashboard login link
+  app.get('/affiliates/me/payout-account/stripe/login', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    const userId = req.user?.id
+    if (!userId) return VendorErrors.unauthorized(reply)
+
+    const affiliate = await getAffiliateByUserId(userId)
+    if (!affiliate) return reply.code(404).send({ error: 'Affiliate profile not found' })
+
+    try {
+      const { url } = await createAffiliateStripeLoginLink(affiliate.id)
+      return reply.code(200).send({ url })
+    } catch (err: any) {
+      return reply.code(400).send({ error: err.message ?? 'Failed to generate Stripe login link' })
+    }
+  })
+
+  // GET /affiliates/me/payout-account - Return current payout account status
+  app.get('/affiliates/me/payout-account', {
+    preHandler: [requireRole(['USER', 'VENDOR', 'AFFILIATE', 'ADMIN']), requireActiveAffiliate],
+  }, async (req, reply) => {
+    const userId = req.user?.id
+    if (!userId) return VendorErrors.unauthorized(reply)
+
+    const affiliate = await getAffiliateByUserId(userId)
+    if (!affiliate) return reply.code(404).send({ error: 'Affiliate profile not found' })
+
+    const status = await syncAffiliatePayoutAccountStatus(affiliate.id)
+    return reply.code(200).send({
+      payoutProvider: affiliate.payoutProvider ?? null,
+      payoutProviderAccountId: affiliate.payoutProviderAccountId ?? null,
+      ...status,
+    })
   })
 
   // GET /affiliates/:id - Get full affiliate detail by ID (admin only)

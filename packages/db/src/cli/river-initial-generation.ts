@@ -51,7 +51,7 @@ async function main() {
 // CLI Entry Point
 // ========================================
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     console.error('CLI execution failed:', error)
     process.exit(1)
