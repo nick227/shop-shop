@@ -4,6 +4,11 @@ import { PostSource, Prisma } from '../generated/client/index.js'
 import type { RiverFeedItem } from '@packages/schemas'
 import { RIVER_AUTO_PRODUCT_COOLDOWN_HOURS } from './river.constants.js'
 import { queryRiverFeedIdsStandard, queryRiverFeedIdsWithGeo } from './river-feed-query.js'
+import {
+  diversifyRiverFeedCandidates,
+  riverFeedDiversityStats,
+  type RiverFeedDiversifyCandidate,
+} from './river-feed-diversify.js'
 
 // ========================================
 // River Service
@@ -151,19 +156,76 @@ function mapMediaJsonToRiver(raw: unknown): RiverFeedItem['media'] {
   return out
 }
 
-type PostRowForRiver = Pick<
-  Post,
-  | 'id'
-  | 'createdAt'
-  | 'priority'
-  | 'layout'
-  | 'source'
-  | 'storeId'
-  | 'content'
-  | 'mediaUrls'
-  | 'linkedItemId'
-> & {
-  store: PostWithDetails['store']
+const RIVER_FEED_STORE_INCLUDE = {
+  select: {
+    name: true,
+    media: {
+      take: 1,
+      orderBy: { sortIndex: 'asc' as const },
+      select: { url: true },
+    },
+  },
+} as const
+
+type PostRowForRiver = Prisma.PostGetPayload<{
+  include: { store: typeof RIVER_FEED_STORE_INCLUDE }
+}>
+
+/** Fetch more SQL rows than one page, then diversify and slice (feed-read path). */
+const FEED_DIVERSITY_CANDIDATE_MULTIPLIER = 3
+const FEED_DIVERSITY_MAX_CANDIDATES = 120
+
+async function buildRiverFeedResponseFromCandidateIds(
+  candidateIdsOrdered: string[],
+  userLimit: number,
+): Promise<{ items: RiverFeedItem[]; nextCursor: string | null }> {
+  if (candidateIdsOrdered.length === 0) {
+    return { items: [], nextCursor: null }
+  }
+
+  const unordered = await prisma.post.findMany({
+    where: { id: { in: candidateIdsOrdered } },
+    include: { store: RIVER_FEED_STORE_INCLUDE },
+  })
+  const byId = new Map(unordered.map((p) => [p.id, p]))
+  const postsOrdered = candidateIdsOrdered
+    .map((id) => byId.get(id))
+    .filter((p): p is PostRowForRiver => p !== undefined)
+
+  const diversifyInput: RiverFeedDiversifyCandidate[] = postsOrdered.map((p) => ({
+    id: p.id,
+    storeId: p.storeId,
+    contentType: p.contentType ?? null,
+    packageId: p.packageId ?? null,
+    duplicateKey: p.duplicateKey ?? null,
+  }))
+
+  const diversified = diversifyRiverFeedCandidates(diversifyInput)
+  if (process.env.RIVER_FEED_DIVERSITY_DEBUG === 'true') {
+    const window = diversified.slice(0, userLimit + 1)
+    console.debug('[river-feed] diversity stats', riverFeedDiversityStats(window))
+  }
+
+  const diversifiedPosts = diversified
+    .map((c) => byId.get(c.id))
+    .filter((p): p is PostRowForRiver => p !== undefined)
+
+  const hasMore = diversifiedPosts.length > userLimit
+  const pageRows = hasMore ? diversifiedPosts.slice(0, userLimit) : diversifiedPosts
+  const last = pageRows[pageRows.length - 1]
+  const nextCursor =
+    hasMore && last
+      ? encodeRiverCursor({
+          priority: last.priority,
+          createdAt: last.createdAt,
+          id: last.id,
+        })
+      : null
+
+  return {
+    items: pageRows.map(mapPostToRiverFeedItem),
+    nextCursor,
+  }
 }
 
 function mapPostToRiverFeedItem(post: PostRowForRiver): RiverFeedItem {
@@ -382,96 +444,31 @@ export const getRiverFeed = async (options: {
 }): Promise<{ items: RiverFeedItem[]; nextCursor: string | null }> => {
   const { cursor, limit, storeId, near } = options
   const requireMedia = options.requireMedia ?? true
-  const take = limit + 1
   const decoded = cursor ? parseRiverCursor(cursor) : undefined
 
-  const storeInclude = {
-    select: {
-      name: true,
-      media: {
-        take: 1,
-        orderBy: { sortIndex: 'asc' as const },
-        select: { url: true },
-      },
-    },
-  }
+  const candidateTake = Math.min(
+    (limit + 1) * FEED_DIVERSITY_CANDIDATE_MULTIPLIER,
+    FEED_DIVERSITY_MAX_CANDIDATES,
+  )
 
   if (near !== undefined) {
     const ids = await queryRiverFeedIdsWithGeo(prisma, {
-      take,
+      take: candidateTake,
       cursor: decoded,
       storeId,
       near,
       requireMedia,
     })
-    if (ids.length === 0) {
-      return { items: [], nextCursor: null }
-    }
-
-    const unordered = await prisma.post.findMany({
-      where: { id: { in: ids } },
-      include: { store: storeInclude },
-    })
-
-    const byId = new Map(unordered.map((p) => [p.id, p]))
-    const posts = ids
-      .map((id) => byId.get(id))
-      .filter((p): p is NonNullable<typeof p> => p !== undefined) as PostRowForRiver[]
-
-    const hasMore = posts.length > limit
-    const pageRows = hasMore ? posts.slice(0, limit) : posts
-    const last = pageRows[pageRows.length - 1]
-    const nextCursor =
-      hasMore && last
-        ? encodeRiverCursor({
-            priority: last.priority,
-            createdAt: last.createdAt,
-            id: last.id,
-          })
-        : null
-
-    return {
-      items: pageRows.map(mapPostToRiverFeedItem),
-      nextCursor,
-    }
+    return buildRiverFeedResponseFromCandidateIds(ids, limit)
   }
 
   const ids = await queryRiverFeedIdsStandard(prisma, {
-    take,
+    take: candidateTake,
     cursor: decoded,
     storeId,
     requireMedia,
   })
-  if (ids.length === 0) {
-    return { items: [], nextCursor: null }
-  }
-
-  const unordered = await prisma.post.findMany({
-    where: { id: { in: ids } },
-    include: { store: storeInclude },
-  })
-
-  const byId = new Map(unordered.map((p) => [p.id, p]))
-  const posts = ids
-    .map((id) => byId.get(id))
-    .filter((p): p is NonNullable<typeof p> => p !== undefined) as PostRowForRiver[]
-
-  const hasMore = posts.length > limit
-  const pageRows = hasMore ? posts.slice(0, limit) : posts
-  const last = pageRows[pageRows.length - 1]
-  const nextCursor =
-    hasMore && last
-      ? encodeRiverCursor({
-          priority: last.priority,
-          createdAt: last.createdAt,
-          id: last.id,
-        })
-      : null
-
-  return {
-    items: pageRows.map(mapPostToRiverFeedItem),
-    nextCursor,
-  }
+  return buildRiverFeedResponseFromCandidateIds(ids, limit)
 }
 
 export const deletePost = async (id: string): Promise<Post> => {
