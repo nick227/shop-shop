@@ -174,12 +174,12 @@ export const realtimeRoutes = async (app: FastifyInstance) => {
     })
 
     // Handle errors
-    socket.on('error', (error) => {
+    socket.on('error', (error: Error) => {
       app.log.error({ err: error, clientId }, '[Realtime] Client error')
     })
 
     // Cleanup on close
-    socket.on('close', (code, reason) => {
+    socket.on('close', (code: number, reason: Buffer) => {
       app.log.info(`[Realtime] Client ${clientId} disconnected (code: ${code}, reason: ${reason.toString()})`)
       
       // Cleanup

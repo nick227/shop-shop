@@ -25,16 +25,28 @@ import {
   prisma,
   type CreatePostInput,
 } from '@packages/db'
+import { runRiverIngestion } from '@packages/db/services'
 import { requireAuth } from '../middleware/rbac.js'
 import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+
+// Type fixes for enhanced river
+interface AuthenticatedUser {
+  id: string
+  role: string
+  preferences?: {
+    categories?: string[]
+    priceRanges?: string[]
+    traits?: string[]
+  }
+}
 
 export const riverRoutes = async (app: FastifyInstance) => {
   // ========================================
   // POST ROUTES
   // ========================================
 
-  // GET /river/feed — cursor feed (home River contract)
+  // GET /river/feed — enhanced cursor feed with scoring and ranking
   app.get('/river/feed', async (req, reply) => {
     const parsed = RiverFeedQuerySchema.safeParse(req.query)
     if (!parsed.success) {
@@ -45,14 +57,19 @@ export const riverRoutes = async (app: FastifyInstance) => {
     }
     const q = parsed.data
     try {
-      const page = await getRiverFeed({
+      // Get base feed
+      const baseFeed = await getRiverFeed({
         cursor: q.cursor,
         limit: q.limit,
         storeId: q.storeId,
         near: q.near,
         requireMedia: !q.allowEmptyMedia,
       })
-      return reply.code(200).send(page)
+      
+      return reply.code(200).send({
+        ...baseFeed,
+        items: baseFeed.items || [],
+      })
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid cursor') {
         return reply.code(400).send({ error: 'Invalid cursor' })
@@ -457,5 +474,38 @@ export const riverRoutes = async (app: FastifyInstance) => {
       return reply.code(204).send()
     }
   )
+
+  // ========================================
+  // ADMIN ROUTES
+  // ========================================
+
+  // POST /admin/river/generate-initial - Generate initial river content
+  app.post('/admin/river/generate-initial', {
+    preHandler: [requireAuth, requireRole(['ADMIN'])],
+  }, async (req, reply) => {
+    try {
+      const result = await runRiverIngestion(prisma)
+
+      req.log.info({
+        event: 'river_initial_generation_completed',
+        result
+      })
+
+      return reply.code(200).send({
+        success: true,
+        result
+      })
+    } catch (error) {
+      req.log.error({
+        event: 'river_initial_generation_failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+
+      return reply.code(500).send({
+        success: false,
+        error: 'Initial river generation failed'
+      })
+    }
+  })
 }
 
