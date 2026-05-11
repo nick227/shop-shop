@@ -23,20 +23,20 @@
     }
   },
   "scripts": {
-    "gen:dtos": "tsx scripts/generate-dtos-from-prisma.ts",
-    "gen:dtos:all": "tsx scripts/generate-all-dtos.ts",
-    "gen:openapi": "tsx src/openapi.ts",
+    "gen:dtos": "pnpm exec tsx scripts/generate-dtos-from-prisma.ts",
+    "gen:dtos:all": "pnpm exec tsx scripts/generate-all-dtos.ts",
+    "gen:openapi": "pnpm exec tsx src/openapi.ts",
     "gen:all": "pnpm gen:dtos:all && pnpm gen:openapi",
-    "consolidate:types": "tsx scripts/consolidate-types.ts",
-    "consolidate:parallel": "tsx scripts/consolidate-types-parallel.ts",
-    "gen:parallel": "tsx scripts/parallel-generator.ts",
-    "validate:comprehensive": "tsx scripts/comprehensive-validation.ts",
-    "validate:quick": "tsx scripts/quick-validation.ts",
-    "validate:simple": "tsx scripts/simple-validation.ts",
-    "smoke-test": "tsx scripts/smoke-test.ts",
-    "api-smoke-test": "tsx scripts/api-smoke-test.ts",
-    "simple-smoke-test": "tsx scripts/simple-smoke-test.ts",
-    "working-smoke-test": "tsx scripts/working-smoke-test.ts",
+    "consolidate:types": "pnpm exec tsx scripts/consolidate-types.ts",
+    "consolidate:parallel": "pnpm exec tsx scripts/consolidate-types-parallel.ts",
+    "gen:parallel": "pnpm exec tsx scripts/parallel-generator.ts",
+    "validate:comprehensive": "pnpm exec tsx scripts/comprehensive-validation.ts",
+    "validate:quick": "pnpm exec tsx scripts/quick-validation.ts",
+    "validate:simple": "pnpm exec tsx scripts/simple-validation.ts",
+    "smoke-test": "pnpm exec tsx scripts/smoke-test.ts",
+    "api-smoke-test": "pnpm exec tsx scripts/api-smoke-test.ts",
+    "simple-smoke-test": "pnpm exec tsx scripts/simple-smoke-test.ts",
+    "working-smoke-test": "pnpm exec tsx scripts/working-smoke-test.ts",
     "build": "pnpm exec tsc && pnpm gen:all",
     "typecheck": "echo 'Schemas imports server code - typecheck at app level'",
     "lint": "eslint src",
@@ -45,6 +45,8 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.2.0",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.2",
     "zod": "^3.23.8"
   },
@@ -52,8 +54,6 @@
     "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-    "dotenv": "^17.2.3",
-    "eslint": "^9.38.0",
-    "tsx": "^4.19.1"
+    "eslint": "^9.38.0"
   }
 }
