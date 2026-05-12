@@ -383,7 +383,7 @@ export const items = {
       setQueryParam(searchParams, 'storeId', params?.storeId)
 
       const query = searchParams.toString()
-      const url = `${getApiBaseUrl()}/items${query ? `?${query}` : ''}`
+      const url = `${getApiBaseUrl()}/api/items${query ? `?${query}` : ''}`
       if (import.meta.env.MODE === 'development') {
         console.log('[API] -> GET ' + url)
       }
@@ -430,7 +430,7 @@ export const items = {
       setQueryParam(searchParams, 'storeId', params?.storeId)
 
       const query = searchParams.toString()
-      const url = `${getApiBaseUrl()}/items${query ? `?${query}` : ''}`
+      const url = `${getApiBaseUrl()}/api/items${query ? `?${query}` : ''}`
       if (import.meta.env.MODE === 'development') {
         console.log('[API] -> GET ' + url)
       }
@@ -657,7 +657,7 @@ export const stores = {
       setQueryParam(searchParams, 'order', params?.order)
 
       const query = searchParams.toString()
-      const path = `/stores${query ? `?${query}` : ''}`
+      const path = `/api/stores${query ? `?${query}` : ''}`
       const fullUrl = `${getApiBaseUrl()}${path}`
       if (import.meta.env.MODE === 'development') {
         console.log('[API] -> GET ' + fullUrl)
@@ -717,7 +717,7 @@ export const stores = {
       setQueryParam(searchParams, 'order', params?.order)
 
       const query = searchParams.toString()
-      const path = `/stores${query ? `?${query}` : ''}`
+      const path = `/api/stores${query ? `?${query}` : ''}`
       const fullUrl = `${getApiBaseUrl()}${path}`
       if (import.meta.env.MODE === 'development') {
         console.log('[API] -> GET ' + fullUrl)

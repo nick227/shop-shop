@@ -643,7 +643,7 @@ class ApiClient {
         this.apiInstances = {}
       }
       this.config = new Configuration({
-        basePath: this.baseUrl.replace(/\/$/, ''), // Generated SDK paths are server-rooted: /stores, /orders, /payments, etc.
+        basePath: `${this.baseUrl.replace(/\/$/, '')}/api`, // Auto-registered resources (stores, items, orders, etc.) live under /api.
         headers: effectiveToken
           ? {
               Authorization: 'Bearer ' + effectiveToken + '',
@@ -668,7 +668,7 @@ class ApiClient {
         this.apiInstances = {}
       }
       this.authConfig = new Configuration({
-        basePath: `${this.baseUrl.replace(/\/$/, '')}/auth/v1`, // Auth endpoints use /auth/v1 prefix
+        basePath: `${this.baseUrl.replace(/\/$/, '')}/api/auth/v1`, // Auth endpoints live under /api/auth/v1
         headers: effectiveToken
           ? {
               Authorization: 'Bearer ' + effectiveToken + '',

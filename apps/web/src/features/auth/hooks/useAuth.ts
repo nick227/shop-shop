@@ -53,7 +53,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
       setIsLoggingIn(true)
       setLoginError(null)
       try {
-        const response = await fetch(`${authBaseUrl}/auth/v1/login`, {
+        const response = await fetch(`${authBaseUrl}/api/auth/v1/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
           ...(storedAffiliateReferralCode ? { affiliateReferralCode: storedAffiliateReferralCode } : {}),
         }
 
-        const response = await fetch(`${authBaseUrl}/auth/v1/signup`, {
+        const response = await fetch(`${authBaseUrl}/api/auth/v1/signup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
