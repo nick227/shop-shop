@@ -165,7 +165,7 @@ export function StoreHeaderFull({
               className="flex flex-row gap-1 justify-end items-center p-2 w-full text-xs font-medium bg-background text-primary hover:underline"
             >Open in Maps <ExternalLink className="w-3 h-3" aria-hidden />
             </a>
-            <StorePreviewMap onClick={() => openNavigateNewTab(directionsUrl(lat, lng))} latitude={lat} longitude={lng} height="300px" zoom={15} />
+            <StorePreviewMap latitude={lat} longitude={lng} height="300px" zoom={15} />
           </div>
         </section>
       ) : undefined}
