@@ -1,16 +1,15 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { RiverHeader } from '@/features/river/components/RiverHeader/RiverHeader'
 import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
 import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
 import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
 import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
-import { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
+import type { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button } from '@shared/ui/primitives'
-import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-react'
+import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react'
 import { apiClient } from '@api/client'
 import { useHeroStore } from '@shared/hooks/hooks/store'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
@@ -19,22 +18,22 @@ import { cn } from '@shared/lib/cn'
 
 function RiverTileCard({ post }: { post: RiverPost }) {
   return (
-    <article className="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
+    <article className="overflow-hidden relative bg-gray-100 rounded-xl aspect-square">
       {post.media?.[0]?.url ? (
         <img
           src={post.media[0].url}
           alt={post.media[0].title || post.storeName || 'River post'}
-          className="h-full w-full object-cover"
+          className="object-cover w-full h-full"
           loading="lazy"
         />
       ) : (
-        <div className="flex h-full items-center justify-center text-xs text-gray-400">
+        <div className="flex justify-center items-center h-full text-xs text-gray-400">
           No media
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 bg-black/50 p-2">
-        <p className="truncate text-xs font-medium text-white">
+      <div className="absolute inset-x-0 bottom-0 p-2 bg-black/50">
+        <p className="text-xs font-medium text-white truncate">
           {post.storeName ?? 'Store'}
         </p>
       </div>
@@ -128,23 +127,19 @@ function EnhancedPostCard({
     onLike?.()
   }, [onLike])
 
-  const handleSave = useCallback(() => {
-    onSave?.()
-  }, [onSave])
-
   return (
-    <article className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300">
+    <article className="overflow-hidden bg-white rounded-2xl border border-gray-100 transition-all duration-300 group hover:shadow-lg">
       {/* Store Header */}
-      <div className="flex items-center justify-between p-4 pb-2">
-        <div className="flex items-center gap-3">
+      <div className="flex justify-between items-center p-4 pb-2">
+        <div className="flex gap-3 items-center">
           <div className="relative">
             <img
               src={post.storeImage || '/api/placeholder/40/40'}
               alt={post.storeName ?? 'Store'}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
+              className="object-cover w-10 h-10 rounded-full ring-2 ring-gray-100"
             />
             {post.storeVerified && (
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="flex absolute -right-1 -bottom-1 justify-center items-center w-4 h-4 bg-blue-500 rounded-full">
                 <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
@@ -152,10 +147,10 @@ function EnhancedPostCard({
             )}
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
               <Link 
                 to={post.storeId ? getStoreRoute({ id: post.storeId, name: post.storeName ?? 'Store' }) : '#'}
-                className="font-semibold text-gray-900 text-sm hover:text-blue-600 transition-colors"
+                className="text-sm font-semibold text-gray-900 transition-colors hover:text-blue-600"
               >
                 {post.storeName ?? 'Store'}
               </Link>
@@ -174,14 +169,14 @@ function EnhancedPostCard({
       </div>
 
       {/* Media Content */}
-      <div className="relative aspect-square bg-gray-50">
+      <div className="relative bg-gray-50 aspect-square">
         {post.media && post.media.length > 0 ? (
           <div className="relative w-full h-full">
             {post.media.length === 1 ? (
               <img
                 src={post.media[0].url}
                 alt={post.media[0].title || 'Post image'}
-                className="w-full h-full object-cover"
+                className="object-cover w-full h-full"
                 loading="lazy"
               />
             ) : (
@@ -189,11 +184,11 @@ function EnhancedPostCard({
                 <img
                   src={post.media[0].url}
                   alt={post.media[0].title || 'Post image'}
-                  className="w-full h-full object-cover"
+                  className="object-cover w-full h-full"
                   loading="lazy"
                 />
                 {post.media.length > 1 && (
-                  <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium">
+                  <div className="absolute top-4 right-4 px-2 py-1 text-xs font-medium text-white rounded-full bg-black/60">
                     +{post.media.length - 1}
                   </div>
                 )}
@@ -201,9 +196,9 @@ function EnhancedPostCard({
             )}
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
+          <div className="flex justify-center items-center w-full h-full text-gray-400">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-2xl mx-auto mb-2" />
+              <div className="mx-auto mb-2 w-16 h-16 bg-gray-200 rounded-2xl" />
               <p className="text-sm">No media</p>
             </div>
           </div>
@@ -213,12 +208,12 @@ function EnhancedPostCard({
       {/* Content */}
       <div className="p-4">
         {post.content && (
-          <p className="text-gray-900 text-sm mb-3 line-clamp-2">{post.content}</p>
+          <p className="mb-3 text-sm text-gray-900 line-clamp-2">{post.content}</p>
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex gap-1 items-center">
             <button
               onClick={handleLike}
               className={`p-2 rounded-lg transition-all ${
@@ -231,27 +226,17 @@ function EnhancedPostCard({
             </button>
             <button
               onClick={() => onComment?.()}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-600 rounded-lg transition-colors hover:bg-gray-100"
             >
               <MessageCircle className="w-5 h-5" />
             </button>
             <button
               onClick={() => onShare?.()}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-600 rounded-lg transition-colors hover:bg-gray-100"
             >
               <Share2 className="w-5 h-5" />
             </button>
           </div>
-          <button
-            onClick={handleSave}
-            className={`p-2 rounded-lg transition-all ${
-              post.isSaved
-                ? 'text-blue-500 bg-blue-50 hover:bg-blue-100'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Bookmark className={`w-5 h-5 ${post.isSaved ? 'fill-current' : ''}`} />
-          </button>
         </div>
 
         {/* Engagement Stats */}
@@ -391,8 +376,8 @@ export default function RiverPage() {
     if (item.layout === 'featured') {
       return (
         <div key={`featured-${index}`} className="w-full">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Featured Post</h2>
+          <div className="p-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl">
+            <h2 className="mb-4 text-2xl font-bold text-gray-900">Featured Post</h2>
             {item.posts.map((post) => (
               <EnhancedPostCard
                 key={post.id}
@@ -423,9 +408,9 @@ export default function RiverPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to load river</h2>
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">Failed to load river</h2>
           <p className="text-gray-600">{error.message}</p>
         </div>
       </div>
@@ -442,12 +427,11 @@ export default function RiverPage() {
           onRequireLogin={actions.redirectToLogin}
         />
       ) : null}
-      <RiverHeader filters={filters} onFiltersChange={handleFiltersChange} />
       
-      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'max-w-5xl py-6 md:py-10')}>
+      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-6xl md:py-10')}>
         <div className="space-y-6">
           {/* Hero and Discovery sections - show once at top */}
-          <div className="w-full space-y-6">
+          <div className="space-y-6 w-full">
             <RiverHero store={heroStore} isLoading={heroLoading} />
             <RiverDiscovery />
           </div>
@@ -456,9 +440,9 @@ export default function RiverPage() {
         </div>
 
         {hasNextPage && (
-          <div className="text-center mt-12">
+          <div className="mt-12 text-center">
             <Button
-              onClick={() => fetchNextPage()}
+              onClick={() => void fetchNextPage()}
               disabled={isFetchingNextPage}
               isLoading={isFetchingNextPage}
               variant="outline"
@@ -469,19 +453,12 @@ export default function RiverPage() {
           </div>
         )}
 
-        {!hasNextPage && posts.length > 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">You've reached the end of the river</p>
-          </div>
-        )}
-
         {posts.length === 0 && !isLoading && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <div className="py-16 text-center">
+            <div className="flex justify-center items-center mx-auto mb-4 w-24 h-24 bg-gray-100 rounded-full">
               <Heart className="w-12 h-12 text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">No posts yet</h2>
-            <p className="text-gray-600">Be the first to share something amazing!</p>
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">No posts yet</h2>
           </div>
         )}
       </main>

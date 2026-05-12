@@ -38,17 +38,17 @@ function MediaCell({
 }) {
   if (item.type === 'youtube') {
     return (
-      <div className={`relative overflow-hidden rounded-lg bg-black ${className}`}>
+      <div className={`overflow-hidden relative bg-black rounded-lg ${className}`}>
         <YouTubeEmbed url={item.url ?? ''} />
       </div>
     )
   }
   return (
-    <div className={`relative overflow-hidden rounded-lg bg-muted ${className}`}>
+    <div className={`overflow-hidden relative rounded-lg bg-muted ${className}`}>
       <Image
         src={item.url ?? ''}
         alt={`Post ${postId} media ${index + 1}`}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="object-cover w-full h-full"
         fallbackSeed={item.url}
       />
     </div>
@@ -95,7 +95,7 @@ export const PostMedia = ({ media, postId, variant = 'default' }: PostMediaProps
   // Two items side by side
   if (normalizedMedia.length === 2) {
     return (
-      <div className={cn('mb-3 grid w-full gap-1', isStore ? 'grid-cols-2 gap-2 sm:gap-3' : 'grid-cols-2')}>
+      <div className={cn('grid gap-1 mb-3 w-full', isStore ? 'grid-cols-2 gap-2 sm:gap-3' : 'grid-cols-2')}>
         {normalizedMedia.map((item, index) => (
           <MediaCell
             key={item.url ?? `${item.type}-${index}`}
@@ -135,10 +135,10 @@ export const PostMedia = ({ media, postId, variant = 'default' }: PostMediaProps
               <img
                 src={item.thumbnailUrl || item.thumbnail}
                 alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="object-cover w-full h-full"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
+              <div className="flex justify-center items-center w-full h-full">
                 <svg className="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>

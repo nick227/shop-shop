@@ -59,7 +59,7 @@ export default function VendorStoreRiverPage() {
   const imageUrl = (store as { imageUrl?: string | null }).imageUrl ?? undefined
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-6">
+    <div className="mx-auto w-full">
       <div>
         <h1 className="text-2xl font-bold">River — {store.name}</h1>
         <p className="text-sm text-muted-foreground">
@@ -84,7 +84,7 @@ export default function VendorStoreRiverPage() {
               <p className="text-sm text-muted-foreground">No posts yet.</p>
             ) : (
               rows.map((p) => (
-                <li key={p.id} className="rounded-lg border border-border p-3 text-sm">
+                <li key={p.id} className="p-3 text-sm rounded-lg border border-border">
                   <p className="text-muted-foreground line-clamp-3">{p.content?.trim() || '(no text)'}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}

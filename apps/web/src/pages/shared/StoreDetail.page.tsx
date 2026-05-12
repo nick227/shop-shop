@@ -182,13 +182,6 @@ function KitchenContainer() {
         </p>
       ) : null}
 
-      {hasContent && acceptsOnlineCards === false ? (
-        <div className="px-4 py-3 text-sm rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100">
-          This store is not accepting online card payments yet (Stripe Connect setup may still be in progress). You can
-          still browse the menu — choose another payment option at checkout if available, or contact the store.
-        </div>
-      ) : null}
-
       {hasContent && menuSections.length > 0
         ? menuSections.map((section) => (
             <section key={section.label}>
@@ -208,22 +201,6 @@ function KitchenContainer() {
         className="w-full"
       >
         <section className="">
-          <div className="space-y-3 w-full">
-            <div className="flex flex-wrap gap-4 justify-between items-end">
-              <h2 id="store-river-heading" className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Kitchen updates
-              </h2>
-              <Link
-                to="/river"
-                className="text-base font-medium text-primary underline-offset-4 hover:underline shrink-0"
-              >
-                Shop River
-              </Link>
-            </div>
-            <p className="w-full text-base text-muted-foreground">
-              Posts from this kitchen appear here and in the public Shop River feed.
-            </p>
-          </div>
 
           {canComposeRiver ? (
             <PostComposer
@@ -262,7 +239,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-5xl" contentClassName="py-6 md:py-12">
+    <PageShell className="bg-background" containerClassName="max-w-6xl" contentClassName="py-6 md:py-12">
       <KitchenContainer />
     </PageShell>
   )

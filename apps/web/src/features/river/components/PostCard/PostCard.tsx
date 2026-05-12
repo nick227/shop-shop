@@ -24,7 +24,7 @@ function StoreAvatar({ src, name, large }: { src?: string; name: string; large?:
       <img
         src={src}
         alt={name}
-        className={cn('rounded-full object-cover flex-shrink-0 ring-1 ring-border', frame)}
+        className={cn('object-cover rounded-full ring-1 ring-border', frame)}
       />
     )
   }
@@ -36,7 +36,7 @@ function StoreAvatar({ src, name, large }: { src?: string; name: string; large?:
   return (
     <div
       className={cn(
-        'rounded-full flex-shrink-0 bg-muted flex items-center justify-center ring-1 ring-border',
+        'flex flex-shrink-0 justify-center items-center rounded-full ring-1 bg-muted ring-border',
         frame,
       )}
     >
@@ -70,12 +70,12 @@ export function PostCard({
       onClick={handleCardClick}
     >
       <div className={cn(isStore ? 'p-5 sm:p-6 md:p-8' : 'p-4 sm:p-5')}>
-        <header className={cn('flex items-center gap-3', isStore ? 'mb-4' : 'mb-3')}>
+        <header className={cn('flex gap-3 items-center', isStore ? 'mb-4' : 'mb-3')}>
           <StoreAvatar src={post.storeImage} name={storeName} large={isStore} />
-          <div className="min-w-0 flex-1">
+          <div className="flex-1 min-w-0">
             <p
               className={cn(
-                'font-semibold text-foreground truncate leading-tight',
+                'font-semibold leading-tight truncate text-foreground',
                 isStore ? 'text-base md:text-lg' : 'text-sm',
               )}
             >
@@ -93,7 +93,7 @@ export function PostCard({
         {post.content && (
           <p
             className={cn(
-              'text-body leading-relaxed whitespace-pre-wrap',
+              'leading-relaxed whitespace-pre-wrap text-body',
               isStore ? 'text-base md:text-[17px]' : 'text-sm',
             )}
           >

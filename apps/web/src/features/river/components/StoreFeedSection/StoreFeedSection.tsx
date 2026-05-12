@@ -132,16 +132,10 @@ export function StoreFeedSection({
       ) : undefined}
 
       {showFeedHeader ? (
-        <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap gap-2 justify-between items-end">
           <div>
             <h2 className="text-xl font-bold text-foreground">Feed</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Updates from {storeName} appear on Shop River too.
-            </p>
           </div>
-          <Link to="/river" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-            Shop River
-          </Link>
         </div>
       ) : undefined}
 
@@ -150,7 +144,7 @@ export function StoreFeedSection({
           No updates from this kitchen yet.
         </p>
       ) : (
-        <ul className={cn('m-0 list-none p-0 w-full', isStoreLayout ? 'space-y-5 md:space-y-6' : 'space-y-3')}>
+        <ul className={cn('p-0 m-0 w-full list-none', isStoreLayout ? 'space-y-5 md:space-y-6' : 'space-y-3')}>
           {posts.map((post: RiverPost) => (
             <li key={post.id} className="w-full">
               <PostCard
