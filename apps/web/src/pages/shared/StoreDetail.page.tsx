@@ -202,41 +202,44 @@ function KitchenContainer() {
           ))
         : null}
 
-      <section
+      <div
+        role="region"
         aria-labelledby="store-river-heading"
-        className="w-full space-y-8 border-t border-border pt-10 md:pt-12"
+        className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip border-t border-border bg-muted/15"
       >
-        <div className="w-full space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <h2 id="store-river-heading" className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-              Kitchen updates
-            </h2>
-            <Link
-              to="/river"
-              className="text-base font-medium text-primary underline-offset-4 hover:underline shrink-0"
-            >
-              Shop River
-            </Link>
+        <section className="mx-auto w-full space-y-8 px-4 py-10 md:px-6 md:py-12">
+          <div className="w-full space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <h2 id="store-river-heading" className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                Kitchen updates
+              </h2>
+              <Link
+                to="/river"
+                className="text-base font-medium text-primary underline-offset-4 hover:underline shrink-0"
+              >
+                Shop River
+              </Link>
+            </div>
+            <p className="text-base text-muted-foreground w-full">
+              Posts from this kitchen appear here and in the public Shop River feed.
+            </p>
           </div>
-          <p className="text-base text-muted-foreground w-full">
-            Posts from this kitchen appear here and in the public Shop River feed.
-          </p>
-        </div>
 
-        {canComposeRiver ? (
-          <PostComposer
-            variant="prominent"
-            storeId={store.id}
-            storeName={store.name}
-            storeImage={(store as { imageUrl?: string | null }).imageUrl ?? undefined}
-            onPost={handleRiverPost}
-          />
-        ) : undefined}
+          {canComposeRiver ? (
+            <PostComposer
+              variant="prominent"
+              storeId={store.id}
+              storeName={store.name}
+              storeImage={(store as { imageUrl?: string | null }).imageUrl ?? undefined}
+              onPost={handleRiverPost}
+            />
+          ) : undefined}
 
-        <StoreFeedSection storeId={store.id} storeName={store.name} showFeedHeader={false} layout="store" />
-      </section>
+          <StoreFeedSection storeId={store.id} storeName={store.name} showFeedHeader={false} layout="store" />
+        </section>
+      </div>
 
-      <aside className="sticky bottom-4 z-20 p-4 rounded-xl border shadow-lg backdrop-blur border-border bg-background/95 w-full max-w-none">
+      <aside className="sticky bottom-4 z-20 w-full rounded-xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur">
         <div className="flex gap-3 justify-between items-center">
           <div className="flex gap-2 items-center">
             <CartBadge count={cartCount} />
@@ -259,7 +262,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-none" contentClassName="py-8 md:py-8">
+    <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-8 md:py-8">
       <KitchenContainer />
     </PageShell>
   )
