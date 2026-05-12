@@ -12,6 +12,7 @@ import { Badge } from '@shared/ui/primitives'
 import { cn } from '@shared/lib/cn'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import type { StoreHeaderStore } from './storeHeaderTypes'
+import { StoreHeaderChips } from './StoreHeaderChips'
 import { StoreHeaderSocialRow } from './StoreHeaderSocialRow'
 
 function directionsUrl(lat: number | string, lng: number | string): string {
@@ -153,6 +154,8 @@ export function StoreHeaderFull({
             </div>
           ) : undefined}
         </dl>
+
+        <StoreHeaderChips store={store} />
 
         {socialEntries.length > 0 ? <StoreHeaderSocialRow entries={socialEntries} /> : undefined}
       </div>

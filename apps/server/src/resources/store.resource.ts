@@ -326,20 +326,29 @@ export const storeResource = defineResource({
       return buildStoreListFilters(filters as Record<string, unknown>)
     },
     afterRead: async (result) => {
-      // Include media assets for single store read
+      // Include media assets and public tags for single store read
       const store = result as {
         id: string
         stripeAccountId?: string | null
         stripeOnboarded?: boolean | null
         stripeChargesEnabled?: boolean | null
       }
-      const mediaAssets = await prisma.mediaAsset.findMany({
-        where: { 
-          storeId: store.id,
-          kind: 'IMAGE' 
-        },
-        orderBy: { sortIndex: 'asc' }
-      })
+      const [mediaAssets, storeTagRows] = await Promise.all([
+        prisma.mediaAsset.findMany({
+          where: {
+            storeId: store.id,
+            kind: 'IMAGE',
+          },
+          orderBy: { sortIndex: 'asc' },
+        }),
+        prisma.storeTag.findMany({
+          where: {
+            storeId: store.id,
+            tag: { isPublic: true },
+          },
+          select: { tag: { select: { slug: true, label: true, category: true } } },
+        }),
+      ])
       const acceptsOnlineCardPayments = Boolean(
         store.stripeAccountId &&
           store.stripeOnboarded &&
@@ -349,6 +358,7 @@ export const storeResource = defineResource({
         ...(result as Record<string, unknown>),
         mediaAssets,
         acceptsOnlineCardPayments,
+        tags: storeTagRows.map((row) => row.tag),
       }
     },
     afterList: async (result, context) => {

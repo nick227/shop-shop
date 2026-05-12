@@ -137,7 +137,29 @@ export const StoreResponseSchema = z.object({
   teamMembers: z.string(),
   invitations: z.string(),
   Promotion: z.string(),
-  FavoriteStore: z.string()
+  FavoriteStore: z.string(),
+  /** Enriched on read — see store.resource afterRead */
+  mediaAssets: z
+    .array(
+      z.object({
+        url: z.string(),
+        kind: z.string(),
+        sortIndex: z.number().nullable().optional(),
+      }),
+    )
+    .optional(),
+  tags: z
+    .array(
+      z.object({
+        slug: z.string(),
+        label: z.string(),
+        category: z.string(),
+      }),
+    )
+    .optional(),
+  storeType: z.string().nullable().optional(),
+  priceRange: z.string().nullable().optional(),
+  searchKeywords: z.union([z.string(), z.array(z.string())]).nullable().optional(),
 })
 
 export const StoreListResponseSchema = z.object({
