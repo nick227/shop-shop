@@ -25,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 export const tagsRoutes = async (app: FastifyInstance) => {
-  app.get('/api/tags', async (req, reply) => {
+  app.get('/tags', async (req, reply) => {
     const raw = req.query as Record<string, unknown>
     const targetFilter = typeof raw.target === 'string' ? raw.target.toUpperCase() : undefined
     const categoryFilter = typeof raw.category === 'string' ? raw.category.toUpperCase() : undefined

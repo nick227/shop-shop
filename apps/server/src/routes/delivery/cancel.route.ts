@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { cancelDeliveryJob } from '@packages/db'
 
 export const deliveryCancelRoutes = async (app: FastifyInstance) => {
-  app.post('/api/delivery-jobs/:id/cancel', {
+  app.post('/delivery-jobs/:id/cancel', {
     schema: {
       body: {
         type: 'object',

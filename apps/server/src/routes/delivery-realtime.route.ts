@@ -252,7 +252,7 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
   })
 
   // Vendor-controlled in-house delivery status updates
-  app.post('/api/delivery-jobs/:deliveryJobId/mark-out-for-delivery', { preHandler: authenticate }, async (req, reply) => {
+  app.post('/delivery-jobs/:deliveryJobId/mark-out-for-delivery', { preHandler: authenticate }, async (req, reply) => {
     try {
       const { deliveryJobId, status, providerStatus, providerPayload } = req.body as {
         deliveryJobId: string
@@ -371,7 +371,7 @@ export const deliveryRealtimeRoutes = async (app: FastifyInstance) => {
   })
 
   // Publish delivery location updates
-  app.post('/api/delivery/location-updated', { preHandler: authenticate }, async (req, reply) => {
+  app.post('/delivery/location-updated', { preHandler: authenticate }, async (req, reply) => {
     try {
       const { deliveryJobId, latitude, longitude, address, providerPayload } = req.body as {
         deliveryJobId: string

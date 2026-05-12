@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { prisma } from '@packages/db'
 
 export const deliveryStatusRoutes = async (app: FastifyInstance) => {
-  app.get('/api/delivery-jobs/:id', {
+  app.get('/delivery-jobs/:id', {
     schema: {
       params: {
         type: 'object',

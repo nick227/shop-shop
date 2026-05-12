@@ -23,7 +23,7 @@ function getLatestLocation(providerPayload: unknown): unknown {
 }
 
 export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
-  app.get('/api/delivery/tracking/:orderId', { preHandler: authenticate }, async (req, reply) => {
+  app.get('/delivery/tracking/:orderId', { preHandler: authenticate }, async (req, reply) => {
     try {
       const { orderId } = req.params as { orderId: string }
 
@@ -114,7 +114,7 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
   })
 
   // Admin-only delivery job viewer (for admin delivery event viewer)
-  app.get('/api/admin/delivery/jobs', { preHandler: authenticate }, async (req, reply) => {
+  app.get('/admin/delivery/jobs', { preHandler: authenticate }, async (req, reply) => {
     try {
       // Check if user is admin
       if (req.user?.role !== 'ADMIN') {
@@ -184,7 +184,7 @@ export const deliveryTrackingRoutes = async (app: FastifyInstance) => {
   })
 
   // Admin delivery events viewer
-  app.get('/api/admin/delivery/events', { preHandler: authenticate }, async (req, reply) => {
+  app.get('/admin/delivery/events', { preHandler: authenticate }, async (req, reply) => {
     try {
       // Check if user is admin
       if (req.user?.role !== 'ADMIN') {

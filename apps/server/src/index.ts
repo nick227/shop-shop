@@ -154,7 +154,7 @@ app.addHook('preHandler', optionalAuthenticate)
 app.get('/healthz', async () => ({ ok: true }))
 
 // Register routes
-await app.register(authRoutes, { prefix: '/auth/v1' })
+await app.register(authRoutes, { prefix: '/api/auth/v1' })
 await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
 await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
 await app.register(orderDispatchRoutes, { prefix: '/api/v1/orders' })

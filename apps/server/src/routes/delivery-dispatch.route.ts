@@ -17,7 +17,7 @@ const cancelRequestSchema = z.object({
 
 export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
   // Check if order can be dispatched
-  app.get('/api/delivery/can-dispatch/:orderId', { preHandler: authenticate }, async (req, reply) => {
+  app.get('/delivery/can-dispatch/:orderId', { preHandler: authenticate }, async (req, reply) => {
     try {
       const { orderId } = req.params as { orderId: string }
 
@@ -134,7 +134,7 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
   })
 
   // Dispatch DoorDash delivery
-  app.post('/api/delivery/dispatch', { preHandler: authenticate }, async (req, reply) => {
+  app.post('/delivery/dispatch', { preHandler: authenticate }, async (req, reply) => {
     try {
       const validatedData = dispatchRequestSchema.parse(req.body)
       const { orderId, storeId, dropoffLatitude, dropoffLongitude } = validatedData
@@ -280,7 +280,7 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
   })
 
   // Cancel DoorDash delivery
-  app.post('/api/delivery/cancel', { preHandler: authenticate }, async (req, reply) => {
+  app.post('/delivery/cancel', { preHandler: authenticate }, async (req, reply) => {
     try {
       const validatedData = cancelRequestSchema.parse(req.body)
       const { deliveryJobId } = validatedData
@@ -398,7 +398,7 @@ export const deliveryDispatchRoutes = async (app: FastifyInstance) => {
   })
 
   // Get delivery job status
-  app.get('/api/delivery/jobs/order/:orderId', { preHandler: authenticate }, async (req, reply) => {
+  app.get('/delivery/jobs/order/:orderId', { preHandler: authenticate }, async (req, reply) => {
     try {
       const { orderId } = req.params as { orderId: string }
 

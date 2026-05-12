@@ -13,7 +13,7 @@ const quoteRequestSchema = z.object({
 
 export const deliveryQuoteRoutes = async (app: FastifyInstance) => {
   // Get delivery quote (called during checkout)
-  app.post('/api/delivery/quote', async (req, reply) => {
+  app.post('/delivery/quote', async (req, reply) => {
     try {
       const validatedData = quoteRequestSchema.parse(req.body)
       const { orderId, storeId, provider, dropoffLatitude, dropoffLongitude } = validatedData
@@ -104,7 +104,7 @@ export const deliveryQuoteRoutes = async (app: FastifyInstance) => {
   })
 
   // Get multiple quotes for all available providers
-  app.post('/api/delivery/quotes', async (req, reply) => {
+  app.post('/delivery/quotes', async (req, reply) => {
     try {
       const validatedData = quoteRequestSchema.omit({ provider: true }).parse(req.body)
       const { orderId, storeId, dropoffLatitude, dropoffLongitude } = validatedData

@@ -196,7 +196,7 @@ async function handleItemAnalytics(request: FastifyRequest, reply: FastifyReply)
 }
 
 export async function itemAnalyticsRoutes(app: FastifyInstance) {
-  app.get('/api/items/analytics', {
+  app.get('/items/analytics', {
     preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
   }, async (req, reply) => {
     const { storeId } = QuerySchema.parse(req.query)
