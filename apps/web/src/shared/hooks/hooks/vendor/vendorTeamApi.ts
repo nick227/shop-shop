@@ -7,12 +7,11 @@ interface TeamMeStoreRow {
 }
 
 export function getVendorApiBase(): string {
-  return '/api/vendor'
+  return '/api'
 }
 
 export async function fetchTeamMeStores(): Promise<StoreResponse[]> {
-  // Team routes are mounted server-side without the `/api` prefix.
-  const response = await authGet('/team/me/stores')
+  const response = await authGet(`${getVendorApiBase()}/team/me/stores`)
   
   if (!response.ok) {
     const data = await response.json().catch(() => ({})) as { error?: string; message?: string }

@@ -1,4 +1,5 @@
 import type React from 'react'
+import { Link } from 'react-router-dom'
 import type { MediaApiResponse, StoreSocialLinks } from '@api/types'
 import {
   MapPin,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@shared/ui/primitives'
 import { cn } from '@shared/lib/cn'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import type { StoreHeaderStore } from './storeHeaderTypes'
 import { StoreHeaderChips } from './StoreHeaderChips'
@@ -89,7 +91,12 @@ export function StoreHeaderFull({
         <header className="space-y-4">
           <div className="flex flex-wrap gap-y-2 gap-3 justify-between items-start">
             <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground sm:text-4xl">
-              {store.name}
+              <Link
+                to={getStoreRoute({ id: store.id, name: store.name })}
+                className="transition-colors hover:text-primary"
+              >
+                {store.name}
+              </Link>
             </h1>
             <div className="flex flex-wrap gap-2 justify-end items-center">
               {!store.isPublished ? <Badge variant="warning">Draft</Badge> : undefined}

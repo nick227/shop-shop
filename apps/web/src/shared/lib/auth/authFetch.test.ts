@@ -202,7 +202,7 @@ describe('API Integration Tests', () => {
       await fetchTeamMeStores()
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/team/me/stores'),
+        expect.stringContaining('/api/team/me/stores'),
         expect.objectContaining({
           headers: expect.any(Headers)
         })

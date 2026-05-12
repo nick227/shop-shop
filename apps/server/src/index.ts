@@ -208,7 +208,7 @@ await app.register(settingsPublicRoutes, { prefix: '/api' })
 
 // Register search routes at the end to avoid conflicts
 await app.register(searchUnifiedRoutes)
-await app.register(tagsRoutes)
+await app.register(tagsRoutes, { prefix: '/api' })
 
 // Wire up order service to realtime broker
 setOrderServiceBroadcast((topic, event) => {

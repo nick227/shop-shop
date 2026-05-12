@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Store Creation Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .test-section h3 {
+            margin: 0 0 10px 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .warning { color: #ffc107; }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-running { background: #ffc107; }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 Local Store Creation Test</h1>
+        
+        <div class="test-section">
+            <h3>🌐 Server Status</h3>
+            <div id="serverStatus">
+                <span class="status-indicator status-error"></span>
+                <span id="serverStatusText">Checking...</span>
+            </div>
+            <button onclick="checkServerStatus()">🔄 Check Server</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Test User Configuration</h3>
+            <div class="input-group">
+                <label for="testEmail">Email:</label>
+                <input type="email" id="testEmail" value="testuser@example.com">
+            </div>
+            <div class="input-group">
+                <label for="testPassword">Password:</label>
+                <input type="password" id="testPassword" value="TestPassword123!">
+            </div>
+            <div class="input-group">
+                <label for="testName">Name:</label>
+                <input type="text" id="testName" value="Test User">
+            </div>
+            <div class="input-group">
+                <label for="userRole">User Role:</label>
+                <select id="userRole">
+                    <option value="USER">USER</option>
+                    <option value="VENDOR">VENDOR</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🏪 Test Store Configuration</h3>
+            <div class="input-group">
+                <label for="storeName">Store Name:</label>
+                <input type="text" id="storeName" value="Test Store">
+            </div>
+            <div class="input-group">
+                <label for="storeDescription">Description:</label>
+                <input type="text" id="storeDescription" value="Automated test store for local development verification">
+            </div>
+            <div class="input-group">
+                <label for="storeAddress">Address:</label>
+                <input type="text" id="storeAddress" value="123 Test Street, Test City, TS 12345">
+            </div>
+            <div class="input-group">
+                <label for="storePhone">Phone:</label>
+                <input type="text" id="storePhone" value="+1-555-0123">
+            </div>
+            <div class="input-group">
+                <label for="storeCategory">Category:</label>
+                <select id="storeCategory">
+                    <option value="RESTAURANT">Restaurant</option>
+                    <option value="RETAIL">Retail</option>
+                    <option value="SERVICE">Service</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Controls</h3>
+            <button onclick="runAllTests()">🚀 Run All Tests</button>
+            <button onclick="clearLog()">🧹 Clear Log</button>
+            <button onclick="testServerHealth()">🏥 Test Server Health</button>
+            <button onclick="testUserSignup()">🔐 Test Signup</button>
+            <button onclick="testUserLogin()">🔑 Test Login</button>
+            <button onclick="testStoreCreation()">🏪 Test Store Creation</button>
+            <button onclick="testTeamMeStores()">👥 Test Team Stores</button>
+            <button onclick="testStoresList()">📋 Test Stores List</button>
+            <button onclick="testTagsEndpoint()">🏷️ Test Tags</button>
+            <button onclick="testMediaUpload()">📸 Test Media Upload</button>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <h3>📊 Test Results</h3>
+            <div id="resultsList"></div>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // For local development, use localhost
+        const API_BASE = 'http://localhost:3005';
+        let authToken = null;
+        let createdStoreId = null;
+        let testResults = {};
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateResult(testName, passed) {
+            testResults[testName] = passed;
+            const resultsElement = document.getElementById('results');
+            const resultsList = document.getElementById('resultsList');
+            
+            resultsElement.style.display = 'block';
+            resultsList.innerHTML = '';
+            
+            Object.entries(testResults).forEach(([test, passed]) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <span>${test}</span>
+                    <span class="${passed ? 'success' : 'error'}">${passed ? '✅ PASSED' : '❌ FAILED'}</span>
+                `;
+                resultsList.appendChild(resultItem);
+            });
+            
+            const allPassed = Object.values(testResults).every(result => result);
+            if (Object.keys(testResults).length > 0) {
+                const summary = document.createElement('div');
+                summary.className = 'result-item';
+                summary.innerHTML = `
+                    <strong>Overall Result:</strong>
+                    <strong class="${allPassed ? 'success' : 'error'}">${allPassed ? '🎉 ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}</strong>
+                `;
+                resultsList.appendChild(summary);
+            }
+        }
+
+        function updateServerStatus(isRunning, message = '') {
+            const statusElement = document.getElementById('serverStatus');
+            const statusText = document.getElementById('serverStatusText');
+            const indicator = statusElement.querySelector('.status-indicator');
+            
+            if (isRunning) {
+                indicator.className = 'status-indicator status-success';
+                statusText.textContent = 'Server is running' + (message ? ` - ${message}` : '');
+            } else {
+                indicator.className = 'status-indicator status-error';
+                statusText.textContent = 'Server is not running' + (message ? ` - ${message}` : '');
+            }
+        }
+
+        async function checkServerStatus() {
+            log('🔄 Checking server status...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateServerStatus(true, `v${data.version || 'unknown'}`);
+                    log(`✅ Server is running! Version: ${data.version || 'unknown'}`, 'success');
+                    updateResult('Server Status', true);
+                } else {
+                    updateServerStatus(false, `HTTP ${response.status}`);
+                    log(`❌ Server returned HTTP ${response.status}`, 'error');
+                    updateResult('Server Status', false);
+                }
+            } catch (error) {
+                updateServerStatus(false, error.message);
+                log(`❌ Server not accessible: ${error.message}`, 'error');
+                updateResult('Server Status', false);
+            }
+        }
+
+        async function makeRequest(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(authToken && { Authorization: `Bearer ${authToken}` })
+                },
+                ...options
+            };
+
+            log(`🔄 ${options.method || 'GET'} ${url}`, 'info');
+            try {
+                const response = await fetch(url, config);
+                const data = await response.json();
+                
+                log(`📊 Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`📄 Response: ${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+                
+                return { response, data };
+            } catch (error) {
+                log(`💥 Network Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function testServerHealth() {
+            log('\n🏥 Testing Server Health...', 'info');
+            
+            const { response, data } = await makeRequest('/health');
+            
+            if (response.ok) {
+                log(`🎉 Server health check passed!`, 'success');
+                updateResult('Server Health', true);
+                return true;
+            } else {
+                log('❌ Server health check failed', 'error');
+                updateResult('Server Health', false);
+                return false;
+            }
+        }
+
+        async function testUserSignup() {
+            log('\n🔐 Testing User Signup...', 'info');
+            
+            const testData = {
+                email: `testuser${Date.now()}@example.com`,
+                password: document.getElementById('testPassword').value,
+                name: document.getElementById('testName').value,
+                role: document.getElementById('userRole').value
+            };
+
+            const { response, data } = await makeRequest('/api/auth/v1/signup', {
+                method: 'POST',
+                body: JSON.stringify(testData)
+            });
+
+            if (response.ok && data.token) {
+                authToken = data.token;
+                log('🎉 User signup successful!', 'success');
+                updateResult('User Signup', true);
+                return true;
+            } else {
+                log('⚠️ User signup failed, trying login...', 'warning');
+                return await testUserLogin();
+            }
+        }
+
+        async function testUserLogin() {
+            log('\n🔑 Testing User Login...', 'info');
+            
+            const { response, data } = await makeRequest('/api/auth/v1/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('testEmail').value,
+                    password: document.getElementById('testPassword').value
+                })
+            });
+
+            if (response.ok && data.token) {
+                authToken = data.token;
+                log('🎉 User login successful!', 'success');
+                updateResult('User Login', true);
+                return true;
+            } else {
+                log('❌ User login failed', 'error');
+                updateResult('User Login', false);
+                return false;
+            }
+        }
+
+        async function testStoreCreation() {
+            if (!authToken) {
+                log('⚠️ Please authenticate first', 'warning');
+                updateResult('Store Creation', false);
+                return false;
+            }
+
+            log('\n🏪 Testing Store Creation...', 'info');
+            
+            const testData = {
+                name: document.getElementById('storeName').value + ' ' + Date.now(),
+                description: document.getElementById('storeDescription').value,
+                addressStreet: '123 Test Street',
+                addressCity: 'Test City',
+                addressState: 'TS',
+                addressZip: '12345',
+                phone: document.getElementById('storePhone').value,
+                companyName: 'Test Company Inc',
+                website: 'https://example.com',
+                category: document.getElementById('storeCategory').value
+            };
+
+            const { response, data } = await makeRequest('/api/stores', {
+                method: 'POST',
+                body: JSON.stringify(testData)
+            });
+
+            if (response.ok && data.id) {
+                createdStoreId = data.id;
+                log(`🎉 Store creation successful! Store ID: ${createdStoreId}`, 'success');
+                updateResult('Store Creation', true);
+                return true;
+            } else {
+                log('❌ Store creation failed', 'error');
+                updateResult('Store Creation', false);
+                return false;
+            }
+        }
+
+        async function testTeamMeStores() {
+            if (!authToken) {
+                log('⚠️ Please authenticate first', 'warning');
+                updateResult('Team Stores', false);
+                return false;
+            }
+
+            log('\n👥 Testing /api/team/me/stores...', 'info');
+            
+            const { response, data } = await makeRequest('/api/team/me/stores');
+            
+            if (response.ok) {
+                log(`🎉 Team stores endpoint working! Found ${data.data?.length || 0} stores`, 'success');
+                updateResult('Team Stores', true);
+                return true;
+            } else {
+                log('❌ Team stores endpoint failed', 'error');
+                updateResult('Team Stores', false);
+                return false;
+            }
+        }
+
+        async function testStoresList() {
+            log('\n📋 Testing /api/stores list...', 'info');
+            
+            const { response, data } = await makeRequest('/api/stores?page=1&limit=10');
+            
+            if (response.ok) {
+                log(`🎉 Stores list endpoint working! Found ${data.data?.length || 0} stores`, 'success');
+                updateResult('Stores List', true);
+                return true;
+            } else {
+                log('❌ Stores list endpoint failed', 'error');
+                updateResult('Stores List', false);
+                return false;
+            }
+        }
+
+        async function testTagsEndpoint() {
+            log('\n🏷️ Testing Tags Endpoint...', 'info');
+            
+            const { response, data } = await makeRequest('/api/tags?target=STORE');
+            
+            if (response.ok) {
+                log(`🎉 Tags endpoint working! Found ${data.groups?.length || 0} tag groups`, 'success');
+                updateResult('Tags Endpoint', true);
+                return true;
+            } else {
+                log('❌ Tags endpoint failed', 'error');
+                updateResult('Tags Endpoint', false);
+                return false;
+            }
+        }
+
+        async function testMediaUpload() {
+            if (!authToken || !createdStoreId) {
+                log('⚠️ Please authenticate and create a store first', 'warning');
+                updateResult('Media Upload', false);
+                return false;
+            }
+
+            log('\n📸 Testing Media Upload...', 'info');
+            
+            // Create a simple test image using canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(0, 0, 100, 100);
+            
+            return new Promise((resolve) => {
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('file', blob, 'test-image.png');
+                    formData.append('storeId', createdStoreId);
+                    formData.append('kind', 'IMAGE');
+
+                    try {
+                        const response = await fetch(`${API_BASE}/api/media/upload`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            },
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            log('🎉 Media upload successful!', 'success');
+                            updateResult('Media Upload', true);
+                            resolve(true);
+                        } else {
+                            log('❌ Media upload failed', 'error');
+                            log(`📄 Error: ${JSON.stringify(data, null, 2)}`, 'error');
+                            updateResult('Media Upload', false);
+                            resolve(false);
+                        }
+                    } catch (error) {
+                        log(`💥 Media upload error: ${error.message}`, 'error');
+                        updateResult('Media Upload', false);
+                        resolve(false);
+                    }
+                }, 'image/png');
+            });
+        }
+
+        async function runAllTests() {
+            log('🚀 Starting Local Store Creation Tests', 'info');
+            log('=====================================', 'info');
+            
+            testResults = {};
+            createdStoreId = null;
+            
+            // First check server status
+            const serverOk = await checkServerStatus();
+            if (!serverOk) {
+                log('❌ Server is not running. Please start the local server first.', 'error');
+                log('💡 Run: pnpm --filter @apps/server start', 'info');
+                return;
+            }
+            
+            const results = {
+                serverHealth: await testServerHealth(),
+                userSignup: await testUserSignup(),
+                storesList: await testStoresList(),
+                storeCreation: await testStoreCreation(),
+                teamMeStores: await testTeamMeStores(),
+                tagsEndpoint: await testTagsEndpoint(),
+                mediaUpload: await testMediaUpload()
+            };
+            
+            log('\n📋 Test Results Summary', 'info');
+            log('=======================', 'info');
+            
+            if (createdStoreId) {
+                log(`📝 Created Store ID: ${createdStoreId}`, 'info');
+                log('🧹 You may want to manually clean up this test store', 'warning');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('results').style.display = 'none';
+            testResults = {};
+        }
+
+        // Auto-check server status on load
+        window.addEventListener('load', () => {
+            checkServerStatus();
+            log('🌐 Local Store Creation Test Ready', 'success');
+            log('📝 Configure test data and click "Run All Tests" to begin', 'info');
+        });
+    </script>
+</body>
+</html>
