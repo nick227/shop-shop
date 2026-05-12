@@ -183,7 +183,7 @@ function KitchenContainer() {
       ) : null}
 
       {hasContent && acceptsOnlineCards === false ? (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+        <div className="px-4 py-3 text-sm rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100">
           This store is not accepting online card payments yet (Stripe Connect setup may still be in progress). You can
           still browse the menu — choose another payment option at checkout if available, or contact the store.
         </div>
@@ -205,11 +205,11 @@ function KitchenContainer() {
       <div
         role="region"
         aria-labelledby="store-river-heading"
-        className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip border-t border-border bg-muted/15"
+        className="w-full"
       >
-        <section className="mx-auto w-full space-y-8 px-4 py-10 md:px-6 md:py-12">
-          <div className="w-full space-y-3">
-            <div className="flex flex-wrap items-end justify-between gap-4">
+        <section className="">
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap gap-4 justify-between items-end">
               <h2 id="store-river-heading" className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                 Kitchen updates
               </h2>
@@ -220,7 +220,7 @@ function KitchenContainer() {
                 Shop River
               </Link>
             </div>
-            <p className="text-base text-muted-foreground w-full">
+            <p className="w-full text-base text-muted-foreground">
               Posts from this kitchen appear here and in the public Shop River feed.
             </p>
           </div>
@@ -239,7 +239,7 @@ function KitchenContainer() {
         </section>
       </div>
 
-      <aside className="sticky bottom-4 z-20 w-full rounded-xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur">
+      <aside className="sticky bottom-4 z-20 p-4 w-full rounded-xl border shadow-lg backdrop-blur border-border bg-background/95">
         <div className="flex gap-3 justify-between items-center">
           <div className="flex gap-2 items-center">
             <CartBadge count={cartCount} />
@@ -262,7 +262,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-8 md:py-8">
+    <PageShell className="bg-background" containerClassName="max-w-5xl" contentClassName="py-6 md:py-12">
       <KitchenContainer />
     </PageShell>
   )
