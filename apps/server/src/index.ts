@@ -48,7 +48,7 @@ import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
 import multipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
-import { join } from 'path'
+import { isAbsolute, join } from 'path'
 import { env, corsOrigins } from './env.js'
 import { setOrderServiceBroadcast, setTipServiceBroadcast } from '@packages/db'
 import { realtimeBroker } from './services/realtime.broker.js'
@@ -64,6 +64,16 @@ const app = Fastify({
     }
   } : true,
 })
+
+function normalizeUploadDir(uploadDir: string): string {
+  const windowsDrivePath = /^([a-zA-Z]):[\\/](.*)$/u.exec(uploadDir)
+  if (windowsDrivePath) {
+    const [, drive, rest] = windowsDrivePath
+    return `/mnt/${drive.toLowerCase()}/${rest.replace(/\\/gu, '/')}`
+  }
+
+  return isAbsolute(uploadDir) ? uploadDir : join(process.cwd(), uploadDir)
+}
 
 // Enable global Zod validation
 app.setValidatorCompiler(validatorCompiler)
@@ -111,7 +121,7 @@ await app.register(multipart, {
 
 // Serve uploaded files (for local storage only)
 if (process.env.STORAGE_TYPE === 'local' || !process.env.STORAGE_TYPE) {
-  const uploadDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads')
+  const uploadDir = normalizeUploadDir(process.env.UPLOAD_DIR || 'uploads')
   await app.register(fastifyStatic, {
     root: uploadDir,
     prefix: '/uploads/',

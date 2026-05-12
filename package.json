@@ -55,6 +55,8 @@
         "knip": "knip",
         "madge": "madge --extensions ts,tsx --circular apps packages",
         "test": "pnpm -r run test",
+        "test:all": "pnpm --filter @packages/db build && pnpm --filter @packages/db test:run && pnpm --filter @apps/server test && pnpm --filter @apps/web test:run && pnpm test:api && pnpm --filter @packages/sdk test && pnpm e2e",
+        "start:test": "pnpm test:all",
         "test:server": "pnpm --filter @packages/db build && pnpm --filter @apps/server test",
         "test:stripe-smoke": "pnpm --dir apps/server run test:stripe-smoke",
         "test:payments-adapter": "pnpm --filter @packages/db exec vitest run src/adapters/payments.adapter.connect-intent.test.ts",

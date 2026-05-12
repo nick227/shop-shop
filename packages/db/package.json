@@ -58,9 +58,10 @@
     "ingest:river": "node --import tsx src/cli/river-ingest-run.ts",
     "river-initial": "node --import tsx src/cli/river-initial-generation.ts",
     "import-zips": "node --import tsx import-us-zips.ts",
-    "build": "pnpm exec tsc -p tsconfig.json && node scripts/sync-generated-to-dist.mjs",
+    "build": "node scripts/run-tsc.mjs && node scripts/sync-generated-to-dist.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",
+    "test:run": "vitest run",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
   },
