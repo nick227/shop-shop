@@ -14,6 +14,8 @@ import { Heart, MessageCircle, Share2, Bookmark, MoreVertical } from 'lucide-rea
 import { apiClient } from '@api/client'
 import { useHeroStore } from '@shared/hooks/hooks/store'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { PAGE_SHELL_CONTAINER_CLASS } from '@shared/ui/layout/PageShell'
+import { cn } from '@shared/lib/cn'
 
 function RiverTileCard({ post }: { post: RiverPost }) {
   return (
@@ -327,7 +329,7 @@ export default function RiverPage() {
     if (!('kind' in item)) {
       const p = item
       return (
-        <div key={item.id} className="max-w-2xl mx-auto">
+        <div key={item.id} className="w-full">
           <EnhancedPostCard
             post={p}
             onLike={() => {
@@ -349,7 +351,7 @@ export default function RiverPage() {
 
     if (item.layout === 'grid-2x2') {
       return (
-        <div key={`grid-2x2-${index}`} className="max-w-2xl mx-auto">
+        <div key={`grid-2x2-${index}`} className="w-full">
           <div className="grid grid-cols-2 gap-4">
             {item.posts.map((post) => (
               <EnhancedPostCard
@@ -376,7 +378,7 @@ export default function RiverPage() {
 
     if (item.layout === 'grid-3x3') {
       return (
-        <div key={`grid-3x3-${index}`} className="max-w-2xl mx-auto">
+        <div key={`grid-3x3-${index}`} className="w-full">
           <div className="grid grid-cols-3 gap-3">
             {item.posts.map((post) => (
               <RiverTileCard key={post.id} post={post} />
@@ -388,7 +390,7 @@ export default function RiverPage() {
 
     if (item.layout === 'featured') {
       return (
-        <div key={`featured-${index}`} className="max-w-2xl mx-auto">
+        <div key={`featured-${index}`} className="w-full">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Featured Post</h2>
             {item.posts.map((post) => (
@@ -442,10 +444,10 @@ export default function RiverPage() {
       ) : null}
       <RiverHeader filters={filters} onFiltersChange={handleFiltersChange} />
       
-      <main className="container mx-auto px-4 py-6">
+      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'max-w-5xl py-6 md:py-10')}>
         <div className="space-y-6">
           {/* Hero and Discovery sections - show once at top */}
-          <div className="max-w-2xl mx-auto space-y-6">
+          <div className="w-full space-y-6">
             <RiverHero store={heroStore} isLoading={heroLoading} />
             <RiverDiscovery />
           </div>
