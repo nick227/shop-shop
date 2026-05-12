@@ -10,6 +10,7 @@ import { AuthContext } from '../context/AuthContext'
 import type { LoginCredentials } from '../types'
 import { useAuthStore } from '@stores/authStore'
 import { apiClient } from '@api/client'
+import { apiPath } from '@shared/lib/auth/authFetch'
 
 export interface UseAuthProps {
   onSuccess?: () => void
@@ -18,7 +19,6 @@ export interface UseAuthProps {
 
 export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
   const authContext = useContext(AuthContext)
-  const authBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
   const setAuth = useAuthStore((state) => state.setAuth)
 
   if (!authContext) {
@@ -53,7 +53,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
       setIsLoggingIn(true)
       setLoginError(null)
       try {
-        const response = await fetch(`${authBaseUrl}/api/auth/v1/login`, {
+        const response = await fetch(apiPath('/api/auth/v1/login'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
         setIsLoggingIn(false)
       }
     },
-    [authBaseUrl, contextLogin, onSuccess, onError, setAuth]
+    [contextLogin, onSuccess, onError, setAuth]
   )
 
   // ========================================
@@ -108,7 +108,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
           ...(storedAffiliateReferralCode ? { affiliateReferralCode: storedAffiliateReferralCode } : {}),
         }
 
-        const response = await fetch(`${authBaseUrl}/api/auth/v1/signup`, {
+        const response = await fetch(apiPath('/api/auth/v1/signup'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -155,7 +155,7 @@ export function useAuth({ onSuccess, onError }: UseAuthProps = {}) {
         setIsSigningUp(false)
       }
     },
-    [authBaseUrl, contextLogin, onSuccess, onError, setAuth]
+    [contextLogin, onSuccess, onError, setAuth]
   )
 
   // ========================================

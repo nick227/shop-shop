@@ -150,9 +150,9 @@ class ApiClient {
       throw new Error('VITE_API_URL environment variable is required in production')
     }
     
-    // Fallback for test environment; strip trailing /api/v1 so buildContractUrl does not double-prefix
+    // Fallback for test environment; strip trailing API prefixes so callers can append route groups.
     const origin = (baseUrl || 'http://localhost:3005').replace(/\/$/, '')
-    return origin.replace(/\/api\/v1\/?$/i, '')
+    return origin.replace(/\/api(?:\/v1)?$/i, '')
   }
 
   /**

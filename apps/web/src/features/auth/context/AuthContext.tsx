@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useCallback, useReducer } from 'react'
 import type { User } from '../types'
 import { useAuthStore } from '@stores/authStore'
+import { apiPath } from '@shared/lib/auth/authFetch'
 
 // ========================================
 // Types & Interfaces
@@ -254,10 +255,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     try {
       // Call logout endpoint to invalidate session
-      const authBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
       const { accessToken } = getStoredTokens()
       if (accessToken) {
-        await fetch(`${authBaseUrl}/api/auth/v1/logout`, {
+        await fetch(apiPath('/api/auth/v1/logout'), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -305,7 +305,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initializeAuth = async () => {
       let authResolved = false
-      const authBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
       const { accessToken, refreshToken: storedRefreshToken } = getStoredTokens()
       
       if (!accessToken || !storedRefreshToken) {
@@ -316,7 +315,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
         // Validate current access token by getting current user info
-        const response = await fetch(`${authBaseUrl}/api/auth/v1/me`, {
+        const response = await fetch(apiPath('/api/auth/v1/me'), {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'

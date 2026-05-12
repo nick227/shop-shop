@@ -85,6 +85,12 @@ describe('authFetch', () => {
       expect(apiPath('api/test')).toBe('http://localhost:3005/api/test')
     })
 
+    it('should not duplicate api prefix when VITE_API_URL includes /api', () => {
+      vi.stubEnv('VITE_API_URL', 'https://shop-shop-production.up.railway.app/api')
+
+      expect(apiPath('/api/auth/v1/login')).toBe('https://shop-shop-production.up.railway.app/api/auth/v1/login')
+    })
+
     it('should resolve media upload path correctly', () => {
       vi.stubEnv('VITE_API_URL', 'http://localhost:3005')
       
