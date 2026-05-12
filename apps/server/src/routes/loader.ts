@@ -14,12 +14,14 @@ import { requireRole } from '../middleware/rbac.js'
  */
 export async function registerResource(
   app: FastifyInstance,
-  resource: ResourceDefinition
+  resource: ResourceDefinition,
+  prefix?: string
 ) {
   const controller = new BaseCrudController(resource)
   const ops = getResourceOperations(resource)
+  const fullPath = prefix ? `${prefix}${resource.path}` : resource.path
   
-  app.log.info({ resource: resource.name, path: resource.path }, 'Registering resource')
+  app.log.info({ resource: resource.name, path: resource.path, fullPath, prefix }, 'Registering resource')
   
   // CREATE - POST /resources
   if (ops.hasCreate) {
@@ -28,7 +30,7 @@ export async function registerResource(
       ? [requireRole(roles)]
       : []
     
-    app.post(resource.path, {
+    app.post(fullPath, {
       preHandler,
       schema: {
         tags: [resource.name],
@@ -38,7 +40,7 @@ export async function registerResource(
     
     app.log.info({ 
       method: 'POST', 
-      path: resource.path,
+      path: fullPath,
       auth: roles.length > 0,
       roles 
     }, 'Route registered')
@@ -51,7 +53,7 @@ export async function registerResource(
       ? [requireRole(roles)]
       : []
     
-    app.get(resource.path, {
+    app.get(fullPath, {
       preHandler,
       schema: {
         tags: [resource.name],
@@ -61,7 +63,7 @@ export async function registerResource(
     
     app.log.info({ 
       method: 'GET', 
-      path: resource.path,
+      path: fullPath,
       auth: roles.length > 0,
       roles 
     }, 'Route registered')
@@ -74,7 +76,7 @@ export async function registerResource(
       ? [requireRole(roles)]
       : []
     
-    app.get(`${resource.path}/:id`, {
+    app.get(`${fullPath}/:id`, {
       preHandler,
       schema: {
         tags: [resource.name],
@@ -84,7 +86,7 @@ export async function registerResource(
     
     app.log.info({ 
       method: 'GET', 
-      path: `${resource.path}/:id`,
+      path: `${fullPath}/:id`,
       auth: roles.length > 0,
       roles 
     }, 'Route registered')
@@ -97,7 +99,7 @@ export async function registerResource(
       ? [requireRole(roles)]
       : []
     
-    app.patch(`${resource.path}/:id`, {
+    app.patch(`${fullPath}/:id`, {
       preHandler,
       schema: {
         tags: [resource.name],
@@ -107,7 +109,7 @@ export async function registerResource(
     
     app.log.info({ 
       method: 'PATCH', 
-      path: `${resource.path}/:id`,
+      path: `${fullPath}/:id`,
       auth: roles.length > 0,
       roles,
       ownership: resource.ownership?.enabled || false
@@ -121,7 +123,7 @@ export async function registerResource(
       ? [requireRole(roles)]
       : []
     
-    app.delete(`${resource.path}/:id`, {
+    app.delete(`${fullPath}/:id`, {
       preHandler,
       schema: {
         tags: [resource.name],
@@ -131,7 +133,7 @@ export async function registerResource(
     
     app.log.info({ 
       method: 'DELETE', 
-      path: `${resource.path}/:id`,
+      path: `${fullPath}/:id`,
       auth: roles.length > 0,
       roles,
       ownership: resource.ownership?.enabled || false
@@ -144,12 +146,17 @@ export async function registerResource(
  */
 export async function registerAllResources(
   app: FastifyInstance,
-  resources: readonly ResourceDefinition[]
+  resources: readonly ResourceDefinition[],
+  options?: { prefix?: string }
 ) {
-  app.log.info({ count: resources.length }, 'Registering all resources')
+  app.log.info({ count: resources.length, prefix: options?.prefix }, 'Registering all resources')
   
   for (const resource of resources) {
-    await registerResource(app, resource)
+    if (options?.prefix) {
+      await registerResource(app, resource, options.prefix)
+    } else {
+      await registerResource(app, resource)
+    }
   }
   
   app.log.info('All resources registered successfully')

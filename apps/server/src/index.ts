@@ -198,7 +198,7 @@ await app.register(favoritesRoutes)
 await app.register(itemAnalyticsRoutes)
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
-await registerAllResources(app, ALL_RESOURCES)
+await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })
 
 // Admin routes (all protected by requireAdmin inside the route file)
 await app.register(adminRoutes, { prefix: '/api' })
