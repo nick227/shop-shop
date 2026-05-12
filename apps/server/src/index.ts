@@ -163,7 +163,7 @@ await app.register(deliveryStatusRoutes)
 await app.register(doordashWebhookRoutes)
 await app.register(driverRoutes, { prefix: '/api/v1' })
 await app.register(stripeWebhookRoutes) 
-await app.register(paymentRoutes)  
+await app.register(paymentRoutes, { prefix: '/api' })  
 // Media routes are consumed by the web app via Vite proxy at `/api/*`,
 // but are also used directly in some places without the `/api` prefix.
 // Register both to avoid dev/prod path mismatches.
@@ -189,7 +189,7 @@ await app.register(vendorVerificationRoutes)
 await app.register(exportRoutes) 
 await app.register(vendorPayoutRoutes) 
 await app.register(vendorAffiliateSalesRoutes)
-await app.register(teamRoutes) 
+await app.register(teamRoutes, { prefix: '/api' }) 
 await app.register(promotionEnhancedRoutes) 
 await app.register(orderCancellationRoutes) 
 await app.register(favoritesRoutes)
