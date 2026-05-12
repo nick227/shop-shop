@@ -17,6 +17,8 @@ interface StoreFeedSectionProps {
   readonly className?: string
   /** When false, omits the built-in “Feed” title row (parent supplies page-level heading). */
   readonly showFeedHeader?: boolean
+  /** Larger cards + comfortable actions — store detail page */
+  readonly layout?: 'default' | 'store'
 }
 
 /** Store-scoped River slice: same `getFeed` + mapping as global River; posts rank in Shop River too. */
@@ -25,6 +27,7 @@ export function StoreFeedSection({
   storeName,
   className,
   showFeedHeader = true,
+  layout = 'default',
 }: StoreFeedSectionProps) {
   const [commentsPostId, setCommentsPostId] = useState<string | undefined>()
 
@@ -89,8 +92,10 @@ export function StoreFeedSection({
     [actions],
   )
 
+  const isStoreLayout = layout === 'store'
+
   const wrap = (children: ReactNode) => (
-    <section className={cn('w-full space-y-4', className)}>{children}</section>
+    <section className={cn('w-full', isStoreLayout ? 'space-y-6' : 'space-y-4', className)}>{children}</section>
   )
 
   if (error) {
@@ -108,7 +113,7 @@ export function StoreFeedSection({
         <h2 className="text-xl font-bold text-foreground">Feed</h2>
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <Skeleton key={i} className="h-36 w-full rounded-xl" />
+            <Skeleton key={i} className={cn('w-full rounded-xl', isStoreLayout ? 'h-48 sm:h-52' : 'h-36')} />
           ))}
         </div>
       </>,
@@ -141,13 +146,16 @@ export function StoreFeedSection({
       ) : undefined}
 
       {posts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No updates from this kitchen yet.</p>
+        <p className={cn('text-muted-foreground', isStoreLayout ? 'text-base' : 'text-sm')}>
+          No updates from this kitchen yet.
+        </p>
       ) : (
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className={cn('m-0 list-none p-0 w-full', isStoreLayout ? 'space-y-5 md:space-y-6' : 'space-y-3')}>
           {posts.map((post: RiverPost) => (
-            <li key={post.id}>
+            <li key={post.id} className="w-full">
               <PostCard
                 post={post}
+                variant={isStoreLayout ? 'store' : 'default'}
                 onLike={handleLike}
                 onComment={handleComment}
                 onShare={handleShare}

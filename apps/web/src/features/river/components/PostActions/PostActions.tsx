@@ -1,5 +1,6 @@
 import type { RiverPost } from '@api/types'
 import { formatCount } from '@shared/lib/utils/media'
+import { cn } from '@shared/lib/cn'
 
 interface PostActionsProps {
   readonly post: RiverPost
@@ -7,9 +8,17 @@ interface PostActionsProps {
   readonly onComment?: (postId: string) => void
   readonly onShare?: (postId: string) => void
   readonly onSave?: (postId: string) => void
+  readonly density?: 'default' | 'comfortable'
 }
 
-export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostActionsProps) => {
+export const PostActions = ({
+  post,
+  onLike,
+  onComment,
+  onShare,
+  onSave,
+  density = 'default',
+}: PostActionsProps) => {
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (onLike && post.id) onLike(String(post.id))
@@ -30,21 +39,26 @@ export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostAc
     if (onSave && post.id) onSave(String(post.id))
   }
 
+  const comfy = density === 'comfortable'
+
   return (
-    <footer className="flex items-center gap-1 py-1 -mx-1">
+    <footer className={cn('flex items-center gap-1 -mx-1', comfy ? 'gap-2 py-2' : 'py-1')}>
       <button
         onClick={handleLike}
         aria-label={post.isLiked ? 'Unlike post' : 'Like post'}
         aria-pressed={post.isLiked}
-        className={[
-          'flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium transition-all duration-150 tap-scale',
+        className={cn(
+          'flex items-center font-medium transition-all duration-150 tap-scale',
+          comfy
+            ? 'gap-2 min-h-12 px-4 rounded-xl text-base'
+            : 'gap-1.5 min-h-10 px-3 rounded-lg text-sm',
           post.isLiked
             ? 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-        ].join(' ')}
+        )}
       >
         <svg
-          className="w-[18px] h-[18px] flex-shrink-0"
+          className={cn('flex-shrink-0', comfy ? 'w-5 h-5' : 'w-[18px] h-[18px]')}
           viewBox="0 0 24 24"
           fill={post.isLiked ? 'currentColor' : 'none'}
           stroke="currentColor"
@@ -60,10 +74,15 @@ export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostAc
       <button
         onClick={handleComment}
         aria-label="Comment on post"
-        className="flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale"
+        className={cn(
+          'flex items-center font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale',
+          comfy
+            ? 'gap-2 min-h-12 px-4 rounded-xl text-base'
+            : 'gap-1.5 min-h-10 px-3 rounded-lg text-sm',
+        )}
       >
         <svg
-          className="w-[18px] h-[18px] flex-shrink-0"
+          className={cn('flex-shrink-0', comfy ? 'w-5 h-5' : 'w-[18px] h-[18px]')}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -81,15 +100,18 @@ export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostAc
           onClick={handleSave}
           aria-label={post.isSaved ? 'Remove saved post' : 'Save post'}
           aria-pressed={post.isSaved}
-          className={[
-            'flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium transition-all duration-150 tap-scale',
+          className={cn(
+            'flex items-center font-medium transition-all duration-150 tap-scale',
+            comfy
+              ? 'gap-2 min-h-12 px-4 rounded-xl text-base'
+              : 'gap-1.5 min-h-10 px-3 rounded-lg text-sm',
             post.isSaved
               ? 'text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-          ].join(' ')}
+          )}
         >
           <svg
-            className="w-[18px] h-[18px] flex-shrink-0"
+            className={cn('flex-shrink-0', comfy ? 'w-5 h-5' : 'w-[18px] h-[18px]')}
             viewBox="0 0 24 24"
             fill={post.isSaved ? 'currentColor' : 'none'}
             stroke="currentColor"
@@ -105,10 +127,15 @@ export const PostActions = ({ post, onLike, onComment, onShare, onSave }: PostAc
       <button
         onClick={handleShare}
         aria-label="Share post"
-        className="flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale ml-auto"
+        className={cn(
+          'flex items-center font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 tap-scale ml-auto',
+          comfy
+            ? 'gap-2 min-h-12 px-4 rounded-xl text-base'
+            : 'gap-1.5 min-h-10 px-3 rounded-lg text-sm',
+        )}
       >
         <svg
-          className="w-[18px] h-[18px] flex-shrink-0"
+          className={cn('flex-shrink-0', comfy ? 'w-5 h-5' : 'w-[18px] h-[18px]')}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

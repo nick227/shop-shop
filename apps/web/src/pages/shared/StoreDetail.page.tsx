@@ -204,27 +204,28 @@ function KitchenContainer() {
 
       <section
         aria-labelledby="store-river-heading"
-        className="w-full max-w-none space-y-6 border-t border-border pt-10"
+        className="w-full space-y-8 border-t border-border pt-10 md:pt-12"
       >
-        <div className="w-full space-y-2">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="store-river-heading" className="text-xl font-bold text-foreground">
+        <div className="w-full space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 id="store-river-heading" className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
               Kitchen updates
             </h2>
             <Link
               to="/river"
-              className="text-sm font-medium text-primary underline-offset-4 hover:underline shrink-0"
+              className="text-base font-medium text-primary underline-offset-4 hover:underline shrink-0"
             >
               Shop River
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground max-w-3xl">
+          <p className="text-base text-muted-foreground w-full">
             Posts from this kitchen appear here and in the public Shop River feed.
           </p>
         </div>
 
         {canComposeRiver ? (
           <PostComposer
+            variant="prominent"
             storeId={store.id}
             storeName={store.name}
             storeImage={(store as { imageUrl?: string | null }).imageUrl ?? undefined}
@@ -232,7 +233,7 @@ function KitchenContainer() {
           />
         ) : undefined}
 
-        <StoreFeedSection storeId={store.id} storeName={store.name} showFeedHeader={false} />
+        <StoreFeedSection storeId={store.id} storeName={store.name} showFeedHeader={false} layout="store" />
       </section>
 
       <aside className="sticky bottom-4 z-20 p-4 rounded-xl border shadow-lg backdrop-blur border-border bg-background/95 w-full max-w-none">
@@ -258,7 +259,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-7xl" contentClassName="py-8 md:py-8">
+    <PageShell className="bg-background" containerClassName="max-w-none" contentClassName="py-8 md:py-8">
       <KitchenContainer />
     </PageShell>
   )

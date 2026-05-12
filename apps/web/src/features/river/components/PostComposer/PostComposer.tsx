@@ -3,6 +3,7 @@ import { Button, Card } from '@shared/ui/primitives'
 import { MediaPreview } from '../MediaPreview/MediaPreview'
 import { useMediaDetection } from '@shared/hooks/hooks/useMediaDetection'
 import type { MediaItem } from '@api/types'
+import { cn } from '@shared/lib/cn'
 
 interface PostComposerProps {
   storeId: string
@@ -10,15 +11,18 @@ interface PostComposerProps {
   storeImage?: string
   onPost: (content: string, media: MediaItem[]) => Promise<void>
   onCancel?: () => void
+  readonly variant?: 'default' | 'prominent'
 }
 
-function ComposerAvatar({ src, name }: { src?: string; name: string }) {
+function ComposerAvatar({ src, name, large }: { src?: string; name: string; large?: boolean }) {
+  const frame = large ? 'w-11 h-11' : 'w-9 h-9'
+  const initialCls = large ? 'text-sm' : 'text-xs'
   if (src) {
     return (
       <img
         src={src}
         alt={name}
-        className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-border"
+        className={cn('rounded-full object-cover flex-shrink-0 ring-1 ring-border', frame)}
       />
     )
   }
@@ -28,8 +32,13 @@ function ComposerAvatar({ src, name }: { src?: string; name: string }) {
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('')
   return (
-    <div className="w-9 h-9 rounded-full flex-shrink-0 bg-muted flex items-center justify-center ring-1 ring-border">
-      <span className="text-xs font-semibold text-muted-foreground">{initials || '?'}</span>
+    <div
+      className={cn(
+        'rounded-full flex-shrink-0 bg-muted flex items-center justify-center ring-1 ring-border',
+        frame,
+      )}
+    >
+      <span className={cn('font-semibold text-muted-foreground', initialCls)}>{initials || '?'}</span>
     </div>
   )
 }
@@ -43,7 +52,9 @@ export const PostComposer = ({
   storeImage,
   onPost,
   onCancel,
+  variant = 'default',
 }: PostComposerProps) => {
+  const prominent = variant === 'prominent'
   const [content, setContent] = useState('')
   const [isPosting, setIsPosting] = useState(false)
   const [showMediaUploader, setShowMediaUploader] = useState(false)
@@ -177,33 +188,49 @@ export const PostComposer = ({
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card
+      className={cn(
+        'overflow-hidden w-full',
+        prominent && 'rounded-xl border-border shadow-md sm:rounded-2xl',
+      )}
+    >
       <form onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
-        <div className="p-4 sm:p-5">
-          <header className="flex items-center gap-3 mb-3">
-            <ComposerAvatar src={storeImage} name={storeName} />
-            <span className="font-semibold text-sm text-foreground">{storeName}</span>
+        <div className={cn(prominent ? 'p-5 sm:p-6 md:p-8' : 'p-4 sm:p-5')}>
+          <header className={cn('flex items-center gap-3', prominent ? 'mb-4' : 'mb-3')}>
+            <ComposerAvatar src={storeImage} name={storeName} large={prominent} />
+            <span
+              className={cn(
+                'font-semibold text-foreground',
+                prominent ? 'text-base md:text-lg' : 'text-sm',
+              )}
+            >
+              {storeName}
+            </span>
           </header>
 
           <textarea
-            className="w-full min-h-[100px] p-0 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:opacity-50 leading-relaxed"
+            className={cn(
+              'w-full p-0 resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:opacity-50 leading-relaxed',
+              prominent
+                ? 'min-h-[128px] text-base md:text-[17px]'
+                : 'min-h-[100px] text-sm',
+            )}
             placeholder="Share what's happening in your store… (Ctrl+Enter to post)"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            rows={4}
+            rows={prominent ? 5 : 4}
             maxLength={MAX_CHARS}
             disabled={isPosting}
           />
 
           {showCounter && (
             <p
-              className={[
-                'text-xs mt-1 text-right tabular-nums',
-                charsLeft <= 0
-                  ? 'text-destructive font-semibold'
-                  : 'text-muted-foreground',
-              ].join(' ')}
+              className={cn(
+                'mt-1 text-right tabular-nums',
+                prominent ? 'text-sm' : 'text-xs',
+                charsLeft <= 0 ? 'text-destructive font-semibold' : 'text-muted-foreground',
+              )}
             >
               {charsLeft}
             </p>
@@ -211,7 +238,7 @@ export const PostComposer = ({
         </div>
 
         {detectedMedia.length > 0 && (
-          <div className="px-4 sm:px-5 pb-3">
+          <div className={cn(prominent ? 'px-5 pb-4 sm:px-6 md:px-8' : 'px-4 sm:px-5 pb-3')}>
             <MediaPreview
               media={detectedMedia}
               onRemove={removeMedia}
@@ -220,53 +247,56 @@ export const PostComposer = ({
           </div>
         )}
 
-        <footer className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-border bg-muted/40">
-          <p className="text-xs text-muted-foreground">
+        <footer
+          className={cn(
+            'flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/40',
+            prominent ? 'px-5 py-4 sm:px-6 md:px-8' : 'px-4 sm:px-5 py-3',
+          )}
+        >
+          <p className={cn('text-muted-foreground', prominent ? 'text-sm' : 'text-xs')}>
             {detectedMedia.length > 0 && (
               <span>{detectedMedia.length} media detected</span>
             )}
           </p>
-          <div className="flex gap-2">
-            {/* Media Upload Button */}
+          <div className="flex flex-wrap gap-2 justify-end">
             <Button
               type="button"
               variant="ghost"
-              size="small"
+              size={prominent ? 'medium' : 'small'}
               onClick={handleMediaUpload}
               disabled={isPosting}
               title="Upload media"
             >
               📎 Upload
             </Button>
-            
-            {/* Camera Capture Button */}
+
             <Button
               type="button"
               variant="ghost"
-              size="small"
+              size={prominent ? 'medium' : 'small'}
               onClick={handleCameraCapture}
               disabled={isPosting}
               title="Take photo"
             >
               📷 Camera
             </Button>
-            
+
             {onCancel && (
               <Button
                 type="button"
                 variant="ghost"
-                size="small"
+                size={prominent ? 'medium' : 'small'}
                 onClick={onCancel}
                 disabled={isPosting}
               >
                 Cancel
               </Button>
             )}
-            
+
             <Button
               type="submit"
               variant="primary"
-              size="small"
+              size={prominent ? 'medium' : 'small'}
               disabled={!isValid || isPosting}
               isLoading={isPosting}
             >

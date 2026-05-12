@@ -2,10 +2,12 @@ import { useState } from 'react'
 import type { MediaItem } from '@api/types'
 import { getYouTubeEmbedUrl } from '@shared/hooks/hooks/useMediaDetection'
 import { Image } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 interface PostMediaProps {
   readonly media: MediaItem[]
   readonly postId: string
+  readonly variant?: 'default' | 'store'
 }
 
 function YouTubeEmbed({ url }: { url: string }) {
@@ -53,7 +55,7 @@ function MediaCell({
   )
 }
 
-export const PostMedia = ({ media, postId }: PostMediaProps) => {
+export const PostMedia = ({ media, postId, variant = 'default' }: PostMediaProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   // Handle both media array and string formats
@@ -68,17 +70,24 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
     setSelectedIndex(index)
   }
 
+  const isStore = variant === 'store'
+  const singleVisualClass =
+    isStore && normalizedMedia[0]?.type !== 'youtube'
+      ? 'aspect-video w-full min-h-[220px] sm:min-h-[min(480px,55vh)] max-h-[70vh]'
+      : undefined
+
   // Single item
   if (normalizedMedia.length === 1) {
     const item = normalizedMedia[0]
+    const cellClass =
+      item.type === 'youtube'
+        ? 'aspect-video w-full'
+        : isStore
+          ? (singleVisualClass ?? 'aspect-video')
+          : 'aspect-[4/3]'
     return (
-      <div className="mb-3">
-        <MediaCell
-          item={item}
-          index={0}
-          postId={postId}
-          className={item.type === 'youtube' ? 'aspect-video' : 'aspect-[4/3]'}
-        />
+      <div className={cn('mb-3 w-full', isStore && 'mb-4')}>
+        <MediaCell item={item} index={0} postId={postId} className={cellClass} />
       </div>
     )
   }
@@ -86,7 +95,7 @@ export const PostMedia = ({ media, postId }: PostMediaProps) => {
   // Two items side by side
   if (normalizedMedia.length === 2) {
     return (
-      <div className="mb-3 grid grid-cols-2 gap-1">
+      <div className={cn('mb-3 grid w-full gap-1', isStore ? 'grid-cols-2 gap-2 sm:gap-3' : 'grid-cols-2')}>
         {normalizedMedia.map((item, index) => (
           <MediaCell
             key={item.url ?? `${item.type}-${index}`}
