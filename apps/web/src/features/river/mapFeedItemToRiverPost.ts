@@ -1,5 +1,6 @@
 import type { RiverPost } from '@api/types'
 import type { MediaItem } from '@api/backend-types'
+import { resolveRiverAssetUrl } from '@/features/river/resolveRiverAssetUrl'
 
 /** Wire shape from GET /api/v1/river/feed (matches RiverFeedItem JSON) and GET /api/v1/river/posts. */
 export interface RiverFeedItemWire {
@@ -48,10 +49,13 @@ function mapFeedMediaToMediaItems(
   for (const m of media) {
     if (!m.url) continue
     const t: MediaItem['type'] = m.type === 'video' ? 'video' : 'image'
+    const url = resolveRiverAssetUrl(m.url) ?? m.url
+    const thumbRaw = m.thumbnailUrl || m.thumbnail
+    const thumbnail = resolveRiverAssetUrl(thumbRaw) ?? thumbRaw
     out.push({
       type: t,
-      url: m.url,
-      thumbnail: m.thumbnailUrl || m.thumbnail,
+      url,
+      thumbnail,
       width: m.width,
       height: m.height,
     })
@@ -64,7 +68,8 @@ export function mapFeedItemToRiverPost(item: RiverFeedItemWire): RiverPost {
   // Handle both feed endpoint (with actor) and posts endpoint (direct properties)
   const storeId = item.actor?.storeId ?? item.storeId ?? item.links?.storeId ?? ''
   const storeName = item.actor?.displayName ?? item.storeName ?? ''
-  const storeImage = item.actor?.avatarUrl ?? item.storeImage ?? ''
+  const storeImageRaw = item.actor?.avatarUrl ?? item.storeImage ?? ''
+  const storeImage = resolveRiverAssetUrl(storeImageRaw) ?? storeImageRaw
   const content = item.body ?? item.content ?? undefined
   const media = mapFeedMediaToMediaItems(item.media)
   
