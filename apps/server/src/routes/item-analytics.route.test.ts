@@ -8,7 +8,7 @@ import {
   cleanupTestData,
 } from '../__tests__/helpers.js'
 
-describe('GET /api/items/analytics', () => {
+describe('GET /items/analytics', () => {
   const app = Fastify({ logger: false })
   let storeId: string
   let token: string
@@ -39,7 +39,7 @@ describe('GET /api/items/analytics', () => {
     })
     const response = await app.inject({
       method: 'GET',
-      url: `/api/items/analytics?${qs.toString()}`,
+      url: `/items/analytics?${qs.toString()}`,
       headers: {
         authorization: `Bearer ${token}`,
       },

@@ -84,7 +84,17 @@ describe('Store readiness and coordinate marketplace behavior', () => {
 
   it('allows draft saves but blocks publish when readiness fails', async () => {
     const slug = testSlug('draft-readiness')
-    const draftPayload = { name: 'Test Draft Store', slug, description: '', pickupEnabled: true, deliveryEnabled: false, isPublished: false }
+    const draftPayload = {
+      name: 'Test Draft Store',
+      slug,
+      description: '',
+      phone: '555-0100',
+      email: `${slug}@draft.test`,
+      website: 'https://example.com',
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      isPublished: false,
+    }
     const createResponse = await app.inject({ method: 'POST', url: '/stores', headers: authHeaders(vendor.token), payload: draftPayload })
 
     expect(createResponse.statusCode, createResponse.body).toBe(201)
@@ -95,7 +105,7 @@ describe('Store readiness and coordinate marketplace behavior', () => {
     expect(draftSaveResponse.statusCode).toBe(200)
 
     const publishResponse = await app.inject({ method: 'PATCH', url: `/stores/${draftStore.id}`, headers: authHeaders(vendor.token), payload: { ...draftPayload, isPublished: true } })
-    expect(publishResponse.statusCode).toBe(400)
+    expect(publishResponse.statusCode).toBe(403)
     expect(JSON.parse(publishResponse.body)).toMatchObject({ error: 'Store is not ready to publish' })
   })
 

@@ -49,6 +49,25 @@ describe('Open Platform - Vendor Functionality', () => {
     }
   }
 
+  /** UpdateStoreInputSchema requires core identity fields on every PATCH. */
+  function storePatchBase(store: {
+    name: string
+    slug: string
+    description: string | null
+    phone: string | null
+    email: string | null
+    website: string | null
+  }) {
+    return {
+      name: store.name,
+      slug: store.slug,
+      description: store.description ?? '',
+      phone: store.phone ?? '5550100',
+      email: store.email ?? 'store@test.com',
+      website: store.website ?? 'https://example.test',
+    }
+  }
+
   beforeAll(async () => {
     // Create isolated Fastify instance
     app = Fastify({ logger: false })
@@ -153,6 +172,7 @@ describe('Open Platform - Vendor Functionality', () => {
         url: `/stores/${userStore.id}`,
         headers: authHeaders(regularUser.token),
         payload: {
+          ...storePatchBase(userStore),
           description: 'Updated by owner',
         },
       })
@@ -168,6 +188,7 @@ describe('Open Platform - Vendor Functionality', () => {
         url: `/stores/${vendorStore.id}`,
         headers: authHeaders(regularUser.token),
         payload: {
+          ...storePatchBase(vendorStore),
           description: 'Attempted unauthorized update',
         },
       })
@@ -181,6 +202,7 @@ describe('Open Platform - Vendor Functionality', () => {
         url: `/stores/${userStore.id}`,
         headers: authHeaders(adminUser.token),
         payload: {
+          ...storePatchBase(userStore),
           description: 'Updated by admin',
         },
       })
@@ -247,6 +269,7 @@ describe('Open Platform - Vendor Functionality', () => {
         payload: {
           storeId: userStore.id,
           title: 'Unauthorized Item',
+          description: 'No access',
           price: '9.99',
         },
       })
@@ -262,6 +285,8 @@ describe('Open Platform - Vendor Functionality', () => {
         url: `/items/${item.id}`,
         headers: authHeaders(regularUser.token),
         payload: {
+          title: 'Burger',
+          description: 'Updated',
           price: '15.99',
         },
       })
@@ -293,10 +318,7 @@ describe('Open Platform - Vendor Functionality', () => {
           method: 'POST',
           url: '/stores',
           headers: authHeaders(regularUser.token),
-          payload: {
-            name: `Multi Store ${i}`,
-            slug: `multi-store-${Date.now()}-${i}`,
-          },
+          payload: newStorePayload(`Multi Store ${i}`, `multi-store-${Date.now()}-${i}-${randomUUID().slice(0, 6)}`, `Branch ${i}`),
         })
 
         expect(response.statusCode).toBe(201)
@@ -316,7 +338,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'PATCH',
         url: `/stores/${store1.id}`,
         headers: authHeaders(regularUser.token),
-        payload: { description: 'Store 1 updated' },
+        payload: { ...storePatchBase(store1), description: 'Store 1 updated' },
       })
       expect(update1.statusCode).toBe(200)
 
@@ -325,7 +347,7 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'PATCH',
         url: `/stores/${store2.id}`,
         headers: authHeaders(regularUser.token),
-        payload: { description: 'Store 2 updated' },
+        payload: { ...storePatchBase(store2), description: 'Store 2 updated' },
       })
       expect(update2.statusCode).toBe(200)
 
@@ -421,6 +443,7 @@ describe('Open Platform - Vendor Functionality', () => {
         url: `/stores/${store.id}`,
         headers: authHeaders(vendorUser.token),
         payload: {
+          ...storePatchBase(store),
           description: 'Updated by vendor role',
         },
       })
@@ -437,14 +460,14 @@ describe('Open Platform - Vendor Functionality', () => {
         method: 'PATCH',
         url: `/stores/${userStore.id}`,
         headers: authHeaders(regularUser.token),
-        payload: { prepTimeMin: 30 },
+        payload: { ...storePatchBase(userStore), prepTimeMin: 30 },
       })
 
       const vendorUpdate = await app.inject({
         method: 'PATCH',
         url: `/stores/${vendorStore.id}`,
         headers: authHeaders(vendorUser.token),
-        payload: { prepTimeMin: 30 },
+        payload: { ...storePatchBase(vendorStore), prepTimeMin: 30 },
       })
 
       expect(userUpdate.statusCode).toBe(200)

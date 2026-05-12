@@ -121,6 +121,9 @@ export const createTestUsers = async () => {
 export const createTestStore = async (vendorId: string, overrides?: {
   name?: string
   slug?: string
+  phone?: string | null
+  email?: string | null
+  website?: string | null
   isPublished?: boolean
   stripeAccountId?: string | null
   stripeOnboarded?: boolean
@@ -135,11 +138,16 @@ export const createTestStore = async (vendorId: string, overrides?: {
     throw new Error(`createTestStore: vendorId not found: ${vendorId}`)
   }
   
+  const slug = overrides?.slug || `${TEST_NAMESPACE}-store-${uniqueId}`
+
   return prisma.store.create({
     data: {
       name: overrides?.name || `Test Store ${uniqueId}`,
-      slug: overrides?.slug || `${TEST_NAMESPACE}-store-${uniqueId}`,
+      slug,
       ownerUserId: owner.id,
+      phone: overrides?.phone ?? '555-0100',
+      email: overrides?.email ?? `${slug}@store.test`,
+      website: overrides?.website ?? 'https://example.com',
       isPublished: overrides?.isPublished ?? true,
       ...(overrides?.stripeAccountId !== undefined ? { stripeAccountId: overrides.stripeAccountId } : {}),
       ...(overrides?.stripeOnboarded !== undefined ? { stripeOnboarded: overrides.stripeOnboarded } : {}),

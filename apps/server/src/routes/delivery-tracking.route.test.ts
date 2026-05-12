@@ -10,7 +10,7 @@ import {
   createTestStore,
 } from '../__tests__/helpers.js'
 
-describe('GET /api/delivery/tracking/:orderId', () => {
+describe('GET /delivery/tracking/:orderId', () => {
   const app = Fastify({ logger: false })
 
   beforeAll(async () => {
@@ -26,7 +26,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
   it('returns 401 when unauthenticated', async () => {
     const res = await app.inject({
       method: 'GET',
-      url: '/api/delivery/tracking/00000000-0000-4000-8000-000000000001',
+      url: '/delivery/tracking/00000000-0000-4000-8000-000000000001',
     })
     expect(res.statusCode).toBe(401)
   })
@@ -58,7 +58,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
 
     const res = await app.inject({
       method: 'GET',
-      url: `/api/delivery/tracking/${order.id}`,
+      url: `/delivery/tracking/${order.id}`,
       headers: authHeaders(customer.token),
     })
     expect(res.statusCode).toBe(200)
@@ -94,7 +94,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
 
     const res = await app.inject({
       method: 'GET',
-      url: `/api/delivery/tracking/${order.id}`,
+      url: `/delivery/tracking/${order.id}`,
       headers: authHeaders(otherCustomer.token),
     })
     expect(res.statusCode).toBe(403)
@@ -127,7 +127,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
 
     const res = await app.inject({
       method: 'GET',
-      url: `/api/delivery/tracking/${order.id}`,
+      url: `/delivery/tracking/${order.id}`,
       headers: authHeaders(vendor.token),
     })
     expect(res.statusCode).toBe(200)
@@ -169,7 +169,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
 
     const res = await app.inject({
       method: 'GET',
-      url: `/api/delivery/tracking/${order.id}`,
+      url: `/delivery/tracking/${order.id}`,
       headers: authHeaders(staff.token),
     })
     expect(res.statusCode).toBe(200)
@@ -211,7 +211,7 @@ describe('GET /api/delivery/tracking/:orderId', () => {
 
     const res = await app.inject({
       method: 'GET',
-      url: `/api/delivery/tracking/${order.id}`,
+      url: `/delivery/tracking/${order.id}`,
       headers: authHeaders(staff.token),
     })
     expect(res.statusCode).toBe(403)

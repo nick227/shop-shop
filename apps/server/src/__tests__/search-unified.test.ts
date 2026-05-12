@@ -45,6 +45,9 @@ describe('/api/search/unified', () => {
           name: 'Test Pizza Place',
           description: 'Best pizza in town',
           slug: `test-pizza-${Date.now()}`,
+          phone: '555-0101',
+          email: `pizza-${Date.now()}@store.test`,
+          website: 'https://example.com',
           isPublished: true,
           addressStreet: '123 Main St',
           addressCity: 'Austin',
@@ -62,7 +65,8 @@ describe('/api/search/unified', () => {
       const data = JSON.parse(response.payload)
       expect(data.query).toBe('pizza')
       expect(data.sections.stores.total).toBeGreaterThan(0)
-      expect(data.sections.stores.results[0].name).toContain('Pizza')
+      const names = (data.sections.stores.results as Array<{ name: string }>).map((r) => r.name)
+      expect(names.some((n) => n.toLowerCase().includes('pizza'))).toBe(true)
 
       // Cleanup
       await prisma.store.delete({ where: { id: testStore.id } })

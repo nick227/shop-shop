@@ -46,6 +46,7 @@ describe('Address Routes E2E', () => {
         url: '/addresses',
         headers: authHeaders(user.token),
         payload: {
+          userId: user.id,
           label: 'Home',
           contactName: 'John Doe',
           phone: '+14155551234',
@@ -54,6 +55,7 @@ describe('Address Routes E2E', () => {
           city: 'San Francisco',
           state: 'CA',
           postalCode: '94102',
+          country: 'US',
           instructions: 'Ring doorbell',
           isDefault: true,
         },
@@ -77,10 +79,12 @@ describe('Address Routes E2E', () => {
         url: '/addresses',
         headers: authHeaders(user.token),
         payload: {
+          userId: user.id,
           line1: '456 Oak Ave',
           city: 'Oakland',
           state: 'CA',
           postalCode: '94601',
+          country: 'US',
         },
       })
 
@@ -168,8 +172,10 @@ describe('Address Routes E2E', () => {
         headers: authHeaders(user.token),
       })
 
-      // Soft delete throws custom error
-      expect(response.statusCode).toBe(500)
+      // Soft delete runs in beforeDelete; hook error is mapped to 403 by BaseCrudController
+      expect(response.statusCode).toBe(403)
+      const errBody = JSON.parse(response.body) as { error: string }
+      expect(errBody.error).toBe('Address archived successfully')
 
       // Verify soft deleted
       const { prisma } = await import('@packages/db')

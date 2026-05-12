@@ -70,6 +70,7 @@ describe('Item Routes E2E', () => {
         payload: {
           storeId,
           title: 'Simple Item',
+          description: 'Minimal',
           price: '5.00',
         },
       })
@@ -148,6 +149,8 @@ describe('Item Routes E2E', () => {
         url: `/items/${updateItemId}`,
         headers: authHeaders(vendor.token),
         payload: {
+          title: 'Patched item',
+          description: 'Updated',
           price: '15.99',
         },
       })
@@ -163,6 +166,8 @@ describe('Item Routes E2E', () => {
         url: `/items/${updateItemId}`,
         headers: authHeaders(admin.token),
         payload: {
+          title: 'Admin patched',
+          description: 'Admin update',
           price: '20.00',
         },
       })
@@ -176,6 +181,8 @@ describe('Item Routes E2E', () => {
         url: `/items/${updateItemId}`,
         headers: authHeaders(vendor2.token),
         payload: {
+          title: 'Malicious',
+          description: 'Hack',
           price: '25.00',
         },
       })
