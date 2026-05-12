@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
@@ -8,15 +8,25 @@ import { PostCard } from '@/features/river/components/PostCard/PostCard'
 import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
 import { Button, Skeleton } from '@shared/ui/primitives'
+import { cn } from '@shared/lib/cn'
 
 interface StoreFeedSectionProps {
   readonly storeId: string
   readonly storeName: string
+  /** Layout wrapper; default fills parent (e.g. store PageShell container). */
+  readonly className?: string
+  /** When false, omits the built-in “Feed” title row (parent supplies page-level heading). */
+  readonly showFeedHeader?: boolean
 }
 
 /** Store-scoped River slice: same `getFeed` + mapping as global River; posts rank in Shop River too. */
-export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) {
-  const [commentsPostId, setCommentsPostId] = useState<string | null>(null)
+export function StoreFeedSection({
+  storeId,
+  storeName,
+  className,
+  showFeedHeader = true,
+}: StoreFeedSectionProps) {
+  const [commentsPostId, setCommentsPostId] = useState<string | undefined>()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
     queryKey: ['store-feed', storeId],
@@ -79,50 +89,56 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
     [actions],
   )
 
+  const wrap = (children: ReactNode) => (
+    <section className={cn('w-full space-y-4', className)}>{children}</section>
+  )
+
   if (error) {
-    return (
-      <section className="max-w-2xl space-y-2">
+    return wrap(
+      <>
         <h2 className="text-xl font-bold text-foreground">Feed</h2>
         <p className="text-sm text-muted-foreground">Could not load updates right now.</p>
-      </section>
+      </>,
     )
   }
 
   if (isLoading && !data) {
-    return (
-      <section className="max-w-2xl space-y-3">
+    return wrap(
+      <>
         <h2 className="text-xl font-bold text-foreground">Feed</h2>
         <div className="space-y-3">
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-36 w-full rounded-xl" />
           ))}
         </div>
-      </section>
+      </>,
     )
   }
 
-  return (
-    <section className="max-w-2xl space-y-4">
+  return wrap(
+    <>
       {commentsPostId ? (
         <RiverCommentsPanel
           postId={commentsPostId}
-          onClose={() => setCommentsPostId(null)}
+          onClose={() => setCommentsPostId(undefined)}
           isAuthenticated={actions.isAuthenticated}
           onRequireLogin={actions.redirectToLogin}
         />
-      ) : null}
+      ) : undefined}
 
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Feed</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Updates from {storeName} appear on Shop River too.
-          </p>
+      {showFeedHeader ? (
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Feed</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Updates from {storeName} appear on Shop River too.
+            </p>
+          </div>
+          <Link to="/river" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+            Shop River
+          </Link>
         </div>
-        <Link to="/river" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-          Shop River
-        </Link>
-      </div>
+      ) : undefined}
 
       {posts.length === 0 ? (
         <p className="text-sm text-muted-foreground">No updates from this kitchen yet.</p>
@@ -142,7 +158,7 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
         </ul>
       )}
 
-      {hasNextPage ? (
+      {hasNextPage && (
         <div className="pt-1">
           <Button
             variant="outline"
@@ -154,7 +170,7 @@ export function StoreFeedSection({ storeId, storeName }: StoreFeedSectionProps) 
             Load more
           </Button>
         </div>
-      ) : null}
-    </section>
+      )}
+    </>,
   )
 }
