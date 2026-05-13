@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
-import { HomeVendorTypes } from '@features/home/components/HomeVendorTypes'
 import { HomeNewestProducts } from '@features/home/components/HomeNewestProducts'
 import { HomeSellSection } from '@features/home/components/HomeSellSection'
 import { geocodeCity } from '@services/geocoding'
@@ -51,7 +50,6 @@ export function RiverDiscovery() {
     <div className="space-y-6">
       <AvailableLocations onSelectCity={onSelectCity} />
       <NewestStores />
-      <HomeVendorTypes />
       <HomeNewestProducts />
       <HomeSellSection />
     </div>

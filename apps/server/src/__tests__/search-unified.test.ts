@@ -7,6 +7,8 @@ import { prisma } from '@packages/db'
 import { createApp } from '../index'
 import { createAuthenticatedUser, cleanupTestData, TEST_NAMESPACE } from './helpers'
 
+const testImageUrl = (label: string) => `https://example.com/${TEST_NAMESPACE}-${label}.jpg`
+
 describe('/api/search/unified', () => {
   let app: FastifyInstance
 
@@ -49,6 +51,7 @@ describe('/api/search/unified', () => {
           email: `pizza-${Date.now()}@store.test`,
           website: 'https://example.com',
           isPublished: true,
+          imageUrl: testImageUrl('pizza'),
           addressStreet: '123 Main St',
           addressCity: 'Austin',
           addressState: 'TX',
@@ -81,6 +84,7 @@ describe('/api/search/unified', () => {
           description: 'Somewhere in Texas',
           slug: `test-austin-${Date.now()}`,
           isPublished: true,
+          imageUrl: testImageUrl('austin'),
           addressStreet: '1 Congress Ave',
           addressCity: 'Austin',
           addressState: 'TX',
@@ -98,6 +102,51 @@ describe('/api/search/unified', () => {
       expect(data.sections.stores.total).toBeGreaterThan(0)
       expect(data.sections.stores.results.some((s: { name: string }) => s.name === testStore.name)).toBe(true)
     })
+
+    it('should exclude stores without an image from store results', async () => {
+      const vendor = await createAuthenticatedUser('VENDOR')
+      const token = `imageless-${Date.now()}`
+      const imagelessStore = await prisma.store.create({
+        data: {
+          ownerUserId: vendor.id,
+          name: `Imageless ${token}`,
+          description: 'This store should not be shown on the River',
+          slug: `test-imageless-${Date.now()}`,
+          isPublished: true,
+          addressStreet: '1 Hidden Ave',
+          addressCity: 'Austin',
+          addressState: 'TX',
+          addressZip: '78701',
+        },
+      })
+      const imagedStore = await prisma.store.create({
+        data: {
+          ownerUserId: vendor.id,
+          name: `Imaged ${token}`,
+          description: 'This store can be shown on the River',
+          slug: `test-imaged-${Date.now()}`,
+          isPublished: true,
+          imageUrl: testImageUrl('imaged'),
+          addressStreet: '2 Visible Ave',
+          addressCity: 'Austin',
+          addressState: 'TX',
+          addressZip: '78701',
+        },
+      })
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/search/unified?q=${encodeURIComponent(token)}`,
+      })
+
+      expect(response.statusCode).toBe(200)
+      const data = JSON.parse(response.payload)
+      const ids = (data.sections.stores.results as Array<{ id: string }>).map((store) => store.id)
+      expect(ids).toContain(imagedStore.id)
+      expect(ids).not.toContain(imagelessStore.id)
+
+      await prisma.store.deleteMany({ where: { id: { in: [imagelessStore.id, imagedStore.id] } } })
+    })
   })
 
   describe('Location filtering', () => {
@@ -110,6 +159,7 @@ describe('/api/search/unified', () => {
           description: 'Local food',
           slug: `test-austin-restaurant-${Date.now()}`,
           isPublished: true,
+          imageUrl: testImageUrl('restaurant'),
           addressStreet: '123 Main St',
           addressCity: 'Austin',
           addressState: 'TX',
@@ -140,6 +190,7 @@ describe('/api/search/unified', () => {
           description: 'Store with specific ZIP',
           slug: `test-zip-store-${Date.now()}`,
           isPublished: true,
+          imageUrl: testImageUrl('zip-store'),
           addressStreet: '456 Oak Ave',
           addressCity: 'Boston',
           addressState: 'MA',
@@ -176,6 +227,7 @@ describe('/api/search/unified', () => {
           isPublished: true,
           phone: '555-0123',
           slug: `test-nearby-${Date.now()}`,
+          imageUrl: testImageUrl('nearby'),
           latitude: 39.17,
           longitude: baseLon,
           addressStreet: '123 Nearby St',
@@ -194,6 +246,7 @@ describe('/api/search/unified', () => {
           isPublished: true,
           phone: '555-0456',
           slug: `test-distant-${Date.now()}`,
+          imageUrl: testImageUrl('distant'),
           latitude: 39.245,
           longitude: baseLon,
           addressStreet: '456 Distant Ave',
@@ -239,6 +292,7 @@ describe('/api/search/unified', () => {
             isPublished: true,
             phone: `555-${String(i).padStart(4, '0')}`,
             slug: `${TEST_NAMESPACE}-coord-${Date.now()}-${i}`,
+            imageUrl: testImageUrl(`coord-${i}`),
             latitude: baseLat + (i * 0.01),
             longitude: baseLon + (i * 0.01),
             addressStreet: `${i} Test St`,

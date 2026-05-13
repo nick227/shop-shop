@@ -6,7 +6,6 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
-import { HomeVendorTypes } from './HomeVendorTypes'
 import { HomeNewestProducts } from './HomeNewestProducts'
 import { HomeSellSection } from './HomeSellSection'
 import { geocodeCity } from '@services/geocoding'
@@ -52,20 +51,19 @@ export function DiscoverySection() {
   return (
     <>
       <AvailableLocations onSelectCity={(entry) => void handleCitySelect(entry)} />
-      <HomeVendorTypes />
       <NewestStores />
       <HomeNewestProducts />
       <HomeSellSection />
       <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <p className="text-sm font-semibold text-foreground">Local-first</p>
           <p className="mt-1 text-sm text-muted-foreground">Neighborhood sellers you won&apos;t find on giant apps.</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <p className="text-sm font-semibold text-foreground">Straightforward checkout</p>
           <p className="mt-1 text-sm text-muted-foreground">Cart, pay, track — without extra noise.</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <p className="text-sm font-semibold text-foreground">Clear order status</p>
           <p className="mt-1 text-sm text-muted-foreground">Know when your order is received and ready.</p>
         </div>

@@ -123,7 +123,7 @@ export const checkProductActivationRequirements = async (productId: string): Pro
 
   // Check media requirements
   const mediaCount = await prisma.mediaAsset.count({
-    where: { itemId: productId }
+    where: { itemId: productId, kind: 'IMAGE' }
   })
   const hasMedia = mediaCount >= 1
 
@@ -174,7 +174,7 @@ export const checkBundleActivationRequirements = async (
   if (!bundle) throw new Error('Bundle not found')
 
   const hasRequiredFields = !!(bundle.name)
-  const mediaCount = await prisma.mediaAsset.count({ where: { bundleId } })
+  const mediaCount = await prisma.mediaAsset.count({ where: { bundleId, kind: 'IMAGE' } })
   const hasMedia = mediaCount >= 1
   
   // Production safety rules: bundle must have at least 2 items, all from same store, all active

@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
 
   // Stores data fetching
   const { data: storesData, isLoading: storesLoading } = useQuery<AdminStoresResponse>({
-    queryKey: ['admin-stores', search, statusFilter, page],
+    queryKey: ['admin-stores', 'dashboard', search, statusFilter, page],
     queryFn: async () => {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
@@ -277,6 +277,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed to load stores')
       return res.json()
     },
+    enabled: Boolean(token),
   })
 
   const bulkDeleteMutation = useMutation({

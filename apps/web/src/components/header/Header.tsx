@@ -95,7 +95,7 @@ export function Header({ className = '' }: HeaderProps) {
   return (
     <>
       <header className={`sticky top-0 shadow-md backdrop-blur-md bg-white/95 header z-[999] ${className}`}>
-        <div className="px-4 py-3 mx-auto max-w-4xl">
+        <div className="px-4 py-3 mx-auto max-w-5xl">
           <div className="flex justify-between items-center">
             {/* Left side - Branding and Search */}
             <div className="flex flex-1 gap-4 items-center">

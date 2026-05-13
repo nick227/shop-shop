@@ -1,6 +1,7 @@
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@packages/db'
+import { requireAdmin } from '../middleware/rbac.js'
 
 const BulkDeleteStoresSchema = z.object({
   storeIds: z.array(z.string()).min(1).max(100), // Limit to 100 stores at a time
@@ -8,25 +9,8 @@ const BulkDeleteStoresSchema = z.object({
 })
 
 export async function adminStoresRoutes(app: FastifyInstance) {
-  // Admin-only middleware check
-  app.addHook('preHandler', async (request, reply) => {
-    const token = request.headers.authorization?.replace('Bearer ', '')
-    if (!token) {
-      return reply.code(401).send({ error: 'Authentication required' })
-    }
-
-    // Verify token and check admin role
-    try {
-      const payload = app.jwt.verify(token) as { userId: string; role: string }
-      if (payload.role !== 'ADMIN') {
-        return reply.code(403).send({ error: 'Admin access required' })
-      }
-      // Attach user info to request for later use
-      (request as any).user = payload
-    } catch (error) {
-      return reply.code(401).send({ error: 'Invalid token' })
-    }
-  })
+  // Same auth as /api/admin/*: Bearer JWT via verifyJWT + ADMIN role (app.jwt is not registered).
+  app.addHook('preHandler', requireAdmin())
 
   // GET /api/admin/stores - List all stores for admin
   app.get('/stores', async (request, reply) => {
@@ -106,7 +90,7 @@ export async function adminStoresRoutes(app: FastifyInstance) {
   app.delete('/stores/bulk', async (request, reply) => {
     try {
       const { storeIds, reason } = BulkDeleteStoresSchema.parse(request.body)
-      const user = (request as any).user
+      const adminUser = request.user
 
       // Validate all stores exist before deletion
       const stores = await prisma.store.findMany({
@@ -166,7 +150,7 @@ export async function adminStoresRoutes(app: FastifyInstance) {
       // Log the bulk delete action for audit
       await prisma.adminAuditLog.create({
         data: {
-          adminId: user.userId,
+          adminId: adminUser.id,
           action: 'BULK_DELETE_STORES',
           targetType: 'Store',
           targetId: null,

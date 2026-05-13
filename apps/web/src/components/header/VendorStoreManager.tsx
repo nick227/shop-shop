@@ -4,12 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { stores as storesApi } from '@api/apiWrapper'
 import { useAuthStore } from '@stores/authStore'
 
+const pillLinkClass =
+  'inline-block px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap bg-gray-100 rounded-lg border-0 transition-all cursor-pointer hover:bg-gray-200 hover:-translate-y-px'
+
 interface VendorStoreManagerProps {
-  onNavigateToVendor?: () => void
-  className?: string
+  readonly onNavigateToVendor?: () => void
+  readonly className?: string
 }
 
-export function VendorStoreManager({ onNavigateToVendor, className = '' }: VendorStoreManagerProps) {
+export function VendorStoreManager({ onNavigateToVendor: _onNavigateToVendor, className = '' }: VendorStoreManagerProps) {
   const { user, isAuthenticated } = useAuthStore()
   const role = user?.role?.toUpperCase()
 
@@ -30,7 +33,7 @@ export function VendorStoreManager({ onNavigateToVendor, className = '' }: Vendo
 
   const getVendorButtonConfig = () => {
     if (role === 'ADMIN') {
-      return { text: 'Admin', destination: '/vendor/dashboard' }
+      return { text: 'Vendor', destination: '/vendor/dashboard' }
     }
 
     if (role === 'VENDOR' || userHasStore) {
@@ -43,10 +46,19 @@ export function VendorStoreManager({ onNavigateToVendor, className = '' }: Vendo
   const buttonConfig = getVendorButtonConfig()
 
   return (
-    <div className={className}>
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      {role === 'ADMIN' && (
+        <Link
+          to="/admin"
+          className={pillLinkClass}
+          aria-label="Admin dashboard"
+        >
+          ⚙️ Admin
+        </Link>
+      )}
       <Link
         to={buttonConfig.destination}
-        className="inline-block px-4 py-2 text-sm font-medium text-gray-800 bg-gray-100 rounded-lg border-0 transition-all cursor-pointer hover:bg-gray-200 hover:-translate-y-px"
+        className={pillLinkClass}
         aria-label="Vendor Portal"
       >
         🏪 {buttonConfig.text}

@@ -16,6 +16,9 @@ const ITEM_LIST_WHERE_KEYS = new Set([
   'spicyLevel',
   'createdAt',
   'updatedAt',
+  'media',
+  'imageUrl',
+  'store',
 ])
 
 const BOOL_KEYS = new Set([

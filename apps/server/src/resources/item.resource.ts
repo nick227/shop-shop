@@ -8,7 +8,7 @@ import {
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
 import { prisma, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION } from '@packages/db'
-import { checkProductActivationRequirements } from '@packages/db/services'
+import { checkProductActivationRequirements, checkStoreActivationRequirements } from '@packages/db/services'
 
 import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.js'
 
@@ -114,24 +114,42 @@ export const itemResource = defineResource({
       const nextFilters = sanitizeItemListWhere(filters as Record<string, unknown>)
       // Apply activation requirements for public listings
       if (!nextFilters.storeId) {
+        // Exclude specific stores if needed (e.g. system stores)
         nextFilters.store = PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION
-        // For public listings without store filter, check product activation
+        
+        // Add basic product requirements to the primary filter
+        nextFilters.isActive = true
+        nextFilters.media = { some: { kind: 'IMAGE', url: { not: '' } } }
+        
+        // 1. Fetch items that pass basic product-level filters
         const itemList = await prisma.item.findMany({
           where: nextFilters,
-          select: { id: true },
+          select: { id: true, storeId: true },
+          take: 100, // Limit the pre-check pool size
         })
         
-        const itemIds = itemList.map(item => item.id)
-        const activationChecks = await Promise.all(
-          itemIds.map(itemId => checkProductActivationRequirements(itemId))
+        if (itemList.length === 0) {
+          nextFilters.id = { in: [NIL_UUID] }
+          return nextFilters
+        }
+        
+        // 2. Batch check store activation to avoid N+1 queries
+        const uniqueStoreIds = [...new Set(itemList.map(item => item.storeId))]
+        const storeActivationMap = new Map<string, boolean>()
+        
+        await Promise.all(
+          uniqueStoreIds.map(async (sid) => {
+            const check = await checkStoreActivationRequirements(sid)
+            storeActivationMap.set(sid, check.canAppearInMarketplace)
+          })
         )
         
-        // Only show products that meet activation requirements
-        const eligibleItemIds = activationChecks
-          .filter(check => check.canAppearPublicly)
-          .map((_, index) => itemIds[index])
+        // 3. Filter items by store eligibility
+        const eligibleItemIds = itemList
+          .filter(item => storeActivationMap.get(item.storeId))
+          .map(item => item.id)
         
-        // Filter by eligible item IDs
+        // Apply the final set of eligible IDs to the query
         if (eligibleItemIds.length > 0) {
           nextFilters.id = { in: eligibleItemIds }
         } else {

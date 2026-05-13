@@ -199,6 +199,10 @@ describe('River posts & marketplace (official store)', () => {
         name: `${mark} Vendor Store`,
         isPublished: true,
       })
+      await prisma.store.update({
+        where: { id: vendorStore.id },
+        data: { imageUrl: `https://example.com/${TEST_NAMESPACE}-marketplace-vendor.jpg` },
+      })
 
       const res = await app.inject({
         method: 'GET',

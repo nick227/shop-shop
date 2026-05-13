@@ -75,17 +75,10 @@ export function StoreHeaderFull({
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-2xl border shadow-sm border-border bg-card text-card-foreground',
+        'border-border bg-card text-card-foreground',
         className,
       )}
     >
-      <div className="relative aspect-[2.4/1] max-h-[min(280px,38vh)] min-h-[140px] w-full bg-muted">
-        <div className="absolute inset-0">{renderHeroMedia(heroMedia, storeImageUrl, store.name)}</div>
-        <div
-          className="absolute inset-0 bg-gradient-to-t via-transparent pointer-events-none from-black/25 to-black/10"
-          aria-hidden
-        />
-      </div>
 
       <div className="px-5 py-6 border-b border-border sm:px-8 sm:py-8">
         <header className="space-y-4">
@@ -159,6 +152,14 @@ export function StoreHeaderFull({
         <StoreHeaderChips store={store} />
 
         {socialEntries.length > 0 ? <StoreHeaderSocialRow entries={socialEntries} /> : undefined}
+      </div>
+      
+      <div className="relative aspect-[2.4/1] max-h-[min(280px,38vh)] min-h-[640px] w-full bg-muted">
+        <div className="absolute inset-0">{renderHeroMedia(heroMedia, storeImageUrl, store.name)}</div>
+        <div
+          className="absolute inset-0 bg-gradient-to-t via-transparent pointer-events-none from-black/25 to-black/10"
+          aria-hidden
+        />
       </div>
 
       {hasCoords && lat && lng ? (

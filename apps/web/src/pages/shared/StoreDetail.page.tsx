@@ -193,7 +193,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-3xl" contentClassName="py-6 md:py-12">
+    <PageShell className="bg-background" containerClassName="max-w-5xl" contentClassName="py-6 md:py-12">
       <KitchenContainer />
     </PageShell>
   )

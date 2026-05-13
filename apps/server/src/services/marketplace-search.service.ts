@@ -202,6 +202,10 @@ export class MarketplaceSearchService {
       const where: Prisma.StoreWhereInput = {
         isPublished: true,
         ...PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
+        OR: [
+          { media: { some: { kind: 'IMAGE', url: { not: '' } } } },
+          { imageUrl: { not: null } },
+        ],
       }
       if (storeType) where.storeType = storeType as any
       if (priceRange) where.priceRange = priceRange as any
@@ -218,12 +222,17 @@ export class MarketplaceSearchService {
       }
 
       if (query) {
-        where.OR = [
-          { name: { contains: query } },
-          { description: { contains: query } },
-          { addressCity: { contains: query } },
-          { addressState: { contains: query } },
-          { addressZip: { contains: query } },
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+          {
+            OR: [
+              { name: { contains: query } },
+              { description: { contains: query } },
+              { addressCity: { contains: query } },
+              { addressState: { contains: query } },
+              { addressZip: { contains: query } },
+            ],
+          },
         ]
       }
 
@@ -245,6 +254,8 @@ export class MarketplaceSearchService {
       const results: StoreSearchResult[] = []
       for (const store of candidateStores) {
         if (results.length >= 50) break
+        const imageUrl = store.media?.[0]?.url || store.imageUrl || undefined
+        if (!imageUrl?.trim()) continue
 
         let distance: number | undefined
         if (hasUserCoords && store.latitude && store.longitude) {
@@ -259,7 +270,7 @@ export class MarketplaceSearchService {
           id: store.id,
           name: store.name,
           description: store.description || undefined,
-          imageUrl: store.media?.[0]?.url || undefined,
+          imageUrl,
           prepTimeMin: store.prepTimeMin || 30,
           isOpen: true,
           category: store.storeType ?? 'GENERAL',

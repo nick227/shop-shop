@@ -454,7 +454,7 @@ export default function RiverPage() {
         />
       ) : null}
       
-      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-3xl md:py-10')}>
+      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-5xl md:py-10')}>
         <div className="space-y-6">
           <PublicMaintenanceBanner />
           <div className="space-y-6 w-full">

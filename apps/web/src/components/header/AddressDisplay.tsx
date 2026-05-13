@@ -22,7 +22,7 @@ export function AddressDisplay({
   return (
     <button
       type="button" 
-      className={`px-4 py-2 rounded-lg border-0 cursor-pointer text-sm font-medium transition-all bg-gray-100 text-gray-800 hover:bg-gray-200 hover:-translate-y-px ${className}`}
+      className={`px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap bg-gray-100 rounded-lg border-0 transition-all cursor-pointer hover:bg-gray-200 hover:-translate-y-px ${className}`}
       onClick={onClearLocation}
       aria-label={`Change location. Current: ${locationDisplayName}, ${currentRadius} miles`}
     >

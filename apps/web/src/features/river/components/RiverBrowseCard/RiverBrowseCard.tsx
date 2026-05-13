@@ -12,8 +12,8 @@ import {
   messageForGeolocationPositionError,
 } from '@shared/lib/utils/geolocationBrowser'
 import type { StoreWithDistance } from '@api/types'
+import type { StoreSearchResult } from '@features/search/hooks/useUnifiedSearchApi'
 import { RiverHero } from '../RiverHero/RiverHero'
-import { RiverBrowseMatchColumn } from './RiverBrowseMatchColumn'
 import { RiverBrowseDetailColumn } from './RiverBrowseDetailColumn'
 
 const GEO_OPTIONS: PositionOptions = {
@@ -22,8 +22,25 @@ const GEO_OPTIONS: PositionOptions = {
   timeout: 15_000,
 }
 
-const MATCH_LIST_SKELETON_COUNT = 4
-const AUTO_ADVANCE_MS = 8000
+const AUTO_ADVANCE_MS = 10_000
+
+function randomIndex(max: number): number {
+  return Math.floor(Math.random() * max)
+}
+
+function pickRandomStoreId(
+  stores: readonly StoreSearchResult[],
+  currentId: string | undefined,
+): string | undefined {
+  if (stores.length === 0) return undefined
+
+  const candidates = stores.filter((store) => store.id !== currentId)
+  if (candidates.length > 0) {
+    return candidates[randomIndex(candidates.length)].id
+  }
+
+  return currentId
+}
 
 export interface RiverBrowseCardProps {
   readonly featuredStore: StoreWithDistance | null | undefined
@@ -64,7 +81,9 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
       return
     }
     setSelectedStoreId((prev) =>
-      prev && listStores.some((s) => s.id === prev) ? prev : listStores[0].id,
+      prev && listStores.some((store) => store.id === prev)
+        ? prev
+        : pickRandomStoreId(listStores, prev),
     )
   }, [listStores])
 
@@ -129,12 +148,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
       return
     }
     const timer = window.setInterval(() => {
-      setSelectedStoreId((prev) => {
-        const currentIdx = listStores.findIndex((s) => s.id === prev)
-        const base = currentIdx >= 0 ? currentIdx : 0
-        const nextIdx = (base + 1) % listStores.length
-        return listStores[nextIdx].id
-      })
+      setSelectedStoreId((prev) => pickRandomStoreId(listStores, prev))
     }, AUTO_ADVANCE_MS)
     return () => window.clearInterval(timer)
   }, [autoAdvanceActive, listStores, browseLoading, awaitingGeo])
@@ -152,7 +166,11 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
   const showDetailSkeleton = Boolean(
     selectedStoreId &&
       !showDetailError &&
-      (detailStoreLoading || detailItemsLoading || !detailStore || !detailStoreSynced || !itemsSynced),
+      (detailStoreLoading ||
+        detailItemsLoading ||
+        !detailStore ||
+        !detailStoreSynced ||
+        !itemsSynced),
   )
 
   const detailStoreRoute =
@@ -160,10 +178,10 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
 
   const heroPick = useMemo(() => {
     if (selectedStoreId) {
-      const fromList = listStores.find((s) => s.id === selectedStoreId)
+      const fromList = listStores.find((store) => store.id === selectedStoreId)
       if (fromList) return fromList
       if (detailStoreSynced && detailStore) return detailStore
-      return
+      return undefined
     }
     return featuredStore ?? undefined
   }, [selectedStoreId, listStores, detailStoreSynced, detailStore, featuredStore])
@@ -173,14 +191,6 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
       (featuredLoading ||
         browseLoading ||
         (Boolean(selectedStoreId) && detailStoreLoading)),
-  )
-
-  const handleSelectStore = useCallback(
-    (id: string) => {
-      cancelAutoAdvance()
-      setSelectedStoreId(id)
-    },
-    [cancelAutoAdvance],
   )
 
   const handleChipFilter = useCallback(
@@ -208,8 +218,6 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
       className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
       aria-labelledby="river-browse-heading"
     >
-      <RiverHero store={heroPick} isLoading={heroIsLoading} embedded onInteraction={cancelAutoAdvance} />
-
       <header className="border-b border-gray-100 p-4">
         <h2 id="river-browse-heading" className="mb-3 text-lg font-semibold tracking-tight text-gray-900">
           Browse kitchens
@@ -253,18 +261,12 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
         ) : undefined}
       </header>
 
-      <div className="grid min-h-[280px] divide-y divide-gray-100 md:grid-cols-2 md:divide-x md:divide-y-0 md:divide-gray-100">
-        <RiverBrowseMatchColumn
-          awaitingGeo={awaitingGeo}
-          geoPending={geoPending}
-          errorMessage={error?.message}
-          browseLoading={browseLoading}
-          listSkeletonCount={MATCH_LIST_SKELETON_COUNT}
-          listStores={listStores}
-          selectedStoreId={selectedStoreId}
-          nearMe={nearMe}
-          onSelectStore={handleSelectStore}
-          onUserInteract={cancelAutoAdvance}
+      <div className="min-h-[660px] bg-white">
+        <RiverHero
+          store={heroPick}
+          isLoading={heroIsLoading}
+          embedded
+          onInteraction={cancelAutoAdvance}
         />
         <RiverBrowseDetailColumn
           selectedStoreId={selectedStoreId}
@@ -273,6 +275,12 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
           detailStore={detailStore}
           detailStoreRoute={detailStoreRoute}
           menuSections={menuSections}
+          emptyMessage={
+            awaitingGeo && geoPending
+              ? 'Getting your location...'
+              : error?.message ??
+                (browseLoading ? 'Finding a kitchen...' : 'Random kitchens will appear here.')
+          }
           onUserInteract={cancelAutoAdvance}
         />
       </div>

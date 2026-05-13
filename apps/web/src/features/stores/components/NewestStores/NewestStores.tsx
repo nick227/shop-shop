@@ -35,8 +35,7 @@ export function NewestStores() {
   return (
     <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
       <div className="flex gap-4 justify-between items-start">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">New kitchens</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">Recently joined the marketplace.</p>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">New members</h2>
       </div>
 
       {isLoading ? (

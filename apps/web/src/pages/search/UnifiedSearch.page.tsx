@@ -164,6 +164,12 @@ function SearchStoreCard({
           {store.description && (
             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{store.description}</p>
           )}
+          {store.address && (
+            <>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{store.address.street}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{store.address.city}, {store.address.state}</p>
+            </>
+          )}
         </div>
 
         <div className="flex gap-2 justify-between items-center text-xs text-muted-foreground">
@@ -381,7 +387,7 @@ export default function UnifiedSearchPage() {
   return (
     <PageShell
       className="bg-background"
-      containerClassName="max-w-3xl"
+      containerClassName="max-w-5xl"
       contentClassName="space-y-6 py-6 md:space-y-8"
     >
       <LocationUrlNotice

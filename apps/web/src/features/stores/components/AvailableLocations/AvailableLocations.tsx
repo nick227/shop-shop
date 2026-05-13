@@ -12,7 +12,7 @@ export function AvailableLocations({ onSelectCity }: AvailableLocationsProps) {
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
         <p className="text-sm text-muted-foreground">Loading areas…</p>
       </section>
     )
@@ -23,18 +23,14 @@ export function AvailableLocations({ onSelectCity }: AvailableLocationsProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">Browse by city</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Every marketplace kitchen mapped by city. ZIPs listed are the ones stores actually use in that area.
-      </p>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
+      <ul className="grid gap-3 mt-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.cities.map((entry) => (
           <li key={`${entry.city}-${entry.state}`}>
             <button
               type="button"
               onClick={() => onSelectCity?.(entry)}
-              className="flex h-full w-full flex-col rounded-xl border border-border bg-background p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+              className="flex flex-col p-4 w-full h-full text-left rounded-xl border transition-colors border-border bg-background hover:border-primary/40 hover:bg-muted/40"
             >
               <span className="font-semibold text-foreground">
                 {entry.city}, {entry.state}
@@ -43,7 +39,7 @@ export function AvailableLocations({ onSelectCity }: AvailableLocationsProps) {
                 {entry.count} {entry.count === 1 ? 'kitchen' : 'kitchens'}
               </span>
               {entry.zips.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mt-3">
                   {entry.zips.map((z) => (
                     <span
                       key={z.zip}

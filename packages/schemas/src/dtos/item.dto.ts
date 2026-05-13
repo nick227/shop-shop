@@ -63,6 +63,7 @@ export const ItemResponseSchema = z.object({
   isGlutenFree: z.boolean().nullable(),
   isDairyFree: z.boolean().nullable(),
   spicyLevel: z.number().int().nullable(),
+  imageUrl: z.string().nullable().optional(),
   media: z.string(),
   cartItems: z.string(),
   orderItems: z.string(),
