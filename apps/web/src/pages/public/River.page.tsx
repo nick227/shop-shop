@@ -458,14 +458,14 @@ export default function RiverPage() {
           <div className="space-y-6 w-full">
             <RiverHero store={heroStore} isLoading={heroLoading} />
           </div>
-          
+
+          <RiverDiscovery />
+
           {isLoading && !data ? (
             <FeedLoadingCards />
           ) : (
             layoutedPosts.map((item, index) => renderPostItem(item, index))
           )}
-
-          <RiverDiscovery />
         </div>
 
         {hasNextPage && (

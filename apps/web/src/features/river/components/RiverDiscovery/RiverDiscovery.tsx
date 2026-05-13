@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
@@ -40,9 +40,16 @@ export function RiverDiscovery() {
     [navigate, setLocation]
   )
 
+  const onSelectCity = useCallback(
+    (entry: CityDirectoryEntry) => {
+      void handleCitySelect(entry)
+    },
+    [handleCitySelect]
+  )
+
   return (
     <div className="space-y-6">
-      <AvailableLocations />
+      <AvailableLocations onSelectCity={onSelectCity} />
       <NewestStores />
       <HomeVendorTypes />
       <HomeNewestProducts />
