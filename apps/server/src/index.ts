@@ -212,8 +212,8 @@ await app.register(promotionEnhancedRoutes)
 await app.register(orderCancellationRoutes) 
 await app.register(favoritesRoutes)
 
-// Item analytics must register before `/items/:id` so `/items/analytics` is not parsed as an id.
-await app.register(itemAnalyticsRoutes)
+// Item analytics must register before `/api/items/:id` so `/api/items/analytics` is not parsed as an id.
+await app.register(itemAnalyticsRoutes, { prefix: '/api' })
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })

@@ -13,7 +13,7 @@ import { StoreHoursEditor } from './components/StoreHoursEditor'
 
 export function createStoreFormSections(
   formData: StoreFormData,
-  onChange: (field: keyof StoreFormData, value: string | number | boolean | any) => void,
+  onChange: <K extends keyof StoreFormData>(field: K, value: StoreFormData[K]) => void,
   isEdit: boolean,
   storeId?: string,
   scopedMediaQueue?: {
@@ -43,7 +43,7 @@ export function createStoreFormSections(
 
           <Select
             value={formData.storeType || ''}
-            onValueChange={(value) => onChange('storeType', value)}
+            onValueChange={(value) => onChange('storeType', value as StoreFormData['storeType'])}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select store type" />
@@ -62,13 +62,13 @@ export function createStoreFormSections(
           <div>
             <TextArea
               label="Description"
-              value={formData.description}
+              value={formData.description ?? ''}
               onChange={(e) => onChange('description', e.target.value)}
               placeholder="Tell customers about your store, cuisine type, specialties, and what makes you unique..."
               rows={5}
               maxLength={1000}
             />
-            <CharCount current={formData.description.length} max={1000} />
+            <CharCount current={(formData.description ?? '').length} max={1000} />
           </div>
         </>
       ),
@@ -407,18 +407,6 @@ export function createStoreFormSections(
               label="Published (visible to customers)"
               checked={formData.isPublished}
               onChange={(e) => onChange('isPublished', e.target.checked)}
-            />
-
-            <Checkbox
-              label="Delivery Enabled"
-              checked={formData.deliveryEnabled}
-              onChange={(e) => onChange('deliveryEnabled', e.target.checked)}
-            />
-
-            <Checkbox
-              label="Pickup Enabled"
-              checked={formData.pickupEnabled}
-              onChange={(e) => onChange('pickupEnabled', e.target.checked)}
             />
           </CheckboxGroup>
 

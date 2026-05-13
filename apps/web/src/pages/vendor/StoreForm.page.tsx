@@ -151,7 +151,7 @@ export default function StoreFormPage() {
     }
   }
 
-  const handleChange = (field: keyof StoreFormData, value: string | number | boolean) => {
+  const handleChange = <K extends keyof StoreFormData>(field: K, value: StoreFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
     // Auto-generate slug from name

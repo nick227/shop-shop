@@ -11,9 +11,16 @@ const REALTIME_LOG_PREFIX = '[Realtime]'
 
 // Create singleton client;
 let clientInstance: RealtimeClient | undefined;
+
+function getDefaultRealtimeUrl(): string {
+  if (typeof window === 'undefined') return 'ws://localhost:3005/realtime'
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/realtime`
+}
+
 export function getRealtimeClient(): RealtimeClient {
   if (!clientInstance) {
-    const wsUrl = env.VITE_WS_URL ?? 'ws://localhost:3005/realtime'
+    const wsUrl = env.VITE_WS_URL ?? getDefaultRealtimeUrl()
 
     clientInstance = createRealtimeClient({
       url: wsUrl,
@@ -62,4 +69,3 @@ export function resetRealtimeClient() {
     clientInstance = undefined;
   }
 }
-
