@@ -26,6 +26,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    globalSetup: ['./scripts/vitest-global-setup.ts'],
     maxWorkers: 1,
     minWorkers: 1,
     server: {

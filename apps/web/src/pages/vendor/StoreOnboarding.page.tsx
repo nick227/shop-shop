@@ -3,17 +3,17 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
-import { useAuth } from '@features/auth/hooks/useAuth'
 import { Button, Input, TextArea, Checkbox } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
-import { Store as StoreIcon, MapPin, Clock, Package } from 'lucide-react'
+import { Store as StoreIcon, MapPin, Clock } from 'lucide-react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
+import type { StoreResponse } from '@api/types'
 
 // Store onboarding schema
 const storeOnboardingSchema = z.object({
@@ -24,7 +24,6 @@ const storeOnboardingSchema = z.object({
   deliveryEnabled: z.boolean().default(true),
   deliveryRadius: z.number().min(1, 'Delivery radius must be at least 1 mile').max(50, 'Delivery radius cannot exceed 50 miles'),
   prepTime: z.number().min(5, 'Prep time must be at least 5 minutes').max(120, 'Prep time cannot exceed 120 minutes'),
-  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED']).default('DRAFT'),
 })
 
 type StoreOnboardingData = z.infer<typeof storeOnboardingSchema>
@@ -48,14 +47,13 @@ const zodFormResolver: Resolver<StoreOnboardingData> = async (values) => {
 
 export default function VendorStoreOnboardingPage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
     watch,
     setValue,
   } = useForm<StoreOnboardingData>({
@@ -68,7 +66,6 @@ export default function VendorStoreOnboardingPage() {
       deliveryEnabled: true,
       deliveryRadius: 25,
       prepTime: 30,
-      status: 'DRAFT',
     },
   })
 
@@ -87,19 +84,46 @@ export default function VendorStoreOnboardingPage() {
           deliveryEnabled: data.deliveryEnabled,
           deliveryDistance: data.deliveryRadius.toString(),
           prepTimeMin: data.prepTime,
-          isPublished: data.status === 'ACTIVE',
+          isPublished: true,
           phone: '',
           email: '',
           website: ''
         }
       })
     },
-    onSuccess: (response) => {
+    onSuccess: async (response, data) => {
       // Handle different response structures
-      const storeId = (response as any)?.id || (response as any)?.data?.id
+      const createdStore = ((response as any)?.data ?? response) as Partial<StoreResponse>
+      const storeId = createdStore.id
       if (storeId) {
-        navigate(`/vendor/stores/${storeId}/settings`)
+        const now = new Date().toISOString()
+        const activeStore = {
+          ...createdStore,
+          id: storeId,
+          name: createdStore.name ?? data.name,
+          description: createdStore.description ?? data.description,
+          addressStreet: createdStore.addressStreet ?? data.address,
+          pickupEnabled: createdStore.pickupEnabled ?? data.pickupEnabled,
+          deliveryEnabled: createdStore.deliveryEnabled ?? data.deliveryEnabled,
+          deliveryDistance: createdStore.deliveryDistance ?? data.deliveryRadius.toString(),
+          prepTimeMin: createdStore.prepTimeMin ?? data.prepTime,
+          isPublished: true,
+          createdAt: createdStore.createdAt ?? now,
+          updatedAt: createdStore.updatedAt ?? now,
+        } as StoreResponse
+
+        queryClient.setQueriesData<StoreResponse[]>(
+          { queryKey: ['vendor-managed-stores'] },
+          (stores) => stores ? [activeStore, ...stores.filter((store) => store.id !== storeId)] : stores
+        )
+
+        await queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+        navigate(`/vendor/dashboard?storeId=${encodeURIComponent(storeId)}`, { replace: true })
+        return
       }
+
+      await queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+      navigate('/vendor/dashboard', { replace: true })
     },
     onError: (error) => {
       console.error('Store creation failed:', error)
@@ -269,28 +293,6 @@ export default function VendorStoreOnboardingPage() {
                   />
                   {errors.prepTime && (
                     <p className="text-sm text-destructive">{errors.prepTime.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Store Status */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Store Status</h3>
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Store Status</label>
-                  </div>
-                  <select
-                    {...register('status')}
-                    className="w-full p-2 border rounded-md"
-                    disabled={isSubmitting}
-                  >
-                    <option value="DRAFT">Draft - Not visible to customers</option>
-                    <option value="ACTIVE">Active - Accepting orders</option>
-                    <option value="PAUSED">Paused - Temporarily closed</option>
-                  </select>
-                  {errors.status && (
-                    <p className="text-sm text-destructive">{errors.status.message}</p>
                   )}
                 </div>
               </div>

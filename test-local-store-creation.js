@@ -80,7 +80,7 @@ async function checkServerStatus() {
   log('Checking server status...', 'info');
   
   try {
-    const { response, data } = await makeRequest('/health');
+    const { response, data } = await makeRequest('/healthz');
     
     if (response.ok) {
       log(`Server is running! Version: ${data.version || 'unknown'}`, 'success');
