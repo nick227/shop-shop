@@ -36,7 +36,14 @@ interface UpdateCartItemInput { quantity?: number; notes?: string }
 const CART_NOT_IMPLEMENTED_MESSAGE = 'Cart API methods not yet in OpenAPI spec'
 
 function getApiBaseUrl(): string {
-  return (import.meta.env.VITE_API_URL || 'http://localhost:3005').replace(/\/$/, '')
+  const raw = import.meta.env.VITE_API_URL
+  const base =
+    raw !== undefined && raw !== ''
+      ? String(raw)
+      : import.meta.env.DEV
+        ? ''
+        : 'http://localhost:3005'
+  return base.replace(/\/$/, '')
 }
 
 function setQueryParam(params: URLSearchParams, key: string, value: string | number | undefined): void {

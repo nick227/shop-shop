@@ -16,6 +16,11 @@ export default defineConfig({
       'Cache-Control': 'no-store',
     },
     proxy: {
+      '/geocode': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+      },
       // Media routes on the backend are registered at `/media/*` (not `/api/media/*`).
       // The web app calls `/api/media/*` so it is safely proxied (and doesn't hit Vite HTML fallback).
       // Rewrite `/api/media/*` -> `/media/*` at the proxy layer to match the server.

@@ -149,9 +149,10 @@ class ApiClient {
     if (!baseUrl && import.meta.env.PROD) {
       throw new Error('VITE_API_URL environment variable is required in production')
     }
-    
-    // Fallback for test environment; strip trailing API prefixes so callers can append route groups.
-    const origin = (baseUrl || 'http://localhost:3005').replace(/\/$/, '')
+
+    // Dev: empty origin = same host as Vite; `/api/*` is proxied to the API (no browser CORS).
+    // Prod / explicit VITE_API_URL: absolute API origin. Tests often set VITE_API_URL explicitly.
+    const origin = (baseUrl || (import.meta.env.DEV ? '' : 'http://localhost:3005')).replace(/\/$/, '')
     return origin.replace(/\/api(?:\/v1)?$/i, '')
   }
 

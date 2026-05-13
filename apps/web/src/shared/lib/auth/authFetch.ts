@@ -24,7 +24,13 @@ export function getApiBaseUrl(): string {
   if (!url && import.meta.env.PROD) {
     throw new Error('VITE_API_URL is required in production builds')
   }
-  return (url || 'http://localhost:3005').replace(/\/$/, '').replace(/\/api(?:\/v1)?$/i, '')
+  const origin =
+    url !== undefined && url !== ''
+      ? String(url)
+      : import.meta.env.DEV
+        ? ''
+        : 'http://localhost:3005'
+  return origin.replace(/\/$/, '').replace(/\/api(?:\/v1)?$/i, '')
 }
 
 /**

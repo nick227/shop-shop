@@ -12,6 +12,12 @@ export interface GeocodeResult {
   displayName: string;
 }
 
+function apiOriginForRequests(): string {
+  const raw = import.meta.env.VITE_API_URL
+  if (raw !== undefined && raw !== '') return String(raw).replace(/\/$/, '')
+  return import.meta.env.DEV ? '' : 'http://localhost:3005'
+}
+
 // const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005'
 
 /**
@@ -19,7 +25,7 @@ export interface GeocodeResult {
  */
 export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undefined> {
   try {
-    const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3005'
+    const apiBaseUrl = apiOriginForRequests()
     const url = `${apiBaseUrl}/geocode/zip?zip=${zipCode}`
     console.log(`[Geocoding] Fetching ZIP ${zipCode} from ${url}`)
     
@@ -50,9 +56,7 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
  */
 export async function geocodeCity(city: string, state: string): Promise<GeocodeResult | undefined> {
   try {
-    const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3005'
-    const response = await fetch(
-      `${apiBaseUrl}/geocode/city?city=${encodeURIComponent(city)}&state=${state}`
+    const apiBaseUrl = apiOriginForRequests()
     )
     
     if (!response.ok) {
@@ -74,9 +78,7 @@ export async function geocodeCity(city: string, state: string): Promise<GeocodeR
  */
 export async function geocodeAddress(address: string): Promise<GeocodeResult | undefined> {
   try {
-    const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3005'
-    const response = await fetch(
-      `${apiBaseUrl}/geocode/address?address=${encodeURIComponent(address)}`
+    const apiBaseUrl = apiOriginForRequests()
     )
     
     if (!response.ok) {
