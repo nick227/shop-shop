@@ -9,6 +9,7 @@ import type { StoreFormData } from '@api/types'
 import { EnhancedMediaGalleryManager } from '@shared/ui/media'
 import { maskEmailInput, maskUsPhoneInput, maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
 import { US_STATES } from '@shared/lib/constants/usStates'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { StoreHoursEditor } from './components/StoreHoursEditor'
 
 export function createStoreFormSections(
@@ -70,6 +71,19 @@ export function createStoreFormSections(
             />
             <CharCount current={(formData.description ?? '').length} max={1000} />
           </div>
+
+          {isEdit && storeId && (
+            <div className="mt-4">
+              <a
+                href={getStoreRoute({ id: storeId, name: formData.name })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                👁️ View Store Public Page
+              </a>
+            </div>
+          )}
         </>
       ),
     },
