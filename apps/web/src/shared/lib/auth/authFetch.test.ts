@@ -114,10 +114,14 @@ describe('authFetch', () => {
         updateUser: vi.fn()
       })
 
+      const errorBody = { error: 'Invalid token' }
       const mockFetch = vi.fn().mockResolvedValue({
         status: 401,
         ok: false,
-        json: vi.fn().mockResolvedValue({ error: 'Unauthorized' })
+        json: vi.fn().mockResolvedValue(errorBody),
+        clone: vi.fn().mockReturnValue({
+          json: vi.fn().mockResolvedValue(errorBody),
+        }),
       })
       global.fetch = mockFetch
 
