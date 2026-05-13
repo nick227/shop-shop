@@ -94,21 +94,21 @@ export function Header({ className = '' }: HeaderProps) {
 
   return (
     <>
-      <header className={`bg-white/95 backdrop-blur-md shadow-md sticky header top-0 z-[999] ${className}`}>
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+      <header className={`sticky top-0 shadow-md backdrop-blur-md bg-white/95 header z-[999] ${className}`}>
+        <div className="px-4 py-3 mx-auto max-w-4xl">
+          <div className="flex justify-between items-center">
             {/* Left side - Branding and Search */}
-            <div className="flex items-center gap-4 flex-1">
+            <div className="flex flex-1 gap-4 items-center">
               <SiteBranding />
               <SiteSearch onSearch={handleSearch} />
             </div>
             
             {/* Right side - Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex gap-3 items-center">
               {user?.role === 'RIDER' && (
                 <Link
                   to="/driver/deliveries"
-                  className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                  className="hidden gap-2 items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 transition-colors sm:inline-flex hover:bg-gray-50"
                 >
                   Driver Deliveries
                 </Link>

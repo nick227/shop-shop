@@ -186,7 +186,7 @@ function KitchenContainer() {
         ? menuSections.map((section) => (
             <section key={section.label}>
               <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2">
                 {section.items.map((item) => (
                   <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
                 ))}
@@ -239,7 +239,7 @@ function KitchenContainer() {
 
 export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-6xl" contentClassName="py-6 md:py-12">
+    <PageShell className="bg-background" containerClassName="max-w-3xl" contentClassName="py-6 md:py-12">
       <KitchenContainer />
     </PageShell>
   )

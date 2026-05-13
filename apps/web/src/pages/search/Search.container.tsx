@@ -108,7 +108,7 @@ export function SearchContainer() {
   return (
     <PageShell
       className="bg-background"
-      containerClassName="max-w-6xl"
+      containerClassName="max-w-3xl"
       contentClassName="space-y-4 py-6 md:space-y-5"
     >
       <LocationUrlNotice notice={urlLocationNotice} onDismiss={() => setUrlLocationNotice(undefined)} />

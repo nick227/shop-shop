@@ -134,6 +134,9 @@ if (process.env.STORAGE_TYPE === 'local' || !process.env.STORAGE_TYPE) {
     root: uploadDir,
     prefix: '/uploads/',
     decorateReply: false,
+    setHeaders: (res, path) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+    },
   })
   app.log.info({ uploadDir }, 'Serving local uploads')
 }
