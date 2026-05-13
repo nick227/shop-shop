@@ -19,7 +19,7 @@ const GEO_OPTIONS: PositionOptions = {
 }
 
 const MATCH_LIST_SKELETON_COUNT = 4
-const AUTO_ADVANCE_MS = 3000
+const AUTO_ADVANCE_MS = 8000
 
 export interface RiverBrowseCardProps {
   readonly featuredStore: StoreWithDistance | null | undefined
