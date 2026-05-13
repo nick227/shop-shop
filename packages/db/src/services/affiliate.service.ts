@@ -652,6 +652,7 @@ export async function listAffiliates(options?: {
           select: {
             referredStores: true,
             commissions: true,
+            payouts: true,
           },
         },
       },

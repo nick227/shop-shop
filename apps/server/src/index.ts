@@ -44,6 +44,7 @@ import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
 import { adminRoutes } from './routes/admin.route.js'
 import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
 import { adminStoresRoutes } from './routes/admin-stores.route.js'
+import { adminBulkRoutes } from './routes/admin-bulk.route.js'
 import { settingsPublicRoutes } from './routes/settings-public.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
@@ -225,6 +226,7 @@ await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })
 await app.register(adminRoutes, { prefix: '/api' })
 await app.register(adminCatalogRoutes, { prefix: '/api' })
 await app.register(adminStoresRoutes, { prefix: '/api/admin' })
+await app.register(adminBulkRoutes, { prefix: '/api/admin' })
 // Public settings (no auth)
 await app.register(settingsPublicRoutes, { prefix: '/api' })
 

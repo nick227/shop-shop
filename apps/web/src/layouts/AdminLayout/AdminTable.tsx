@@ -4,18 +4,19 @@ import { Spinner } from '@shared/ui/primitives'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
 
 export interface AdminTableColumn {
-  label: string
-  className?: string
+  readonly label: string
+  readonly className?: string
 }
 
 interface AdminTableProps<T> {
-  columns: AdminTableColumn[]
-  rows: T[]
-  renderRow: (row: T) => ReactNode
-  isLoading?: boolean
-  emptyIcon?: LucideIcon | ReactNode
-  emptyTitle?: string
-  emptyDescription?: string
+  readonly columns: AdminTableColumn[]
+  readonly rows: T[]
+  readonly renderRow: (row: T) => ReactNode
+  readonly isLoading?: boolean
+  readonly emptyIcon?: LucideIcon | ReactNode
+  readonly emptyTitle?: string
+  readonly emptyDescription?: string
+  readonly getRowKey?: (row: T) => string
 }
 
 export function AdminTable<T>({
@@ -26,6 +27,7 @@ export function AdminTable<T>({
   emptyIcon,
   emptyTitle = 'No results',
   emptyDescription,
+  getRowKey,
 }: AdminTableProps<T>) {
   if (isLoading) {
     return (
@@ -59,7 +61,7 @@ export function AdminTable<T>({
         </thead>
         <tbody className="divide-y divide-border">
           {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-muted/30 transition-colors">
+            <tr key={getRowKey ? getRowKey(row) : i} className="hover:bg-muted/30 transition-colors">
               {renderRow(row)}
             </tr>
           ))}

@@ -4,29 +4,30 @@ import { useAuthStore } from '@stores/authStore'
 import { Badge, Button } from '@shared/ui/primitives'
 import { AdminTable } from '@layouts/AdminLayout'
 import { toast } from 'sonner'
-import { Package, AlertTriangle } from 'lucide-react'
+import { Package, AlertTriangle, CheckSquare, Square, Trash2 } from 'lucide-react'
+import { BulkDeleteConfirmDialog } from './components/BulkDeleteConfirmDialog'
 
 function getApiBase() {
   return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 }
 
 interface CatalogItem {
-  id: string
-  title: string
-  price: number
-  isActive: boolean
-  flagged: boolean
-  flaggedAt: string | null
-  flaggedReason: string | null
-  store: { id: string; name: string }
+  readonly id: string
+  readonly title: string
+  readonly price: number
+  readonly isActive: boolean
+  readonly flagged: boolean
+  readonly flaggedAt: string | null
+  readonly flaggedReason: string | null
+  readonly store: { readonly id: string; readonly name: string }
 }
 
 interface ConfirmDialogProps {
-  message: string
-  requireReason?: boolean
-  confirmLabel?: string
-  onConfirm: (reason?: string) => void
-  onCancel: () => void
+  readonly message: string
+  readonly requireReason?: boolean
+  readonly confirmLabel?: string
+  readonly onConfirm: (reason?: string) => void
+  readonly onCancel: () => void
 }
 
 function ConfirmDialog({ message, requireReason, confirmLabel = 'Confirm', onConfirm, onCancel }: ConfirmDialogProps) {
@@ -70,6 +71,7 @@ type PendingAction =
   | { type: 'enable'; item: CatalogItem }
 
 const COLUMNS = [
+  { label: '', className: 'px-4 py-3 w-10' },
   { label: 'Item', className: 'px-4 py-3' },
   { label: 'Store', className: 'px-4 py-3 hidden sm:table-cell' },
   { label: 'Status', className: 'px-4 py-3' },
@@ -85,6 +87,8 @@ export default function AdminCatalogPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [pending, setPending] = useState<PendingAction | null>(null)
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(() => new Set())
+  const [showBulkDialog, setShowBulkDialog] = useState(false)
 
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
@@ -98,6 +102,30 @@ export default function AdminCatalogPage() {
       const res = await fetch(`${apiBase}/api/admin/catalog?${params}`, { headers })
       if (!res.ok) throw new Error('Failed to load catalog')
       return res.json() as Promise<{ items: CatalogItem[]; total: number; pages: number }>
+    },
+    enabled: Boolean(token),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async ({ itemIds, reason }: { itemIds: string[]; reason?: string }) => {
+      const res = await fetch(`${apiBase}/api/admin/catalog/bulk`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ itemIds, reason }),
+      })
+      const body = (await res.json()) as { error?: string }
+      if (!res.ok) throw new Error(body.error || 'Failed to delete items')
+      return body as { deletedCount: number }
+    },
+    onSuccess: (r) => {
+      toast.success(`Deleted ${r.deletedCount} catalog item(s)`)
+      setSelectedItemIds(new Set())
+      setShowBulkDialog(false)
+      queryClient.invalidateQueries({ queryKey: ['admin-catalog'] })
+    },
+    onError: (e: Error) => {
+      toast.error(e.message)
+      setShowBulkDialog(false)
     },
   })
 
@@ -126,9 +154,36 @@ export default function AdminCatalogPage() {
   })
 
   const items = data?.items ?? []
+  const selectedItems = items.filter((it) => selectedItemIds.has(it.id))
+
+  const handleSelectAllItems = () => {
+    if (selectedItemIds.size === items.length && items.length > 0) {
+      setSelectedItemIds(new Set())
+      return
+    }
+    setSelectedItemIds(new Set(items.map((it) => it.id)))
+  }
+
+  const toggleItem = (id: string) => {
+    const next = new Set(selectedItemIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedItemIds(next)
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
+      {showBulkDialog && (
+        <BulkDeleteConfirmDialog
+          entityLabel="catalog items"
+          count={selectedItemIds.size}
+          previewLines={selectedItems.map((it) => `${it.title} · ${it.store.name}`)}
+          isDeleting={bulkDeleteMutation.isPending}
+          onCancel={() => setShowBulkDialog(false)}
+          onConfirm={(reason) => bulkDeleteMutation.mutate({ itemIds: [...selectedItemIds], reason })}
+        />
+      )}
+
       {pending && (
         <ConfirmDialog
           message={
@@ -155,17 +210,17 @@ export default function AdminCatalogPage() {
         <p className="text-sm text-muted-foreground">All items across all stores</p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
           placeholder="Search by item name…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); setSelectedItemIds(new Set()) }}
           className="h-9 w-60 rounded-md border border-border bg-background px-3 text-sm"
         />
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); setSelectedItemIds(new Set()) }}
           className="h-9 rounded-md border border-border bg-background px-3 text-sm"
         >
           <option value="">All statuses</option>
@@ -173,17 +228,57 @@ export default function AdminCatalogPage() {
           <option value="disabled">Disabled</option>
           <option value="active">Active</option>
         </select>
+
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={handleSelectAllItems}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {selectedItemIds.size === items.length ? (
+              <CheckSquare className="h-4 w-4 text-primary" />
+            ) : (
+              <Square className="h-4 w-4" />
+            )}
+            {selectedItemIds.size === items.length ? 'Deselect all' : 'Select all'}
+          </button>
+        )}
+
+        {selectedItemIds.size > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm text-muted-foreground">{selectedItemIds.size} selected</span>
+            <Button variant="danger" size="small" className="gap-2" onClick={() => setShowBulkDialog(true)}>
+              <Trash2 className="h-4 w-4" />
+              Delete selected
+            </Button>
+          </div>
+        )}
       </div>
 
       <AdminTable
         columns={COLUMNS}
         rows={items}
+        getRowKey={(item) => item.id}
         isLoading={isLoading}
         emptyIcon={Package}
         emptyTitle="No items found"
         emptyDescription="Try adjusting your search or filters."
         renderRow={(item) => (
           <>
+            <td className="px-4 py-3">
+              <button
+                type="button"
+                onClick={() => toggleItem(item.id)}
+                className="flex items-center justify-center"
+                aria-label="Select row"
+              >
+                {selectedItemIds.has(item.id) ? (
+                  <CheckSquare className="h-4 w-4 text-primary" />
+                ) : (
+                  <Square className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            </td>
             <td className="px-4 py-3">
               <div className="font-medium">{item.title}</div>
               {item.flaggedReason && (
@@ -236,10 +331,10 @@ export default function AdminCatalogPage() {
             Page {page} of {data?.pages} · {data?.total} items
           </span>
           <div className="flex gap-2">
-            <Button size="small" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+            <Button size="small" variant="outline" disabled={page === 1} onClick={() => { setPage((p) => p - 1); setSelectedItemIds(new Set()) }}>
               Previous
             </Button>
-            <Button size="small" variant="outline" disabled={page === data?.pages} onClick={() => setPage((p) => p + 1)}>
+            <Button size="small" variant="outline" disabled={page === data?.pages} onClick={() => { setPage((p) => p + 1); setSelectedItemIds(new Set()) }}>
               Next
             </Button>
           </div>

@@ -6,16 +6,12 @@ import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { Spinner, Badge, Button } from '@shared/ui/primitives'
 import { useConfirm } from '@shared/ui/primitives/ui/ConfirmDialog/ConfirmDialog'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { UserCheck } from 'lucide-react'
+import { CheckSquare, Square, Trash2, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
+import { BulkDeleteConfirmDialog } from './components/BulkDeleteConfirmDialog'
 
 function getApiBase(): string {
   return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-}
-
-function formatCurrency(n: unknown): string {
-  const v = typeof n === 'number' ? n : Number(n ?? 0)
-  return '$' + v.toFixed(2)
 }
 
 function formatDate(s: string | undefined | null): string {
@@ -33,12 +29,29 @@ const statusColor: Record<
   TERMINATED: 'destructive',
 }
 
+interface AffiliateRow {
+  id: string
+  status: string
+  referralCode: string
+  createdAt: string
+  user?: { id?: string; email?: string; name?: string | null }
+  _count?: { referredStores?: number; commissions?: number; payouts?: number }
+}
+
+function affiliateSelectable(a: AffiliateRow): boolean {
+  const c = a._count
+  if (!c) return true
+  return (c.commissions ?? 0) === 0 && (c.payouts ?? 0) === 0
+}
+
 export default function AdminAffiliatesPage() {
   const token = useAuthStore((s) => s.token)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { confirm, dialog: confirmDialog } = useConfirm()
   const [filterStatus, setFilterStatus] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [showBulkDialog, setShowBulkDialog] = useState(false)
 
   const apiBase = getApiBase()
   const headers = {
@@ -52,8 +65,9 @@ export default function AdminAffiliatesPage() {
       const q = filterStatus ? `?status=${filterStatus}` : ''
       const res = await fetch(`${apiBase}/api/affiliates${q}`, { headers })
       if (!res.ok) throw new Error('Failed to load affiliates')
-      return res.json() as Promise<{ affiliates: Record<string, unknown>[]; total: number }>
+      return res.json() as Promise<{ affiliates: AffiliateRow[]; total: number }>
     },
+    enabled: Boolean(token),
   })
 
   const updateStatusMutation = useMutation({
@@ -73,36 +87,132 @@ export default function AdminAffiliatesPage() {
     onError: (err: Error) => toast.error(err.message),
   })
 
-  const affiliates = listQuery.data?.affiliates ?? []
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async ({ affiliateIds, reason }: { affiliateIds: string[]; reason?: string }) => {
+      const res = await fetch(`${apiBase}/api/admin/affiliates/bulk`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ affiliateIds, reason }),
+      })
+      const body = (await res.json()) as { error?: string }
+      if (!res.ok) throw new Error(body.error || 'Failed to delete affiliates')
+      return body as { deletedCount: number }
+    },
+    onSuccess: (r) => {
+      toast.success(`Deleted ${r.deletedCount} affiliate record(s)`)
+      setSelectedIds(new Set())
+      setShowBulkDialog(false)
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] })
+    },
+    onError: (e: Error) => {
+      toast.error(e.message)
+      setShowBulkDialog(false)
+    },
+  })
+
+  const affiliates = (listQuery.data?.affiliates ?? []) as AffiliateRow[]
+  const selectable = affiliates.filter(affiliateSelectable)
+  const selectedRows = affiliates.filter((a) => selectedIds.has(a.id))
+  const hasBlockedSelection = selectedRows.some((a) => !affiliateSelectable(a))
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === selectable.length && selectable.length > 0) {
+      setSelectedIds(new Set())
+      return
+    }
+    setSelectedIds(new Set(selectable.map((a) => a.id)))
+  }
+
+  const toggleAffiliate = (a: AffiliateRow) => {
+    if (!affiliateSelectable(a)) return
+    const next = new Set(selectedIds)
+    if (next.has(a.id)) next.delete(a.id)
+    else next.add(a.id)
+    setSelectedIds(next)
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
       {confirmDialog}
+      {showBulkDialog && (
+        <BulkDeleteConfirmDialog
+          entityLabel="affiliate records"
+          count={selectedIds.size}
+          previewLines={selectedRows.map(
+            (a) =>
+              `${(a.user?.name as string) ?? (a.user?.email as string) ?? '—'} · ${a.referralCode}`,
+          )}
+          extraWarning={
+            hasBlockedSelection
+              ? 'Selection includes affiliates with commissions or payouts — remove them from the selection.'
+              : undefined
+          }
+          disableConfirm={hasBlockedSelection}
+          isDeleting={bulkDeleteMutation.isPending}
+          onCancel={() => setShowBulkDialog(false)}
+          onConfirm={(reason) => bulkDeleteMutation.mutate({ affiliateIds: [...selectedIds], reason })}
+        />
+      )}
+
       <div>
         <h1 className="text-2xl font-bold">Affiliates</h1>
         <p className="text-sm text-muted-foreground">Monitor affiliates and manage account status.</p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-muted-foreground">Status:</label>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All</option>
-          <option value="PENDING">Pending (legacy)</option>
-          <option value="ACTIVE">Active</option>
-          <option value="SUSPENDED">Suspended</option>
-          <option value="TERMINATED">Terminated</option>
-        </select>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-muted-foreground">Status:</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value)
+              setSelectedIds(new Set())
+            }}
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+          >
+            <option value="">All</option>
+            <option value="PENDING">Pending (legacy)</option>
+            <option value="ACTIVE">Active</option>
+            <option value="SUSPENDED">Suspended</option>
+            <option value="TERMINATED">Terminated</option>
+          </select>
+        </div>
+
+        {selectable.length > 0 && (
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {selectedIds.size === selectable.length ? (
+              <CheckSquare className="h-4 w-4 text-primary" />
+            ) : (
+              <Square className="h-4 w-4" />
+            )}
+            {selectedIds.size === selectable.length ? 'Deselect all (eligible)' : 'Select all (eligible)'}
+          </button>
+        )}
+
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+            <Button variant="danger" size="small" className="gap-2" onClick={() => setShowBulkDialog(true)}>
+              <Trash2 className="h-4 w-4" />
+              Delete selected
+            </Button>
+          </div>
+        )}
       </div>
 
-      {listQuery.isLoading ? (
+      {!token ? (
         <div className="flex min-h-[300px] items-center justify-center">
           <Spinner size="large" />
         </div>
-      ) : (affiliates.length === 0 ? (
+      ) : listQuery.isLoading ? (
+        <div className="flex min-h-[300px] items-center justify-center">
+          <Spinner size="large" />
+        </div>
+      ) : affiliates.length === 0 ? (
         <EmptyState
           icon={UserCheck}
           title="No affiliates found"
@@ -110,52 +220,74 @@ export default function AdminAffiliatesPage() {
         />
       ) : (
         <div className="space-y-2">
-          {affiliates.map((a) => {
-            const user = a.user as Record<string, unknown> | undefined
-            const counts = a._count as Record<string, unknown> | undefined
+          {affiliates.map(({ id, user, _count: counts, status, referralCode, createdAt }) => {
+            const a: AffiliateRow = { id, user, _count: counts, status, referralCode, createdAt }
+            const canSelect = affiliateSelectable(a)
             return (
-              <Card key={a.id as string}>
+              <Card key={id}>
                 <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {(user?.name as string) ?? (user?.email as string)}
-                      </span>
-                      <Badge variant={statusColor[(a.status as string) ?? ''] ?? 'outline'}>
-                        {a.status as string}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {user?.email as string}
-                      {' · '}Code: <span className="font-mono">{a.referralCode as string}</span>
-                      {' · '}Since {formatDate(a.createdAt as string)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {(counts?.referredStores as number) ?? 0} stores
-                      {' · '}
-                      {(counts?.commissions as number) ?? 0} commissions
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <button
+                      type="button"
+                      disabled={!canSelect}
+                      onClick={() => toggleAffiliate(a)}
+                      className={canSelect ? 'mt-0.5 shrink-0' : 'mt-0.5 shrink-0 opacity-30 cursor-not-allowed'}
+                      aria-label={canSelect ? 'Select affiliate' : 'Not eligible for delete'}
+                    >
+                      {selectedIds.has(id) ? (
+                        <CheckSquare className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Square className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {(user?.name as string) ?? (user?.email as string)}
+                        </span>
+                        <Badge variant={statusColor[status] ?? 'outline'}>{status}</Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {user?.email as string}
+                        {' · '}
+                        Code: <span className="font-mono">{referralCode}</span>
+                        {' · '}
+                        Since {formatDate(createdAt)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {(counts?.referredStores as number) ?? 0} stores
+                        {' · '}
+                        {(counts?.commissions as number) ?? 0} commissions
+                        {' · '}
+                        {(counts?.payouts as number) ?? 0} payouts
+                        {!canSelect && (
+                          <span className="block text-destructive mt-1">
+                            Bulk delete only when commissions and payouts are both zero.
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="small"
                       variant="outline"
-                      onClick={() => navigate(`/admin/affiliates/${a.id as string}`)}
+                      onClick={() => navigate(`/admin/affiliates/${id}`)}
                     >
                       View
                     </Button>
-                    {a.status === 'PENDING' && (
+                    {status === 'PENDING' && (
                       <Button
                         size="small"
                         variant="primary"
                         onClick={() =>
-                          updateStatusMutation.mutate({ id: a.id as string, status: 'ACTIVE' })
+                          updateStatusMutation.mutate({ id, status: 'ACTIVE' })
                         }
                       >
                         Activate
                       </Button>
                     )}
-                    {a.status === 'ACTIVE' && (
+                    {status === 'ACTIVE' && (
                       <Button
                         size="small"
                         variant="outline"
@@ -166,24 +298,24 @@ export default function AdminAffiliatesPage() {
                             confirmLabel: 'Suspend',
                             variant: 'danger',
                           })
-                          if (ok) updateStatusMutation.mutate({ id: a.id as string, status: 'SUSPENDED' })
+                          if (ok) updateStatusMutation.mutate({ id, status: 'SUSPENDED' })
                         }}
                       >
                         Suspend
                       </Button>
                     )}
-                    {a.status === 'SUSPENDED' && (
+                    {status === 'SUSPENDED' && (
                       <Button
                         size="small"
                         variant="primary"
                         onClick={() =>
-                          updateStatusMutation.mutate({ id: a.id as string, status: 'ACTIVE' })
+                          updateStatusMutation.mutate({ id, status: 'ACTIVE' })
                         }
                       >
                         Reactivate
                       </Button>
                     )}
-                    {a.status !== 'TERMINATED' && (
+                    {status !== 'TERMINATED' && (
                       <Button
                         size="small"
                         variant="danger"
@@ -194,7 +326,7 @@ export default function AdminAffiliatesPage() {
                             confirmLabel: 'Terminate',
                             variant: 'danger',
                           })
-                          if (ok) updateStatusMutation.mutate({ id: a.id as string, status: 'TERMINATED' })
+                          if (ok) updateStatusMutation.mutate({ id, status: 'TERMINATED' })
                         }}
                       >
                         Terminate
@@ -206,7 +338,7 @@ export default function AdminAffiliatesPage() {
             )
           })}
         </div>
-      ))}
+      )}
     </div>
   )
 }
