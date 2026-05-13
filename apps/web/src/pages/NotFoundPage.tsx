@@ -21,7 +21,7 @@ export default function NotFoundPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <Link to="/">
+          <Link to="/river">
             <Button variant="primary" fullWidth>Go to Home</Button>
           </Link>
           <Button variant="outline" fullWidth onClick={() => window.history.back()}>
@@ -34,7 +34,7 @@ export default function NotFoundPage() {
             Need help? Check out these links:
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <Link to="/" className="text-primary hover:underline">Browse Stores</Link>
+            <Link to="/river" className="text-primary hover:underline">Browse Stores</Link>
             <Link to="/cart" className="text-primary hover:underline">View Cart</Link>
             <Link to="/orders" className="text-primary hover:underline">Order History</Link>
           </div>

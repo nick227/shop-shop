@@ -1,7 +1,7 @@
 /**
  * Router Configuration - Route definitions;
  */
-import { createBrowserRouter, Navigate, useParams } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation, useParams } from 'react-router-dom'
 import { Layout } from './layouts/MainLayout'
 import { VendorLayout } from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -14,8 +14,6 @@ import { lazy } from 'react'
 
 const LoginPage = lazy(() => import('./pages/public/Login.page'))
 const SignupPage = lazy(() => import('./pages/public/Signup.page'))
-// Temporarily disable lazy loading for HomePage to fix render2 error;
-import HomePage from './pages/public/Home.page'
 const SearchPage = lazy(() => import('./pages/search/Search.page'))
 const UnifiedSearchPage = lazy(() => import('./pages/search/UnifiedSearch.page'))
 const StoreDetailPage = lazy(() => import('./pages/shared/StoreDetail.page'))
@@ -94,6 +92,12 @@ function LegacyRiverToMenuRedirect() {
   return <Navigate to={`/menu/${storeId}`} replace />
 }
 
+/** Root URL forwards to the River landing (preserves query + hash for UTMs, etc.). */
+function LandingRedirect() {
+  const { search, hash } = useLocation()
+  return <Navigate to={`/river${search}${hash}`} replace />
+}
+
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter(
   [
     {
@@ -138,8 +142,8 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         // Public shopping routes;
         {
           path: '/',
-          element: <HomePage />,
-          handle: { title: 'Home' },
+          element: <LandingRedirect />,
+          handle: { title: 'River' },
         },
         {
           path: '/search',

@@ -25,7 +25,7 @@ export function MobileShell({
   const [menuOpen, setMenuOpen] = useState(false)
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Home' },
+    { path: '/river', icon: Home, label: 'Home' },
     { path: '/search', icon: Store, label: 'Stores' },
     { path: '/cart', icon: ShoppingCart, label: 'Cart' },
     { path: '/profile', icon: User, label: 'Profile' },

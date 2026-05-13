@@ -6,6 +6,7 @@ import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPan
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
 import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
+import { PublicMaintenanceBanner } from '@features/home/components'
 import type { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button, Skeleton } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react'
@@ -455,6 +456,7 @@ export default function RiverPage() {
       
       <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-3xl md:py-10')}>
         <div className="space-y-6">
+          <PublicMaintenanceBanner />
           <div className="space-y-6 w-full">
             <RiverHero store={heroStore} isLoading={heroLoading} />
           </div>

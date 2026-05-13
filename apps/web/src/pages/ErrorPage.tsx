@@ -34,7 +34,7 @@ export default function ErrorPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <Link to="/">
+          <Link to="/river">
             <Button variant="primary" fullWidth>Go to Home</Button>
           </Link>
           <Button variant="outline" fullWidth onClick={() => window.location.reload()}>
