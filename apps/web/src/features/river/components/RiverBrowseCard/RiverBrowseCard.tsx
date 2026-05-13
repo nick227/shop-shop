@@ -7,6 +7,8 @@ import { useRiverBrowseStores } from '@features/river/hooks/useRiverBrowseStores
 import { groupItemsByMenuType } from '@features/products/utils/groupItemsByMenuType'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { cn } from '@shared/lib/cn'
+import type { StoreWithDistance } from '@api/types'
+import { RiverHero } from '../RiverHero/RiverHero'
 import { RiverBrowseMatchColumn } from './RiverBrowseMatchColumn'
 import { RiverBrowseDetailColumn } from './RiverBrowseDetailColumn'
 
@@ -18,7 +20,12 @@ const GEO_OPTIONS: PositionOptions = {
 
 const MATCH_LIST_SKELETON_COUNT = 4
 
-export function RiverBrowseCard() {
+export interface RiverBrowseCardProps {
+  readonly featuredStore: StoreWithDistance | null | undefined
+  readonly featuredLoading: boolean
+}
+
+export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseCardProps) {
   const [storeTypeFilter, setStoreTypeFilter] = useState('')
   const [nearMe, setNearMe] = useState(false)
   const [userLat, setUserLat] = useState<number | undefined>()
@@ -118,11 +125,30 @@ export function RiverBrowseCard() {
   const detailStoreRoute =
     detailStore && detailStoreSynced ? getStoreRoute({ id: detailStore.id, name: detailStore.name }) : ''
 
+  const heroPick = useMemo(() => {
+    if (selectedStoreId) {
+      const fromList = listStores.find((s) => s.id === selectedStoreId)
+      if (fromList) return fromList
+      if (detailStoreSynced && detailStore) return detailStore
+      return
+    }
+    return featuredStore ?? undefined
+  }, [selectedStoreId, listStores, detailStoreSynced, detailStore, featuredStore])
+
+  const heroIsLoading = Boolean(
+    heroPick === undefined &&
+      (featuredLoading ||
+        browseLoading ||
+        (Boolean(selectedStoreId) && detailStoreLoading)),
+  )
+
   return (
     <section
       className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
       aria-labelledby="river-browse-heading"
     >
+      <RiverHero store={heroPick} isLoading={heroIsLoading} embedded />
+
       <header className="border-b border-gray-100 p-4">
         <h2 id="river-browse-heading" className="mb-3 text-lg font-semibold tracking-tight text-gray-900">
           Browse kitchens

@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
 import { RiverBrowseCard } from '@/features/river/components/RiverBrowseCard/RiverBrowseCard'
 import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
@@ -459,8 +458,7 @@ export default function RiverPage() {
         <div className="space-y-6">
           <PublicMaintenanceBanner />
           <div className="space-y-6 w-full">
-            <RiverHero store={heroStore} isLoading={heroLoading} />
-            <RiverBrowseCard />
+            <RiverBrowseCard featuredStore={heroStore} featuredLoading={heroLoading} />
           </div>
 
           <RiverDiscovery />
