@@ -1,23 +1,31 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'node:path'
 
-export default defineConfig({
-  plugins: [react()],
+const repoRoot = path.resolve(__dirname, '../..')
+
+export default defineConfig(({ mode }) => {
+  // Root `.env` `PORT` is what @apps/server listens on; proxy must match or you get ECONNREFUSED.
+  const env = loadEnv(mode, repoRoot, '')
+  const apiPort = env.PORT || '3005'
+  const apiTarget = `http://127.0.0.1:${apiPort}`
+
+  return {
+    plugins: [react()],
   // Load `VITE_*` from monorepo root so PORT / VITE_API_URL stay aligned with apps/server
-  envDir: path.resolve(__dirname, '../..'),
+  envDir: repoRoot,
   preview: {
     allowedHosts: ['shop-shop.up.railway.app'],
   },
   server: { 
-    port: Number(process.env.VITE_PORT) || 5177,
+    port: Number(env.VITE_PORT) || 5177,
     headers: {
       // Avoid conditional requests returning 304 without a usable module MIME type in some browsers.
       'Cache-Control': 'no-store',
     },
     proxy: {
       '/geocode': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
       },
@@ -25,34 +33,34 @@ export default defineConfig({
       // The web app calls `/api/media/*` so it is safely proxied (and doesn't hit Vite HTML fallback).
       // Rewrite `/api/media/*` -> `/media/*` at the proxy layer to match the server.
       '/api/media': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/media/, '/media'),
       },
       // Team routes are registered at `/team/*` (not under `/api/*`)
       '/api/team': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/team/, '/team'),
       },
       // River is served at /api/v1/river/* on the API — forward unchanged.
       '/api/v1/river': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
       },
       // All other /api/* (excluding /api/v1/river and /api/search, matched above)
       '^/api(?!/v1/river|/search)': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       // Search routes - forward unchanged
       '/api/search': {
-        target: 'http://localhost:3005',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
       },
@@ -88,4 +96,5 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1100,
   },
+  }
 })
