@@ -83,7 +83,7 @@ export function RiverBrowseMatchColumn({
     body = <p className="p-3 text-sm text-gray-600">No kitchens match this filter yet.</p>
   } else {
     body = (
-      <ul className="space-y-1" role="list">
+      <ul className="space-y-1">
         {listStores.map((s) => (
           <BrowseMatchRow
             key={s.id}

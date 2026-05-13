@@ -43,7 +43,7 @@ export function RiverBrowseDetailColumn({
   showDetailSkeleton: boolean
   detailStore: StoreHeaderStore | undefined
   detailStoreRoute: string
-  menuSections: ReadonlyArray<{ readonly label: string; readonly items: readonly ItemResponse[] }>
+  menuSections: readonly { readonly label: string; readonly items: readonly ItemResponse[] }[]
 }>) {
   let body: ReactNode
   if (!selectedStoreId) {
