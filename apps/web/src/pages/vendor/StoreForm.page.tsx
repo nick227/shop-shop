@@ -123,7 +123,7 @@ export default function StoreFormPage() {
     mutationFn: async (data: typeof formData) => {
       return await apiClient.stores().updateStore({
         id: storeId!,
-        createStoreRequest: storePayloadFromFormData(data),
+        updateStoreRequest: storePayloadFromFormData(data),
       })
     },
     onSuccess: () => {
