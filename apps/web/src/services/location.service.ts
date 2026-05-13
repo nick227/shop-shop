@@ -4,6 +4,10 @@
  */
 
 import type { LocationData, LocationPreferences, LocationInput } from '@shared/types/types/location.types'
+import {
+  getBrowserGeolocationBlockReason,
+  messageForGeolocationPositionError,
+} from '@shared/lib/utils/geolocationBrowser'
 
 const STORAGE_KEYS = {
   PREFERENCES: 'location_preferences',
@@ -81,8 +85,9 @@ export class LocationService {
    * OPTIMIZED: Get current location from browser geolocation
    */
   async getLocationFromGeolocation(): Promise<LocationData> {
-    if (!navigator.geolocation) {
-      throw new Error('Geolocation is not supported by your browser')
+    const block = getBrowserGeolocationBlockReason()
+    if (block) {
+      throw new Error(block)
     }
 
     return new Promise((resolve, reject) => {
@@ -101,28 +106,8 @@ export class LocationService {
           this.addToHistory(location)
           resolve(location)
         },
-        (error) => {
-          let errorMessage: string
-          switch (error.code) {
-            case error.PERMISSION_DENIED: {
-              errorMessage = 'Location permission denied. Please enable location access in your browser settings.'
-              break
-            }
-            case error.POSITION_UNAVAILABLE: {
-              errorMessage =
-                'Your device couldn’t determine a precise position. Choose a city from the list or check that location is enabled.'
-              break
-            }
-            case error.TIMEOUT: {
-              errorMessage =
-                'Location request timed out. You can still pick a city on the home page or enter an area manually.'
-              break
-            }
-            default: {
-              errorMessage = 'Unable to get your location: ' + error.message
-            }
-          }
-          reject(new Error(errorMessage))
+        (error: GeolocationPositionError) => {
+          reject(new Error(messageForGeolocationPositionError(error)))
         },
         {
           enableHighAccuracy: true,

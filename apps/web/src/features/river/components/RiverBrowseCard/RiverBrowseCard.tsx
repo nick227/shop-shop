@@ -7,6 +7,10 @@ import { useRiverBrowseStores } from '@features/river/hooks/useRiverBrowseStores
 import { groupItemsByMenuType } from '@features/products/utils/groupItemsByMenuType'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { cn } from '@shared/lib/cn'
+import {
+  getBrowserGeolocationBlockReason,
+  messageForGeolocationPositionError,
+} from '@shared/lib/utils/geolocationBrowser'
 import type { StoreWithDistance } from '@api/types'
 import { RiverHero } from '../RiverHero/RiverHero'
 import { RiverBrowseMatchColumn } from './RiverBrowseMatchColumn'
@@ -14,8 +18,8 @@ import { RiverBrowseDetailColumn } from './RiverBrowseDetailColumn'
 
 const GEO_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
-  maximumAge: 60_000,
-  timeout: 12_000,
+  maximumAge: 300_000,
+  timeout: 15_000,
 }
 
 const MATCH_LIST_SKELETON_COUNT = 4
@@ -32,6 +36,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
   const [userLat, setUserLat] = useState<number | undefined>()
   const [userLng, setUserLng] = useState<number | undefined>()
   const [geoPending, setGeoPending] = useState(false)
+  const [geoHint, setGeoHint] = useState<string | undefined>()
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>()
   const [autoAdvanceActive, setAutoAdvanceActive] = useState(true)
 
@@ -64,10 +69,6 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
   }, [listStores])
 
   const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast.error('Location is not supported in this browser.')
-      return
-    }
     setGeoPending(true)
     // User opted in via "Within 25 miles of me"
     // eslint-disable-next-line sonarjs/no-intrusive-permissions -- explicit opt-in checkbox
@@ -76,9 +77,12 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
         setUserLat(pos.coords.latitude)
         setUserLng(pos.coords.longitude)
         setGeoPending(false)
+        setGeoHint(undefined)
       },
-      () => {
-        toast.error('Could not read your location.')
+      (error: GeolocationPositionError) => {
+        const msg = messageForGeolocationPositionError(error)
+        setGeoHint(msg)
+        toast.error(msg)
         setGeoPending(false)
         setNearMe(false)
         setUserLat(undefined)
@@ -89,6 +93,13 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
   }, [])
 
   const startNearMe = useCallback(() => {
+    const block = getBrowserGeolocationBlockReason()
+    if (block) {
+      setGeoHint(block)
+      toast.error(block)
+      return
+    }
+    setGeoHint(undefined)
     setNearMe(true)
     requestLocation()
   }, [requestLocation])
@@ -97,6 +108,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
     setNearMe(false)
     setUserLat(undefined)
     setUserLng(undefined)
+    setGeoHint(undefined)
   }, [])
 
   const { data: detailStore, isLoading: detailStoreLoading } = useStore(selectedStoreId ?? '')
@@ -234,6 +246,11 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
           />
           Within 25 miles of me
         </label>
+        {geoHint ? (
+          <p role="alert" className="mt-2 text-xs leading-snug text-amber-900">
+            {geoHint}
+          </p>
+        ) : undefined}
       </header>
 
       <div className="grid min-h-[280px] divide-y divide-gray-100 md:grid-cols-2 md:divide-x md:divide-y-0 md:divide-gray-100">
