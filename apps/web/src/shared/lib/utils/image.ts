@@ -1,14 +1,20 @@
 /**
  * Image utility functions;
  */
-import { PLACEHOLDER_PREFIX } from '@shared/ui/primitives'
+import { generateColorFromSeed } from './colorGenerator'
 
 type PlaceholderType = 'item' | 'store' | 'product'
 
-const PREFIX_MAP: Record<PlaceholderType, string> = {
-  item: PLACEHOLDER_PREFIX.ITEM,
-  store: PLACEHOLDER_PREFIX.STORE,
-  product: PLACEHOLDER_PREFIX.PRODUCT}
+/** SVG data URL so missing images still load (no static /placeholder-*.jpg files in public). */
+function placeholderDataUrl(id: string, type: PlaceholderType): string {
+  const fill = generateColorFromSeed(id + type)
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">' +
+    '<rect width="100%" height="100%" fill="' +
+    fill +
+    '"/></svg>'
+  return 'data:image/svg+xml,' + encodeURIComponent(svg)
+}
 
 /**
  * Get fallback image URL with placeholder;
@@ -33,7 +39,7 @@ export function getImageUrl(
   // Fallback to imageUrl property (if it exists)
   if (imageUrl) return imageUrl
   
-  // Final fallback to placeholder
-  return PREFIX_MAP[type] + id + '.jpg'
+  // Final fallback: inline SVG (static /placeholder-*.jpg paths are not shipped)
+  return placeholderDataUrl(id, type)
 }
 

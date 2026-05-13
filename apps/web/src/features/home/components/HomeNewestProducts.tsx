@@ -2,16 +2,20 @@
  * Grid of newest menu items across kitchens.
  */
 import { Link } from 'react-router-dom'
+import { Image } from '@shared/ui/primitives'
 import { useNewestProducts } from '@shared/hooks/hooks/store'
 import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 import { getImageUrl } from '@shared/lib/utils/image'
 import type { ItemResponse } from '@api/types'
 
+type ItemWithOptionalImage = ItemResponse & { readonly imageUrl?: string }
+
 function ProductMiniCard({ item }: { readonly item: ItemResponse }) {
   const price = parsePrice(item.price)
   const href = getItemRouteSimple({ id: item.id, title: item.title })
-  const imageUrl = getImageUrl(undefined, item.id, 'product', item.mediaAssets)
+  const row = item as ItemWithOptionalImage
+  const imageUrl = getImageUrl(row.imageUrl, item.id, 'item', item.mediaAssets)
 
   return (
     <Link
@@ -19,12 +23,13 @@ function ProductMiniCard({ item }: { readonly item: ItemResponse }) {
       className="flex overflow-hidden flex-col rounded-xl border transition-colors border-border bg-card hover:border-primary/40 hover:bg-muted/30"
     >
       <div className="overflow-hidden relative aspect-square bg-muted">
-        <img
+        <Image
           src={imageUrl}
           alt={item.title}
+          fallbackSeed={item.id}
+          aspectRatio="1/1"
+          containerClassName="w-full h-full"
           className="object-cover w-full h-full"
-          loading="lazy"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
         />
       </div>
       <div className="p-3">
@@ -41,8 +46,7 @@ export function HomeNewestProducts() {
   return (
     <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
       <div className="flex gap-4 justify-between items-start">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">New on menus</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">Recently listed dishes across kitchens.</p>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">New products</h2>
       </div>
 
       {isLoading ? (
