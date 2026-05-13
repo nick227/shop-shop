@@ -1,10 +1,11 @@
-import { Suspense, lazy, useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
 import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
+import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
 import type { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
 import { Button, Skeleton } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react'
@@ -13,12 +14,6 @@ import { useHeroStore } from '@shared/hooks/hooks/store'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { PAGE_SHELL_CONTAINER_CLASS } from '@shared/ui/layout/PageShell'
 import { cn } from '@shared/lib/cn'
-
-const RiverDiscovery = lazy(() =>
-  import('@/features/river/components/RiverDiscovery/RiverDiscovery').then((module) => ({
-    default: module.RiverDiscovery,
-  }))
-)
 
 function FeedLoadingCards() {
   return (
@@ -48,23 +43,6 @@ function FeedLoadingCards() {
         </div>
       ))}
     </div>
-  )
-}
-
-function DiscoverySkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="w-full h-40 rounded-2xl" />
-      <Skeleton className="w-full h-56 rounded-2xl" />
-    </div>
-  )
-}
-
-function RiverDiscoverySection() {
-  return (
-    <Suspense fallback={<DiscoverySkeleton />}>
-      <RiverDiscovery />
-    </Suspense>
   )
 }
 
@@ -487,7 +465,7 @@ export default function RiverPage() {
             layoutedPosts.map((item, index) => renderPostItem(item, index))
           )}
 
-          <RiverDiscoverySection />
+          <RiverDiscovery />
         </div>
 
         {hasNextPage && (
