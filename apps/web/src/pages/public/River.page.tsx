@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { Suspense, lazy, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
@@ -35,7 +35,7 @@ function FeedLoadingCards() {
             </div>
             <Skeleton className="w-8 h-8" />
           </div>
-          <div className="aspect-square bg-gray-100" />
+          <div className="bg-gray-100 aspect-square" />
           <div className="p-4 space-y-3">
             <Skeleton className="w-full h-4" />
             <Skeleton className="w-5/6 h-4" />
@@ -60,39 +60,11 @@ function DiscoverySkeleton() {
   )
 }
 
-function LazyRiverDiscovery() {
-  const ref = useRef<HTMLDivElement | null>(null)
-  const [shouldLoad, setShouldLoad] = useState(false)
-
-  useEffect(() => {
-    if (shouldLoad) return
-    const node = ref.current
-    if (!node) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setShouldLoad(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '600px 0px' }
-    )
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [shouldLoad])
-
+function RiverDiscoverySection() {
   return (
-    <div ref={ref}>
-      {shouldLoad ? (
-        <Suspense fallback={<DiscoverySkeleton />}>
-          <RiverDiscovery />
-        </Suspense>
-      ) : (
-        <DiscoverySkeleton />
-      )}
-    </div>
+    <Suspense fallback={<DiscoverySkeleton />}>
+      <RiverDiscovery />
+    </Suspense>
   )
 }
 
@@ -195,7 +167,6 @@ function EnhancedPostCard({
   onLike,
   onComment,
   onShare,
-  onSave,
 }: {
   readonly post: RiverPost
   readonly onLike?: () => void
@@ -504,7 +475,7 @@ export default function RiverPage() {
         />
       ) : null}
       
-      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-6xl md:py-10')}>
+      <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-3xl md:py-10')}>
         <div className="space-y-6">
           <div className="space-y-6 w-full">
             <RiverHero store={heroStore} isLoading={heroLoading} />
@@ -516,7 +487,7 @@ export default function RiverPage() {
             layoutedPosts.map((item, index) => renderPostItem(item, index))
           )}
 
-          <LazyRiverDiscovery />
+          <RiverDiscoverySection />
         </div>
 
         {hasNextPage && (
