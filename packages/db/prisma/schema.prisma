@@ -872,6 +872,7 @@ model Post {
   @@index([storeId])
   @@index([createdAt])
   @@index([priority, createdAt, id])
+  @@index([storeId, priority, createdAt, id])
   @@index([publishAt])
   @@index([freshnessKind, freshnessScore])
   @@index([contentType])

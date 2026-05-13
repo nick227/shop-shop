@@ -29,21 +29,15 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         secure: false,
       },
-      // Media routes on the backend are registered at `/media/*` (not `/api/media/*`).
-      // The web app calls `/api/media/*` so it is safely proxied (and doesn't hit Vite HTML fallback).
-      // Rewrite `/api/media/*` -> `/media/*` at the proxy layer to match the server.
       '/api/media': {
         target: apiTarget,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/media/, '/media'),
       },
-      // Team routes are registered at `/team/*` (not under `/api/*`)
       '/api/team': {
         target: apiTarget,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/team/, '/team'),
       },
       // River is served at /api/v1/river/* on the API — forward unchanged.
       '/api/v1/river': {
@@ -51,12 +45,11 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         secure: false,
       },
-      // All other /api/* (excluding /api/v1/river and /api/search, matched above)
+      // All other /api/* routes are registered on the API with the `/api` prefix.
       '^/api(?!/v1/river|/search)': {
         target: apiTarget,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       // Search routes - forward unchanged
       '/api/search': {

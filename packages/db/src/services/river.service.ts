@@ -187,6 +187,11 @@ type PostRowForRiver = Prisma.PostGetPayload<{
   include: { store: typeof RIVER_FEED_STORE_INCLUDE }
 }>
 
+type RiverCandidateRow = Pick<
+  Post,
+  'id' | 'storeId' | 'contentType' | 'packageId' | 'duplicateKey' | 'priority' | 'createdAt'
+>
+
 /** Fetch more SQL rows than one page, then diversify and slice (feed-read path). */
 const FEED_DIVERSITY_CANDIDATE_MULTIPLIER = 3
 const FEED_DIVERSITY_MAX_CANDIDATES = 120
@@ -200,16 +205,24 @@ async function buildRiverFeedResponseFromCandidateIds(
     return { items: [], nextCursor: null }
   }
 
-  const unordered = await prisma.post.findMany({
+  const unorderedCandidates = await prisma.post.findMany({
     where: { id: { in: candidateIdsOrdered } },
-    include: { store: RIVER_FEED_STORE_INCLUDE },
+    select: {
+      id: true,
+      storeId: true,
+      contentType: true,
+      packageId: true,
+      duplicateKey: true,
+      priority: true,
+      createdAt: true,
+    },
   })
-  const byId = new Map(unordered.map((p) => [p.id, p]))
-  const postsOrdered = candidateIdsOrdered
-    .map((id) => byId.get(id))
-    .filter((p): p is PostRowForRiver => p !== undefined)
+  const candidateById = new Map(unorderedCandidates.map((p) => [p.id, p]))
+  const candidatesOrdered = candidateIdsOrdered
+    .map((id) => candidateById.get(id))
+    .filter((p): p is RiverCandidateRow => p !== undefined)
 
-  const diversifyInput: RiverFeedDiversifyCandidate[] = postsOrdered.map((p) => ({
+  const diversifyInput: RiverFeedDiversifyCandidate[] = candidatesOrdered.map((p) => ({
     id: p.id,
     storeId: p.storeId,
     contentType: p.contentType ?? null,
@@ -225,13 +238,13 @@ async function buildRiverFeedResponseFromCandidateIds(
     })
   }
 
-  const diversifiedPosts = diversified
-    .map((c) => byId.get(c.id))
-    .filter((p): p is PostRowForRiver => p !== undefined)
+  const diversifiedCandidates = diversified
+    .map((c) => candidateById.get(c.id))
+    .filter((p): p is RiverCandidateRow => p !== undefined)
 
-  const hasMore = diversifiedPosts.length > userLimit
-  const pageRows = hasMore ? diversifiedPosts.slice(0, userLimit) : diversifiedPosts
-  const last = pageRows[pageRows.length - 1]
+  const hasMore = diversifiedCandidates.length > userLimit
+  const pageCandidates = hasMore ? diversifiedCandidates.slice(0, userLimit) : diversifiedCandidates
+  const last = pageCandidates[pageCandidates.length - 1]
   const nextCursor =
     hasMore && last
       ? encodeRiverCursor({
@@ -240,6 +253,15 @@ async function buildRiverFeedResponseFromCandidateIds(
           id: last.id,
         })
       : null
+
+  const unorderedPageRows = await prisma.post.findMany({
+    where: { id: { in: pageCandidates.map((p) => p.id) } },
+    include: { store: RIVER_FEED_STORE_INCLUDE },
+  })
+  const pageRowById = new Map(unorderedPageRows.map((p) => [p.id, p]))
+  const pageRows = pageCandidates
+    .map((p) => pageRowById.get(p.id))
+    .filter((p): p is PostRowForRiver => p !== undefined)
 
   let likedIds = new Set<string>()
   let savedIds = new Set<string>()

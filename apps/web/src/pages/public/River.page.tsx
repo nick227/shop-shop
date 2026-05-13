@@ -1,20 +1,100 @@
-import { useState, useMemo, useCallback } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { LoadingSkeleton } from '@/features/river/components/LoadingSkeleton/LoadingSkeleton'
 import { RiverHero } from '@/features/river/components/RiverHero/RiverHero'
-import { RiverDiscovery } from '@/features/river/components/RiverDiscovery/RiverDiscovery'
 import { RiverCommentsPanel } from '@/features/river/components/RiverCommentsPanel/RiverCommentsPanel'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import { useRiverPostActions } from '@/features/river/hooks/useRiverPostActions'
 import type { RiverFilters as RiverFiltersType, RiverPost } from '@api/types'
-import { Button } from '@shared/ui/primitives'
+import { Button, Skeleton } from '@shared/ui/primitives'
 import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react'
 import { apiClient } from '@api/client'
 import { useHeroStore } from '@shared/hooks/hooks/store'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { PAGE_SHELL_CONTAINER_CLASS } from '@shared/ui/layout/PageShell'
 import { cn } from '@shared/lib/cn'
+
+const RiverDiscovery = lazy(() =>
+  import('@/features/river/components/RiverDiscovery/RiverDiscovery').then((module) => ({
+    default: module.RiverDiscovery,
+  }))
+)
+
+function FeedLoadingCards() {
+  return (
+    <div className="space-y-6">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="overflow-hidden bg-white rounded-2xl border border-gray-100">
+          <div className="flex justify-between items-center p-4 pb-2">
+            <div className="flex gap-3 items-center">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="w-32 h-4" />
+                <Skeleton className="w-20 h-3" />
+              </div>
+            </div>
+            <Skeleton className="w-8 h-8" />
+          </div>
+          <div className="aspect-square bg-gray-100" />
+          <div className="p-4 space-y-3">
+            <Skeleton className="w-full h-4" />
+            <Skeleton className="w-5/6 h-4" />
+            <div className="flex gap-2">
+              <Skeleton className="w-10 h-10" />
+              <Skeleton className="w-10 h-10" />
+              <Skeleton className="w-10 h-10" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function DiscoverySkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="w-full h-40 rounded-2xl" />
+      <Skeleton className="w-full h-56 rounded-2xl" />
+    </div>
+  )
+}
+
+function LazyRiverDiscovery() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
+
+  useEffect(() => {
+    if (shouldLoad) return
+    const node = ref.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setShouldLoad(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '600px 0px' }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [shouldLoad])
+
+  return (
+    <div ref={ref}>
+      {shouldLoad ? (
+        <Suspense fallback={<DiscoverySkeleton />}>
+          <RiverDiscovery />
+        </Suspense>
+      ) : (
+        <DiscoverySkeleton />
+      )}
+    </div>
+  )
+}
 
 function RiverTileCard({ post }: { post: RiverPost }) {
   return (
@@ -402,10 +482,6 @@ export default function RiverPage() {
     }
   }
 
-  if (isLoading && !data) {
-    return <LoadingSkeleton />
-  }
-
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -430,13 +506,17 @@ export default function RiverPage() {
       
       <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-6xl md:py-10')}>
         <div className="space-y-6">
-          {/* Hero and Discovery sections - show once at top */}
           <div className="space-y-6 w-full">
             <RiverHero store={heroStore} isLoading={heroLoading} />
-            <RiverDiscovery />
           </div>
           
-          {layoutedPosts.map((item, index) => renderPostItem(item, index))}
+          {isLoading && !data ? (
+            <FeedLoadingCards />
+          ) : (
+            layoutedPosts.map((item, index) => renderPostItem(item, index))
+          )}
+
+          <LazyRiverDiscovery />
         </div>
 
         {hasNextPage && (

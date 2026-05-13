@@ -57,18 +57,27 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
 export async function geocodeCity(city: string, state: string): Promise<GeocodeResult | undefined> {
   try {
     const apiBaseUrl = apiOriginForRequests()
-    )
+    const url = `${apiBaseUrl}/geocode/city?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`
+    console.log(`[Geocoding] Fetching city ${city}, ${state} from ${url}`)
+    
+    const response = await fetch(url)
     
     if (!response.ok) {
       if (response.status === 404) {
-        return undefined;
+        const errorData = await response.json().catch(() => ({})) as { message?: string }
+        console.warn(`[Geocoding] City ${city}, ${state} not found:`, errorData.message)
+        return undefined // City not found;
       }
-      throw new Error('Geocoding failed')
+      const errorText = await response.text().catch(() => 'Unknown error')
+      console.error(`[Geocoding] API error (${response.status}):`, errorText)
+      throw new Error(`Geocoding failed: ${response.status}`)
     }
     
-    return await response.json() as GeocodeResult
-  } catch {
-    console.error('Geocoding error:')
+    const result = await response.json() as GeocodeResult
+    console.log(`[Geocoding] Success for city ${city}, ${state}:`, result)
+    return result;
+  } catch (error: unknown) {
+    console.error('[Geocoding] Fetch error:', error)
     return undefined;
   }
 }
@@ -79,18 +88,27 @@ export async function geocodeCity(city: string, state: string): Promise<GeocodeR
 export async function geocodeAddress(address: string): Promise<GeocodeResult | undefined> {
   try {
     const apiBaseUrl = apiOriginForRequests()
-    )
+    const url = `${apiBaseUrl}/geocode/address?address=${encodeURIComponent(address)}`
+    console.log(`[Geocoding] Fetching address from ${url}`)
+    
+    const response = await fetch(url)
     
     if (!response.ok) {
       if (response.status === 404) {
-        return undefined;
+        const errorData = await response.json().catch(() => ({})) as { message?: string }
+        console.warn(`[Geocoding] Address not found:`, errorData.message)
+        return undefined // Address not found;
       }
-      throw new Error('Geocoding failed')
+      const errorText = await response.text().catch(() => 'Unknown error')
+      console.error(`[Geocoding] API error (${response.status}):`, errorText)
+      throw new Error(`Geocoding failed: ${response.status}`)
     }
     
-    return await response.json() as GeocodeResult
+    const result = await response.json() as GeocodeResult
+    console.log(`[Geocoding] Success for address:`, result)
+    return result;
   } catch (error: unknown) {
-    console.error('Geocoding error:', error)
+    console.error('[Geocoding] Fetch error:', error)
     return undefined;
   }
 }

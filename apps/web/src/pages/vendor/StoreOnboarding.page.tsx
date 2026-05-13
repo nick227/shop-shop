@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
+import { stores as storesApi } from '@api/apiWrapper'
 import { Button, Input, TextArea, Checkbox } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import { PageHeader } from '@shared/ui/layout/PageLayout'
@@ -14,17 +14,24 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import type { StoreResponse } from '@api/types'
+import { useAuthStore } from '@stores/authStore'
+import { toast } from 'sonner'
 
 // Store onboarding schema
-const storeOnboardingSchema = z.object({
-  name: z.string().min(1, 'Store name is required'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  address: z.string().min(1, 'Address is required'),
-  pickupEnabled: z.boolean().default(true),
-  deliveryEnabled: z.boolean().default(true),
-  deliveryRadius: z.number().min(1, 'Delivery radius must be at least 1 mile').max(50, 'Delivery radius cannot exceed 50 miles'),
-  prepTime: z.number().min(5, 'Prep time must be at least 5 minutes').max(120, 'Prep time cannot exceed 120 minutes'),
-})
+const storeOnboardingSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Store name is required'),
+    description: z.string().trim().min(10, 'Description must be at least 10 characters'),
+    address: z.string().trim().min(1, 'Address is required'),
+    pickupEnabled: z.boolean().default(true),
+    deliveryEnabled: z.boolean().default(true),
+    deliveryRadius: z.number().min(1, 'Delivery radius must be at least 1 mile').max(50, 'Delivery radius cannot exceed 50 miles'),
+    prepTime: z.number().min(5, 'Prep time must be at least 5 minutes').max(120, 'Prep time cannot exceed 120 minutes'),
+  })
+  .refine((data) => data.pickupEnabled || data.deliveryEnabled, {
+    path: ['pickupEnabled'],
+    message: 'Enable pickup or delivery before creating your store',
+  })
 
 type StoreOnboardingData = z.infer<typeof storeOnboardingSchema>
 
@@ -45,9 +52,20 @@ const zodFormResolver: Resolver<StoreOnboardingData> = async (values) => {
   return { values: {}, errors }
 }
 
+function createStoreSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 50)
+}
+
 export default function VendorStoreOnboardingPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const user = useAuthStore((state) => state.user)
+  const updateUser = useAuthStore((state) => state.updateUser)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -74,28 +92,26 @@ export default function VendorStoreOnboardingPage() {
 
   const createStoreMutation = useMutation({
     mutationFn: async (data: StoreOnboardingData) => {
-      return await apiClient.stores().createStore({ 
-        createStoreRequest: {
-          name: data.name,
-          slug: data.name.toLowerCase().replaceAll(/\s+/g, '-'),
-          description: data.description,
-          addressStreet: data.address,
-          pickupEnabled: data.pickupEnabled,
-          deliveryEnabled: data.deliveryEnabled,
-          deliveryDistance: data.deliveryRadius.toString(),
-          prepTimeMin: data.prepTime,
-          isPublished: true,
-          phone: '',
-          email: '',
-          website: ''
-        }
+      return await storesApi.create({
+        name: data.name,
+        slug: createStoreSlug(data.name),
+        description: data.description,
+        addressStreet: data.address,
+        pickupEnabled: data.pickupEnabled,
+        deliveryEnabled: data.deliveryEnabled,
+        deliveryDistance: data.deliveryRadius.toString(),
+        prepTimeMin: data.prepTime,
+        isPublished: true,
+        phone: '',
+        email: user?.email ?? '',
+        website: ''
       })
     },
     onSuccess: async (response, data) => {
-      // Handle different response structures
-      const createdStore = ((response as any)?.data ?? response) as Partial<StoreResponse>
+      const createdStore = response as Partial<StoreResponse>
       const storeId = createdStore.id
       if (storeId) {
+        updateUser({ role: 'VENDOR' } as any)
         const now = new Date().toISOString()
         const activeStore = {
           ...createdStore,
@@ -107,26 +123,28 @@ export default function VendorStoreOnboardingPage() {
           deliveryEnabled: createdStore.deliveryEnabled ?? data.deliveryEnabled,
           deliveryDistance: createdStore.deliveryDistance ?? data.deliveryRadius.toString(),
           prepTimeMin: createdStore.prepTimeMin ?? data.prepTime,
-          isPublished: true,
+          isPublished: createdStore.isPublished ?? true,
+          status: createdStore.status ?? 'ACTIVE',
           createdAt: createdStore.createdAt ?? now,
           updatedAt: createdStore.updatedAt ?? now,
         } as StoreResponse
 
-        queryClient.setQueriesData<StoreResponse[]>(
-          { queryKey: ['vendor-managed-stores'] },
+        queryClient.setQueryData<StoreResponse[]>(
+          ['vendor-managed-stores', user?.id],
           (stores) => stores ? [activeStore, ...stores.filter((store) => store.id !== storeId)] : stores
         )
 
-        await queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+        void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
         navigate(`/vendor/dashboard?storeId=${encodeURIComponent(storeId)}`, { replace: true })
         return
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+      void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       navigate('/vendor/dashboard', { replace: true })
     },
     onError: (error) => {
       console.error('Store creation failed:', error)
+      toast.error(error instanceof Error ? error.message : 'Store creation failed')
       setIsSubmitting(false)
     },
     onSettled: () => {
@@ -231,6 +249,9 @@ export default function VendorStoreOnboardingPage() {
                     disabled={isSubmitting}
                   />
                 </div>
+                {errors.pickupEnabled && (
+                  <p className="text-sm text-destructive">{errors.pickupEnabled.message}</p>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
+import { stores as storesApi } from '@api/apiWrapper'
 import { toast } from 'sonner'
 import { useAuthStore } from '@stores/authStore'
 import { handleApiError } from '@api/errors'
@@ -22,6 +23,7 @@ export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const user = useAuthStore((state) => state.user)
   const updateUser = useAuthStore((state) => state.updateUser)
   const isEdit = Boolean(storeId)
 
@@ -64,19 +66,25 @@ export default function StoreFormPage() {
       const affiliateReferralCode = localStorage.getItem('affiliateReferralCode') || undefined
       const payload = {
         ...storePayloadFromFormData(data),
+        email: data.email?.trim() || user?.email || '',
         ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
       }
-      return await apiClient.stores().createStore({
-        createStoreRequest: payload as any,
-      })
+      return await storesApi.create(payload as any)
     },
     onSuccess: async (result) => {
       updateUser({ role: 'VENDOR' } as any)
-      queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
       // Attribution has been snapshotted onto the new store; clear local cache.
       localStorage.removeItem('affiliateReferralCode')
       localStorage.removeItem('affiliateReferralId')
       const newId = (result as any).id as string | undefined
+
+      if (newId) {
+        queryClient.setQueryData(
+          ['vendor-managed-stores', user?.id],
+          (stores: any[] | undefined) =>
+            stores ? [result, ...stores.filter((store) => store.id !== newId)] : stores
+        )
+      }
 
       if (newId && pendingScopedMediaFiles.length > 0) {
         try {
@@ -97,10 +105,12 @@ export default function StoreFormPage() {
           toast.error('Store created, but some media failed to upload. You can add them on the edit page.')
         }
       } else {
-        toast.success('Store created! Add photos below.')
+        toast.success('Store created.')
       }
 
-      navigate(newId ? `/vendor/stores/${newId}/edit` : '/vendor/dashboard')
+      void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+      void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+      navigate(newId ? `/vendor/dashboard?storeId=${encodeURIComponent(newId)}` : '/vendor/dashboard', { replace: true })
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -118,6 +128,7 @@ export default function StoreFormPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['store', storeId] })
+      queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
       toast.success('Store updated successfully!')
       navigate('/vendor/dashboard')

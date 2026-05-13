@@ -105,6 +105,13 @@ await app.register(cors, {
       callback(null, true)
       return
     }
+    
+    // Explicitly allow common Vite dev ports
+    const commonVitePorts = [5173, 5174, 3000, 8080, 8081]
+    if (commonVitePorts.some(port => origin.includes(`:${port}`))) {
+      callback(null, true)
+      return
+    }
 
     callback(null, corsOrigins.includes(origin))
   },
