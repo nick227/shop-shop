@@ -37,6 +37,7 @@ export function RiverBrowseDetailColumn({
   detailStore,
   detailStoreRoute,
   menuSections,
+  onUserInteract,
 }: Readonly<{
   selectedStoreId: string | undefined
   showDetailError: boolean
@@ -44,6 +45,7 @@ export function RiverBrowseDetailColumn({
   detailStore: StoreHeaderStore | undefined
   detailStoreRoute: string
   menuSections: readonly { readonly label: string; readonly items: readonly ItemResponse[] }[]
+  onUserInteract?: () => void
 }>) {
   let body: ReactNode
   if (!selectedStoreId) {
@@ -90,7 +92,12 @@ export function RiverBrowseDetailColumn({
       <div className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-500">
         Selected kitchen
       </div>
-      <div className="max-h-[min(420px,50vh)] flex-1 overflow-y-auto p-3">{body}</div>
+      <div
+        className="max-h-[min(420px,50vh)] flex-1 overflow-y-auto p-3"
+        onPointerDownCapture={() => onUserInteract?.()}
+      >
+        {body}
+      </div>
     </div>
   )
 }

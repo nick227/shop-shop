@@ -61,6 +61,7 @@ export function RiverBrowseMatchColumn({
   selectedStoreId,
   nearMe,
   onSelectStore,
+  onUserInteract,
 }: Readonly<{
   awaitingGeo: boolean
   geoPending: boolean
@@ -71,6 +72,7 @@ export function RiverBrowseMatchColumn({
   selectedStoreId: string | undefined
   nearMe: boolean
   onSelectStore: (id: string) => void
+  onUserInteract?: () => void
 }>) {
   let body: ReactNode
   if (awaitingGeo && geoPending) {
@@ -100,7 +102,12 @@ export function RiverBrowseMatchColumn({
   return (
     <div className="flex min-h-0 flex-col bg-gray-50/50">
       <div className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-500">Matches</div>
-      <div className="max-h-[min(420px,50vh)] flex-1 overflow-y-auto p-2">{body}</div>
+      <div
+        className="max-h-[min(420px,50vh)] flex-1 overflow-y-auto p-2"
+        onPointerDownCapture={() => onUserInteract?.()}
+      >
+        {body}
+      </div>
     </div>
   )
 }

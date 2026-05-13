@@ -19,6 +19,7 @@ const GEO_OPTIONS: PositionOptions = {
 }
 
 const MATCH_LIST_SKELETON_COUNT = 4
+const AUTO_ADVANCE_MS = 3000
 
 export interface RiverBrowseCardProps {
   readonly featuredStore: StoreWithDistance | null | undefined
@@ -32,6 +33,11 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
   const [userLng, setUserLng] = useState<number | undefined>()
   const [geoPending, setGeoPending] = useState(false)
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>()
+  const [autoAdvanceActive, setAutoAdvanceActive] = useState(true)
+
+  const cancelAutoAdvance = useCallback(() => {
+    setAutoAdvanceActive(false)
+  }, [])
 
   const awaitingGeo = nearMe && (userLat === undefined || userLng === undefined)
 
@@ -106,6 +112,21 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
 
   const browseLoading = !awaitingGeo && (isLoading || isFetching)
 
+  useEffect(() => {
+    if (!autoAdvanceActive || listStores.length < 2 || browseLoading || awaitingGeo) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      setSelectedStoreId((prev) => {
+        const currentIdx = listStores.findIndex((s) => s.id === prev)
+        const base = currentIdx >= 0 ? currentIdx : 0
+        const nextIdx = (base + 1) % listStores.length
+        return listStores[nextIdx].id
+      })
+    }, AUTO_ADVANCE_MS)
+    return () => window.clearInterval(timer)
+  }, [autoAdvanceActive, listStores, browseLoading, awaitingGeo])
+
   const detailStoreSynced = detailStore?.id === selectedStoreId
   const itemsSynced =
     !detailItemsLoading &&
@@ -142,12 +163,40 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
         (Boolean(selectedStoreId) && detailStoreLoading)),
   )
 
+  const handleSelectStore = useCallback(
+    (id: string) => {
+      cancelAutoAdvance()
+      setSelectedStoreId(id)
+    },
+    [cancelAutoAdvance],
+  )
+
+  const handleChipFilter = useCallback(
+    (value: string) => {
+      cancelAutoAdvance()
+      setStoreTypeFilter(value)
+    },
+    [cancelAutoAdvance],
+  )
+
+  const handleNearMeCheckbox = useCallback(
+    (checked: boolean) => {
+      cancelAutoAdvance()
+      if (checked) {
+        startNearMe()
+        return
+      }
+      stopNearMe()
+    },
+    [cancelAutoAdvance, startNearMe, stopNearMe],
+  )
+
   return (
     <section
       className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
       aria-labelledby="river-browse-heading"
     >
-      <RiverHero store={heroPick} isLoading={heroIsLoading} embedded />
+      <RiverHero store={heroPick} isLoading={heroIsLoading} embedded onInteraction={cancelAutoAdvance} />
 
       <header className="border-b border-gray-100 p-4">
         <h2 id="river-browse-heading" className="mb-3 text-lg font-semibold tracking-tight text-gray-900">
@@ -161,7 +210,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
                 key={value || 'all'}
                 type="button"
                 aria-pressed={active}
-                onClick={() => setStoreTypeFilter(value)}
+                onClick={() => handleChipFilter(value)}
                 className={cn(
                   'inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
                   active
@@ -180,13 +229,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
             type="checkbox"
             checked={nearMe}
             disabled={geoPending}
-            onChange={(e) => {
-              if (e.target.checked) {
-                startNearMe()
-                return
-              }
-              stopNearMe()
-            }}
+            onChange={(e) => handleNearMeCheckbox(e.target.checked)}
             className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
           />
           Within 25 miles of me
@@ -203,7 +246,8 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
           listStores={listStores}
           selectedStoreId={selectedStoreId}
           nearMe={nearMe}
-          onSelectStore={setSelectedStoreId}
+          onSelectStore={handleSelectStore}
+          onUserInteract={cancelAutoAdvance}
         />
         <RiverBrowseDetailColumn
           selectedStoreId={selectedStoreId}
@@ -212,6 +256,7 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
           detailStore={detailStore}
           detailStoreRoute={detailStoreRoute}
           menuSections={menuSections}
+          onUserInteract={cancelAutoAdvance}
         />
       </div>
     </section>

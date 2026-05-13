@@ -18,9 +18,11 @@ interface RiverHeroProps {
   readonly isLoading: boolean
   /** When true, sits inside a parent card: no outer radius/border (parent clips corners). */
   readonly embedded?: boolean
+  /** Fires on pointer down before navigation (e.g. to stop carousel auto-advance). */
+  readonly onInteraction?: () => void
 }
 
-export function RiverHero({ store, isLoading, embedded = false }: RiverHeroProps) {
+export function RiverHero({ store, isLoading, embedded = false, onInteraction }: RiverHeroProps) {
   const frame = cn(
     'relative aspect-[3/2] min-h-[260px] w-full overflow-hidden sm:aspect-[16/7]',
     embedded ? 'rounded-none border-0 border-b border-gray-100' : 'rounded-2xl border border-border',
@@ -45,7 +47,11 @@ export function RiverHero({ store, isLoading, embedded = false }: RiverHeroProps
   }
 
   return (
-    <Link to={getStoreRoute({ id: store.id, name: store.name })} className="block group">
+    <Link
+      to={getStoreRoute({ id: store.id, name: store.name })}
+      className="block group"
+      onPointerDownCapture={() => onInteraction?.()}
+    >
       <div className={frame}>
         <img
           src={getStoreImageUrl(store)}
