@@ -1,23 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { MapPin } from 'lucide-react'
 import { useStore } from '@shared/hooks/hooks/useStores'
 import { useItems } from '@shared/hooks/generated'
 import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
 import { useRiverBrowseStores } from '@features/river/hooks/useRiverBrowseStores'
-import { StoreHeader } from '@features/stores/components/StoreHeader'
-import { ItemCard } from '@features/products/components/ItemCard'
 import { groupItemsByMenuType } from '@features/products/utils/groupItemsByMenuType'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
-import { formatDistance } from '@shared/lib/utils/format'
 import { cn } from '@shared/lib/cn'
+import { RiverBrowseMatchColumn } from './RiverBrowseMatchColumn'
+import { RiverBrowseDetailColumn } from './RiverBrowseDetailColumn'
 
 const GEO_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
   maximumAge: 60_000,
   timeout: 12_000,
 }
+
+const MATCH_LIST_SKELETON_COUNT = 4
 
 export function RiverBrowseCard() {
   const [storeTypeFilter, setStoreTypeFilter] = useState('')
@@ -27,7 +26,7 @@ export function RiverBrowseCard() {
   const [geoPending, setGeoPending] = useState(false)
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>()
 
-  const awaitingGeo = nearMe && (userLat == null || userLng == null)
+  const awaitingGeo = nearMe && (userLat === undefined || userLng === undefined)
 
   const { data, isLoading, error, isFetching } = useRiverBrowseStores({
     storeTypeFilter,
@@ -36,7 +35,10 @@ export function RiverBrowseCard() {
     longitude: userLng,
   })
 
-  const listStores = awaitingGeo ? [] : (data?.sections.stores.results ?? [])
+  const listStores = useMemo(
+    () => (awaitingGeo ? [] : (data?.sections.stores.results ?? [])),
+    [awaitingGeo, data?.sections.stores.results],
+  )
 
   useEffect(() => {
     if (listStores.length === 0) {
@@ -54,6 +56,8 @@ export function RiverBrowseCard() {
       return
     }
     setGeoPending(true)
+    // User opted in via "Within 25 miles of me"
+    // eslint-disable-next-line sonarjs/no-intrusive-permissions -- explicit opt-in checkbox
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLat(pos.coords.latitude)
@@ -71,19 +75,16 @@ export function RiverBrowseCard() {
     )
   }, [])
 
-  const onNearMeChange = useCallback(
-    (checked: boolean) => {
-      if (checked) {
-        setNearMe(true)
-        requestLocation()
-      } else {
-        setNearMe(false)
-        setUserLat(undefined)
-        setUserLng(undefined)
-      }
-    },
-    [requestLocation],
-  )
+  const startNearMe = useCallback(() => {
+    setNearMe(true)
+    requestLocation()
+  }, [requestLocation])
+
+  const stopNearMe = useCallback(() => {
+    setNearMe(false)
+    setUserLat(undefined)
+    setUserLng(undefined)
+  }, [])
 
   const { data: detailStore, isLoading: detailStoreLoading } = useStore(selectedStoreId ?? '')
   const { data: detailItems, isLoading: detailItemsLoading } = useItems(
@@ -97,20 +98,36 @@ export function RiverBrowseCard() {
   )
 
   const browseLoading = !awaitingGeo && (isLoading || isFetching)
-  const detailLoading = Boolean(selectedStoreId) && (detailStoreLoading || detailItemsLoading)
+
+  const detailStoreSynced = detailStore?.id === selectedStoreId
+  const itemsSynced =
+    !detailItemsLoading &&
+    (detailItems === undefined ||
+      detailItems.length === 0 ||
+      detailItems[0]?.storeId === selectedStoreId)
+
+  const showDetailError = Boolean(
+    selectedStoreId && !detailStoreLoading && !detailItemsLoading && !detailStore,
+  )
+  const showDetailSkeleton = Boolean(
+    selectedStoreId &&
+      !showDetailError &&
+      (detailStoreLoading || detailItemsLoading || !detailStore || !detailStoreSynced || !itemsSynced),
+  )
+
   const detailStoreRoute =
-    detailStore ? getStoreRoute({ id: detailStore.id, name: detailStore.name }) : ''
+    detailStore && detailStoreSynced ? getStoreRoute({ id: detailStore.id, name: detailStore.name }) : ''
 
   return (
     <section
-      className="overflow-hidden w-full rounded-2xl border border-gray-200 bg-white shadow-sm"
+      className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
       aria-labelledby="river-browse-heading"
     >
-      <div className="p-4 border-b border-gray-100">
+      <header className="border-b border-gray-100 p-4">
         <h2 id="river-browse-heading" className="mb-3 text-lg font-semibold tracking-tight text-gray-900">
           Browse kitchens
         </h2>
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="mb-3 flex flex-wrap gap-2" role="toolbar" aria-label="Kitchen type">
           {STORE_TYPE_CONFIG.map(({ value, label, Icon }) => {
             const active = storeTypeFilter === value
             return (
@@ -132,111 +149,44 @@ export function RiverBrowseCard() {
             )
           })}
         </div>
-        <label className="flex gap-2 items-center text-sm text-gray-700 cursor-pointer select-none">
+        <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
             checked={nearMe}
             disabled={geoPending}
-            onChange={(e) => onNearMeChange(e.target.checked)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                startNearMe()
+                return
+              }
+              stopNearMe()
+            }}
             className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
           />
           Within 25 miles of me
         </label>
-      </div>
+      </header>
 
-      <div className="grid min-h-[280px] divide-y divide-gray-100 md:grid-cols-2 md:divide-y-0 md:divide-x md:divide-gray-100">
-        <div className="flex flex-col min-h-0 bg-gray-50/50">
-          <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Matches
-          </div>
-          <div className="overflow-y-auto flex-1 max-h-[min(420px,50vh)] p-2">
-            {awaitingGeo && geoPending ? (
-              <p className="p-3 text-sm text-gray-600">Getting your location…</p>
-            ) : error ? (
-              <p className="p-3 text-sm text-red-600">{error.message}</p>
-            ) : browseLoading ? (
-              <ul className="space-y-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <li key={i} className="h-12 rounded-lg bg-gray-200 animate-pulse" />
-                ))}
-              </ul>
-            ) : listStores.length === 0 ? (
-              <p className="p-3 text-sm text-gray-600">No kitchens match this filter yet.</p>
-            ) : (
-              <ul className="space-y-1">
-                {listStores.map((s) => {
-                  const selected = s.id === selectedStoreId
-                  return (
-                    <li key={s.id}>
-                      <button
-                        type="button"
-                        aria-selected={selected}
-                        onClick={() => setSelectedStoreId(s.id)}
-                        className={cn(
-                          'flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                          selected ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-white/80',
-                        )}
-                      >
-                        <span className="font-medium text-gray-900">{s.name}</span>
-                        {nearMe && s.distance != null ? (
-                          <span className="flex gap-1 items-center text-xs text-gray-500">
-                            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                            {formatDistance(s.distance)}
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col min-h-0">
-          <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Selected kitchen
-          </div>
-          <div className="overflow-y-auto flex-1 max-h-[min(420px,50vh)] p-3">
-            {!selectedStoreId ? (
-              <p className="text-sm text-gray-600">Choose a kitchen from the list.</p>
-            ) : detailLoading ? (
-              <div className="space-y-3">
-                <div className="h-16 rounded-lg bg-gray-200 animate-pulse" />
-                <div className="h-24 rounded-lg bg-gray-200 animate-pulse" />
-              </div>
-            ) : !detailStore ? (
-              <p className="text-sm text-gray-600">Could not load this kitchen.</p>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <StoreHeader store={detailStore} showMap={false} fullSize={false} />
-                  <Link
-                    to={detailStoreRoute}
-                    className="mt-3 inline-flex text-sm font-medium text-orange-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded"
-                  >
-                    Open full kitchen page →
-                  </Link>
-                </div>
-
-                {menuSections.length === 0 ? (
-                  <p className="text-sm text-gray-600">No menu items to preview.</p>
-                ) : (
-                  menuSections.map((section) => (
-                    <section key={section.label}>
-                      <h3 className="mb-2 text-sm font-semibold text-gray-900">{section.label}</h3>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {section.items.map((item) => (
-                          <ItemCard key={item.id} item={item} store={{ id: detailStore.id, name: detailStore.name }} />
-                        ))}
-                      </div>
-                    </section>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="grid min-h-[280px] divide-y divide-gray-100 md:grid-cols-2 md:divide-x md:divide-y-0 md:divide-gray-100">
+        <RiverBrowseMatchColumn
+          awaitingGeo={awaitingGeo}
+          geoPending={geoPending}
+          errorMessage={error?.message}
+          browseLoading={browseLoading}
+          listSkeletonCount={MATCH_LIST_SKELETON_COUNT}
+          listStores={listStores}
+          selectedStoreId={selectedStoreId}
+          nearMe={nearMe}
+          onSelectStore={setSelectedStoreId}
+        />
+        <RiverBrowseDetailColumn
+          selectedStoreId={selectedStoreId}
+          showDetailError={showDetailError}
+          showDetailSkeleton={showDetailSkeleton}
+          detailStore={detailStore}
+          detailStoreRoute={detailStoreRoute}
+          menuSections={menuSections}
+        />
       </div>
     </section>
   )
