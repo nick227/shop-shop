@@ -17,7 +17,7 @@ export interface UploadResult {
     size: number;
     mimetype: string;
 }
-export declare const getStorageAdapter: () => StorageAdapter;
+export declare const getStorageAdapter: () => Promise<StorageAdapter>;
 export declare const ALLOWED_IMAGE_TYPES: string[];
 export declare const ALLOWED_VIDEO_TYPES: string[];
 export declare const MAX_IMAGE_SIZE: number;

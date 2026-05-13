@@ -3,9 +3,7 @@
 // Abstract interface for file storage (R2, S3, local, etc.)
 // ========================================
 
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
+import { LocalStorageAdapter } from './storage-local.adapter.js'
 
 export interface StorageAdapter {
   upload(file: UploadFile): Promise<UploadResult>
@@ -35,35 +33,39 @@ export interface UploadResult {
 // ========================================
 
 let storageInstance: StorageAdapter | null = null
+let initPromise: Promise<StorageAdapter> | null = null
 
-export const getStorageAdapter = (): StorageAdapter => {
+/** R2 adapter is loaded with dynamic import() so CJS consumers never require() an ESM subgraph. */
+export const getStorageAdapter = async (): Promise<StorageAdapter> => {
   if (storageInstance) {
     return storageInstance
+  }
+  if (initPromise) {
+    return initPromise
   }
 
   const storageType = process.env.STORAGE_TYPE || 'local'
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const R2Adapter = require('./storage-r2.adapter.js').R2StorageAdapter
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const LocalAdapter = require('./storage-local.adapter.js').LocalStorageAdapter
+  initPromise = (async (): Promise<StorageAdapter> => {
+    switch (storageType) {
+      case 'r2':
+      case 's3': {
+        const { R2StorageAdapter } = await import('./storage-r2.adapter.js')
+        storageInstance = new R2StorageAdapter()
+        break
+      }
+      case 'local':
+      default:
+        storageInstance = new LocalStorageAdapter()
+        break
+    }
+    if (!storageInstance) {
+      throw new Error('Failed to initialize storage adapter')
+    }
+    return storageInstance
+  })()
 
-  switch (storageType) {
-    case 'r2':
-    case 's3':
-      storageInstance = new R2Adapter()
-      break
-      
-    case 'local':
-    default:
-      storageInstance = new LocalAdapter()
-      break
-  }
-
-  if (!storageInstance) {
-    throw new Error('Failed to initialize storage adapter')
-  }
-  return storageInstance
+  return initPromise
 }
 
 // ========================================

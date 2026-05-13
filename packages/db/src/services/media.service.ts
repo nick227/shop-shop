@@ -106,7 +106,7 @@ export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaR
   }
 
   // Upload to storage
-  const storage = getStorageAdapter()
+  const storage = await getStorageAdapter()
   const uploadResult = await storage.upload(input.file)
 
   // Save to database
@@ -167,7 +167,7 @@ export const deleteMedia = async (input: DeleteMediaInput): Promise<void> => {
 
   // Delete from storage
   try {
-    const storage = getStorageAdapter()
+    const storage = await getStorageAdapter()
     const key = (media.metadata as { key?: string })?.key
     
     if (key) {
