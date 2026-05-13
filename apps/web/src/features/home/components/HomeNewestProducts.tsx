@@ -1,12 +1,13 @@
 /**
- * Grid of newest menu items across kitchens.
+ * Grid of newest menu items across kitchens (only items with a real photo).
  */
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Image } from '@shared/ui/primitives'
 import { useNewestProducts } from '@shared/hooks/hooks/store'
 import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
-import { getImageUrl } from '@shared/lib/utils/image'
+import { getImageUrl, resolvePrimaryImageUrl } from '@shared/lib/utils/image'
 import type { ItemResponse } from '@api/types'
 
 type ItemWithOptionalImage = ItemResponse & { readonly imageUrl?: string }
@@ -40,8 +41,27 @@ function ProductMiniCard({ item }: { readonly item: ItemResponse }) {
   )
 }
 
+const DISPLAY_LIMIT = 8
+
 export function HomeNewestProducts() {
-  const { data: products, isLoading } = useNewestProducts(8)
+  const { data: pool, isLoading } = useNewestProducts(DISPLAY_LIMIT)
+
+  const products = useMemo(() => {
+    if (!pool?.length) return []
+    const out: ItemResponse[] = []
+    for (const item of pool) {
+      const row = item as ItemWithOptionalImage
+      if (resolvePrimaryImageUrl(row.imageUrl, item.mediaAssets)) {
+        out.push(item)
+        if (out.length >= DISPLAY_LIMIT) break
+      }
+    }
+    return out
+  }, [pool])
+
+  if (!isLoading && products.length === 0) {
+    return null
+  }
 
   return (
     <section className="p-4 rounded-2xl border border-border bg-card sm:p-6">
@@ -51,7 +71,7 @@ export function HomeNewestProducts() {
 
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: DISPLAY_LIMIT }).map((_, i) => (
             <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
               <div className="animate-pulse aspect-square bg-muted" />
               <div className="space-y-1.5 p-3">
@@ -64,7 +84,7 @@ export function HomeNewestProducts() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-4">
-          {(products ?? []).map((item) => (
+          {products.map((item) => (
             <ProductMiniCard key={item.id} item={item} />
           ))}
         </div>

@@ -5,6 +5,23 @@ import { generateColorFromSeed } from './colorGenerator'
 
 type PlaceholderType = 'item' | 'store' | 'product'
 
+type MediaLike = { readonly url: string; readonly kind: string }
+
+/**
+ * First real image URL from `mediaAssets` or `imageUrl` (no placeholder).
+ */
+export function resolvePrimaryImageUrl(
+  imageUrl: string | undefined,
+  mediaAssets?: readonly MediaLike[]
+): string | undefined {
+  if (mediaAssets && mediaAssets.length > 0) {
+    const firstImage = mediaAssets.find((asset) => asset.kind === 'IMAGE' || !asset.kind)
+    if (firstImage?.url) return firstImage.url
+  }
+  if (imageUrl) return imageUrl
+  return undefined
+}
+
 /** SVG data URL so missing images still load (no static /placeholder-*.jpg files in public). */
 function placeholderDataUrl(id: string, type: PlaceholderType): string {
   const fill = generateColorFromSeed(id + type)
@@ -28,17 +45,11 @@ export function getImageUrl(
   imageUrl: string | undefined,
   id: string,
   type: PlaceholderType,
-  mediaAssets?: { url: string; kind: string }[]
+  mediaAssets?: readonly MediaLike[]
 ): string {
-  // Check for mediaAssets first (from backend with media relations)
-  if (mediaAssets && mediaAssets.length > 0) {
-    const firstImage = mediaAssets.find(asset => asset.kind === 'IMAGE' || !asset.kind)
-    if (firstImage?.url) return firstImage.url
-  }
-  
-  // Fallback to imageUrl property (if it exists)
-  if (imageUrl) return imageUrl
-  
+  const resolved = resolvePrimaryImageUrl(imageUrl, mediaAssets)
+  if (resolved) return resolved
+
   // Final fallback: inline SVG (static /placeholder-*.jpg paths are not shipped)
   return placeholderDataUrl(id, type)
 }
