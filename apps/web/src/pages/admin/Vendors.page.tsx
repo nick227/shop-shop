@@ -43,15 +43,19 @@ export default function AdminVendorsPage() {
       if (search) params.set('search', search)
       if (statusFilter) params.set('status', statusFilter)
       params.set('page', String(page))
+      params.set('limit', '25')
       const res = await fetch(`${apiBase}/api/admin/stores?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to load stores')
-      return res.json() as Promise<{ stores: AdminStore[]; total: number; pages: number }>
+      return res.json() as Promise<{
+        data: AdminStore[]
+        pagination: { pages: number; total: number }
+      }>
     },
   })
 
-  const stores = data?.stores ?? []
+  const stores = data?.data ?? []
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
@@ -139,16 +143,16 @@ export default function AdminVendorsPage() {
             </table>
           </div>
 
-          {(data?.pages ?? 1) > 1 && (
+          {(data?.pagination.pages ?? 1) > 1 && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                Page {page} of {data?.pages}
+                Page {page} of {data?.pagination.pages}
               </span>
               <div className="flex gap-2">
                 <Button size="small" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
                   Previous
                 </Button>
-                <Button size="small" variant="outline" disabled={page === data?.pages} onClick={() => setPage(p => p + 1)}>
+                <Button size="small" variant="outline" disabled={page === data?.pagination.pages} onClick={() => setPage(p => p + 1)}>
                   Next
                 </Button>
               </div>

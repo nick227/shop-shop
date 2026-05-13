@@ -36,7 +36,8 @@ export default function AdminRiverComposerPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to load stores')
-      return res.json() as Promise<{ stores: AdminStoreRow[] }>
+      const body = (await res.json()) as { data: AdminStoreRow[] }
+      return { stores: body.data }
     },
     enabled: Boolean(token),
   })

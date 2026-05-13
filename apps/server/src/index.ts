@@ -43,6 +43,7 @@ import { tagsRoutes } from './routes/tags.route.js'
 import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
 import { adminRoutes } from './routes/admin.route.js'
 import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
+import { adminStoresRoutes } from './routes/admin-stores.route.js'
 import { settingsPublicRoutes } from './routes/settings-public.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
@@ -213,6 +214,7 @@ await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })
 // Admin routes (all protected by requireAdmin inside the route file)
 await app.register(adminRoutes, { prefix: '/api' })
 await app.register(adminCatalogRoutes, { prefix: '/api' })
+await app.register(adminStoresRoutes, { prefix: '/api/admin' })
 // Public settings (no auth)
 await app.register(settingsPublicRoutes, { prefix: '/api' })
 
