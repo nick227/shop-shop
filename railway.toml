@@ -9,7 +9,7 @@ builder = "NIXPACKS"
 buildCommand = "export NODE_ENV=development CI=true && pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @packages/db build && pnpm --filter @packages/domain build && pnpm --filter @packages/realtime build && pnpm --filter @packages/schemas build && NODE_ENV=production pnpm --filter @apps/server build"
 
 [deploy]
-startCommand = "pnpm --filter @apps/server start"
+startCommand = "pnpm db:deploy && pnpm --filter @apps/server start"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
