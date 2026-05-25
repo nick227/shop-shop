@@ -25,7 +25,7 @@ const TEST_STORE = {
   addressZip: '12345',
   phone: '+1-555-0123',
   email: `test-store-${Date.now()}@example.com`,
-  companyName: 'Test Company Inc',
+  companyName: 'Test1 Company Inc',
   website: 'https://example.com',
   category: 'RESTAURANT'
 };
