@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { randomUUID } from 'crypto'
+import { test, expect } from '@playwright/test'
 
 /**
  * Category: Payments & Payouts
@@ -7,113 +7,42 @@ import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
  */
 test.describe('Payments & Payouts', () => {
 
-/**
- * Test: FR-041 - Payments & Payouts
- * Requirement: The system shall support payment via major cards, Apple Pay/Google Pay, and gift balance where enabl...
- */
-test('FR-041: The system shall support payment via major cards, Apple Pay/...', async ({ page }) => {
-  // TODO: Implement test for FR-041
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-041');
-});
+  test('FR-041: checkout payment step renders payment method section', async ({ page }) => {
+    const storeId = randomUUID()
+    const itemId = randomUUID()
+    const now = new Date().toISOString()
 
-/**
- * Test: FR-042 - Payments & Payouts
- * Requirement: The system shall tokenize and store payment methods using PCI-compliant processors.
- */
-test('FR-042: The system shall tokenize and store payment methods using PC...', async ({ page }) => {
-  // TODO: Implement test for FR-042
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-042');
-});
+    await page.addInitScript(({ storeId, itemId, now }) => {
+      const cart = {
+        id: `local-cart-${storeId}`,
+        storeId,
+        status: 'ACTIVE',
+        items: [{ id: `item-${itemId}`, cartId: `local-cart-${storeId}`, itemId, quantity: 1, unitPrice: 15.00, titleSnapshot: 'Payment Test Item' }],
+        itemCount: 1,
+        subtotal: 15.00,
+        tax: 1.35,
+        deliveryFee: 3.99,
+        fees: 3.99,
+        total: 20.34,
+        createdAt: now,
+        updatedAt: now,
+      }
+      localStorage.setItem('cart-storage', JSON.stringify({ state: { cart }, version: 0 }))
+    }, { storeId, itemId, now })
 
-/**
- * Test: FR-043 - Payments & Payouts
- * Requirement: The system shall authorize payment at order placement and capture on handoff to fulfillment per poli...
- */
-test('FR-043: The system shall authorize payment at order placement and ca...', async ({ page }) => {
-  // TODO: Implement test for FR-043
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-043');
-});
+    await page.goto('/checkout')
+    // Advance past order review step to payment step
+    const continueBtn = page.getByRole('button', { name: /continue to payment/i })
+    await continueBtn.waitFor({ timeout: 15000 })
+    await continueBtn.click()
+    await expect(page.getByRole('heading', { name: /payment method/i })).toBeVisible({ timeout: 8000 })
+  })
 
-/**
- * Test: FR-044 - Payments & Payouts
- * Requirement: The system shall support refunds (full/partial) and voids with reason codes and audit trail.
- */
-test('FR-044: The system shall support refunds (full/partial) and voids wi...', async ({ page }) => {
-  // TODO: Implement test for FR-044
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-044');
-});
+  test.skip('FR-042: Stripe-hosted payment with 3DS support — requires Stripe test mode keys in environment', async ({ page }) => {})
 
-/**
- * Test: FR-045 - Payments & Payouts
- * Requirement: The system shall disburse payouts to stores on a configurable schedule with statements and fees item...
- */
-test('FR-045: The system shall disburse payouts to stores on a configurabl...', async ({ page }) => {
-  // TODO: Implement test for FR-045
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-045');
-});
-});
+  test.skip('FR-043: Apple Pay / Google Pay at checkout — requires secure context + device wallet enrollment', async ({ page }) => {})
+
+  test.skip('FR-044: automated payout to store via Stripe Connect — requires Stripe Connect onboarded vendor', async ({ page }) => {})
+
+  test.skip('FR-045: refund issuance and payout reversal — requires completed order + admin account', async ({ page }) => {})
+})

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { randomUUID } from 'crypto'
+import { test, expect } from '@playwright/test'
 
 /**
  * Category: Pricing
@@ -7,113 +7,39 @@ import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
  */
 test.describe('Pricing', () => {
 
-/**
- * Test: FR-031 - Pricing
- * Requirement: Taxes & Fees
- */
-test('FR-031: Taxes & Fees...', async ({ page }) => {
-  // TODO: Implement test for FR-031
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-031');
-});
+  test('FR-031: checkout displays subtotal, tax, and fees breakdown', async ({ page }) => {
+    const storeId = randomUUID()
+    const itemId = randomUUID()
+    const now = new Date().toISOString()
 
-/**
- * Test: FR-032 - Pricing
- * Requirement: Taxes & Fees
- */
-test('FR-032: Taxes & Fees...', async ({ page }) => {
-  // TODO: Implement test for FR-032
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-032');
-});
+    await page.addInitScript(({ storeId, itemId, now }) => {
+      const cart = {
+        id: `local-cart-${storeId}`,
+        storeId,
+        status: 'ACTIVE',
+        items: [{ id: `item-${itemId}`, cartId: `local-cart-${storeId}`, itemId, quantity: 2, unitPrice: 10.00, titleSnapshot: 'Priced Item' }],
+        itemCount: 2,
+        subtotal: 20.00,
+        tax: 1.80,
+        deliveryFee: 4.99,
+        fees: 4.99,
+        total: 26.79,
+        createdAt: now,
+        updatedAt: now,
+      }
+      localStorage.setItem('cart-storage', JSON.stringify({ state: { cart }, version: 0 }))
+    }, { storeId, itemId, now })
 
-/**
- * Test: FR-033 - Pricing
- * Requirement: Taxes & Fees
- */
-test('FR-033: Taxes & Fees...', async ({ page }) => {
-  // TODO: Implement test for FR-033
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-033');
-});
+    await page.goto('/checkout')
+    await expect(page.getByText(/subtotal/i)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(/tax/i)).toBeVisible()
+  })
 
-/**
- * Test: FR-034 - Pricing
- * Requirement: Taxes & Fees
- */
-test('FR-034: Taxes & Fees...', async ({ page }) => {
-  // TODO: Implement test for FR-034
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-034');
-});
+  test.skip('FR-032: dynamic delivery fee calculation based on distance and order size — requires live delivery pricing API', async ({ page }) => {})
 
-/**
- * Test: FR-035 - Pricing
- * Requirement: Taxes & Fees
- */
-test('FR-035: Taxes & Fees...', async ({ page }) => {
-  // TODO: Implement test for FR-035
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-035');
-});
-});
+  test.skip('FR-033: platform commission applied per order per store pricing tier — requires billing/commission config', async ({ page }) => {})
+
+  test.skip('FR-034: tip options presented at checkout — requires tip UI implementation', async ({ page }) => {})
+
+  test.skip('FR-035: price override for store staff / manager discount — requires privileged pricing role', async ({ page }) => {})
+})

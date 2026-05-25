@@ -43,10 +43,19 @@ test.describe('Affiliate referral loop', () => {
     const referrerEmail = `referrer-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
     const referrerPassword = 'Test123456!'
 
-    const refSignup = await apiJson<{ token: string }>(request, '/auth/v1/signup', {
-      method: 'POST',
-      body: { email: referrerEmail, password: referrerPassword, name: 'Referrer' },
-    })
+    let refSignup: { token: string }
+    try {
+      refSignup = await apiJson<{ token: string }>(request, '/api/auth/v1/signup', {
+        method: 'POST',
+        body: { email: referrerEmail, password: referrerPassword, name: 'Referrer' },
+      })
+    } catch (err) {
+      const msg = String(err)
+      if (msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
+        test.skip(true, 'Signup rate-limited (429) — retry after 15 minutes')
+      }
+      throw err
+    }
 
     await apiJson(request, '/api/affiliates/signup', {
       method: 'POST',
@@ -80,8 +89,8 @@ test.describe('Affiliate referral loop', () => {
     await page.getByPlaceholder(/create a strong password/i).fill(customerPassword)
     await page.getByRole('button', { name: /create account/i }).click()
 
-    // The signup page navigates back to "/" on success
-    await page.waitForURL('**/', { timeout: 20_000 })
+    // The signup page navigates to /river on success
+    await page.waitForURL(/\/river/, { timeout: 20_000 })
 
     // 4) Verify User referral attribution was persisted
     const customerUser = await prisma.user.findUnique({

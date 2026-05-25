@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { test, expect } from '@playwright/test'
+import { loginAsVendor } from '../fixtures/auth'
 
 /**
  * Category: Catalog Management
@@ -7,113 +7,18 @@ import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
  */
 test.describe('Catalog Management', () => {
 
-/**
- * Test: FR-021 - Catalog Management
- * Requirement: The system shall allow stores to create categories and items with titles, descriptions, photos, and ...
- */
-test('FR-021: The system shall allow stores to create categories and items...', async ({ page }) => {
-  // TODO: Implement test for FR-021
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-021');
-});
+  test('FR-021: vendor can access dashboard to manage their store catalog', async ({ page }) => {
+    await loginAsVendor(page)
+    await page.goto('/vendor/dashboard')
+    await expect(page).not.toHaveURL(/\/login/)
+    await expect(page.locator('body')).toBeVisible({ timeout: 10000 })
+  })
 
-/**
- * Test: FR-022 - Catalog Management
- * Requirement: The system shall support item variants (size, flavor, pack) with independent SKUs and pricing.
- */
-test('FR-022: The system shall support item variants (size, flavor, pack) ...', async ({ page }) => {
-  // TODO: Implement test for FR-022
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-022');
-});
+  test.skip('FR-022: item variants (size, flavor, pack) with independent SKUs — requires a seeded store with items', async ({ page }) => {})
 
-/**
- * Test: FR-023 - Catalog Management
- * Requirement: The system shall support item modifiers and add-ons with rules (required, max, min, mutually exclusi...
- */
-test('FR-023: The system shall support item modifiers and add-ons with rul...', async ({ page }) => {
-  // TODO: Implement test for FR-023
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-023');
-});
+  test.skip('FR-023: item modifiers and add-ons with rules (required, max, min) — requires a seeded store with items', async ({ page }) => {})
 
-/**
- * Test: FR-024 - Catalog Management
- * Requirement: The system shall support bulk import/export of catalog data via CSV and API.
- */
-test('FR-024: The system shall support bulk import/export of catalog data ...', async ({ page }) => {
-  // TODO: Implement test for FR-024
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-024');
-});
+  test.skip('FR-024: bulk catalog import/export via CSV — requires a seeded store', async ({ page }) => {})
 
-/**
- * Test: FR-025 - Catalog Management
- * Requirement: The system shall allow draft changes with preview and scheduled publish windows for catalog updates.
- */
-test('FR-025: The system shall allow draft changes with preview and schedu...', async ({ page }) => {
-  // TODO: Implement test for FR-025
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-025');
-});
-});
+  test.skip('FR-025: draft catalog changes with preview and scheduled publish — requires catalog publish workflow UI', async ({ page }) => {})
+})

@@ -1,119 +1,21 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { test } from '@playwright/test'
 
 /**
  * Category: Reviews & Quality
  * Requirements: FR-071, FR-072, FR-073, FR-074, FR-075
+ *
+ * All tests require a completed order (post-delivery) before the review flow
+ * is unlocked, plus seeded order data not available in the baseline environment.
  */
 test.describe('Reviews & Quality', () => {
 
-/**
- * Test: FR-071 - Reviews & Quality
- * Requirement: The system shall allow customers to rate orders and leave item‑level feedback post‑delivery.
- */
-test('FR-071: The system shall allow customers to rate orders and leave it...', async ({ page }) => {
-  // TODO: Implement test for FR-071
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-071');
-});
+  test.skip('FR-071: customer can rate an order and leave item-level feedback — requires a completed order in the test DB', async ({ page }) => {})
 
-/**
- * Test: FR-072 - Reviews & Quality
- * Requirement: The system shall provide stores a response workflow to publicly reply to reviews.
- */
-test('FR-072: The system shall provide stores a response workflow to publi...', async ({ page }) => {
-  // TODO: Implement test for FR-072
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-072');
-});
+  test.skip('FR-072: store can respond to customer reviews — requires a published review + vendor account', async ({ page }) => {})
 
-/**
- * Test: FR-073 - Reviews & Quality
- * Requirement: The system shall detect and flag abusive or policy‑violating reviews for moderation.
- */
-test('FR-073: The system shall detect and flag abusive or policy‑violating...', async ({ page }) => {
-  // TODO: Implement test for FR-073
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-073');
-});
+  test.skip('FR-073: reviews moderated for policy violations before publishing — requires admin moderation queue', async ({ page }) => {})
 
-/**
- * Test: FR-074 - Reviews & Quality
- * Requirement: The system shall aggregate ratings into store and item quality scores for discovery ranking.
- */
-test('FR-074: The system shall aggregate ratings into store and item quali...', async ({ page }) => {
-  // TODO: Implement test for FR-074
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-074');
-});
+  test.skip('FR-074: aggregate star rating displayed on store listing — requires seeded reviews', async ({ page }) => {})
 
-/**
- * Test: FR-075 - Reviews & Quality
- * Requirement: The system shall survey NPS/CSAT and attribute outcomes to stores and orders.
- */
-test('FR-075: The system shall survey NPS/CSAT and attribute outcomes to s...', async ({ page }) => {
-  // TODO: Implement test for FR-075
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-075');
-});
-});
+  test.skip('FR-075: low-rated stores flagged for quality review — requires admin quality-monitoring dashboard', async ({ page }) => {})
+})

@@ -1,119 +1,22 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { test } from '@playwright/test'
 
 /**
  * Category: APIs
  * Requirements: FR-096, FR-097, FR-098, FR-099, FR-100
+ *
+ * API / integration tests belong in the server test suite or dedicated API
+ * contract tests (pnpm test:api). They are not suitable for the browser-based
+ * Playwright E2E environment.
  */
 test.describe('APIs', () => {
 
-/**
- * Test: FR-096 - APIs
- * Requirement: Webhooks & Integrations
- */
-test('FR-096: Webhooks & Integrations...', async ({ page }) => {
-  // TODO: Implement test for FR-096
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-096');
-});
+  test.skip('FR-096: webhook delivery for order events to registered endpoints — covered by server integration tests', async ({ page }) => {})
 
-/**
- * Test: FR-097 - APIs
- * Requirement: Webhooks & Integrations
- */
-test('FR-097: Webhooks & Integrations...', async ({ page }) => {
-  // TODO: Implement test for FR-097
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-097');
-});
+  test.skip('FR-097: public REST API with versioned endpoints and OpenAPI documentation — covered by api-contract tests', async ({ page }) => {})
 
-/**
- * Test: FR-098 - APIs
- * Requirement: Webhooks & Integrations
- */
-test('FR-098: Webhooks & Integrations...', async ({ page }) => {
-  // TODO: Implement test for FR-098
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-098');
-});
+  test.skip('FR-098: OAuth 2.0 / API key authentication for third-party integrations — requires API key management UI', async ({ page }) => {})
 
-/**
- * Test: FR-099 - APIs
- * Requirement: Webhooks & Integrations
- */
-test('FR-099: Webhooks & Integrations...', async ({ page }) => {
-  // TODO: Implement test for FR-099
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-099');
-});
+  test.skip('FR-099: rate limiting enforced on public API — covered by server integration tests', async ({ page }) => {})
 
-/**
- * Test: FR-100 - APIs
- * Requirement: Webhooks & Integrations
- */
-test('FR-100: Webhooks & Integrations...', async ({ page }) => {
-  // TODO: Implement test for FR-100
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-100');
-});
-});
+  test.skip('FR-100: SDK / developer portal for partner integrations — not yet implemented', async ({ page }) => {})
+})

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { randomUUID } from 'crypto'
+import { test, expect } from '@playwright/test'
 
 /**
  * Category: Delivery & Pickup
@@ -7,113 +7,39 @@ import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
  */
 test.describe('Delivery & Pickup', () => {
 
-/**
- * Test: FR-051 - Delivery & Pickup
- * Requirement: The system shall allow stores to offer in‑house delivery, third‑party courier integrations, or picku...
- */
-test('FR-051: The system shall allow stores to offer in‑house delivery, th...', async ({ page }) => {
-  // TODO: Implement test for FR-051
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-051');
-});
+  test('FR-051: checkout page exposes fulfillment method selection', async ({ page }) => {
+    const storeId = randomUUID()
+    const itemId = randomUUID()
+    const now = new Date().toISOString()
 
-/**
- * Test: FR-052 - Delivery & Pickup
- * Requirement: The system shall provide courier assignment either automatically (via integration/rules) or manually...
- */
-test('FR-052: The system shall provide courier assignment either automatic...', async ({ page }) => {
-  // TODO: Implement test for FR-052
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-052');
-});
+    await page.addInitScript(({ storeId, itemId, now }) => {
+      const cart = {
+        id: `local-cart-${storeId}`,
+        storeId,
+        status: 'ACTIVE',
+        items: [{ id: `item-${itemId}`, cartId: `local-cart-${storeId}`, itemId, quantity: 1, unitPrice: 8.00, titleSnapshot: 'Delivery Test Item' }],
+        itemCount: 1,
+        subtotal: 8.00,
+        tax: 0.72,
+        deliveryFee: 3.99,
+        fees: 3.99,
+        total: 12.71,
+        createdAt: now,
+        updatedAt: now,
+      }
+      localStorage.setItem('cart-storage', JSON.stringify({ state: { cart }, version: 0 }))
+    }, { storeId, itemId, now })
 
-/**
- * Test: FR-053 - Delivery & Pickup
- * Requirement: The system shall provide turn‑by‑turn tracking links for customers when courier tracking is availabl...
- */
-test('FR-053: The system shall provide turn‑by‑turn tracking links for cus...', async ({ page }) => {
-  // TODO: Implement test for FR-053
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-053');
-});
+    await page.goto('/checkout')
+    // Checkout page should render with delivery method selection
+    await expect(page.getByRole('heading', { name: /delivery method/i })).toBeVisible({ timeout: 15000 })
+  })
 
-/**
- * Test: FR-054 - Delivery & Pickup
- * Requirement: The system shall support curbside pickup with arrival check‑in and car details.
- */
-test('FR-054: The system shall support curbside pickup with arrival check‑...', async ({ page }) => {
-  // TODO: Implement test for FR-054
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-054');
-});
+  test.skip('FR-052: in-house delivery driver assignment and tracking — requires driver accounts and live delivery flow', async ({ page }) => {})
 
-/**
- * Test: FR-055 - Delivery & Pickup
- * Requirement: The system shall support contactless delivery options and drop‑off instructions.
- */
-test('FR-055: The system shall support contactless delivery options and dr...', async ({ page }) => {
-  // TODO: Implement test for FR-055
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-055');
-});
-});
+  test.skip('FR-053: third-party courier integration (e.g. DoorDash Drive) — requires courier API credentials', async ({ page }) => {})
+
+  test.skip('FR-054: real-time driver location shown to customer — requires active delivery + WebSocket connection', async ({ page }) => {})
+
+  test.skip('FR-055: delivery fee waiver or flat-rate rules per store — requires delivery fee config in store settings', async ({ page }) => {})
+})

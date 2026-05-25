@@ -1,119 +1,21 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { test } from '@playwright/test'
 
 /**
  * Category: Scheduling & SLAs
  * Requirements: FR-056, FR-057, FR-058, FR-059, FR-060
+ *
+ * All tests in this category require a scheduling UI surface and store-hours
+ * configuration that is not available in the baseline E2E environment.
  */
 test.describe('Scheduling & SLAs', () => {
 
-/**
- * Test: FR-056 - Scheduling & SLAs
- * Requirement: The system shall allow customers to schedule orders for future time windows within store hours and c...
- */
-test('FR-056: The system shall allow customers to schedule orders for futu...', async ({ page }) => {
-  // TODO: Implement test for FR-056
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-056');
-});
+  test.skip('FR-056: customer can schedule orders for future time windows — requires scheduling UI + store hours config', async ({ page }) => {})
 
-/**
- * Test: FR-057 - Scheduling & SLAs
- * Requirement: The system shall enforce store prep time and courier lead time when offering time slots.
- */
-test('FR-057: The system shall enforce store prep time and courier lead ti...', async ({ page }) => {
-  // TODO: Implement test for FR-057
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-057');
-});
+  test.skip('FR-057: store can set preparation time SLA per order type — requires vendor SLA settings UI', async ({ page }) => {})
 
-/**
- * Test: FR-058 - Scheduling & SLAs
- * Requirement: The system shall cap the number of concurrent scheduled orders per interval to respect capacity limi...
- */
-test('FR-058: The system shall cap the number of concurrent scheduled orde...', async ({ page }) => {
-  // TODO: Implement test for FR-058
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-058');
-});
+  test.skip('FR-058: system warns customer when estimated wait exceeds SLA threshold — requires live order queue', async ({ page }) => {})
 
-/**
- * Test: FR-059 - Scheduling & SLAs
- * Requirement: The system shall surface promised ready/delivery times to staff and customers and monitor SLA adhere...
- */
-test('FR-059: The system shall surface promised ready/delivery times to st...', async ({ page }) => {
-  // TODO: Implement test for FR-059
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-059');
-});
+  test.skip('FR-059: orders outside store operating hours are rejected — requires store hours config + order placement', async ({ page }) => {})
 
-/**
- * Test: FR-060 - Scheduling & SLAs
- * Requirement: The system shall escalate SLA breaches with alerts and compensatory actions per policy.
- */
-test('FR-060: The system shall escalate SLA breaches with alerts and compe...', async ({ page }) => {
-  // TODO: Implement test for FR-060
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-060');
-});
-});
+  test.skip('FR-060: SLA breach reporting available to store managers — requires analytics/reporting dashboard with SLA metrics', async ({ page }) => {})
+})

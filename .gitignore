@@ -24,6 +24,8 @@ uploads/
 test-results/
 **/test-results/
 **/playwright-report/
+# Playwright auth state (contains real JWT tokens — never commit)
+**/e2e/.auth/
 **/tests/
 !tests/
 !tests/**

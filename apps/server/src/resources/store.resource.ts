@@ -262,14 +262,14 @@ export const storeResource = defineResource({
       // Enforce ownership: only store owner can update
       const store = await prisma.store.findUnique({
         where: { id },
-        select: { ownerUserId: true },
+        select: { ownerUserId: true, isPublished: true },
       })
       
       if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
         throw new Error('Only store owner can update store')
       }
 
-      if (data.isPublished === true) {
+      if (data.isPublished === true && store.isPublished !== true) {
         const readiness = await getStoreReadiness(id)
         if (!readiness?.canPublish) {
           throw new Error('Store is not ready to publish')

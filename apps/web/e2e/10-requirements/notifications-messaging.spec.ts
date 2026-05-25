@@ -1,119 +1,22 @@
-import { test, expect } from '@playwright/test';
-import { loginAsCustomer, loginAsVendor, loginAsAdmin } from '../fixtures/auth';
+import { test } from '@playwright/test'
 
 /**
  * Category: Notifications & Messaging
  * Requirements: FR-081, FR-082, FR-083, FR-084, FR-085
+ *
+ * Notification delivery (push, SMS, email) and in-app messaging require
+ * server-side event triggers and third-party providers not available in the
+ * E2E browser environment.
  */
 test.describe('Notifications & Messaging', () => {
 
-/**
- * Test: FR-081 - Notifications & Messaging
- * Requirement: The system shall send real‑time notifications for order status changes via push, SMS, and email.
- */
-test('FR-081: The system shall send real‑time notifications for order stat...', async ({ page }) => {
-  // TODO: Implement test for FR-081
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-081');
-});
+  test.skip('FR-081: real-time order status push/SMS/email notifications — requires notification provider config and a live order', async ({ page }) => {})
 
-/**
- * Test: FR-082 - Notifications & Messaging
- * Requirement: The system shall support two‑way messaging between customer and store/courier with privacy safeguard...
- */
-test('FR-082: The system shall support two‑way messaging between customer ...', async ({ page }) => {
-  // TODO: Implement test for FR-082
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-082');
-});
+  test.skip('FR-082: vendor receives new-order alert — requires live order placement + vendor push subscription', async ({ page }) => {})
 
-/**
- * Test: FR-083 - Notifications & Messaging
- * Requirement: The system shall throttle and deduplicate notifications to avoid spam.
- */
-test('FR-083: The system shall throttle and deduplicate notifications to a...', async ({ page }) => {
-  // TODO: Implement test for FR-083
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-083');
-});
+  test.skip('FR-083: customer can opt out of marketing notifications — requires notification preference UI', async ({ page }) => {})
 
-/**
- * Test: FR-084 - Notifications & Messaging
- * Requirement: The system shall localize notification templates by language and tenant branding.
- */
-test('FR-084: The system shall localize notification templates by language...', async ({ page }) => {
-  // TODO: Implement test for FR-084
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-084');
-});
+  test.skip('FR-084: in-app messaging between customer and store — requires messaging feature implementation', async ({ page }) => {})
 
-/**
- * Test: FR-085 - Notifications & Messaging
- * Requirement: The system shall log delivery status for each notification event for troubleshooting.
- */
-test('FR-085: The system shall log delivery status for each notification e...', async ({ page }) => {
-  // TODO: Implement test for FR-085
-  
-  // 1. Setup: Login as appropriate user role
-  // await loginAsCustomer(page)
-  
-  // 2. Navigate to relevant page
-  // await page.goto('/stores')
-  
-  // 3. Perform actions to verify requirement
-  // await page.click('[data-testid="store-card"]')
-  
-  // 4. Assert expected behavior
-  // await expect(page.locator('[data-testid="store-name"]')).toBeVisible()
-  
-  test.skip('Implementation needed for FR-085');
-});
-});
+  test.skip('FR-085: broadcast messages from admin to all users or a segment — requires admin broadcast UI', async ({ page }) => {})
+})

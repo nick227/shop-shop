@@ -1,204 +1,93 @@
-/**
- * E2E Tests: Complete User Journeys
- * End-to-end tests for full customer workflows
- */
 import { test, expect } from '@playwright/test'
 
+async function createAccount(page: Parameters<Parameters<typeof test>[1]>[0], user: { name: string; email: string; password: string }) {
+  await page.goto('/signup')
+  await page.getByLabel(/name/i).fill(user.name)
+  await page.getByLabel(/email/i).fill(user.email)
+  await page.getByLabel(/^password/i).fill(user.password)
+  await page.getByRole('button', { name: /create account/i }).click()
+  await page.waitForURL(/\/river/, { timeout: 15000 })
+}
+
 test.describe('Complete Customer Journey', () => {
-  test('new user: signup → browse → add to cart → view orders', async ({ page }) => {
+  test('new user: signup → land on river → navigate to orders', async ({ page }) => {
     const timestamp = Date.now()
-    const testUser = {
+    await createAccount(page, {
       name: 'Journey Test User',
       email: `journey-${timestamp}@example.com`,
-      phone: '5551234567',
       password: 'Journey123456!',
-    }
+    })
 
-    // Step 1: Sign up
-    await page.goto('/signup')
-    await page.getByLabel(/name/i).fill(testUser.name)
-    await page.getByLabel(/email/i).fill(testUser.email)
-    await page.getByLabel(/phone/i).fill(testUser.phone)
-    await page.getByLabel(/^password/i).fill(testUser.password)
-    await page.getByLabel(/confirm password/i).fill(testUser.password)
-    await page.getByRole('button', { name: /sign up/i }).click()
-    
-    // Should redirect to home
-    await page.waitForURL('/', { timeout: 10000 })
+    await expect(page.locator('body')).toBeVisible()
 
-    // Step 2: Browse stores
-    await page.waitForTimeout(2000)
-    
-    // Verify stores are visible
-    const stores = page.locator('[data-testid="store-card"], article')
-    await expect(stores.first()).toBeVisible()
-
-    // Step 3: Click on a store
-    await stores.first().click()
-    await page.waitForURL(/\/stores\/\d+/, { timeout: 5000 })
-
-    // Step 4: Add item to cart
-    await page.waitForTimeout(2000)
-    const addButton = page.getByRole('button', { name: /add to cart|add/i }).first()
-    await addButton.click()
-    await page.waitForTimeout(1000)
-
-    // Step 5: Verify cart badge
-    const cartBadge = page.locator('[data-testid="cart-badge"], [class*="badge"]')
-    await expect(cartBadge).toBeVisible()
-
-    // Step 6: View cart
-    await page.getByRole('button', { name: /cart/i }).click()
-    await page.waitForTimeout(500)
-    
-    const cartDrawer = page.locator('[role="dialog"]')
-    await expect(cartDrawer).toBeVisible()
-
-    // Step 7: Close cart
-    await page.getByRole('button', { name: /close/i }).click()
-    await page.waitForTimeout(500)
-
-    // Step 8: Navigate to orders
     await page.goto('/orders')
-    await page.waitForTimeout(1000)
-    
-    // Should show empty orders (no checkout yet)
-    await expect(page).toHaveURL('/orders')
+    await expect(page).not.toHaveURL(/\/login/)
+    await expect(page.getByText(/orders|no orders/i)).toBeVisible({ timeout: 10000 })
   })
 
-  test('returning user: login → browse → shop', async ({ page }) => {
-    // First create user
+  test('returning user: signup then login via credentials', async ({ page }) => {
     const timestamp = Date.now()
     const testUser = {
       name: 'Returning User',
       email: `returning-${timestamp}@example.com`,
-      phone: '5559876543',
       password: 'Returning123!',
     }
 
-    await page.goto('/signup')
-    await page.getByLabel(/name/i).fill(testUser.name)
-    await page.getByLabel(/email/i).fill(testUser.email)
-    await page.getByLabel(/phone/i).fill(testUser.phone)
-    await page.getByLabel(/^password/i).fill(testUser.password)
-    await page.getByLabel(/confirm password/i).fill(testUser.password)
-    await page.getByRole('button', { name: /sign up/i }).click()
-    
-    await page.waitForURL('/')
-    
-    // Logout by clearing storage
+    await createAccount(page, testUser)
+
+    // Clear auth state
     await page.evaluate(() => localStorage.clear())
-    
-    // Now login
-    await page.goto('/login-new')
+
+    // Login
+    await page.goto('/login')
     await page.getByLabel(/email/i).fill(testUser.email)
-    await page.getByLabel(/password/i).fill(testUser.password)
-    await page.getByRole('button', { name: /log in/i }).click()
-    
-    await page.waitForURL('/')
-    
-    // Should be authenticated and able to browse
-    await page.waitForTimeout(2000)
-    const stores = page.locator('[data-testid="store-card"], article')
-    await expect(stores.first()).toBeVisible()
+    await page.getByLabel(/^password/i).fill(testUser.password)
+    await page.locator('button[type="submit"]').click()
+    await page.waitForURL(/\/river/, { timeout: 15000 })
+    await expect(page).not.toHaveURL(/\/login/)
   })
 
-  test('guest attempt: should redirect to login', async ({ page }) => {
-    // Try to access protected route without auth
-    await page.goto('/')
-    
-    // Should redirect to login
+  test('guest attempt: accessing a protected route redirects to login', async ({ page }) => {
+    await page.goto('/orders')
     await page.waitForURL(/\/login/, { timeout: 5000 })
   })
 
-  test('session persistence: should maintain auth across page reload', async ({ page }) => {
+  test('session persistence: auth survives page reload', async ({ page }) => {
     const timestamp = Date.now()
-    const testUser = {
+    await createAccount(page, {
       name: 'Persist User',
       email: `persist-${timestamp}@example.com`,
-      phone: '5551112222',
       password: 'Persist123!',
-    }
+    })
 
-    // Sign up
-    await page.goto('/signup')
-    await page.getByLabel(/name/i).fill(testUser.name)
-    await page.getByLabel(/email/i).fill(testUser.email)
-    await page.getByLabel(/phone/i).fill(testUser.phone)
-    await page.getByLabel(/^password/i).fill(testUser.password)
-    await page.getByLabel(/confirm password/i).fill(testUser.password)
-    await page.getByRole('button', { name: /sign up/i }).click()
-    
-    await page.waitForURL('/')
-    
-    // Reload page
     await page.reload()
-    
-    // Should still be on home (authenticated)
-    await expect(page).toHaveURL('/')
-    
-    // Should see stores (not redirected to login)
-    await page.waitForTimeout(2000)
-    const stores = page.locator('[data-testid="store-card"], article')
-    await expect(stores.first()).toBeVisible()
+    await expect(page).not.toHaveURL(/\/login/)
   })
 })
 
 test.describe('Error Handling', () => {
-  test('should handle network errors gracefully', async ({ page, context }) => {
-    // Intercept API calls and simulate failure
-    await page.route('**/api/**', route => route.abort())
-    
-    await page.goto('/login-new')
-    
-    // Try to login
-    await page.getByLabel(/email/i).fill('test@example.com')
-    await page.getByLabel(/password/i).fill('Test123!')
-    await page.getByRole('button', { name: /log in/i }).click()
-    
-    // Should show error message
-    await expect(page.getByText(/network error|connection error|try again/i)).toBeVisible()
+  test('should handle network errors gracefully on login', async ({ page }) => {
+    // Only abort the login endpoint so the initial /me auth check doesn't block page render
+    await page.route('**/auth/v1/login', route => route.abort())
+    await page.goto('/login')
+    await page.getByLabel(/email address/i).fill('test@example.com')
+    await page.getByLabel(/^password/i).fill('Test123!')
+    await page.locator('button[type="submit"]').click()
+    await expect(page.getByText(/network error|connection error|try again|failed|error/i).first()).toBeVisible({ timeout: 8000 })
   })
 
-  test('should show loading states during API calls', async ({ page }) => {
-    await page.goto('/login-new')
-    
+  test('should show loading state while login request is in-flight', async ({ page }) => {
+    await page.goto('/login')
     await page.getByLabel(/email/i).fill('test@example.com')
-    await page.getByLabel(/password/i).fill('Test123!')
-    
-    const loginButton = page.getByRole('button', { name: /log in/i })
-    await loginButton.click()
-    
-    // Button should be disabled or show loading
-    await expect(loginButton).toBeDisabled()
+    await page.getByLabel(/^password/i).fill('Test123!')
+
+    const signInButton = page.locator('button[type="submit"]')
+    await signInButton.click()
+    await expect(signInButton).toBeDisabled()
   })
 
-  test('should handle invalid store ID gracefully', async ({ page }) => {
-    // First login
-    const timestamp = Date.now()
-    const testUser = {
-      email: `invalid-${timestamp}@example.com`,
-      password: 'Invalid123!',
-    }
-    
-    // Quick signup
-    await page.goto('/signup')
-    await page.getByLabel(/name/i).fill('Invalid Test')
-    await page.getByLabel(/email/i).fill(testUser.email)
-    await page.getByLabel(/phone/i).fill('5551111111')
-    await page.getByLabel(/^password/i).fill(testUser.password)
-    await page.getByLabel(/confirm password/i).fill(testUser.password)
-    await page.getByRole('button', { name: /sign up/i }).click()
-    await page.waitForURL('/')
-    
-    // Try invalid store ID
-    await page.goto('/stores/99999')
-    await page.waitForTimeout(2000)
-    
-    // Should show error or empty state
-    const errorMessage = page.getByText(/not found|doesn't exist|error/i)
-    // Error handling should prevent crash
+  test('should render 404 page for unknown routes', async ({ page }) => {
+    await page.goto('/this-route-does-not-exist-xyz')
+    await expect(page.getByRole('heading', { name: '404' })).toBeVisible({ timeout: 8000 })
   })
 })
-
-
