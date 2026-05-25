@@ -122,10 +122,9 @@ export default function StoreFormPage() {
   const updateStoreMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const payload = storePayloadFromFormData(data)
-      console.log('Update store payload:', payload)
       return await apiClient.stores().updateStore({
         id: storeId!,
-        ...payload,
+        updateStoreRequest: payload as any,
       })
     },
     onSuccess: () => {
