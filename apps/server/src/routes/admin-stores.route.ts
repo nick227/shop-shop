@@ -91,6 +91,9 @@ export async function adminStoresRoutes(app: FastifyInstance) {
     try {
       const { storeIds, reason } = BulkDeleteStoresSchema.parse(request.body)
       const adminUser = request.user
+      if (!adminUser) {
+        return reply.code(401).send({ error: 'Authentication required' })
+      }
 
       // Validate all stores exist before deletion
       const stores = await prisma.store.findMany({
@@ -211,7 +214,7 @@ export async function adminStoresRoutes(app: FastifyInstance) {
               orderBy: { createdAt: 'desc' },
               take: 10, // Recent 10 items
             },
-            mediaAssets: {
+            media: {
               where: { kind: 'IMAGE' },
               orderBy: { sortIndex: 'asc' },
               take: 5,
@@ -233,7 +236,7 @@ export async function adminStoresRoutes(app: FastifyInstance) {
               select: {
                 items: true,
                 orders: true,
-                mediaAssets: true,
+                media: true,
               },
             },
           },
@@ -258,7 +261,16 @@ export async function adminStoresRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: 'Store not found' })
       }
 
-      return reply.send({ ...store, kyc })
+      const { media, _count, ...storeDetails } = store
+      return reply.send({
+        ...storeDetails,
+        mediaAssets: media,
+        _count: {
+          ..._count,
+          mediaAssets: _count.media,
+        },
+        kyc,
+      })
     } catch (error) {
       app.log.error(error, 'Failed to fetch store details')
       return reply.code(500).send({ error: 'Failed to fetch store details' })
