@@ -16,10 +16,22 @@ export class LocalStorageAdapter implements StorageAdapter {
   constructor() {
     // Default to uploads directory in project root
     this.uploadDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads')
-    this.baseUrl = process.env.UPLOAD_BASE_URL || 'http://localhost:' + process.env.PORT + '/uploads'
+    this.baseUrl = this.resolveBaseUrl()
     
     // Ensure upload directory exists
     this.ensureUploadDir()
+  }
+
+  private resolveBaseUrl(): string {
+    if (process.env.UPLOAD_BASE_URL) {
+      return process.env.UPLOAD_BASE_URL.replace(/\/$/u, '')
+    }
+
+    if (process.env.APP_URL) {
+      return `${process.env.APP_URL.replace(/\/$/u, '')}/uploads`
+    }
+
+    return `http://localhost:${process.env.PORT || '3005'}/uploads`
   }
 
   private async ensureUploadDir(): Promise<void> {
@@ -81,4 +93,3 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
   }
 }
-

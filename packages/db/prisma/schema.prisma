@@ -296,7 +296,7 @@ model Store {
   // Branding
   brandColor  String? @db.VarChar(7) // Hex color code #RRGGBB
   accentColor String? @db.VarChar(7) // Hex color code #RRGGBB
-  imageUrl   String? @db.VarChar(191) // Store thumbnail/logo
+  imageUrl   String? @db.Text // Store thumbnail/logo
 
   // Delivery Settings
   deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
@@ -396,7 +396,7 @@ model Item {
   store       Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  imageUrl   String? @db.VarChar(191) // Item thumbnail
+  imageUrl   String? @db.Text // Item thumbnail
   price       Decimal @db.Decimal(10, 2)
   isActive         Boolean   @default(true)
   isSoldOut        Boolean   @default(false)
@@ -434,7 +434,7 @@ model MediaAsset {
   item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   bundle    Bundle?   @relation("BundleMedia", fields: [bundleId], references: [id], onDelete: Cascade)
   kind      MediaKind
-  url       String
+  url       String    @db.Text
   altText   String?
   metadata  Json?
   sortIndex Int       @default(0)
