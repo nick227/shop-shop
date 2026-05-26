@@ -48,7 +48,6 @@ export function RiverDiscovery() {
 
   return (
     <div className="space-y-6">
-      <AvailableLocations onSelectCity={onSelectCity} />
       <NewestStores />
       <HomeNewestProducts />
       <HomeSellSection />

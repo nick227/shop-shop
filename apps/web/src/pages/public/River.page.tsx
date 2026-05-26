@@ -457,9 +457,6 @@ export default function RiverPage() {
       <main className={cn(PAGE_SHELL_CONTAINER_CLASS, 'py-6 max-w-5xl md:py-10')}>
         <div className="space-y-6">
           <PublicMaintenanceBanner />
-          <div className="space-y-6 w-full">
-            <RiverBrowseCard featuredStore={heroStore} featuredLoading={heroLoading} />
-          </div>
 
           <RiverDiscovery />
 

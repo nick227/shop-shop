@@ -3,6 +3,7 @@
  * Centralized utilities for accessing store data;
  */
 import type { StoreWithDistance } from '@api/types'
+import { getImageUrl } from './image'
 
 function normalizeRemoteUrl(url: string): string {
   // Fix the common "https:/" (missing slash) issue coming from some sources.
@@ -53,6 +54,6 @@ export function getStoreImageUrl(
   // Fallback to imageUrl property (if it exists)
   if (store.imageUrl) return normalizeRemoteUrl(store.imageUrl)
   
-  // Final fallback to placeholder (variant can be used later for different aspect ratios)
-  return '/placeholder-store-' + store.id + '.jpg'
+  // Final fallback: inline SVG (static /placeholder-*.jpg paths are not shipped)
+  return getImageUrl(undefined, store.id, 'store')
 }
