@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `post` ADD COLUMN `contentType` VARCHAR(50) NULL,
+ALTER TABLE `Post` ADD COLUMN `contentType` VARCHAR(50) NULL,
     ADD COLUMN `duplicateKey` VARCHAR(255) NULL,
     ADD COLUMN `freshnessKind` VARCHAR(50) NULL,
     ADD COLUMN `freshnessScore` INTEGER NOT NULL DEFAULT 100,
