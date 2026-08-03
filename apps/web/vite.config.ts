@@ -85,8 +85,8 @@ export default defineConfig(({ mode }) => {
     global: 'globalThis',
   },
   optimizeDeps: {
-    // Alias `@packages/sdk` → compiled SDK entry (matches packages/sdk package.json after tsc emit).
-    include: ['@packages/sdk'],
+    // Don't prebundle: esbuild drops `export *` re-exports from dist/generated (AddressesApi, etc.).
+    exclude: ['@packages/sdk'],
   },
   build: {
     commonjsOptions: {
