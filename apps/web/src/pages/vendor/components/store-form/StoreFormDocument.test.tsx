@@ -42,15 +42,10 @@ describe('StoreFormDocument', () => {
 
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
     expect(screen.queryByText('New store')).not.toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Summary', selected: true })).toBeInTheDocument()
-    expect(screen.getByRole('table')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
-    expect(screen.queryByText(/still needed/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Description')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('tab', { name: 'Store' }))
+    expect(screen.queryByRole('tab', { name: 'Summary' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Store', selected: true })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
     expect(screen.getByLabelText('Description')).toBeInTheDocument()
     expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
@@ -68,8 +63,7 @@ describe('StoreFormDocument', () => {
     expect(screen.getByLabelText('Company')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Add a link' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: 'Summary' }))
-    await user.click(screen.getByRole('button', { name: /Photos/ }))
+    await user.click(screen.getByRole('tab', { name: 'Photos' }))
     expect(screen.getByText('Photo gallery')).toBeInTheDocument()
   })
 })

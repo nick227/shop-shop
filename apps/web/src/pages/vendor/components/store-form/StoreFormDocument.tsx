@@ -6,7 +6,6 @@ import { StoreIdentitySection } from './StoreIdentitySection'
 import { StoreLocationSection } from './StoreLocationSection'
 import { StoreOrdersSection } from './StoreOrdersSection'
 import { StorePhotosSection } from './StorePhotosSection'
-import { StoreSummary } from './StoreSummary'
 import { needsAddress, needsNameAndAddress, type StoreFieldProps } from './storeFieldProps'
 import { STORE_TABS, type StoreTab } from './storeTabs'
 
@@ -29,7 +28,7 @@ export function StoreFormDocument({
   pendingFiles,
   onPendingFiles,
 }: StoreFormDocumentProps) {
-  const [tab, setTab] = useState<StoreTab>('summary')
+  const [tab, setTab] = useState<StoreTab>('store')
   const showHint = !isEdit && needsNameAndAddress(formData)
 
   const submit = (e: React.FormEvent) => {
@@ -73,9 +72,6 @@ export function StoreFormDocument({
       </div>
 
       <div role="tabpanel" className="min-h-[24rem] pb-8">
-        {tab === 'summary' && (
-          <StoreSummary formData={formData} pendingCount={pendingFiles.length} onOpen={setTab} />
-        )}
         {tab === 'store' && <StoreIdentitySection formData={formData} onChange={onChange} />}
         {tab === 'location' && <StoreLocationSection formData={formData} onChange={onChange} />}
         {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} />}
@@ -92,25 +88,23 @@ export function StoreFormDocument({
         {tab === 'contact' && <StoreContactSection formData={formData} onChange={onChange} />}
       </div>
 
-      {tab !== 'summary' && (
-        <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background px-4 py-3 md:-mx-6 md:px-6">
-          <div className="flex items-center justify-end gap-4">
-            {showHint && (
-              <p className="mr-auto text-sm text-muted-foreground">Add a name and address to save.</p>
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background px-4 py-3 md:-mx-6 md:px-6">
+        <div className="flex items-center justify-end gap-4">
+          {showHint && (
+            <p className="mr-auto text-sm text-muted-foreground">Add a name and address to save.</p>
+          )}
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Spinner size="small" />
+                Saving...
+              </>
+            ) : (
+              'Save'
             )}
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Spinner size="small" />
-                  Saving...
-                </>
-              ) : (
-                'Save'
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
-      )}
+      </div>
     </form>
   )
 }

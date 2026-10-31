@@ -1,5 +1,4 @@
 export const STORE_TABS = [
-  ['summary', 'Summary'],
   ['store', 'Store'],
   ['location', 'Location'],
   ['orders', 'Orders'],
