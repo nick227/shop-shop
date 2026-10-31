@@ -3,6 +3,7 @@ import { Input } from '@shared/ui/primitives'
 import { FormRow } from '@shared/ui/templates'
 import { maskEmailInput, maskUsPhoneInput } from '@shared/lib/utils/fieldInputMasks'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
+import { StoreSectionTitle } from './StoreSectionTitle'
 import { STORE_LINKS, type StoreLinkField } from './storeLinks'
 
 export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
@@ -45,7 +46,10 @@ export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
             />
           </FormRow>
 
-          <StoreLinks formData={formData} onChange={onChange} />
+          <div className="space-y-6">
+            <StoreSectionTitle>Links</StoreSectionTitle>
+            <StoreLinks formData={formData} onChange={onChange} />
+          </div>
     </section>
   )
 }

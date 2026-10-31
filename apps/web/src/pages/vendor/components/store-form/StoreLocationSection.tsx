@@ -7,6 +7,7 @@ import { US_STATES } from '@shared/lib/constants/usStates'
 import { maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
 import { cn } from '@shared/lib/cn'
 import { hasCoordinate, type StoreFieldProps } from './storeFieldProps'
+import { StoreSectionTitle } from './StoreSectionTitle'
 import { useOpenWhenFilled } from './useOpenWhenFilled'
 
 export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
@@ -41,7 +42,9 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-10">
+      <div className="space-y-6">
+        <StoreSectionTitle>Address</StoreSectionTitle>
       <Input
         label="Street *"
         value={formData.addressStreet}
@@ -96,17 +99,21 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
           required
         />
       </div>
+      </div>
 
-      <StoreHoursEditor
-        value={formData.hoursJson}
-        onChange={(hours) => onChange('hoursJson', hours)}
-        deliveryEnabled={formData.deliveryEnabled}
-      />
+      <div className="space-y-6">
+        <StoreSectionTitle>Hours</StoreSectionTitle>
+        <StoreHoursEditor
+          value={formData.hoursJson}
+          onChange={(hours) => onChange('hoursJson', hours)}
+          deliveryEnabled={formData.deliveryEnabled}
+        />
+      </div>
 
       <div className="space-y-4">
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1 text-base font-medium text-foreground"
           aria-expanded={coords.open}
           onClick={() => coords.setOpen((open) => !open)}
         >

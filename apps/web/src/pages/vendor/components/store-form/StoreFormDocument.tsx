@@ -7,6 +7,7 @@ import { StoreLocationSection } from './StoreLocationSection'
 import { StoreOrdersSection } from './StoreOrdersSection'
 import { StorePhotosSection } from './StorePhotosSection'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
+import { StoreSectionTitle } from './StoreSectionTitle'
 import { STORE_TABS, type StoreTab } from './storeTabs'
 
 interface StoreFormDocumentProps extends StoreFieldProps {
@@ -29,6 +30,7 @@ export function StoreFormDocument({
   onPendingFiles,
 }: StoreFormDocumentProps) {
   const [tab, setTab] = useState<StoreTab>('store')
+  const tabLabel = STORE_TABS.find(([id]) => id === tab)?.[1] ?? ''
   const showHint = !hasText(formData.name)
 
   return (
@@ -65,7 +67,8 @@ export function StoreFormDocument({
         ))}
       </div>
 
-      <div role="tabpanel" className="min-h-[24rem] pb-8">
+      <div role="tabpanel" aria-label={tabLabel} className="min-h-[24rem] space-y-8 pb-8">
+        <StoreSectionTitle>{tabLabel}</StoreSectionTitle>
         {tab === 'store' && (
           <div className="space-y-10">
             <StoreIdentitySection formData={formData} onChange={onChange} storeId={storeId} />

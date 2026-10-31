@@ -1,4 +1,4 @@
-import { Checkbox, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/primitives'
+import { Checkbox, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, TextArea } from '@shared/ui/primitives'
 import type { StoreFormData } from '@api/types'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
@@ -33,36 +33,39 @@ export function StoreIdentitySection({ formData, onChange, storeId }: StoreIdent
         ) : null}
       </div>
 
-      <Select
-        value={formData.storeType || ''}
-        onValueChange={(value) => onChange('storeType', value as StoreFormData['storeType'])}
-      >
-        <SelectTrigger
-          id="store-type"
-          aria-label="Type"
-          className="h-auto w-fit gap-2 border-0 bg-transparent px-0 py-0 text-base text-muted-foreground shadow-none focus:ring-0 focus:ring-offset-0"
+      <div className="w-full space-y-2">
+        <label className="text-sm font-medium text-foreground" htmlFor="store-type">
+          Type
+        </label>
+        <Select
+          value={formData.storeType || ''}
+          onValueChange={(value) => onChange('storeType', value as StoreFormData['storeType'])}
         >
-          <SelectValue placeholder="Type" />
-        </SelectTrigger>
-        <SelectContent>
-          {STORE_TYPES.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
-              {type.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <SelectTrigger id="store-type">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {STORE_TYPES.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <textarea
-        aria-label="Description"
-        value={formData.description ?? ''}
-        onChange={(e) => onChange('description', e.target.value)}
-        placeholder="What you sell"
-        rows={8}
-        maxLength={1000}
-        className="w-full resize-none border-0 bg-transparent p-0 text-xl leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50 focus:ring-0"
-      />
-      <p className="text-xs text-muted-foreground">{length} / 1000</p>
+      <div className="space-y-2">
+        <TextArea
+          label="Description"
+          aria-label="Description"
+          value={formData.description ?? ''}
+          onChange={(e) => onChange('description', e.target.value)}
+          placeholder="What you sell"
+          rows={6}
+          maxLength={1000}
+        />
+        <p className="text-xs text-muted-foreground">{length} / 1000</p>
+      </div>
     </section>
   )
 }

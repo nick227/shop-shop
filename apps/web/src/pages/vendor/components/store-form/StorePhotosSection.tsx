@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
+import { StoreSectionTitle } from './StoreSectionTitle'
 import { deleteStorePhoto, listStorePhotos, uploadStorePhoto, type StorePhoto } from './storePhotoApi'
 
 interface StorePhotosSectionProps extends StoreFieldProps {
@@ -84,15 +85,16 @@ export function StorePhotosSection({
   }
 
   return (
-    <section
-      aria-label="Photos"
-      className="rounded-md border border-border p-3"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault()
-        void addFiles(event.dataTransfer.files)
-      }}
-    >
+    <section className="space-y-3">
+      <StoreSectionTitle>Photos</StoreSectionTitle>
+      <div
+        className="rounded-md border border-border p-3"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault()
+          void addFiles(event.dataTransfer.files)
+        }}
+      >
       <div className="flex flex-wrap gap-3">
         {photos.map((photo, index) => (
           <PhotoTile
@@ -130,6 +132,7 @@ export function StorePhotosSection({
         </label>
       </div>
       {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+      </div>
     </section>
   )
 }
