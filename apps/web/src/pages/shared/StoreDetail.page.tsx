@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -21,6 +21,8 @@ import { groupItemsByMenuType } from '@features/products/utils/groupItemsByMenuT
 import { StoreFeedSection } from '@/features/river/components/StoreFeedSection/StoreFeedSection'
 import { PostComposer } from '@/features/river/components/PostComposer/PostComposer'
 import { useAuthStore } from '@stores/authStore'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { recordRecent } from '@features/home/neighborhood/recentViews'
 import { useVendorStores } from '@shared/hooks/hooks/vendor'
 
 function KitchenContainer() {
@@ -49,6 +51,22 @@ function KitchenContainer() {
   const bundles: Bundle[] = bundlesData ?? []
 
   usePageTitle(storeIsPublic ? store?.name : undefined, 'ShopShop')
+
+  useEffect(() => {
+    if (!store || !storeIsPublic) return
+    const pictured = store as typeof store & {
+      imageUrl?: string
+      mediaAssets?: readonly { url: string; kind?: string }[]
+    }
+    const imageUrl = pictured.mediaAssets?.find((asset) => asset.url && asset.kind !== 'VIDEO')?.url ?? pictured.imageUrl
+    recordRecent({
+      id: store.id,
+      kind: 'store',
+      title: store.name,
+      imageUrl,
+      path: getStoreRoute({ id: store.id, name: store.name }),
+    })
+  }, [store, storeIsPublic])
 
   const cartCount = useMemo(() => {
     if (!cart?.items || !Array.isArray(cart.items)) return 0

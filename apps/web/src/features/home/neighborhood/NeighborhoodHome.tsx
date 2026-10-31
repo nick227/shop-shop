@@ -4,7 +4,9 @@ import { STORE_TYPE_LABEL } from '@features/search/config/storeTypes'
 import { HeroWindow } from './HeroWindow'
 import { StoreMosaic, StoryStrip } from './MosaicAndStories'
 import { PlaceField } from './PlaceField'
+import { RecentShelf } from './RecentShelf'
 import { ProductShelf, StoreShelf } from './Shelves'
+import { formatDistance } from '@shared/lib/utils/format'
 import { momentLine, selectHome } from './selectHome'
 import { TypePlates } from './TypePlates'
 import { hideVertical, useHomeTaste } from './taste'
@@ -28,6 +30,10 @@ export function NeighborhoodHome() {
 
   const merchantCount = data.stores.length
   const title = placeTitle(data.location?.city, data.location?.zip)
+  const placeName = data.location?.city ?? data.location?.zip
+  const closest = data.stores
+    .filter((store) => typeof store.distance === 'number' && store.id !== selection.hero?.id)
+    .slice(0, 6)
   const personalSlug = selection.personalSlug
   const personalLabel = personalSlug
     ? STORE_TYPE_LABEL[personalSlug.toUpperCase()] ?? 'this'
@@ -68,6 +74,17 @@ export function NeighborhoodHome() {
           <TypePlates stores={data.stores} />
         </div>
       </div>
+
+      {hasPlace && closest.length > 0 ? (
+        <StoreShelf
+          title={placeName ? `Closest in ${placeName}` : 'Closest to you'}
+          caption=""
+          stores={closest}
+          detail={(store) => formatDistance(store.distance ?? 0)}
+        />
+      ) : null}
+
+      <RecentShelf />
 
       {personalSlug ? (
         <StoreShelf

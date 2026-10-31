@@ -74,11 +74,13 @@ export function StoreShelf({
   caption,
   stores,
   action,
+  detail,
 }: {
   readonly title: string
   readonly caption: string
   readonly stores: readonly StoreWithDistance[]
   readonly action?: ReactNode
+  readonly detail?: (store: StoreWithDistance) => string
 }) {
   const [params] = useSearchParams()
   if (stores.length === 0) return null
@@ -105,7 +107,7 @@ export function StoreShelf({
           >
             {hasPhoto(store) ? <img src={getStoreImageUrl(store, 'square')} alt="" /> : <div className="tile-fallback" />}
             <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug">{store.name}</p>
-            <p className="mt-1 text-xs" style={{ color: 'var(--quiet)' }}>{storeTypeLabel(store)}</p>
+            <p className="mt-1 text-xs" style={{ color: 'var(--quiet)' }}>{detail ? detail(store) : storeTypeLabel(store)}</p>
           </Link>
         ))}
       </div>

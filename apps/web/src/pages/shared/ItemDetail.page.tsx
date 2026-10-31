@@ -4,14 +4,15 @@
  * Canonical route:
  *   /items/:itemId
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { isStorePublic } from '@shared/lib/utils/isStorePublic'
-import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { recordRecent } from '@features/home/neighborhood/recentViews'
 import { Button, Spinner } from '@shared/ui/primitives'
 import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
@@ -36,6 +37,21 @@ export default function ItemDetailPage() {
 
   // Use mediaAssets from item data (now included in backend queries)
   const itemMedia = (item as any)?.mediaAssets || []
+
+  useEffect(() => {
+    if (!item?.id || !item.title) return
+    const photo = (itemMedia as { url?: string; kind?: string }[]).find(
+      (media) => media.url && (!media.kind || media.kind === 'IMAGE'),
+    )
+    recordRecent({
+      id: item.id,
+      kind: 'item',
+      title: item.title,
+      imageUrl: photo?.url,
+      subtitle: store?.name,
+      path: getItemRouteSimple({ id: item.id, title: item.title }),
+    })
+  }, [item?.id, item?.title, store?.name])
 
   const handleBack = () => {
     if (location.key !== 'default') {
