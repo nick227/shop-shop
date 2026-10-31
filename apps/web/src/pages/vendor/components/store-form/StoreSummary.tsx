@@ -1,86 +1,108 @@
-import type { StoreFieldProps } from './storeFieldProps'
-import { hasText } from './storeFieldProps'
-import { STORE_LINKS } from './storeLinks'
+import { cn } from '@shared/lib/cn'
+import type { StoreFormData } from '@api/types'
+import { buildSummaryRows, requiredProgress, type SummaryStatus } from './storeSummaryModel'
 import type { StoreTab } from './storeTabs'
-import { storeTypeLabel } from './storeTypes'
 
-interface StoreSummaryProps extends StoreFieldProps {
+interface StoreSummaryProps {
+  readonly formData: StoreFormData
   readonly pendingCount: number
   readonly onOpen: (tab: StoreTab) => void
 }
 
+const STATUS_LABEL: Record<SummaryStatus, string> = {
+  needed: 'Needed',
+  ready: 'Ready',
+  optional: 'Optional',
+}
+
 export function StoreSummary({ formData, pendingCount, onOpen }: StoreSummaryProps) {
-  const rows: ReadonlyArray<{ tab: StoreTab; label: string; value: string }> = [
-    { tab: 'store', label: 'Store', value: storeLine(formData) },
-    { tab: 'location', label: 'Location', value: locationLine(formData) },
-    { tab: 'orders', label: 'Orders', value: ordersLine(formData) },
-    { tab: 'photos', label: 'Photos', value: photosLine(formData, pendingCount) },
-    { tab: 'contact', label: 'Contact', value: contactLine(formData) },
-  ]
+  const rows = buildSummaryRows(formData, pendingCount)
+  const progress = requiredProgress(rows)
+  const percent = progress.total === 0 ? 0 : Math.round((progress.ready / progress.total) * 100)
 
   return (
-    <div className="divide-y divide-border">
-      {rows.map((row) => (
-        <button
-          key={row.tab}
-          type="button"
-          onClick={() => onOpen(row.tab)}
-          className="grid w-full gap-2 py-6 text-left md:grid-cols-[8rem_minmax(0,1fr)] md:gap-8"
-        >
-          <span className="text-sm text-muted-foreground">{row.label}</span>
-          <span className="line-clamp-2 text-base text-foreground">{row.value}</span>
-        </button>
-      ))}
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <div className="flex items-baseline justify-between gap-6">
+          <p className="text-lg font-medium text-foreground">{progress.title}</p>
+          <p className="shrink-0 text-sm text-muted-foreground">
+            {progress.ready} of {progress.total}
+          </p>
+        </div>
+        <Meter label="Required sections" done={progress.ready} total={progress.total} percent={percent} tone="ready" />
+      </div>
+
+      <div className="divide-y divide-border">
+        {rows.map((row) => {
+          const rowPercent = row.total === 0 ? 0 : Math.round((row.done / row.total) * 100)
+          return (
+            <button
+              key={row.tab}
+              type="button"
+              onClick={() => onOpen(row.tab)}
+              className={cn(
+                'grid w-full gap-4 border-l-2 py-6 pl-5 text-left transition-colors hover:bg-muted/40 md:grid-cols-[minmax(0,1fr)_4.5rem] md:items-start',
+                row.status === 'needed' && 'border-amber-500',
+                row.status === 'ready' && 'border-foreground',
+                row.status === 'optional' && 'border-border',
+              )}
+            >
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-base font-medium text-foreground">{row.label}</span>
+                  <span className={cn('text-sm', statusTone(row.status))}>{STATUS_LABEL[row.status]}</span>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{row.detail}</p>
+                <Meter label={`${row.label} progress`} done={row.done} total={row.total} percent={rowPercent} tone={row.status} />
+              </div>
+              <span className="text-sm text-muted-foreground md:text-right">
+                {row.done} / {row.total}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-function storeLine(formData: StoreFieldProps['formData']): string {
-  const type = storeTypeLabel(formData.storeType)
-  const description = (formData.description ?? '').trim()
-  return description ? `${type} · ${description}` : type
+function Meter({
+  label,
+  done,
+  total,
+  percent,
+  tone,
+}: {
+  readonly label: string
+  readonly done: number
+  readonly total: number
+  readonly percent: number
+  readonly tone: SummaryStatus
+}) {
+  return (
+    <div
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={done}
+      className="h-1.5 w-full max-w-md overflow-hidden bg-muted"
+    >
+      <div
+        className={cn(
+          'h-full',
+          tone === 'needed' && 'bg-amber-500',
+          tone === 'ready' && 'bg-foreground',
+          tone === 'optional' && 'bg-muted-foreground/50',
+        )}
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  )
 }
 
-function locationLine(formData: StoreFieldProps['formData']): string {
-  const complete =
-    hasText(formData.addressStreet) &&
-    hasText(formData.addressCity) &&
-    hasText(formData.addressState) &&
-    hasText(formData.addressZip)
-  const place = complete
-    ? `${formData.addressStreet}, ${formData.addressCity}, ${formData.addressState} ${formData.addressZip}`
-    : 'Address needed'
-  const days = hourDays(formData.hoursJson)
-  return days > 0 ? `${place} · ${days} days` : place
-}
-
-function ordersLine(formData: StoreFieldProps['formData']): string {
-  const modes = [
-    formData.deliveryEnabled ? 'Delivery' : null,
-    formData.pickupEnabled ? 'Pickup' : null,
-  ].filter((mode): mode is string => Boolean(mode))
-  const fulfillment = modes.length > 0 ? modes.join(' and ') : 'No fulfillment'
-  const visibility = formData.isPublished ? 'Visible' : 'Hidden'
-  return `${fulfillment} · ${formData.prepTimeMin || 0} min · ${visibility}`
-}
-
-function photosLine(formData: StoreFieldProps['formData'], pendingCount: number): string {
-  if (hasText(formData.imageUrl)) return 'Thumbnail set'
-  if (pendingCount > 0) return `${pendingCount} waiting to upload`
-  return 'No photos'
-}
-
-function contactLine(formData: StoreFieldProps['formData']): string {
-  const bits = [formData.companyName, formData.phone, formData.email].filter(hasText)
-  const links = STORE_LINKS.filter((link) => hasText(formData[link.field])).length
-  if (bits.length === 0 && links === 0) return 'No contact'
-  if (links > 0) bits.push(`${links} ${links === 1 ? 'link' : 'links'}`)
-  return bits.join(' · ')
-}
-
-function hourDays(hoursJson: unknown): number {
-  if (!hoursJson || typeof hoursJson !== 'object' || !('storeHours' in hoursJson)) return 0
-  const storeHours = hoursJson.storeHours
-  if (!storeHours || typeof storeHours !== 'object') return 0
-  return Object.keys(storeHours).length
+function statusTone(status: SummaryStatus): string {
+  if (status === 'needed') return 'text-amber-700 dark:text-amber-400'
+  if (status === 'ready') return 'text-foreground'
+  return 'text-muted-foreground'
 }

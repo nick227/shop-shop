@@ -74,7 +74,7 @@ export function StoreFormDocument({
 
       <div role="tabpanel" className="min-h-[24rem] pb-8">
         {tab === 'summary' && (
-          <StoreSummary formData={formData} onChange={onChange} pendingCount={pendingFiles.length} onOpen={setTab} />
+          <StoreSummary formData={formData} pendingCount={pendingFiles.length} onOpen={setTab} />
         )}
         {tab === 'store' && <StoreIdentitySection formData={formData} onChange={onChange} />}
         {tab === 'location' && <StoreLocationSection formData={formData} onChange={onChange} />}
