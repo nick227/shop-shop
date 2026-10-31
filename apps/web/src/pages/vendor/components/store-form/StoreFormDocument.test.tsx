@@ -49,11 +49,11 @@ describe('StoreFormDocument', () => {
     expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument()
     expect(screen.getByLabelText('Type')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /Disabled/ })).toBeChecked()
-    expect(screen.getByText('Customers can find this store and place orders.')).toBeInTheDocument()
-    expect(screen.getByText('Hidden from customers. They cannot find it or place orders.')).toBeInTheDocument()
-    await user.click(screen.getByRole('radio', { name: /^Enabled/ }))
-    expect(screen.getByRole('radio', { name: /^Enabled/ })).toBeChecked()
+    expect(screen.getByText('Visible to customers')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Disabled' })).toBeChecked()
+    expect(screen.queryByRole('heading', { name: 'Public URL' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Enabled' }))
+    expect(screen.getByRole('radio', { name: 'Enabled' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
@@ -73,7 +73,7 @@ describe('StoreFormDocument', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Orders' }))
     expect(screen.getByRole('heading', { name: 'Orders' })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /^Enabled/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'Enabled' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Delivery fee ($)')).not.toBeInTheDocument()
     await user.click(screen.getByLabelText('Delivery'))
     expect(screen.getByLabelText('Delivery fee ($)')).toBeInTheDocument()
@@ -101,6 +101,7 @@ describe('StoreFormDocument', () => {
       />,
     )
 
+    expect(screen.getByRole('heading', { name: 'Public URL' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /\/kitchen\/northside-bakery-store-1/ })).toBeInTheDocument()
   })
 })

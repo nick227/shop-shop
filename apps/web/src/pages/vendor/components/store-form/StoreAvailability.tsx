@@ -1,16 +1,8 @@
 import { cn } from '@shared/lib/cn'
 
 const OPTIONS = [
-  {
-    enabled: true,
-    title: 'Enabled',
-    detail: 'Customers can find this store and place orders.',
-  },
-  {
-    enabled: false,
-    title: 'Disabled',
-    detail: 'Hidden from customers. They cannot find it or place orders.',
-  },
+  { enabled: true, title: 'Enabled' },
+  { enabled: false, title: 'Disabled' },
 ] as const
 
 interface StoreAvailabilityProps {
@@ -21,44 +13,47 @@ interface StoreAvailabilityProps {
 
 export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabilityProps) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="text-base font-medium text-foreground">Availability</legend>
-      <div className="grid gap-3 md:grid-cols-2">
-        {OPTIONS.map((option) => {
-          const checked = enabled === option.enabled
-          return (
-            <label
-              key={option.title}
-              className={cn(
-                'flex cursor-pointer flex-col gap-1 rounded-md border p-4',
-                checked ? 'border-foreground' : 'border-border',
-              )}
-            >
-              <span className="flex items-center gap-2">
+    <div className="space-y-6">
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-foreground">Visible to customers</legend>
+        <div className="inline-flex overflow-hidden rounded-md border border-border">
+          {OPTIONS.map((option) => {
+            const checked = enabled === option.enabled
+            return (
+              <label
+                key={option.title}
+                className={cn(
+                  'cursor-pointer px-3 py-1.5 text-sm',
+                  checked ? 'bg-foreground text-background' : 'text-muted-foreground',
+                )}
+              >
                 <input
                   type="radio"
                   name="store-availability"
-                  className="h-4 w-4"
+                  className="sr-only"
                   checked={checked}
                   onChange={() => onChange(option.enabled)}
                 />
-                <span className="text-sm font-medium">{option.title}</span>
-              </span>
-              <span className="text-sm text-muted-foreground">{option.detail}</span>
-            </label>
-          )
-        })}
-      </div>
+                {option.title}
+              </label>
+            )
+          })}
+        </div>
+      </fieldset>
+
       {storeUrl ? (
-        <a
-          href={storeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-primary underline-offset-4 hover:underline"
-        >
-          {storeUrl}
-        </a>
+        <section className="space-y-1 rounded-md border border-border px-4 py-3">
+          <h3 className="text-sm font-medium text-foreground">Public URL</h3>
+          <a
+            href={storeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-base text-foreground underline-offset-4 hover:underline"
+          >
+            {storeUrl}
+          </a>
+        </section>
       ) : null}
-    </fieldset>
+    </div>
   )
 }
