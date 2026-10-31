@@ -75,7 +75,8 @@ shop-shop/
 
 3. **Database setup**
    ```bash
-   pnpm fresh  # Resets DB, runs migrations, and generates all code
+   pnpm fresh    # Reset, migrate, and generate. Reset also runs the seed
+   pnpm db:seed  # Reseed users, stores, customers, products, and activity
    # Or for first-time setup:
    pnpm start:local  # Complete setup and start both services
    ```
@@ -110,6 +111,7 @@ The application will be available at:
 - `pnpm db:migrate` - Run database migrations
 - `pnpm db:studio` - Open Prisma Studio
 - `pnpm db:reset` - Reset database to clean state
+- `pnpm db:seed` - Replace seed data (reads `DATABASE_URL` from `packages/db/.env`)
 
 ### Code Generation
 - `pnpm gen:all` - Generate DTOs, OpenAPI specs, and SDK
@@ -123,6 +125,30 @@ The application will be available at:
 - `pnpm typecheck` - Type check all packages
 - `pnpm test` - Run all unit tests
 - `pnpm e2e` - Run end-to-end tests
+
+## 🌱 Seed data
+
+`pnpm db:seed` clears seed-owned tables, then loads tags, accounts, the Austin catalog, orders and River activity, and the geocoding cache. The Austin catalog is deterministic. Every account uses the password `Test123456!`.
+
+| Email | Role |
+| --- | --- |
+| `admin@seed.local` | Admin |
+| `admin2@seed.local` | Admin |
+| `staff@seed.local` | Staff |
+| `customer@seed.local` | Customer |
+| `maya.chen@seed.local` | Customer, referred by `AFFILIATE2024` |
+| `jordan.lee@seed.local` | Customer |
+| `sam.patel@seed.local` | Customer |
+| `riley.nguyen@seed.local` | Customer |
+| `alex.brooks@seed.local` | Customer |
+| `vendor@seed.local` | Vendor, owns Seed Bistro North and South |
+| `vendor-pending@seed.local` | Vendor, pending approval |
+| `affiliate@seed.local` | Affiliate, active (`AFFILIATE2024`) |
+| `affiliate-pending@seed.local` | Affiliate, pending (`AFFILIATE2025`) |
+| `rider@seed.local` | Rider |
+| `vendor-{store-slug}@test.com` | Vendor for one Austin store |
+
+Customers have a home address and a test card. Activity includes orders across checkout states, an open cart, an abandoned cart, favorites, and River likes, comments, saves, and seen posts. The official Shop Shop store is included for River editorial posts.
 
 ## 🏗️ Core Features
 
