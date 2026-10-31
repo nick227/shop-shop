@@ -44,6 +44,7 @@ describe('StoreFormDocument', () => {
     expect(screen.queryByText('New store')).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: 'Summary' })).not.toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Store', selected: true })).toBeInTheDocument()
+    expect(screen.getByLabelText('Public')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
@@ -55,6 +56,7 @@ describe('StoreFormDocument', () => {
     expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Orders' }))
+    expect(screen.queryByLabelText('Public')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Delivery fee ($)')).not.toBeInTheDocument()
     await user.click(screen.getByLabelText('Delivery'))
     expect(screen.getByLabelText('Delivery fee ($)')).toBeInTheDocument()
@@ -65,5 +67,23 @@ describe('StoreFormDocument', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Photos' }))
     expect(screen.getByText('Photo gallery')).toBeInTheDocument()
+  })
+
+  it('shows the public store link once the store exists', () => {
+    const formData = { ...createInitialStoreFormData(), name: 'Northside Bakery' }
+    render(
+      <StoreFormDocument
+        isEdit
+        storeId="store-1"
+        formData={formData}
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        isSubmitting={false}
+        pendingFiles={[]}
+        onPendingFiles={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('link', { name: /\/kitchen\/northside-bakery-store-1/ })).toBeInTheDocument()
   })
 })

@@ -15,16 +15,3 @@ export function hasCoordinate(val: unknown): boolean {
   const n = Number(val)
   return Number.isFinite(n) && n !== 0
 }
-
-export function needsAddress(formData: StoreFormData): boolean {
-  return (
-    !hasText(formData.addressStreet) ||
-    !hasText(formData.addressCity) ||
-    !hasText(formData.addressState) ||
-    !hasText(formData.addressZip)
-  )
-}
-
-export function needsNameAndAddress(formData: StoreFormData): boolean {
-  return !hasText(formData.name) || needsAddress(formData)
-}

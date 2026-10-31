@@ -1,13 +1,38 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/primitives'
+import { Checkbox, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import type { StoreFormData } from '@api/types'
-import type { StoreFieldProps } from './storeFieldProps'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { hasText, type StoreFieldProps } from './storeFieldProps'
 import { STORE_TYPES } from './storeTypes'
 
-export function StoreIdentitySection({ formData, onChange }: StoreFieldProps) {
+interface StoreIdentitySectionProps extends StoreFieldProps {
+  readonly storeId?: string
+}
+
+export function StoreIdentitySection({ formData, onChange, storeId }: StoreIdentitySectionProps) {
   const length = (formData.description ?? '').length
+  const publicPath = storeId && hasText(formData.name) ? getStoreRoute({ id: storeId, name: formData.name }) : ''
 
   return (
     <section className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Checkbox
+          id="store-published"
+          label="Public"
+          checked={formData.isPublished}
+          onChange={(e) => onChange('isPublished', e.target.checked)}
+        />
+        {publicPath ? (
+          <a
+            href={publicPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary underline-offset-4 hover:underline"
+          >
+            {publicPath}
+          </a>
+        ) : null}
+      </div>
+
       <Select
         value={formData.storeType || ''}
         onValueChange={(value) => onChange('storeType', value as StoreFormData['storeType'])}

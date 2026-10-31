@@ -1,7 +1,7 @@
 /**
  * useStoreForm - Encapsulates store form state, queries, media queue, and create/update mutations.
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -28,6 +28,7 @@ export function useStoreForm(storeId?: string) {
 
   const [pendingScopedMediaFiles, setPendingScopedMediaFiles] = useState<File[]>([])
   const [formData, setFormData] = useState<StoreFormData>(createInitialStoreFormData())
+  const creatingRef = useRef(false)
 
   const { data: store, isLoading: isLoadingStore } = useQuery({
     queryKey: ['store', storeId],
@@ -98,9 +99,9 @@ export function useStoreForm(storeId?: string) {
 
       void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      navigate(newId ? `/vendor/dashboard?storeId=${encodeURIComponent(newId)}` : '/vendor/dashboard', {
-        replace: true,
-      })
+      if (newId) {
+        navigate(`/vendor/stores/${newId}/edit`, { replace: true })
+      }
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -121,7 +122,6 @@ export function useStoreForm(storeId?: string) {
       queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
       toast.success('Store updated successfully!')
-      navigate('/vendor/dashboard')
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -132,7 +132,7 @@ export function useStoreForm(storeId?: string) {
   const handleChange = <K extends keyof StoreFormData>(field: K, value: StoreFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
-    if (field === 'name' && !isEdit) {
+    if (field === 'name') {
       const slug = String(value)
         .toLowerCase()
         .replaceAll(/[^\da-z]+/g, '-')
@@ -141,14 +141,21 @@ export function useStoreForm(storeId?: string) {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!formData.name.trim()) return
+    if (creatingRef.current || createStoreMutation.isPending || updateStoreMutation.isPending) return
     const cleanedData = cleanStoreFormData(formData)
     if (isEdit) {
       updateStoreMutation.mutate(cleanedData)
-    } else {
-      createStoreMutation.mutate(cleanedData)
+      return
     }
+    creatingRef.current = true
+    createStoreMutation.mutate(cleanedData, {
+      onSettled: () => {
+        creatingRef.current = false
+      },
+    })
   }
 
   return {

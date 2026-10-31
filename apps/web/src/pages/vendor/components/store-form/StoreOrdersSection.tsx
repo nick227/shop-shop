@@ -53,13 +53,6 @@ export function StoreOrdersSection({ formData, onChange }: StoreFieldProps) {
           />
         </FormRow>
       )}
-
-      <Checkbox
-        id="store-published"
-        label="Visible to customers"
-        checked={formData.isPublished}
-        onChange={(e) => onChange('isPublished', e.target.checked)}
-      />
     </section>
   )
 }

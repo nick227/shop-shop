@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button, Spinner } from '@shared/ui/primitives'
 import { PageShell } from '@shared/ui/layout/PageShell'
-import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { StoreFormDocument } from './components/store-form/StoreFormDocument'
 import { useStoreForm } from './hooks/useStoreForm'
 
@@ -45,16 +44,6 @@ export default function StoreFormPage() {
           <ArrowLeft className="mr-1 h-4 w-4" />
           Stores
         </Button>
-        {isEdit && storeId && formData.name.trim() ? (
-          <a
-            href={getStoreRoute({ id: storeId, name: formData.name })}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary underline-offset-4 hover:underline"
-          >
-            View store
-          </a>
-        ) : null}
       </div>
 
       <StoreFormDocument
