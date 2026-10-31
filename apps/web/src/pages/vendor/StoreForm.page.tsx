@@ -1,217 +1,79 @@
-// @ts-nocheck
 /**
- * StoreFormPage - Create or edit a store
+ * StoreFormPage - Create or edit a store as one wide document.
  */
-import { useState, useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@api/client'
-import { stores as storesApi } from '@api/apiWrapper'
-import { toast } from 'sonner'
-import { useAuthStore } from '@stores/authStore'
-import { handleApiError } from '@api/errors'
-import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
-import { createStoreFormSections } from '@features/auth'
-import type { StoreFormData } from '@api/types'
-import { createInitialStoreFormData, transformStoreToFormData, cleanStoreFormData, storePayloadFromFormData } from '@shared/lib/utils/form-utilities'
-import { authPost } from '@shared/lib/auth/authFetch'
-import { DeleteStoreSection } from './components/DeleteStoreSection'
-import { VendorStripeConnectSection } from './components/VendorStripeConnectSection'
-import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
+import { useParams } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { Button, Spinner } from '@shared/ui/primitives'
+import { PageHeader } from '@shared/ui/layout/PageLayout'
+import { PageShell } from '@shared/ui/layout/PageShell'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { StoreFormDocument } from './components/store-form/StoreFormDocument'
+import { useStoreForm } from './hooks/useStoreForm'
 
 export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const user = useAuthStore((state) => state.user)
-  const updateUser = useAuthStore((state) => state.updateUser)
-  const isEdit = Boolean(storeId)
-
-  /** Files picked on create flow — uploaded in createStoreMutation.onSuccess once `id` exists */
-  const [pendingScopedMediaFiles, setPendingScopedMediaFiles] = useState<File[]>([])
-
-  // Form state using SDK-derived initialization - no manual field duplication!
-  const [formData, setFormData] = useState<StoreFormData>(createInitialStoreFormData())
-
-  // Fetch existing store for editing
-  const { data: store, isLoading: isLoadingStore } = useQuery({
-    queryKey: ['store', storeId],
-    queryFn: async () => {
-      return await apiClient.stores().getStoreById({ id: storeId! })
-    },
-    enabled: isEdit,
-  })
-
-  // Fetch store media for edit mode (SDK strips imageUrl, so we fall back to primary media)
-  const { data: storeMedia } = usePublicMediaList({ storeId: isEdit ? storeId! : undefined })
-
-  // Populate form when editing - dynamic transformation from SDK data
-  useEffect(() => {
-    if (store) {
-      const base = transformStoreToFormData(store)
-      // SDK strips imageUrl — fall back to the lowest-sortIndex gallery image
-      if (!base.imageUrl) {
-        const primaryImage = storeMedia
-          ?.filter((m) => m.kind === 'IMAGE')
-          ?.sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))[0]?.url
-        if (primaryImage) base.imageUrl = primaryImage
-      }
-      setFormData(base)
-    }
-  }, [store, storeMedia])
-
-  // Create store mutation
-  const createStoreMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const affiliateReferralCode = localStorage.getItem('affiliateReferralCode') || undefined
-      const payload = {
-        ...storePayloadFromFormData(data),
-        email: data.email?.trim() || user?.email || '',
-        ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
-      }
-      return await storesApi.create(payload as any)
-    },
-    onSuccess: async (result) => {
-      updateUser({ role: 'VENDOR' } as any)
-      // Attribution has been snapshotted onto the new store; clear local cache.
-      localStorage.removeItem('affiliateReferralCode')
-      localStorage.removeItem('affiliateReferralId')
-      const newId = (result as any).id as string | undefined
-
-      if (newId) {
-        queryClient.setQueryData(
-          ['vendor-managed-stores', user?.id],
-          (stores: any[] | undefined) =>
-            stores ? [result, ...stores.filter((store) => store.id !== newId)] : stores
-        )
-      }
-
-      if (newId && pendingScopedMediaFiles.length > 0) {
-        try {
-          for (const file of pendingScopedMediaFiles) {
-            const fd = new FormData()
-            fd.append('file', file)
-            fd.append('storeId', newId)
-            const res = await authPost('/api/media/upload', fd)
-            if (!res.ok) {
-              const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-              throw new Error(errBody.error || `Upload failed (${res.status})`)
-            }
-          }
-          setPendingScopedMediaFiles([])
-          queryClient.invalidateQueries({ queryKey: ['media'] })
-          toast.success('Store created and media uploaded.')
-        } catch {
-          toast.error('Store created, but some media failed to upload. You can add them on the edit page.')
-        }
-      } else {
-        toast.success('Store created.')
-      }
-
-      void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
-      void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      navigate(newId ? `/vendor/dashboard?storeId=${encodeURIComponent(newId)}` : '/vendor/dashboard', { replace: true })
-    },
-    onError: async (error) => {
-      const appError = await handleApiError(error)
-      toast.error(appError.message)
-    },
-  })
-
-  // Update store mutation
-  const updateStoreMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const payload = storePayloadFromFormData(data)
-      return await apiClient.stores().updateStore({
-        id: storeId!,
-        updateStoreRequest: payload as any,
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store', storeId] })
-      queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
-      queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      toast.success('Store updated successfully!')
-      navigate('/vendor/dashboard')
-    },
-    onError: async (error) => {
-      const appError = await handleApiError(error)
-      toast.error(appError.message)
-    },
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const cleanedData = cleanStoreFormData(formData)
-
-    if (isEdit) {
-      updateStoreMutation.mutate(cleanedData)
-    } else {
-      createStoreMutation.mutate(cleanedData as any)
-    }
-  }
-
-  const handleChange = <K extends keyof StoreFormData>(field: K, value: StoreFormData[K]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Auto-generate slug from name
-    if (field === 'name' && !isEdit) {
-      const slug = String(value)
-        .toLowerCase()
-        .replaceAll(/[^\da-z]+/g, '-')
-        .replaceAll(/^-|-$/g, '')
-      setFormData((prev) => ({ ...prev, slug }))
-    }
-  }
-
-  const isSubmitting = createStoreMutation.isPending || updateStoreMutation.isPending
-  const sections = createStoreFormSections(
-    formData,
-    handleChange,
+  const {
     isEdit,
-    storeId,
-    isEdit
-      ? undefined
-      : { files: pendingScopedMediaFiles, onFilesChange: setPendingScopedMediaFiles },
-  )
+    store,
+    isLoadingStore,
+    formData,
+    pendingScopedMediaFiles,
+    setPendingScopedMediaFiles,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+    onBack,
+  } = useStoreForm(storeId)
+
+  if (isLoadingStore) {
+    return (
+      <PageShell nested contentClassName="py-8 md:py-10">
+        <div className="flex min-h-[400px] items-center justify-center">
+          <Spinner size="large" />
+        </div>
+      </PageShell>
+    )
+  }
 
   return (
-    <FormPageTemplate
-      title={isEdit ? '✏️ Edit Store' : '+ Create Store'}
-      backLabel="← Back to Dashboard"
-      onBack={() => navigate('/vendor/dashboard')}
-      sections={sections}
-      onSubmit={handleSubmit}
-      submitLabel={isEdit ? 'Update Store' : 'Create Store'}
-      isSubmitting={isSubmitting}
-      isLoading={isLoadingStore}
-      loadingMessage="Loading store..."
-      belowForm={
-        isEdit && store ? (
-          <div className="space-y-8">
-            <div className="rounded-lg border border-border bg-muted/20 px-4 py-3">
-              <Link
-                to={`/vendor/stores/${storeId}/river`}
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-              >
-                Manage Store → River Posts
-              </Link>
-            </div>
-            <VendorStripeConnectSection storeId={storeId!} />
-            <DeleteStoreSection
-              storeId={storeId!}
-              storeName={store.name}
-              onDeleted={() => {
-                queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-                queryClient.removeQueries({ queryKey: ['store', storeId] })
-                toast.success('Store deleted')
-                navigate('/vendor/dashboard')
-              }}
-            />
-          </div>
-        ) : undefined
-      }
-    />
+    <PageShell nested contentClassName="space-y-10 py-8 md:py-10">
+      <PageHeader
+        title={isEdit ? store?.name || 'Store' : 'New store'}
+        backButton={
+          <Button
+            variant="ghost"
+            size="small"
+            onClick={onBack}
+            className="-ml-2 text-muted-foreground hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Stores
+          </Button>
+        }
+        actions={
+          isEdit && storeId ? (
+            <a
+              href={getStoreRoute({ id: storeId, name: formData.name })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              View store
+            </a>
+          ) : undefined
+        }
+      />
+
+      <StoreFormDocument
+        isEdit={isEdit}
+        storeId={storeId}
+        formData={formData}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        pendingFiles={pendingScopedMediaFiles}
+        onPendingFiles={setPendingScopedMediaFiles}
+      />
+    </PageShell>
   )
 }

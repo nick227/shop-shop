@@ -1,7 +1,5 @@
-// @ts-nocheck
 /**
- * FormPageTemplate - DRY template for create/edit form pages;
- * Eliminates 200+ lines of boilerplate per form page;
+ * FormPageTemplate - stacked create/edit form pages.
  */
 import type { ReactNode } from 'react'
 import { Button, Spinner } from '@shared/ui/primitives'
@@ -12,38 +10,25 @@ import { ArrowLeft } from 'lucide-react'
 import { cn } from '@shared/lib/cn'
 
 export interface FormSection {
-  id: string;
-  icon: string | ReactNode;
-  title: string;
-  description: string;
-  content: ReactNode;
+  id: string
+  icon: string | ReactNode
+  title: string
+  description: string
+  content: ReactNode
 }
 
 export interface FormPageTemplateProps {
-  /** Page title (e.g., "Edit Store" or "Create Item") */
-  title: string;
-  /** Optional subtitle displayed under title */
-  subtitle?: string;
-  /** Back button label */
-  backLabel: string;
-  /** Back button onClick handler */
-  onBack: () => void;
-  /** Form sections array */
+  title: string
+  subtitle?: string
+  backLabel: string
+  onBack: () => void
   sections: FormSection[]
-  /** Form submit handler */
-  onSubmit: (e: React.FormEvent) => void;
-  /** Cancel button onClick handler (defaults to onBack) */
-  onCancel?: () => void;
-  /** Submit button label (e.g., "Create" or "Update") */
-  submitLabel: string;
-  /** Whether form is currently submitting */
-  isSubmitting: boolean;
-  /** Loading state for fetching existing data */
-  isLoading?: boolean;
-  /** Loading message (defaults to "Loading...") */
-  loadingMessage?: string;
-  /** Content rendered after the form (e.g. danger zone on edit pages) */
-  belowForm?: ReactNode;
+  onSubmit: (e: React.FormEvent) => void
+  onCancel?: () => void
+  submitLabel: string
+  isSubmitting: boolean
+  isLoading?: boolean
+  loadingMessage?: string
 }
 
 export function FormPageTemplate({
@@ -58,8 +43,7 @@ export function FormPageTemplate({
   isSubmitting,
   isLoading = false,
   loadingMessage = 'Loading...',
-  belowForm}: FormPageTemplateProps) {
-  
+}: FormPageTemplateProps) {
   if (isLoading) {
     return (
       <PageShell nested className="bg-background" containerClassName="max-w-4xl" contentClassName="py-6 md:py-6">
@@ -77,8 +61,13 @@ export function FormPageTemplate({
         title={title}
         description={subtitle}
         backButton={
-          <Button variant="ghost" size="small" onClick={onBack} className="-ml-2 text-muted-foreground hover:bg-transparent">
-            <ArrowLeft className="w-4 h-4 mr-1" />
+          <Button
+            variant="ghost"
+            size="small"
+            onClick={onBack}
+            className="-ml-2 text-muted-foreground hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
             {backLabel.replace('← ', '')}
           </Button>
         }
@@ -89,25 +78,22 @@ export function FormPageTemplate({
           <section key={section.id} className="space-y-4">
             <div className="flex flex-col gap-1 px-1">
               <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted/30 text-lg">{section.icon}</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted/30 text-lg">
+                  {section.icon}
+                </span>
                 {section.title}
               </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {section.description}
-              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{section.description}</p>
             </div>
-            
+
             <Card className="border-border bg-card shadow-sm">
               <CardContent className="p-6 md:p-7">
-                <div className="space-y-6">
-                  {section.content}
-                </div>
+                <div className="space-y-6">{section.content}</div>
               </CardContent>
             </Card>
           </section>
         ))}
 
-        {/* Actions */}
         <Card className="border-border bg-card">
           <CardContent className="flex justify-end gap-3 p-4">
             <Button
@@ -119,57 +105,41 @@ export function FormPageTemplate({
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              variant="primary" 
+            <Button
+              type="submit"
+              variant="primary"
               disabled={isSubmitting}
-              className="h-12 px-8 min-w-[140px] shadow-lg shadow-primary/20"
+              className="h-12 min-w-[140px] px-8 shadow-lg shadow-primary/20"
             >
               {isSubmitting ? (
                 <>
                   <Spinner size="small" className="mr-2" />
                   Saving...
                 </>
-              ) : submitLabel}
+              ) : (
+                submitLabel
+              )}
             </Button>
           </CardContent>
         </Card>
       </form>
-
-      {belowForm}
     </PageShell>
   )
 }
 
-/**
- * Helper component for character count display;
- */
 export function CharCount({ current, max }: { current: number; max: number }) {
-  const isNearLimit = current > max * 0.9;
+  const isNearLimit = current > max * 0.9
   return (
-    <div
-      className={cn(
-        'text-[10px] uppercase tracking-wider font-bold mt-2 text-right',
-        isNearLimit ? 'text-destructive' : 'text-muted-foreground/60'
-      )}
-    >
+    <div className={cn('mt-2 text-right text-xs', isNearLimit ? 'text-destructive' : 'text-muted-foreground')}>
       {current} / {max}
     </div>
   )
 }
 
-/**
- * Helper component for two-column input rows;
- */
 export function FormRow({ children }: { children: ReactNode }) {
-  return <div className="grid gap-6">{children}</div>
+  return <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">{children}</div>
 }
 
-/**
- * Helper component for checkbox groups;
- */
 export function CheckboxGroup({ children }: { children: ReactNode }) {
-  return <div className="space-y-4 bg-muted/20 p-4 rounded-xl border border-border/30">{children}</div>
+  return <div className="space-y-4 rounded-xl border border-border/30 bg-muted/20 p-4">{children}</div>
 }
-
-

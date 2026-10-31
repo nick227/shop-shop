@@ -16,6 +16,7 @@ import { useHaptics } from '@shared/hooks/useHaptics'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { useVendorStores } from '@shared/hooks/hooks/vendor'
+import { ActiveStoreOperations } from './components/ActiveStoreOperations'
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate()
@@ -86,6 +87,8 @@ export default function VendorDashboardPage() {
       </PageShell>
     )
   }
+
+  const activeStore = stores.find((store) => store.id === selectedStoreId)
 
   return (
     <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
@@ -177,6 +180,10 @@ export default function VendorDashboardPage() {
           ))}
         </div>
       )}
+
+      {activeStore ? (
+        <ActiveStoreOperations storeId={activeStore.id} storeName={activeStore.name} />
+      ) : null}
     </PageShell>
   )
 }

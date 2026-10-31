@@ -1,6 +1,5 @@
 // @ts-nocheck
-import type { StoreFormData } from '@shared/types/types/form-types'
-import type { CreateStoreInput, StoreResponse } from '@api/types'
+import type { CreateStoreInput, StoreFormData, StoreResponse } from '@api/types'
 import { maskEmailInput, maskUsPhoneInput, maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
 
 /** Optional fields omitted from payload when empty */
@@ -130,7 +129,8 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     addressState: (store.addressState ?? '').toUpperCase(),
     addressZip: maskUsZipInput(store.addressZip ?? ''),
     addressCountry: store.addressCountry ?? 'US',
-    commissionRate: store.commissionRate ?? '0'
+    commissionRate: store.commissionRate ?? '0',
+    hoursJson: (store as any).hoursJson ?? undefined,
   }
 }
 

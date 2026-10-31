@@ -211,6 +211,7 @@ export function StoreHoursEditor({ value, onChange, deliveryEnabled = true, clas
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
+              type="button"
               onClick={() => setActiveTab('store')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'store'
@@ -226,6 +227,7 @@ export function StoreHoursEditor({ value, onChange, deliveryEnabled = true, clas
             
             {deliveryEnabled && (
               <button
+                type="button"
                 onClick={() => setActiveTab('delivery')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'delivery'
