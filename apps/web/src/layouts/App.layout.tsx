@@ -5,6 +5,8 @@ import { Outlet, useMatches, useLocation } from 'react-router-dom'
 import { CartWidget } from '../features/cart/components/CartWidget'
 import { Header } from '../components/header/Header'
 import { HeaderAddressExtrasProvider } from '../components/header/HeaderAddressExtrasContext'
+import { ShoppingShell } from '../features/home/shell/ShoppingShell'
+import { isShoppingPath } from '../features/home/shell/shoppingPaths'
 import { setPageTitle, BRAND_NAME } from '../hooks/usePageTitle'
 import { useEffect } from 'react'
 
@@ -28,12 +30,20 @@ export function Layout() {
     }
   }, [location.pathname])
 
+  const shopping = isShoppingPath(location.pathname)
+
   return (
     <HeaderAddressExtrasProvider>
-      <Header />
-      <main>
-        <Outlet />
-      </main>
+      {shopping ? (
+        <ShoppingShell />
+      ) : (
+        <>
+          <Header />
+          <main>
+            <Outlet />
+          </main>
+        </>
+      )}
       <CartWidget />
     </HeaderAddressExtrasProvider>
   )

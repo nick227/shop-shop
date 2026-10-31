@@ -143,7 +143,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         {
           path: '/',
           element: <LandingRedirect />,
-          handle: { title: 'River' },
+          handle: { title: 'Home' },
         },
         {
           path: '/search',
@@ -196,7 +196,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         {
           path: '/river',
           element: lazyRoute(RiverPage),
-          handle: { title: 'River' },
+          handle: { title: 'Home' },
         },
         // Become an affiliate (public, no auth required — form handles login check);
         {

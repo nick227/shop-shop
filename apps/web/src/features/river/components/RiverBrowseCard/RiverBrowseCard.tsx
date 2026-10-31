@@ -220,9 +220,9 @@ export function RiverBrowseCard({ featuredStore, featuredLoading }: RiverBrowseC
     >
       <header className="border-b border-gray-100 p-4">
         <h2 id="river-browse-heading" className="mb-3 text-lg font-semibold tracking-tight text-gray-900">
-          Browse kitchens
+          Browse by type
         </h2>
-        <div className="mb-3 flex flex-wrap gap-2" role="toolbar" aria-label="Kitchen type">
+        <div className="mb-3 flex flex-wrap gap-2" role="toolbar" aria-label="Store type">
           {STORE_TYPE_CONFIG.map(({ value, label, Icon }) => {
             const active = storeTypeFilter === value
             return (

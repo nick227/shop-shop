@@ -105,7 +105,7 @@ function SearchRefinementBar({
           type="search"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Search kitchens, dishes…"
+          placeholder="Search products or stores"
           className="pr-4 pl-10 w-full h-11 text-base rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
       </div>
@@ -402,7 +402,7 @@ export default function UnifiedSearchPage() {
       {q ? (
         searchResults && !isFirstLoad && hasResults && (
           <p className="text-sm animate-fade-in text-muted-foreground">
-            {storeTotal > 0 && `${storeTotal} ${storeTotal === 1 ? 'kitchen' : 'kitchens'}`}
+            {storeTotal > 0 && `${storeTotal} ${storeTotal === 1 ? 'store' : 'stores'}`}
             {storeTotal > 0 && productTotal > 0 && ' · '}
             {productTotal > 0 && `${productTotal} menu ${productTotal === 1 ? 'item' : 'items'}`}
           </p>
@@ -413,9 +413,16 @@ export default function UnifiedSearchPage() {
             {location?.city ? 'Browsing near you' : 'Discover'}
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {location?.city
-              ? `Kitchens in ${location.city}${location.state ? `, ${location.state}` : ''}`
-              : 'All kitchens'}
+            {(() => {
+              const browseLabel = STORE_TYPE_CONFIG.find((type) => type.slug === activeBrowse)?.label
+              const place = location?.city
+                ? `${location.city}${location.state ? `, ${location.state}` : ''}`
+                : undefined
+              if (browseLabel && place) return `${browseLabel} in ${place}`
+              if (browseLabel) return browseLabel
+              if (place) return `Stores in ${place}`
+              return 'All stores'
+            })()}
           </h1>
         </header>
       )}
@@ -645,7 +652,7 @@ export default function UnifiedSearchPage() {
                       onClick={() => setStoreLimit((l) => l + INITIAL_STORE_LIMIT)}
                       className="py-3 mt-4 w-full text-sm font-medium rounded-xl border transition-colors border-border bg-card text-muted-foreground hover:bg-muted/40"
                     >
-                      Show more kitchens · {storeTotal - storeLimit} remaining
+                      Show more stores · {storeTotal - storeLimit} remaining
                     </button>
                   )}
                 </>

@@ -19,7 +19,7 @@ export interface UnifiedSearchRequest {
   latitude?: number // Explicit location
   longitude?: number // Explicit location
   radiusMiles?: number // Search radius (default: 25)
-  storeType?: string // Category filter (MEAL_PREP | BAKERY | COFFEE | SPECIALTY | GENERAL)
+  storeType?: string // Vertical (FOOD | GROCERY | CONVENIENCE | RETAIL) or a single store enum
   tags?: string[] // Tag slugs — OR within a group, AND across groups (future)
   priceRange?: string // BUDGET | MODERATE | PREMIUM
 }
@@ -102,6 +102,23 @@ interface LocationFilter {
 // Builds a Prisma WHERE clause for tag filtering.
 // mode ANY: store/item must match at least one slug (OR semantics).
 // mode ALL: store/item must match every slug (AND semantics — each requires its own sub-clause).
+const VERTICAL_STORE_TYPES: Record<string, readonly string[]> = {
+  FOOD: ['RESTAURANT', 'HOME_KITCHEN', 'BAKERY', 'COFFEE', 'MEAL_PREP'],
+  GROCERY: ['GROCERY'],
+  CONVENIENCE: ['CONVENIENCE'],
+  RETAIL: ['RETAIL', 'SPECIALTY', 'OTHER', 'GENERAL'],
+}
+
+function applyStoreType(where: Prisma.StoreWhereInput, storeType?: string) {
+  if (!storeType) return
+  const group = VERTICAL_STORE_TYPES[storeType]
+  if (group) {
+    where.storeType = { in: [...group] } as Prisma.StoreWhereInput['storeType']
+    return
+  }
+  where.storeType = storeType as Prisma.StoreWhereInput['storeType']
+}
+
 function buildStoreTagWhere(slugs: string[], mode: 'ANY' | 'ALL' = 'ANY'): Prisma.StoreWhereInput | undefined {
   if (!slugs.length) return undefined
   if (mode === 'ANY') {
@@ -150,7 +167,7 @@ export class MarketplaceSearchService {
     // Parallel search for stores and products (tolerate partial failures)
     const [storesResult, productsResult] = await Promise.allSettled([
       this.searchStores(keywordQuery, locationFilter, request.storeType, tags, priceRange),
-      this.searchProducts(keywordQuery, locationFilter, tags),
+      this.searchProducts(keywordQuery, locationFilter, request.storeType, tags),
     ])
 
     const stores = storesResult.status === 'fulfilled' ? storesResult.value : []
@@ -207,7 +224,7 @@ export class MarketplaceSearchService {
           { imageUrl: { not: null } },
         ],
       }
-      if (storeType) where.storeType = storeType as any
+      applyStoreType(where, storeType)
       if (priceRange) where.priceRange = priceRange as any
 
       if (locationFilter.latitude && locationFilter.longitude) {
@@ -305,6 +322,7 @@ export class MarketplaceSearchService {
   private async searchProducts(
     query: string,
     locationFilter: LocationFilter,
+    storeType?: string,
     tags?: string[],
   ): Promise<ProductSearchResult[]> {
     try {
@@ -312,6 +330,7 @@ export class MarketplaceSearchService {
         isPublished: true,
         ...PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
       }
+      applyStoreType(storeWhere, storeType)
       if (locationFilter.city) storeWhere.addressCity = { contains: locationFilter.city }
       else if (locationFilter.state) storeWhere.addressState = locationFilter.state
       else if (locationFilter.zip) storeWhere.addressZip = locationFilter.zip

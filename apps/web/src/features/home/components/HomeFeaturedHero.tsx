@@ -22,7 +22,7 @@ function HomeFeaturedHeroComponent({ store, isLoading }: HomeFeaturedHeroProps) 
   if (!store) {
     return (
       <div className="relative flex aspect-[3/2] w-full items-center justify-center rounded-2xl border border-border bg-muted/60 sm:aspect-[16/7]">
-        <p className="text-sm text-muted-foreground">Kitchens will appear here once stores go live.</p>
+        <p className="text-sm text-muted-foreground">Merchants will appear here once stores go live.</p>
       </div>
     )
   }
@@ -49,7 +49,7 @@ function HomeFeaturedHeroComponent({ store, isLoading }: HomeFeaturedHeroProps) 
           {/* Featured pill */}
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
             <Flame className="h-3 w-3" />
-            Featured kitchen
+            Featured nearby
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -67,7 +67,7 @@ function HomeFeaturedHeroComponent({ store, isLoading }: HomeFeaturedHeroProps) 
               to={href}
               className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-md bg-white px-5 text-base font-semibold text-black transition-colors hover:bg-white/90"
             >
-              View menu
+              Open store
             </Link>
           </div>
         </div>

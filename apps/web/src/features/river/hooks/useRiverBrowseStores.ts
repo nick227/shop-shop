@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { StoreResponse } from '@api/types'
+import { STORE_TYPE_GROUPS } from '@features/search/config/storeTypes'
 import type { StoreSearchResult, UnifiedSearchResponse } from '@features/search/hooks/useUnifiedSearchApi'
 
 export interface RiverBrowseStoresParams {
@@ -60,7 +61,8 @@ async function fetchFallbackStores(params: RiverBrowseStoresParams): Promise<Uni
   sp.set('page', '1')
   sp.set('limit', '50')
   sp.set('isPublished', 'true')
-  if (params.storeTypeFilter) sp.set('storeType', params.storeTypeFilter)
+  const group = STORE_TYPE_GROUPS[params.storeTypeFilter]
+  if (params.storeTypeFilter && !group) sp.set('storeType', params.storeTypeFilter)
   if (params.nearMe && params.latitude != null && params.longitude != null) {
     sp.set('latitude', String(params.latitude))
     sp.set('longitude', String(params.longitude))
@@ -82,7 +84,9 @@ async function fetchFallbackStores(params: RiverBrowseStoresParams): Promise<Uni
 
     const body = await response.json() as { data?: StoreWithMedia[] } | StoreWithMedia[]
     const stores = Array.isArray(body) ? body : body.data ?? []
-    const results = stores.map(storeToSearchResult)
+    const results = stores
+      .map(storeToSearchResult)
+      .filter((store) => !group || group.includes(store.category))
 
     return {
       query: '',

@@ -14,7 +14,7 @@ export function CustomerLayout() {
   const location = useLocation()
 
   return (
-    <div className="pb-20 min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Top Bar — glassmorphic, consistent with BottomNav */}
       
       {/* Main Content */}
