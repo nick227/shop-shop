@@ -5,12 +5,14 @@ import { HeroWindow } from './HeroWindow'
 import { StoreMosaic, StoryStrip } from './MosaicAndStories'
 import { PlaceField } from './PlaceField'
 import { RecentShelf } from './RecentShelf'
+import { SignedInShelves } from './SignedInShelves'
 import { ProductShelf, StoreShelf } from './Shelves'
 import { formatDistance } from '@shared/lib/utils/format'
 import { momentLine, selectHome } from './selectHome'
 import { TypePlates } from './TypePlates'
 import { hideVertical, useHomeTaste } from './taste'
 import { useNeighborhoodData } from './useNeighborhoodData'
+import { useSignedInHome } from './useSignedInHome'
 
 function placeTitle(city: string | undefined, zip: string | undefined): string {
   if (city) return city
@@ -22,6 +24,7 @@ export function NeighborhoodHome() {
   const [params] = useSearchParams()
   const taste = useHomeTaste()
   const data = useNeighborhoodData()
+  const account = useSignedInHome()
   const hasPlace = Boolean(data.location)
   const selection = selectHome(data.stores, data.products, taste, hasPlace)
   const explore = new URLSearchParams(params)
@@ -52,7 +55,7 @@ export function NeighborhoodHome() {
           </p>
           <h1>{title}</h1>
           <p className="max-w-md text-sm" style={{ color: 'var(--quiet)' }}>
-            {hasPlace ? momentLine() : 'Enter a ZIP to see what’s close.'}
+            {hasPlace ? account.usual ?? momentLine() : 'Enter a ZIP to see what’s close.'}
           </p>
           <div className="mt-4">
             <PlaceField tone="hero" />
@@ -74,6 +77,13 @@ export function NeighborhoodHome() {
           <TypePlates stores={data.stores} />
         </div>
       </div>
+
+      <SignedInShelves
+        account={account}
+        stores={data.stores}
+        products={data.products}
+        hasPlace={hasPlace}
+      />
 
       {hasPlace && closest.length > 0 ? (
         <StoreShelf

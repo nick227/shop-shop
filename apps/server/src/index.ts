@@ -215,6 +215,7 @@ await app.register(teamRoutes, { prefix: '/api' })
 await app.register(promotionEnhancedRoutes) 
 await app.register(orderCancellationRoutes) 
 await app.register(favoritesRoutes)
+await app.register(favoritesRoutes, { prefix: '/api' })
 
 // Item analytics must register before `/api/items/:id` so `/api/items/analytics` is not parsed as an id.
 await app.register(itemAnalyticsRoutes, { prefix: '/api' })
