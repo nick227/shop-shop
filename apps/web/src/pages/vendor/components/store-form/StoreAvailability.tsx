@@ -13,7 +13,6 @@ export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabi
   return (
     <div className="space-y-6">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground">Public page</legend>
         <div className="flex gap-4">
           {OPTIONS.map((option) => (
             <label key={option.title} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -31,7 +30,7 @@ export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabi
       </fieldset>
 
       {storeUrl ? (
-        <section className="space-y-1 rounded-md border border-border px-4 py-3">
+        <section className="space-y-1 py-4">
           <h3 className="text-sm font-medium text-foreground">Public URL</h3>
           <a
             href={storeUrl}
