@@ -49,7 +49,7 @@ describe('StoreFormDocument', () => {
     expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument()
     expect(screen.getByLabelText('Type')).toBeInTheDocument()
-    expect(screen.getByText('Visible to customers')).toBeInTheDocument()
+    expect(screen.getByText('Accepting orders')).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Disabled' })).toBeChecked()
     expect(screen.queryByRole('heading', { name: 'Public URL' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Enabled' }))
