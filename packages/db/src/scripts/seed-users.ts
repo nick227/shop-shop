@@ -78,7 +78,9 @@ const USERS_TO_CREATE: UserSeed[] = [
     name: 'Marketing Affiliate',
     role: Role.AFFILIATE,
     phone: '5125550007',
+    affiliateStatus: AffiliateStatus.ACTIVE,
     referralCode: 'AFFILIATE2024',
+    commissionRate: 0.1,
   },
   
   // Affiliate (Pending)
@@ -87,6 +89,7 @@ const USERS_TO_CREATE: UserSeed[] = [
     name: 'Pending Affiliate',
     role: Role.AFFILIATE,
     phone: '5125550008',
+    affiliateStatus: AffiliateStatus.PENDING,
     referralCode: 'AFFILIATE2025',
   },
   

@@ -56,22 +56,15 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
 
   const passwordHash = await hash('Test123456!', 10)
 
-  const affiliateUser = await prisma.user.create({
-    data: {
-      email: 'affiliate-demo@seed.local',
-      name: 'Seed Affiliate',
-      phone: '555-2020',
-      role: 'AFFILIATE',
-      passwordHash,
-    },
-  })
+  const affiliateUser = await prisma.user.findUnique({ where: { email: 'affiliate@seed.local' } })
+  if (!affiliateUser) {
+    throw new Error('affiliate@seed.local is missing. Seed users before the demo catalog.')
+  }
 
-  const affiliate = await prisma.affiliate.create({
+  const affiliate = await prisma.affiliate.update({
+    where: { userId: affiliateUser.id },
     data: {
-      userId: affiliateUser.id,
       status: 'ACTIVE',
-      referralCode: 'SEEDPARTNER',
-      commissionRate: 0.05,
       paypalEmail: 'affiliate-payouts@seed.local',
       bankAccountJson: { routingLast4: '1100', accountLast4: '4421' },
       taxId: '12-3456789',
@@ -80,29 +73,24 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
     },
   })
 
-  const vendor = await prisma.user.create({
+  const vendor = await prisma.user.findUnique({ where: { email: 'vendor@seed.local' } })
+  if (!vendor) {
+    throw new Error('vendor@seed.local is missing. Seed users before the demo catalog.')
+  }
+
+  await prisma.vendorVerification.create({
     data: {
-      email: 'vendor-demo@seed.local',
-      name: 'Jamie Vendor',
-      phone: '555-1010',
-      role: 'VENDOR',
-      isCompany: true,
-      companyName: 'Seed Foods LLC',
-      passwordHash,
-      vendorVerification: {
-        create: {
-          businessName: 'Seed Foods LLC',
-          businessType: 'LLC',
-          taxId: '98-7654321',
-          documentsJson: [{ kind: 'EIN', ref: 'doc_seed_1' }],
-          status: 'APPROVED',
-          submittedAt: validFrom,
-          reviewedAt: validFrom,
-          approvedAt: validFrom,
-          stripeAccountId: 'acct_seed_vendor',
-          reviewNotes: 'Approved for seed.',
-        },
-      },
+      userId: vendor.id,
+      businessName: 'Seed Foods LLC',
+      businessType: 'LLC',
+      taxId: '98-7654321',
+      documentsJson: [{ kind: 'EIN', ref: 'doc_seed_1' }],
+      status: 'APPROVED',
+      submittedAt: validFrom,
+      reviewedAt: validFrom,
+      approvedAt: validFrom,
+      stripeAccountId: 'acct_seed_vendor',
+      reviewNotes: 'Approved for seed.',
     },
   })
 

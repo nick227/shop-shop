@@ -12,6 +12,16 @@ import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'
 import { hash } from 'bcrypt'
 import { seedCanonicalTags } from './seed-tags.js'
 
+function createSeededRandom(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (Math.imul(1664525, state) + 1013904223) >>> 0
+    return state / 4294967296
+  }
+}
+
+const random = createSeededRandom(78758)
+
 // Austin area ZIPs with coordinates near 78758
 const AUSTIN_LOCATIONS = [
   { zip: '78758', lat: 30.3764, lng: -97.7078, area: 'North Central' },
@@ -468,8 +478,8 @@ function generateImageUrls(baseSeed: string, count: number, width: number, heigh
   
   for (let i = 0; i < count; i++) {
     const variation = variations[i % variations.length]
-    const randomWidth = width + Math.floor(Math.random() * 100) - 50
-    const randomHeight = height + Math.floor(Math.random() * 100) - 50
+    const randomWidth = width + Math.floor(random() * 100) - 50
+    const randomHeight = height + Math.floor(random() * 100) - 50
     urls.push(`https://picsum.photos/seed/${baseSeed}${variation}/${randomWidth}/${randomHeight}.jpg`)
   }
   return urls
@@ -663,7 +673,7 @@ async function createSampleFavorites(prisma: PrismaClient) {
   let favoriteItemCount = 0
   
   // Create favorite stores (random 3-5 stores) using upsert to handle duplicates
-  const numFavoriteStores = Math.floor(Math.random() * 3) + 3
+  const numFavoriteStores = Math.floor(random() * 3) + 3
   for (let i = 0; i < numFavoriteStores && i < stores.length; i++) {
     const store = stores[i]
     await prisma.favoriteStore.upsert({
@@ -683,7 +693,7 @@ async function createSampleFavorites(prisma: PrismaClient) {
   }
   
   // Create favorite items (random 5-10 items) using upsert to handle duplicates
-  const numFavoriteItems = Math.floor(Math.random() * 6) + 5
+  const numFavoriteItems = Math.floor(random() * 6) + 5
   for (let i = 0; i < numFavoriteItems && i < items.length; i++) {
     const item = items[i]
     await prisma.favoriteItem.upsert({
@@ -723,20 +733,21 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
   for (const location of AUSTIN_LOCATIONS) {
     // Randomly select 1-3 store types for this location
     const storeTypesArray = Object.keys(STORE_TYPES)
-    const numStores = Math.floor(Math.random() * 3) + 1
+    const numStores = Math.floor(random() * 3) + 1
     
     for (let i = 0; i < numStores; i++) {
-      const storeTypeKey = storeTypesArray[Math.floor(Math.random() * storeTypesArray.length)]
+      const storeTypeKey = storeTypesArray[Math.floor(random() * storeTypesArray.length)]
       const storeType = STORE_TYPES[storeTypeKey as keyof typeof STORE_TYPES]
       
       // Generate store name
-      const baseName = storeType.names[Math.floor(Math.random() * storeType.names.length)]
-      const storeName = `${baseName} ${location.area}`
-      const slug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-      
-      // Check if store already exists
-      const existingStore = await prisma.store.findUnique({ where: { slug } })
-      if (existingStore) {
+      const baseName = storeType.names[Math.floor(random() * storeType.names.length)]
+      let storeName = `${baseName} ${location.area}`
+      let slug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      if (await prisma.store.findUnique({ where: { slug } })) {
+        storeName = `${storeName} ${i + 1}`
+        slug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      }
+      if (await prisma.store.findUnique({ where: { slug } })) {
         console.log(`⏭️  Skipping ${storeName} (already exists)`)
         continue
       }
@@ -753,26 +764,26 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           role: Role.VENDOR,
           isCompany: true,
           companyName: `${storeName} LLC`,
-          phone: `512${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
+          phone: `512${Math.floor(random() * 10000000).toString().padStart(7, '0')}`,
         },
       })
       vendorCount++
       
       // Generate random street address
-      const streetNumber = Math.floor(Math.random() * 9000) + 1000
+      const streetNumber = Math.floor(random() * 9000) + 1000
       const streetNames = ['N Lamar Blvd', 'Burnet Rd', 'Airport Blvd', 'Guadalupe St', 'Research Blvd', 'Anderson Ln', 'Metric Blvd', 'Mopac Expy']
-      const street = `${streetNumber} ${streetNames[Math.floor(Math.random() * streetNames.length)]}`
+      const street = `${streetNumber} ${streetNames[Math.floor(random() * streetNames.length)]}`
       
       // Small random offset (within 0.5 miles)
-      const latOffset = (Math.random() - 0.5) * 0.01
-      const lngOffset = (Math.random() - 0.5) * 0.01
+      const latOffset = (random() - 0.5) * 0.01
+      const lngOffset = (random() - 0.5) * 0.01
       
       // Generate store media URLs first to use first one as thumbnail
-      const numStoreMedia = Math.floor(Math.random() * 3) + 3 // 3-5 images
+      const numStoreMedia = Math.floor(random() * 3) + 3 // 3-5 images
       const storeMediaUrls = generateImageUrls(storeName.replace(/\s+/g, ''), numStoreMedia, 1200, 400)
       
       // Create store
-      const description = storeType.descriptions[Math.floor(Math.random() * storeType.descriptions.length)]
+      const description = storeType.descriptions[Math.floor(random() * storeType.descriptions.length)]
       const store = await prisma.store.create({
         data: {
           ownerUserId: vendor.id,
@@ -784,7 +795,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           status: 'ACTIVE',
           deliveryEnabled: true,
           pickupEnabled: true,
-          prepTimeMin: 15 + Math.floor(Math.random() * 30),
+          prepTimeMin: 15 + Math.floor(random() * 30),
           latitude: location.lat + latOffset,
           longitude: location.lng + lngOffset,
           addressStreet: street,
@@ -794,11 +805,11 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
           addressCountry: 'US',
           geocodedAt: new Date(),
           geocodeSource: 'manual',
-          phone: `512${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
+          phone: `512${Math.floor(random() * 10000000).toString().padStart(7, '0')}`,
           email: vendorEmail,
-          deliveryDistance: 5 + Math.floor(Math.random() * 10),
-          deliveryCharge: 2.99 + Math.floor(Math.random() * 3),
-          commissionRate: 8 + Math.floor(Math.random() * 7), // 8-15%
+          deliveryDistance: 5 + Math.floor(random() * 10),
+          deliveryCharge: 2.99 + Math.floor(random() * 3),
+          commissionRate: 8 + Math.floor(random() * 7), // 8-15%
           hoursJson: {
             monday: { open: '10:00', close: '22:00' },
             tuesday: { open: '10:00', close: '22:00' },
@@ -842,7 +853,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
         
         for (const itemTemplate of categoryItems) {
           // Generate item media URLs first to use first one as thumbnail
-          const numItemMedia = Math.floor(Math.random() * 2) + 2 // 2-3 images
+          const numItemMedia = Math.floor(random() * 2) + 2 // 2-3 images
           const itemMediaUrls = generateImageUrls(itemTemplate.title.replace(/\s+/g, ''), numItemMedia, 400, 400)
           
           const item = await prisma.item.create({
@@ -857,7 +868,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
               isSoldOut: false,
               sortIndex: storeItemCount,
               optionsJson: { category },
-              stockQty: Math.floor(Math.random() * 50) + 10,
+              stockQty: Math.floor(random() * 50) + 10,
               spicyLevel: (itemTemplate as any).spicyLevel || null,
               allergensJson: (itemTemplate as any).allergens ? (itemTemplate as any).allergens : undefined,
               tags: {
@@ -896,9 +907,9 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       }
       
       // Create 2-5 river posts for this store
-      const numPosts = Math.floor(Math.random() * 4) + 2
+      const numPosts = Math.floor(random() * 4) + 2
       for (let p = 0; p < numPosts; p++) {
-        const postTemplate = POST_TEMPLATES[Math.floor(Math.random() * POST_TEMPLATES.length)]
+        const postTemplate = POST_TEMPLATES[Math.floor(random() * POST_TEMPLATES.length)]
         const postImageUrl = `https://picsum.photos/seed/${storeName.replace(/\s+/g, '')}-post-${p}/${postTemplate.imgWidth}/${postTemplate.imgHeight}.jpg`
         
         const post = await prisma.post.create({
@@ -906,8 +917,8 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
             storeId: store.id,
             content: postTemplate.content,
             mediaUrls: [postImageUrl],
-            likesCount: Math.floor(Math.random() * 50),
-            commentsCount: Math.floor(Math.random() * 10),
+            likesCount: Math.floor(random() * 50),
+            commentsCount: Math.floor(random() * 10),
           },
         })
         postCount++
@@ -918,11 +929,11 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       // BUNDLE CREATION DISABLED FOR TESTING
       // Create 0-3 bundles for this store (randomized)
       const availableBundles = BUNDLE_COMBINATIONS[storeTypeKey as keyof typeof BUNDLE_COMBINATIONS] || []
-      const numBundles = 0 // Math.floor(Math.random() * 4) // 0-3 bundles - DISABLED
+      const numBundles = 0 // Math.floor(random() * 4) // 0-3 bundles - DISABLED
       
       if (numBundles > 0 && availableBundles.length > 0) {
         // Shuffle and take random bundles
-        const shuffledBundles = [...availableBundles].sort(() => Math.random() - 0.5)
+        const shuffledBundles = [...availableBundles].sort(() => random() - 0.5)
         const selectedBundles = shuffledBundles.slice(0, Math.min(numBundles, availableBundles.length))
         
         console.log(`   🎁 Creating ${selectedBundles.length} bundle(s):`)
