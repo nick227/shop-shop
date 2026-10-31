@@ -66,19 +66,20 @@ export function StoreFormDocument({
       </div>
 
       <div role="tabpanel" className="min-h-[24rem] pb-8">
-        {tab === 'store' && <StoreIdentitySection formData={formData} onChange={onChange} storeId={storeId} />}
+        {tab === 'store' && (
+          <div className="space-y-10">
+            <StoreIdentitySection formData={formData} onChange={onChange} storeId={storeId} />
+            <StorePhotosSection
+              formData={formData}
+              onChange={onChange}
+              storeId={storeId}
+              pendingFiles={pendingFiles}
+              onPendingFiles={onPendingFiles}
+            />
+          </div>
+        )}
         {tab === 'location' && <StoreLocationSection formData={formData} onChange={onChange} />}
         {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} />}
-        {tab === 'photos' && (
-          <StorePhotosSection
-            formData={formData}
-            onChange={onChange}
-            isEdit={isEdit}
-            storeId={storeId}
-            pendingFiles={pendingFiles}
-            onPendingFiles={onPendingFiles}
-          />
-        )}
         {tab === 'contact' && <StoreContactSection formData={formData} onChange={onChange} />}
       </div>
 

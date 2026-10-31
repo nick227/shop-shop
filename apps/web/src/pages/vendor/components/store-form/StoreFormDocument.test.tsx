@@ -6,8 +6,10 @@ import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData } from '@shared/lib/utils/form-utilities'
 import { StoreFormDocument } from './StoreFormDocument'
 
-vi.mock('@shared/ui/media', () => ({
-  EnhancedMediaGalleryManager: () => <div>Photo gallery</div>,
+vi.mock('./storePhotoApi', () => ({
+  listStorePhotos: vi.fn().mockResolvedValue([]),
+  uploadStorePhoto: vi.fn(),
+  deleteStorePhoto: vi.fn(),
 }))
 
 vi.mock('@features/auth/components/StoreHoursEditor', () => ({
@@ -49,10 +51,13 @@ describe('StoreFormDocument', () => {
     expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
     expect(screen.getByLabelText('Description')).toBeInTheDocument()
+    expect(screen.getByLabelText('Add photo')).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Photos' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Location' }))
     expect(screen.getByLabelText('Street *')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Add photo')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Orders' }))
@@ -64,9 +69,7 @@ describe('StoreFormDocument', () => {
     await user.click(screen.getByRole('tab', { name: 'Contact' }))
     expect(screen.getByLabelText('Company')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Add a link' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('tab', { name: 'Photos' }))
-    expect(screen.getByText('Photo gallery')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Add photo')).not.toBeInTheDocument()
   })
 
   it('shows the public store link once the store exists', () => {
