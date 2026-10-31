@@ -10,6 +10,7 @@ import { ProductShelf, StoreShelf } from './Shelves'
 import { formatDistance } from '@shared/lib/utils/format'
 import { momentLine, selectHome } from './selectHome'
 import { TypePlates } from './TypePlates'
+import { ProductRange } from './ProductRange'
 import { hideVertical, useHomeTaste } from './taste'
 import { useNeighborhoodData } from './useNeighborhoodData'
 import { useSignedInHome } from './useSignedInHome'
@@ -77,6 +78,8 @@ export function NeighborhoodHome() {
           <TypePlates stores={data.stores} />
         </div>
       </div>
+
+      <ProductRange products={data.products} stores={data.stores} />
 
       <SignedInShelves
         account={account}
