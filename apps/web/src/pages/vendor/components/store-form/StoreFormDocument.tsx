@@ -92,23 +92,25 @@ export function StoreFormDocument({
         {tab === 'contact' && <StoreContactSection formData={formData} onChange={onChange} />}
       </div>
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background px-4 py-3 md:-mx-6 md:px-6">
-        <div className="flex items-center justify-end gap-4">
-          {showHint && (
-            <p className="mr-auto text-sm text-muted-foreground">Add a name and address to save.</p>
-          )}
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Spinner size="small" />
-                Saving...
-              </>
-            ) : (
-              'Save'
+      {tab !== 'summary' && (
+        <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background px-4 py-3 md:-mx-6 md:px-6">
+          <div className="flex items-center justify-end gap-4">
+            {showHint && (
+              <p className="mr-auto text-sm text-muted-foreground">Add a name and address to save.</p>
             )}
-          </Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner size="small" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </form>
   )
 }
