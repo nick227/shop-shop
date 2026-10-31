@@ -15,7 +15,7 @@ export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabi
   return (
     <div className="space-y-6">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground">Accepting orders</legend>
+        <legend className="text-sm font-medium text-foreground">Public page</legend>
         <div className="inline-flex overflow-hidden rounded-md border border-border">
           {OPTIONS.map((option) => {
             const checked = enabled === option.enabled

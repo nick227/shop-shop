@@ -9,6 +9,7 @@ import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
+import { isStorePublic } from '@shared/lib/utils/isStorePublic'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { Button, Spinner, Badge } from '@shared/ui/primitives'
 import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
@@ -27,23 +28,21 @@ export default function ItemDetailPage() {
 
   const { data: item, isLoading, error } = useItem(itemId || '')
   const targetStoreId = item?.storeId
-  const { data: store } = useStore(targetStoreId || '', { enabled: !!targetStoreId } as any)
+  const { data: store, isLoading: isStoreLoading } = useStore(targetStoreId || '', { enabled: !!targetStoreId } as any)
+  const storeIsPublic = isStorePublic(store)
   const addToCart = useAddToCart()
 
-  usePageTitle(item?.name, store?.name, 'ShopShop')
+  usePageTitle(storeIsPublic ? item?.name : undefined, storeIsPublic ? store?.name : undefined, 'ShopShop')
 
   // Use mediaAssets from item data (now included in backend queries)
   const itemMedia = (item as any)?.mediaAssets || []
 
   const handleBack = () => {
-    if (store) {
-      const route = getStoreRoute({ id: store.id, name: store.name })
-      navigate(route)
-    } else if (targetStoreId) {
-      navigate('/kitchen/' + targetStoreId + '')
-    } else {
-      navigate('/')
+    if (storeIsPublic && store) {
+      navigate(getStoreRoute({ id: store.id, name: store.name }))
+      return
     }
+    navigate('/search')
   }
 
   const handleAddToCart = () => {
@@ -59,7 +58,7 @@ export default function ItemDetailPage() {
     })
   }
 
-  if (isLoading) {
+  if (isLoading || (targetStoreId && isStoreLoading)) {
     return (
       <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
         <Spinner size="large" />
@@ -68,7 +67,7 @@ export default function ItemDetailPage() {
     )
   }
 
-  if (error || !item) {
+  if (error || !item || (targetStoreId && !storeIsPublic)) {
     return (
       <PageContainer className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="mb-2 text-lg font-semibold text-destructive">Item Not Found</h2>

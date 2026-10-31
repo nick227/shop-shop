@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useStore } from '@shared/hooks/hooks/useStores'
 import { useItems } from '@shared/hooks/generated'
 import { useCart } from '@shared/hooks/hooks/useCart'
+import { isStorePublic } from '@shared/lib/utils/isStorePublic'
 import { parseStoreSlug } from '@shared/lib/utils/slugify'
 import { StoreHeader } from '@features/stores/components/StoreHeader'
 import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
@@ -33,20 +34,21 @@ function KitchenContainer() {
   const { cart } = useCart()
 
   const { data: store, isLoading: isStoreLoading, error: storeError } = useStore(storeId ?? '')
+  const storeIsPublic = isStorePublic(store)
   const { data: items, isLoading: isItemsLoading, error: itemsError } = useItems(
     storeId ? { storeId } : undefined,
-    { enabled: Boolean(storeId) },
+    { enabled: storeIsPublic },
   )
 
   const { data: bundlesData, isLoading: isBundlesLoading } = useQuery({
     queryKey: ['bundles', storeId, 'public'],
     queryFn: () => bundlesApi.list({ storeId, isActive: true }),
-    enabled: Boolean(storeId),
+    enabled: storeIsPublic,
   })
 
   const bundles: Bundle[] = bundlesData ?? []
 
-  usePageTitle(store?.name, 'ShopShop')
+  usePageTitle(storeIsPublic ? store?.name : undefined, 'ShopShop')
 
   const cartCount = useMemo(() => {
     if (!cart?.items || !Array.isArray(cart.items)) return 0
@@ -90,11 +92,11 @@ function KitchenContainer() {
     return <StateBlock title="Loading kitchen" message="Please wait while we load this kitchen." />
   }
 
-  if (storeError || !store) {
+  if (storeError || !store || !storeIsPublic) {
     return (
       <StateBlock
         title="Kitchen not found"
-        message={storeError?.message ?? 'The kitchen could not be loaded.'}
+        message="The kitchen could not be loaded."
         actionLabel="Back to search"
         onAction={() => navigate('/search')}
       />
