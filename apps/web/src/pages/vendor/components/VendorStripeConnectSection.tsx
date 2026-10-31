@@ -2,7 +2,7 @@
  * Stripe Connect onboarding card — vendors never enter API keys (platform-owned Stripe account).
  * Surfaces four practical states so owners understand why card checkout may still be blocked.
  */
-import { Button, Badge } from '@shared/ui/primitives'
+import { Button } from '@shared/ui/primitives'
 import { useStripeConnect, useStripeConnectStatus } from '@shared/hooks/hooks/usePayments'
 
 export interface VendorStripeConnectSectionProps {
@@ -61,70 +61,45 @@ export function VendorStripeConnectSection({ storeId }: VendorStripeConnectSecti
           ? 'Your account is linked, but Stripe has not enabled charges yet. Complete any outstanding requirements or check the Stripe dashboard for restrictions.'
           : 'Customers can check out with a card; payments route to your connected account minus the platform fee.'
 
+  const requirements = [
+    status?.requirements?.currentlyDue?.length
+      ? `Stripe needs: ${status.requirements.currentlyDue.join(', ')}`
+      : '',
+    status?.requirements?.eventuallyDue?.length
+      ? `Upcoming: ${status.requirements.eventuallyDue.join(', ')}`
+      : '',
+    status?.requirements && 'disabledReason' in status.requirements && status.requirements.disabledReason
+      ? `Reason: ${String(status.requirements.disabledReason)}`
+      : '',
+  ].filter(Boolean)
+
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-lg font-semibold text-foreground">Online payments (Stripe)</h3>
-        {phase === 'ready_cards' ? (
-          <Badge variant="success">Cards enabled</Badge>
-        ) : phase === 'charges_disabled' ? (
-          <Badge variant="warning">Charges pending</Badge>
-        ) : phase === 'onboarding_incomplete' ? (
-          <Badge variant="warning">Onboarding</Badge>
-        ) : (
-          <Badge variant="warning">Not connected</Badge>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm">
-        <p className="font-medium text-foreground">{headline}</p>
-        <p className="mt-1 text-muted-foreground">{detail}</p>
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Shop-Shop uses platform-managed Stripe Connect — you never paste secret or publishable keys here. Card checkout
-        requires a connected account with <strong className="text-foreground">charges enabled</strong>.
-      </p>
+    <section className="space-y-3">
+      <h3 className="text-sm font-medium text-foreground">Card payments</h3>
+      <p className="text-sm text-foreground">{headline}</p>
+      <p className="text-sm text-muted-foreground">{detail}</p>
 
       {status?.connected ? (
-        <dl className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <div>
-            <dt className="font-medium text-foreground">Onboarding submitted</dt>
-            <dd>{status.onboarded ? 'Yes' : 'No'}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-foreground">Card charges</dt>
-            <dd>{status.chargesEnabled ? 'Enabled' : 'Not enabled'}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-foreground">Payouts</dt>
-            <dd>{status.payoutsEnabled ? 'Enabled' : 'Not enabled'}</dd>
-          </div>
-        </dl>
+        <p className="text-sm text-muted-foreground">
+          Onboarding {status.onboarded ? 'submitted' : 'not submitted'}
+          {' · '}
+          Charges {status.chargesEnabled ? 'enabled' : 'not enabled'}
+          {' · '}
+          Payouts {status.payoutsEnabled ? 'enabled' : 'not enabled'}
+        </p>
       ) : null}
 
-      {due && status?.requirements ? (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning-foreground">
-          <p className="font-medium text-foreground">Stripe requirements</p>
-          {status.requirements.currentlyDue?.length ? (
-            <p>Currently due: {status.requirements.currentlyDue.join(', ')}</p>
-          ) : null}
-          {status.requirements.eventuallyDue?.length ? (
-            <p>Upcoming: {status.requirements.eventuallyDue.join(', ')}</p>
-          ) : null}
-          {'disabledReason' in status.requirements && status.requirements.disabledReason ? (
-            <p>Reason: {String(status.requirements.disabledReason)}</p>
-          ) : null}
-        </div>
+      {due && requirements.length > 0 ? (
+        <p className="text-sm text-foreground">{requirements.join('. ')}.</p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
         {phase !== 'ready_cards' ? (
-          <Button type="button" variant="primary" onClick={() => void handleConnect()} disabled={connectMutation.isPending}>
+          <Button type="button" variant="primary" size="small" onClick={() => void handleConnect()} disabled={connectMutation.isPending}>
             {status?.connected ? 'Finish Stripe onboarding' : 'Connect Stripe'}
           </Button>
         ) : null}
-        <Button type="button" variant="outline" onClick={() => void refetch()} disabled={isFetching}>
+        <Button type="button" variant="outline" size="small" onClick={() => void refetch()} disabled={isFetching}>
           Refresh status
         </Button>
         {status?.dashboardUrl ? (
@@ -132,12 +107,12 @@ export function VendorStripeConnectSection({ storeId }: VendorStripeConnectSecti
             href={status.dashboardUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-10 items-center justify-center rounded-md border border-border px-4 text-sm font-medium text-foreground hover:bg-muted"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground hover:bg-accent"
           >
             Stripe dashboard
           </a>
         ) : null}
       </div>
-    </div>
+    </section>
   )
 }

@@ -3,12 +3,10 @@
  */
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { AlertTriangle } from 'lucide-react'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
 import { Button } from '@shared/ui/primitives'
-import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
 import {
   Dialog,
   DialogContent,
@@ -55,31 +53,21 @@ export function DeleteStoreSection({ storeId, storeName, onDeleted }: DeleteStor
 
   return (
     <>
-      <Card className="border-destructive/40 bg-destructive/[0.03]">
-        <CardContent className="space-y-4 p-6">
-          <div className="flex gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10">
-              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden />
-            </span>
-            <div className="min-w-0 space-y-1">
-              <h2 className="text-lg font-semibold text-foreground">Delete store</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Once deleted, this store, its catalog, and vendor-only settings for it are removed.
-                This cannot be undone.
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="danger"
-            className="h-11"
-            onClick={() => setOpen(true)}
-            disabled={deleteMutation.isPending}
-          >
-            Delete store…
-          </Button>
-        </CardContent>
-      </Card>
+      <section className="space-y-3 border-t border-border pt-6">
+        <h3 className="text-sm font-medium text-foreground">Delete store</h3>
+        <p className="text-sm text-muted-foreground">
+          Deleting {trimmedName} removes the store, its catalog, and its settings. This cannot be undone.
+        </p>
+        <Button
+          type="button"
+          variant="danger"
+          size="small"
+          onClick={() => setOpen(true)}
+          disabled={deleteMutation.isPending}
+        >
+          Delete store
+        </Button>
+      </section>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md">

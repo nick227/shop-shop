@@ -12,7 +12,7 @@ export function ActiveStoreOperations({ storeId, storeName }: ActiveStoreOperati
   const queryClient = useQueryClient()
 
   return (
-    <section className="space-y-8 border-t border-border pt-8">
+    <div className="space-y-6 border-t border-border py-5">
       <VendorStripeConnectSection storeId={storeId} />
       <DeleteStoreSection
         storeId={storeId}
@@ -24,6 +24,6 @@ export function ActiveStoreOperations({ storeId, storeName }: ActiveStoreOperati
           toast.success('Store deleted')
         }}
       />
-    </section>
+    </div>
   )
 }
