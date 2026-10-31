@@ -1,5 +1,3 @@
-import { cn } from '@shared/lib/cn'
-
 const OPTIONS = [
   { enabled: true, title: 'Enabled' },
   { enabled: false, title: 'Disabled' },
@@ -16,28 +14,19 @@ export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabi
     <div className="space-y-6">
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-foreground">Public page</legend>
-        <div className="inline-flex overflow-hidden rounded-md border border-border">
-          {OPTIONS.map((option) => {
-            const checked = enabled === option.enabled
-            return (
-              <label
-                key={option.title}
-                className={cn(
-                  'cursor-pointer px-3 py-1.5 text-sm',
-                  checked ? 'bg-foreground text-background' : 'text-muted-foreground',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="store-availability"
-                  className="sr-only"
-                  checked={checked}
-                  onChange={() => onChange(option.enabled)}
-                />
-                {option.title}
-              </label>
-            )
-          })}
+        <div className="flex gap-4">
+          {OPTIONS.map((option) => (
+            <label key={option.title} className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="store-availability"
+                className="h-4 w-4"
+                checked={enabled === option.enabled}
+                onChange={() => onChange(option.enabled)}
+              />
+              {option.title}
+            </label>
+          ))}
         </div>
       </fieldset>
 
