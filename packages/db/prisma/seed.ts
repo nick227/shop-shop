@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { PrismaClient } from '../src/generated/client/index.js'
 import { cleanSeedTables } from './seed-tables.js'
 import { seedFullDemo } from './seed-demo.js'
