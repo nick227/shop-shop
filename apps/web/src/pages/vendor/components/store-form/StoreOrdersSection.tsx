@@ -4,9 +4,7 @@ import type { StoreFieldProps } from './storeFieldProps'
 
 export function StoreOrdersSection({ formData, onChange }: StoreFieldProps) {
   return (
-    <section id="orders" className="scroll-mt-6 space-y-6">
-      <h2 className="text-sm font-semibold text-foreground">Orders</h2>
-
+    <section className="space-y-6">
       <div className="space-y-3">
         <div className="rounded-md border border-border px-4 py-3">
           <Checkbox

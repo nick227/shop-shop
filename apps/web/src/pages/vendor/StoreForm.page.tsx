@@ -1,10 +1,9 @@
 /**
- * StoreFormPage - Create or edit a store as one wide document.
+ * StoreFormPage - Store name stays as the title. Sections live in tabs.
  */
 import { useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button, Spinner } from '@shared/ui/primitives'
-import { PageHeader } from '@shared/ui/layout/PageLayout'
 import { PageShell } from '@shared/ui/layout/PageShell'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { StoreFormDocument } from './components/store-form/StoreFormDocument'
@@ -14,7 +13,6 @@ export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
   const {
     isEdit,
-    store,
     isLoadingStore,
     formData,
     pendingScopedMediaFiles,
@@ -36,33 +34,28 @@ export default function StoreFormPage() {
   }
 
   return (
-    <PageShell nested contentClassName="space-y-10 py-8 md:py-10">
-      <PageHeader
-        title={isEdit ? store?.name || 'Store' : 'New store'}
-        backButton={
-          <Button
-            variant="ghost"
-            size="small"
-            onClick={onBack}
-            className="-ml-2 text-muted-foreground hover:bg-transparent"
+    <PageShell nested contentClassName="space-y-8 py-8 md:py-10">
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          variant="ghost"
+          size="small"
+          onClick={onBack}
+          className="-ml-2 text-muted-foreground hover:bg-transparent"
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Stores
+        </Button>
+        {isEdit && storeId && formData.name.trim() ? (
+          <a
+            href={getStoreRoute({ id: storeId, name: formData.name })}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary underline-offset-4 hover:underline"
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Stores
-          </Button>
-        }
-        actions={
-          isEdit && storeId ? (
-            <a
-              href={getStoreRoute({ id: storeId, name: formData.name })}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary underline-offset-4 hover:underline"
-            >
-              View store
-            </a>
-          ) : undefined
-        }
-      />
+            View store
+          </a>
+        ) : null}
+      </div>
 
       <StoreFormDocument
         isEdit={isEdit}

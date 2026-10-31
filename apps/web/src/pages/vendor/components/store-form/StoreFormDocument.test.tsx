@@ -35,27 +35,39 @@ function Harness() {
 }
 
 describe('StoreFormDocument', () => {
-  it('shows the store fields without progress chrome, and keeps contact closed', async () => {
+  it('keeps the store name above the tabs and shows one section at a time', async () => {
     const user = userEvent.setup()
 
     render(<Harness />)
 
-    expect(screen.getByLabelText('Store name *')).toBeInTheDocument()
-    expect(screen.getByLabelText('Street *')).toBeInTheDocument()
-    expect(screen.getByLabelText('City *')).toBeInTheDocument()
-    expect(screen.getByLabelText('ZIP *')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
+    expect(screen.queryByText('New store')).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Summary', selected: true })).toBeInTheDocument()
+    expect(screen.getByText('Address needed')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Description')).not.toBeInTheDocument()
     expect(screen.getByText('Add a name and address to save.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
-    expect(screen.queryByText('Setup Progress')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Company')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Delivery fee ($)')).not.toBeInTheDocument()
 
+    await user.click(screen.getByRole('tab', { name: 'Store' }))
+    expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Description')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Street *')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Location' }))
+    expect(screen.getByLabelText('Street *')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Orders' }))
+    expect(screen.queryByLabelText('Delivery fee ($)')).not.toBeInTheDocument()
     await user.click(screen.getByLabelText('Delivery'))
     expect(screen.getByLabelText('Delivery fee ($)')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Contact', expanded: false }))
+    await user.click(screen.getByRole('tab', { name: 'Contact' }))
     expect(screen.getByLabelText('Company')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Add a link' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Summary' }))
+    await user.click(screen.getByRole('button', { name: /Photos/ }))
+    expect(screen.getByText('Photo gallery')).toBeInTheDocument()
   })
 })

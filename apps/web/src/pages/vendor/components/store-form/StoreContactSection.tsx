@@ -1,37 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
 import { Input } from '@shared/ui/primitives'
 import { FormRow } from '@shared/ui/templates'
 import { maskEmailInput, maskUsPhoneInput } from '@shared/lib/utils/fieldInputMasks'
-import { cn } from '@shared/lib/cn'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
 import { STORE_LINKS, type StoreLinkField } from './storeLinks'
-import { useOpenWhenFilled } from './useOpenWhenFilled'
 
 export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
-  const filled = [
-    formData.companyName,
-    formData.phone,
-    formData.email,
-    formData.website,
-    ...STORE_LINKS.map((link) => formData[link.field]),
-  ].some(hasText)
-  const contact = useOpenWhenFilled(filled)
-
   return (
-    <section id="contact" className="scroll-mt-6 space-y-6">
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 text-sm font-semibold text-foreground"
-        aria-expanded={contact.open}
-        onClick={() => contact.setOpen((open) => !open)}
-      >
-        <ChevronRight className={cn('h-4 w-4 transition-transform', contact.open && 'rotate-90')} />
-        Contact
-      </button>
-
-      {contact.open && (
-        <div className="space-y-6">
+    <section className="space-y-6">
           <FormRow>
             <Input
               label="Company"
@@ -70,8 +46,6 @@ export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
           </FormRow>
 
           <StoreLinks formData={formData} onChange={onChange} />
-        </div>
-      )}
     </section>
   )
 }

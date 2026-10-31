@@ -41,9 +41,7 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
   }
 
   return (
-    <section id="location" className="scroll-mt-6 space-y-6">
-      <h2 className="text-sm font-semibold text-foreground">Location</h2>
-
+    <section className="space-y-6">
       <Input
         label="Street *"
         value={formData.addressStreet}

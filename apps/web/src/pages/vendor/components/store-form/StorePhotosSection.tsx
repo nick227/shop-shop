@@ -17,8 +17,7 @@ export function StorePhotosSection({
   onPendingFiles,
 }: StorePhotosSectionProps) {
   return (
-    <section id="photos" className="scroll-mt-6 space-y-6">
-      <h2 className="text-sm font-semibold text-foreground">Photos</h2>
+    <section className="space-y-6">
       <EnhancedMediaGalleryManager
         storeId={storeId}
         maxFiles={100}
