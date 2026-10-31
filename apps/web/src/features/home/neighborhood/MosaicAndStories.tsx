@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { StoreWithDistance } from '@api/types'
 import type { RiverPost } from '@api/types'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'
 import { hasPhoto, storeTypeLabel, verticalSlugForStore } from './selectHome'
 import { recordVertical } from './taste'
+import { placeTarget } from '../shell/placeMemory'
 
 function remember(store: StoreWithDistance) {
   const slug = verticalSlugForStore(store)
@@ -20,14 +21,15 @@ export function StoreMosaic({
   readonly title: string
   readonly caption: string
 }) {
+  const [params] = useSearchParams()
   if (stores.length === 0) return null
 
   return (
     <section>
       <div className="section-head">
         <div>
-          <h2 className="shop-display">{title}</h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--quiet)' }}>{caption}</p>
+          <h2>{title}</h2>
+          {caption ? <p className="mt-1 text-sm" style={{ color: 'var(--quiet)' }}>{caption}</p> : null}
         </div>
       </div>
       <div className="mosaic">
@@ -36,7 +38,7 @@ export function StoreMosaic({
           return (
             <Link
               key={store.id}
-              to={getStoreRoute({ id: store.id, name: store.name })}
+              to={placeTarget(getStoreRoute({ id: store.id, name: store.name }), params.toString())}
               onClick={() => remember(store)}
             >
               {hasPhoto(store) ? (
@@ -44,7 +46,7 @@ export function StoreMosaic({
               ) : (
                 <div className="tile-fallback" />
               )}
-              <p className="mt-2 text-base font-semibold leading-tight">{store.name}</p>
+              <p className="mt-2 text-sm font-semibold leading-tight">{store.name}</p>
               <p className="mt-1 text-xs" style={{ color: 'var(--quiet)' }}>
                 {storeTypeLabel(store)}
                 {place ? ` · ${place}` : ''}
@@ -58,6 +60,7 @@ export function StoreMosaic({
 }
 
 export function StoryStrip({ posts }: { readonly posts: readonly RiverPost[] }) {
+  const [params] = useSearchParams()
   const visible = posts.filter((post) => post.media?.[0]?.url || post.mediaUrls?.[0]?.url)
   if (visible.length === 0) return null
 
@@ -65,10 +68,7 @@ export function StoryStrip({ posts }: { readonly posts: readonly RiverPost[] }) 
     <section>
       <div className="section-head">
         <div>
-          <h2 className="shop-display">From the block</h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--quiet)' }}>
-            What merchants are putting up, separate from the menu.
-          </p>
+          <h2>From the block</h2>
         </div>
       </div>
       <div className="shelf-row">
@@ -78,7 +78,7 @@ export function StoryStrip({ posts }: { readonly posts: readonly RiverPost[] }) 
             ? getStoreRoute({ id: post.storeId, name: post.storeName ?? 'Store' })
             : '/search'
           return (
-            <Link key={post.id} to={href} className="story-tile">
+            <Link key={post.id} to={placeTarget(href, params.toString())} className="story-tile">
               {image ? <img src={image} alt="" /> : <div className="tile-fallback" />}
               <p className="mt-2 line-clamp-2 text-sm font-semibold">{post.storeName ?? 'Store'}</p>
               {post.content ? (

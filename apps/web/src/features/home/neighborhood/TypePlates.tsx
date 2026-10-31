@@ -1,39 +1,36 @@
 import { Link, useSearchParams } from 'react-router-dom'
+import type { StoreWithDistance } from '@api/types'
 import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
+import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'
+import { hasPhoto } from './selectHome'
 import { recordVertical } from './taste'
 
-const HINTS: Record<string, string> = {
-  food: 'Kitchens, bakeries, coffee',
-  grocery: 'Markets and produce',
-  convenience: 'The corner, open late',
-  retail: 'Shops that deliver',
-}
-
-export function TypePlates() {
+export function TypePlates({ stores }: { readonly stores: readonly StoreWithDistance[] }) {
   const [params] = useSearchParams()
   const plates = STORE_TYPE_CONFIG.filter((type) => type.slug)
+  const photos = stores.filter(hasPhoto)
 
   return (
     <section aria-label="Shop by type">
       <div className="section-head">
-        <h2 className="shop-display">What do you need?</h2>
+        <h2>Shop by type</h2>
       </div>
       <div className="plate-grid">
-        {plates.map((plate) => {
+        {plates.map((plate, index) => {
           const next = new URLSearchParams(params)
           next.set('browse', plate.slug)
           next.delete('q')
-          const wide = plate.slug === 'food' || plate.slug === 'retail'
-          const className = plate.slug === 'food' ? 'plate plate-food' : wide ? 'plate plate-wide' : 'plate'
+          const photo = photos[index % Math.max(photos.length, 1)]
+          const src = photo ? getStoreImageUrl(photo, 'square') : undefined
           return (
             <Link
               key={plate.slug}
               to={{ pathname: '/search', search: next.toString() }}
-              className={className}
+              className="plate"
               onClick={() => recordVertical(plate.slug)}
             >
-              <strong className="shop-display">{plate.label}</strong>
-              <span>{HINTS[plate.slug]}</span>
+              {src ? <img src={src} alt="" /> : <div className="tile-fallback" />}
+              <strong>{plate.label}</strong>
             </Link>
           )
         })}

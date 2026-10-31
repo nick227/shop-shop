@@ -41,33 +41,21 @@ export function NeighborhoodHome() {
         <header className="opening">
           <p className="shop-mono text-xs" style={{ color: 'var(--quiet)' }}>
             {hasPlace
-              ? `${data.location?.zip ?? 'Nearby'} · within ${Math.round(data.location?.radiusMiles ?? 5)} mi`
+              ? `${data.location?.zip ?? 'Nearby'} · ${Math.round(data.location?.radiusMiles ?? 5)} mi`
               : 'Delivery area'}
           </p>
-          <h1 className="shop-display">{title}</h1>
-          <p className="max-w-md text-base leading-snug">
-            {hasPlace ? (
-              <>
-                {merchantCount > 0 ? <i className="live-dot" aria-hidden /> : null}
-                {momentLine()}
-              </>
-            ) : (
-              'Food, grocery, convenience, and the shop on the corner — once we know the ZIP.'
-            )}
+          <h1>{title}</h1>
+          <p className="max-w-md text-sm" style={{ color: 'var(--quiet)' }}>
+            {hasPlace ? momentLine() : 'Enter a ZIP to see what’s close.'}
           </p>
-          <p className="mt-3 max-w-md text-sm" style={{ color: 'var(--quiet)' }}>
-            {hasPlace
-              ? `${merchantCount} ${merchantCount === 1 ? 'merchant' : 'merchants'} in range. A store inside the radius can still be closed, or unable to deliver to your door.`
-              : 'A ZIP is enough to look around. The street address comes when you check out.'}
-          </p>
-          <div className="mt-5">
+          <div className="mt-4">
             <PlaceField tone="hero" />
           </div>
           {hasPlace ? (
             <Link
               to={{ pathname: '/search', search: explore.toString() }}
-              className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold"
-              style={{ color: 'var(--leaf)' }}
+              className="mt-3 inline-flex min-h-11 items-center text-sm"
+              style={{ color: 'var(--quiet)' }}
             >
               See everything in range
             </Link>
@@ -77,14 +65,14 @@ export function NeighborhoodHome() {
           {selection.hero && !data.storesLoading ? <HeroWindow store={selection.hero} /> : null}
         </div>
         <div className="lead-types">
-          <TypePlates />
+          <TypePlates stores={data.stores} />
         </div>
       </div>
 
       {personalSlug ? (
         <StoreShelf
           title={`More ${personalLabel.toLowerCase()}`}
-          caption="From the kinds of places you keep opening. A view counts less than an order."
+          caption=""
           stores={selection.personal}
           action={
             <button
@@ -101,13 +89,7 @@ export function NeighborhoodHome() {
 
       <ProductShelf
         title={selection.productsAreLocal ? 'From stores in range' : 'New on ShopShop'}
-        caption={
-          selection.productsAreLocal
-            ? 'Products from merchants inside your radius, with the store named on each one.'
-            : hasPlace
-              ? 'Nothing from this radius is in the latest menus yet. These are new elsewhere.'
-              : 'Set a ZIP and this shelf tightens to merchants who can actually reach you.'
-        }
+        caption=""
         products={data.productsLoading ? [] : selection.products}
         stores={data.stores}
       />
@@ -120,11 +102,7 @@ export function NeighborhoodHome() {
         <StoreMosaic
           stores={selection.mosaic}
           title={hasPlace ? 'On your streets' : 'Merchants to start with'}
-          caption={
-            hasPlace
-              ? 'Merchants in range. Being nearby is not the same as being able to deliver to your door.'
-              : 'Set a ZIP and this becomes the businesses around that delivery area.'
-          }
+          caption=""
         />
       )}
 

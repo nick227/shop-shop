@@ -70,8 +70,8 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
       {!compact ? (
         <button
           type="submit"
-          className="min-h-11 rounded-full px-5 text-sm font-semibold"
-          style={{ background: 'var(--ink)', color: 'var(--air)' }}
+          className="min-h-11 rounded-xl border px-4 text-sm font-medium"
+          style={{ borderColor: 'var(--line)', background: 'var(--paper)', color: 'var(--ink)' }}
         >
           Use this ZIP
         </button>
@@ -86,10 +86,11 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setRadius(miles)}
-                className="shop-mono min-h-11 rounded-full px-4 text-xs"
+                className="shop-mono min-h-11 rounded-xl border px-4 text-xs"
                 style={{
-                  background: active ? 'var(--ink)' : 'var(--paper)',
-                  color: active ? 'var(--air)' : 'var(--ink)',
+                  borderColor: active ? 'var(--ink)' : 'var(--line)',
+                  background: 'var(--paper)',
+                  color: 'var(--ink)',
                 }}
               >
                 {miles} mi

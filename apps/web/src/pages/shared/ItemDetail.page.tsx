@@ -4,27 +4,27 @@
  * Canonical route:
  *   /items/:itemId
  */
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { isStorePublic } from '@shared/lib/utils/isStorePublic'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
-import { Button, Spinner, Badge } from '@shared/ui/primitives'
-import { Card, CardContent } from '@shared/ui/primitives/ui/Card/Card'
-import { PageContainer, SectionHeader } from '@shared/ui/layout/PageLayout'
+import { Button, Spinner } from '@shared/ui/primitives'
 import { formatCurrency } from '@shared/lib/format'
 import { parsePrice } from '@api/types'
-import { ArrowLeft, ShoppingCart } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useHaptics } from '@shared/hooks/useHaptics'
-import { CustomerMediaGallery } from '@shared/ui/media'
-import { StoreHeader } from '@features/stores/components/StoreHeader'
+import { getImageUrl } from '@shared/lib/utils/image'
 
 export default function ItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const haptics = useHaptics()
+  const [photoIndex, setPhotoIndex] = useState(0)
 
   const { data: item, isLoading, error } = useItem(itemId || '')
   const targetStoreId = item?.storeId
@@ -38,6 +38,10 @@ export default function ItemDetailPage() {
   const itemMedia = (item as any)?.mediaAssets || []
 
   const handleBack = () => {
+    if (location.key !== 'default') {
+      navigate(-1)
+      return
+    }
     if (storeIsPublic && store) {
       navigate(getStoreRoute({ id: store.id, name: store.name }))
       return
@@ -60,90 +64,94 @@ export default function ItemDetailPage() {
 
   if (isLoading || (targetStoreId && isStoreLoading)) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="home-stack">
         <Spinner size="large" />
-        <p className="mt-4 text-sm text-muted-foreground">Loading item...</p>
-      </PageContainer>
+      </div>
     )
   }
 
   if (error || !item || (targetStoreId && !storeIsPublic)) {
     return (
-      <PageContainer className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="mb-2 text-lg font-semibold text-destructive">Item Not Found</h2>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {error?.message || 'The item you are looking for does not exist.'}
+      <div className="home-stack">
+        <h2 className="text-base font-semibold">Item not found</h2>
+        <p className="text-sm" style={{ color: 'var(--quiet)' }}>
+          {error?.message || 'This item is not available.'}
         </p>
         <Button variant="outline" onClick={handleBack}>
-          Go Back
+          Go back
         </Button>
-      </PageContainer>
+      </div>
     )
   }
 
   const price = parsePrice(item.price)
+  const photos = (itemMedia as { url?: string; kind?: string }[]).filter(
+    (media) => media.url && (!media.kind || media.kind === 'IMAGE'),
+  )
+  const activePhoto = photos[photoIndex] ?? photos[0]
+  const photoSrc = activePhoto?.url ?? getImageUrl(undefined, item.id, 'item')
 
   return (
-    <PageContainer className="max-w-[640px] mx-auto rounded-xl shadow-lg">
-
-    {/* Store title */}
-    {store ? <StoreHeader showMap={false} store={store} fullSize={false} /> : null}
-    
-      <Button
-        variant="ghost"
-        size="small"
+    <div className="home-stack" style={{ maxWidth: '40rem' }}>
+      <button
+        type="button"
         onClick={handleBack}
-        className="-ml-2 text-muted-foreground"
+        className="inline-flex min-h-11 items-center gap-1 text-sm"
+        style={{ color: 'var(--quiet)' }}
       >
-        <ArrowLeft className="mr-1 w-4 h-4" />
+        <ArrowLeft className="h-4 w-4" />
         Back
-      </Button>
+      </button>
 
-      <div className="flex flex-col gap-5">
+      <img className="media-frame" src={photoSrc} alt="" />
 
-        {/* Title + Price */}
-        <div className="flex flex-wrap gap-4 justify-between items-start">
-          <div>
-            <h1 className="mb-2 text-6xl font-bold tracking-tight">{item.title}</h1>
-            <div className="flex flex-wrap gap-2">
-              {item.isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
-              {!item.isActive && <Badge variant="warning">Inactive</Badge>}
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-primary shrink-0">{formatCurrency(price)}</div>
+      {photos.length > 1 ? (
+        <div className="shelf-row">
+          {photos.map((photo, index) => (
+            <button
+              key={photo.url}
+              type="button"
+              onClick={() => setPhotoIndex(index)}
+              className="product-tile"
+              aria-label={`Photo ${index + 1}`}
+            >
+              <img src={photo.url} alt="" style={{ outline: index === photoIndex ? '1px solid var(--ink)' : undefined }} />
+            </button>
+          ))}
         </div>
+      ) : null}
 
-        {/* Media Gallery */}
-        {itemMedia && itemMedia.length > 0 && (
-          <Card>
-            <CardContent className="pt-5">
-              <CustomerMediaGallery media={itemMedia} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Description */}
-        {item.description && (
-          <Card>
-            <CardContent className="pt-5">
-              <SectionHeader title="Description" className="mb-3" />
-              <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Add to Cart */}
-        <Button
-          variant="primary"
-          size="large"
-          fullWidth
-          onClick={handleAddToCart}
-          disabled={item.isSoldOut || !item.isActive || addToCart.isPending}
-        >
-          <ShoppingCart className="mr-2 w-5 h-5" />
-          {addToCart.isPending ? 'Adding...' : ''}
-        </Button>
+      <div>
+        {store ? (
+          <Link
+            to={getStoreRoute({ id: store.id, name: store.name })}
+            className="text-sm"
+            style={{ color: 'var(--quiet)' }}
+          >
+            {store.name}
+          </Link>
+        ) : null}
+        <div className="mt-1 flex items-start justify-between gap-4">
+          <h1 className="text-xl font-semibold leading-snug">{item.title}</h1>
+          <p className="shrink-0 text-base font-medium">{formatCurrency(price)}</p>
+        </div>
+        {item.isSoldOut ? (
+          <p className="mt-2 text-sm" style={{ color: 'var(--quiet)' }}>Sold out</p>
+        ) : null}
+        {item.description ? (
+          <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--quiet)' }}>{item.description}</p>
+        ) : null}
       </div>
-    </PageContainer>
+
+      <Button
+        variant="primary"
+        size="large"
+        fullWidth
+        onClick={handleAddToCart}
+        disabled={item.isSoldOut || !item.isActive || addToCart.isPending}
+      >
+        {addToCart.isPending ? 'Adding…' : 'Add to cart'}
+      </Button>
+    </div>
   )
 }

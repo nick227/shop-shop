@@ -4,6 +4,7 @@ import { Menu, ShoppingBag, X } from 'lucide-react'
 import { SearchInput } from '@shared/ui/primitives'
 import { useCartStore } from '@stores/cartStore'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
+import { rememberedPlace, rememberPlace } from './placeMemory'
 import { DrawerNav } from './ShopNav'
 
 function cartCount(raw: unknown): number {
@@ -28,13 +29,20 @@ export function ShoppingChrome() {
     setOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    rememberPlace(location.search)
+  }, [location.search])
+
+  const placeSearch = location.search.includes('zip=') ? location.search : rememberedPlace()
+  const zip = place?.zip ?? new URLSearchParams(placeSearch).get('zip')
+
   const count = cartCount(cart?.items)
   const placeLabel = place?.zip
     ? `${place.zip}${place.city ? ` ${place.city}` : ''}`
-    : 'Set ZIP'
+    : zip ?? 'Set ZIP'
 
   const submitSearch = () => {
-    const next = new URLSearchParams(location.search)
+    const next = new URLSearchParams(location.search.includes('zip=') ? location.search : placeSearch)
     const trimmed = query.trim()
     if (trimmed) next.set('q', trimmed)
     else next.delete('q')
@@ -53,12 +61,12 @@ export function ShoppingChrome() {
         >
           <Menu className="h-5 w-5" />
         </button>
-        {place?.zip ? (
+        {zip ? (
           <Link
-            to="/river"
+            to={{ pathname: '/river', search: placeSearch }}
             className="shop-mono max-w-24 truncate text-xs lg:hidden"
           >
-            {place.zip}
+            {zip}
           </Link>
         ) : (
           <Link to="/river" className="shop-display text-lg font-bold lg:hidden">S</Link>
@@ -78,7 +86,7 @@ export function ShoppingChrome() {
           />
         </form>
         <Link
-          to={{ pathname: '/river', search: location.pathname === '/river' ? location.search : undefined }}
+          to={{ pathname: '/river', search: placeSearch }}
           className="shop-mono hidden min-h-11 items-center px-2 text-xs sm:inline-flex"
           style={{ color: 'var(--quiet)' }}
         >
@@ -89,7 +97,7 @@ export function ShoppingChrome() {
           {count > 0 ? (
             <span
               className="absolute right-1 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px]"
-              style={{ background: 'var(--citrus)', color: 'white' }}
+              style={{ background: 'var(--ink)', color: 'var(--air)' }}
             >
               {count > 9 ? '9+' : count}
             </span>

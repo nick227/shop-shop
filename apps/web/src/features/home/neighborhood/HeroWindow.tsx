@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { StoreWithDistance } from '@api/types'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'
 import { hasPhoto, storeTypeLabel, verticalSlugForStore } from './selectHome'
 import { recordVertical } from './taste'
+import { placeTarget } from '../shell/placeMemory'
 
 function deliveryLine(store: StoreWithDistance): string {
   const prep = store.prepTimeMin ? `${store.prepTimeMin} min prep` : 'Local'
@@ -14,7 +15,8 @@ function deliveryLine(store: StoreWithDistance): string {
 }
 
 export function HeroWindow({ store }: { readonly store: StoreWithDistance }) {
-  const href = getStoreRoute({ id: store.id, name: store.name })
+  const [params] = useSearchParams()
+  const href = placeTarget(getStoreRoute({ id: store.id, name: store.name }), params.toString())
   const place = [store.addressCity, store.addressState].filter(Boolean).join(', ')
 
   return (
@@ -36,7 +38,7 @@ export function HeroWindow({ store }: { readonly store: StoreWithDistance }) {
           {storeTypeLabel(store)}
           {place ? ` · ${place}` : ''}
         </p>
-        <h2 className="shop-display mt-1 text-3xl font-bold leading-none">{store.name}</h2>
+        <h2 className="mt-1 text-base font-semibold leading-snug">{store.name}</h2>
         <p className="mt-2 text-sm" style={{ color: 'var(--quiet)' }}>{deliveryLine(store)}</p>
       </div>
     </Link>
