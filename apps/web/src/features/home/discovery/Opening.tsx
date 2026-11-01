@@ -1,84 +1,66 @@
 import { HOME_RADIUS_MILES } from '../shell/placeMemory'
 import { PlaceField } from '../neighborhood/PlaceField'
-import type { StoreTile, StoryTile } from './tiles'
+import { formatDistance } from '@shared/lib/utils/format'
 import { NeighborhoodMap, type MapPoint } from './NeighborhoodMap'
+import type { StoreTile, StoryTile } from './tiles'
 
-function Frame({ image, label }: { readonly image?: string; readonly label: string }) {
-  if (image) return <img src={image} alt="" />
-  return <div className="brand-fall"><span>{label}</span></div>
-}
-
-export function Opening({
+export function LocationHero({
+  mode,
   city,
   zip,
-  hero,
-}: {
-  readonly city?: string
-  readonly zip?: string
-  readonly hero?: StoreTile
-}) {
-  const place = city ?? zip ?? 'Your neighborhood'
-  return (
-    <section className="discover-hero">
-      <div>
-        <p className="tile-kicker">Your neighborhood</p>
-        <h1 className="discover-display">{place}</h1>
-        <p className="discover-lede">Food, goods, and everyday essentials from the businesses around you.</p>
-        {zip ? (
-          <p className="discover-where">Delivering across {zip} · {HOME_RADIUS_MILES} mi</p>
-        ) : (
-          <div className="mt-4 max-w-sm"><PlaceField tone="hero" /></div>
-        )}
-        <a href="#market" className="detail-buy discover-jump">Explore nearby</a>
-      </div>
-      <Frame image={hero?.image} label={hero?.name ?? place} />
-    </section>
-  )
-}
-
-export function ExploreHead({ city, zip }: { readonly city?: string; readonly zip?: string }) {
-  const place = [city, zip].filter(Boolean).join(', ') || 'your area'
-  return (
-    <header className="explore-head">
-      <p className="tile-kicker">Explore / {place}</p>
-      <h1>Discover nearby.</h1>
-      <p>Local stores, food, and everyday essentials.</p>
-    </header>
-  )
-}
-
-export function Bento({
+  shopCount,
   story,
-  hero,
+  nearest,
   points,
   userLat,
   userLng,
   onSelectStore,
 }: {
+  readonly mode: 'home' | 'explore'
+  readonly city?: string
+  readonly zip?: string
+  readonly shopCount: number
   readonly story?: StoryTile
-  readonly hero?: StoreTile
+  readonly nearest: readonly StoreTile[]
   readonly points: readonly MapPoint[]
   readonly userLat?: number
   readonly userLng?: number
   readonly onSelectStore: (id: string) => void
 }) {
+  const place = city ?? zip ?? 'Your neighborhood'
+  const label = city && zip ? `${city}, ${zip}` : place
+  const range = zip ? `${HOME_RADIUS_MILES} mi around ${label}` : 'Set a delivery ZIP'
   return (
-    <section className="discover-bento" aria-label="Around your neighborhood">
-      <button type="button" className="bento-story" onClick={() => story?.storeId && onSelectStore(story.storeId)}>
-        <p className="tile-kicker">{story?.kicker ?? 'Around the block'}</p>
-        <strong>{story?.title ?? 'Your neighborhood, in a few notes'}</strong>
-        <p>{story?.body ?? 'Openings and notes from shops that deliver here.'}</p>
-      </button>
-      <div className="bento-map">
-        <p className="tile-kicker">The neighborhood</p>
-        <NeighborhoodMap points={points} userLat={userLat} userLng={userLng} onSelect={onSelectStore} />
+    <section className="discover-hero" aria-label="Your neighborhood">
+      <div className="hero-copy">
+        <p className="tile-kicker">{mode === 'home' ? 'Your neighborhood' : 'Explore'} / {label}</p>
+        <h1 className={mode === 'home' ? 'discover-display' : 'explore-title'}>{mode === 'home' ? place : 'Discover nearby.'}</h1>
+        <p className="discover-lede">
+          {shopCount > 0 ? `${shopCount} shops delivering around ${place}.` : 'Food, goods, and everyday essentials from the businesses around you.'}
+        </p>
+        {zip ? <p className="discover-where">{range}</p> : <div className="mt-4 max-w-sm"><PlaceField tone="hero" /></div>}
+        {story ? (
+          <button type="button" className="hero-story" onClick={() => story.storeId && onSelectStore(story.storeId)}>
+            <span className="tile-kicker">{story.kicker}</span>
+            <strong>{story.title}</strong>
+            <span>{story.body}</span>
+          </button>
+        ) : null}
+        {nearest.length > 0 ? (
+          <ul className="hero-near">
+            {nearest.map((store) => (
+              <li key={store.id}>
+                <button type="button" onClick={() => onSelectStore(store.id)}>
+                  <strong>{store.name}</strong>
+                  <span>{store.typeLabel}{store.distance != undefined ? ` · ${formatDistance(store.distance)}` : ''}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
-      <div className="bento-fresh">
-        {hero?.image ? <img src={hero.image} alt="" /> : <div className="brand-fall"><span>{hero?.name ?? 'Nearby'}</span></div>}
-        <div>
-          <p className="tile-kicker">Fresh nearby</p>
-          <strong>{hero?.name ?? 'Local shops'}</strong>
-        </div>
+      <div className="hero-map">
+        <NeighborhoodMap points={points} userLat={userLat} userLng={userLng} onSelect={onSelectStore} />
       </div>
     </section>
   )

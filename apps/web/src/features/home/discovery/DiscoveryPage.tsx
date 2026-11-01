@@ -8,8 +8,7 @@ import { HOME_RADIUS_MILES, placeZip, rememberedPlace } from '../shell/placeMemo
 import { CategoryColumn } from './CategoryColumn'
 import { DetailPanel } from './DetailPanel'
 import { Masonry } from './Masonry'
-import { NeighborhoodMap } from './NeighborhoodMap'
-import { Bento, ExploreHead, Opening } from './Opening'
+import { LocationHero } from './Opening'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
 
@@ -19,7 +18,6 @@ export function DiscoveryPage({ mode }: { readonly mode: 'home' | 'explore' }) {
   const account = useSignedInHome()
   const accountZip = defaultAddressZip(account.addresses)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
-  const [mapOnly, setMapOnly] = useState(false)
 
   useEffect(() => {
     const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
@@ -56,47 +54,27 @@ export function DiscoveryPage({ mode }: { readonly mode: 'home' | 'explore' }) {
   return (
     <div className="discover">
       <PublicMaintenanceBanner />
-      {mode === 'home' ? (
-        <>
-          <Opening city={data.location?.city} zip={shownZip} hero={composed.hero} />
-          <Bento
-            story={composed.stories[0]}
-            hero={composed.hero}
-            points={points}
-            userLat={data.location?.latitude}
-            userLng={data.location?.longitude}
-            onSelectStore={openStore}
-          />
-        </>
-      ) : (
-        <ExploreHead city={data.location?.city} zip={shownZip} />
-      )}
+      <LocationHero
+        mode={mode}
+        city={data.location?.city}
+        zip={shownZip}
+        shopCount={composed.places.length}
+        story={composed.stories[0]}
+        nearest={composed.nearest}
+        points={points}
+        userLat={data.location?.latitude}
+        userLng={data.location?.longitude}
+        onSelectStore={openStore}
+      />
 
       <div className="discover-workspace">
         <CategoryColumn />
-        <div>
-          {mode === 'explore' ? (
-            <button type="button" className="discover-float" onClick={() => setMapOnly((value) => !value)}>
-              {mapOnly ? 'List' : 'Map'}
-            </button>
-          ) : null}
-          <div className={mode === 'explore' ? `discover-split${mapOnly ? ' is-map' : ''}` : undefined}>
-            <Masonry
-              tiles={mode === 'home' && composed.stories[0]
-                ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
-                : composed.tiles}
-              onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-            />
-            {mode === 'explore' ? (
-              <NeighborhoodMap
-                points={points}
-                userLat={data.location?.latitude}
-                userLng={data.location?.longitude}
-                onSelect={openStore}
-              />
-            ) : null}
-          </div>
-        </div>
+        <Masonry
+          tiles={composed.stories[0]
+            ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
+            : composed.tiles}
+          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
+        />
       </div>
 
       {selected ? (

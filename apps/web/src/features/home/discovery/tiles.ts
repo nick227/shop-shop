@@ -120,7 +120,13 @@ export function composeDiscovery(input: {
   readonly stories: readonly RiverPost[]
   readonly browse: string
   readonly query: string
-}): { readonly hero?: StoreTile; readonly stories: readonly StoryTile[]; readonly tiles: readonly DiscoveryTile[]; readonly places: readonly DiscoveryStore[] } {
+}): {
+  readonly hero?: StoreTile
+  readonly stories: readonly StoryTile[]
+  readonly tiles: readonly DiscoveryTile[]
+  readonly places: readonly DiscoveryStore[]
+  readonly nearest: readonly StoreTile[]
+} {
   const q = input.query.trim().toLowerCase()
   const stores = (input.stores as readonly DiscoveryStore[]).filter((store) => {
     if (!inVertical(store, input.browse)) return false
@@ -183,7 +189,8 @@ export function composeDiscovery(input: {
     if (store) tiles.push(store)
     if (story && index === 0) tiles.push(story)
   }
-  return { hero, stories, tiles, places: stores }
+  const nearest = [...storeTiles].sort((a, b) => (a.distance ?? 99) - (b.distance ?? 99)).slice(0, 3)
+  return { hero, stories, tiles, places: stores, nearest }
 }
 
 export function mapPoints(stores: readonly DiscoveryStore[]): { id: string; name: string; latitude: number; longitude: number }[] {
