@@ -24,16 +24,18 @@ function Portrait({ tile, onOpen }: { readonly tile: ProductTile; readonly onOpe
   )
 }
 
-function Feature({ tile, onOpen }: { readonly tile: StoreTile; readonly onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void }) {
+function BandArt({ image, label }: { readonly image?: string; readonly label: string }) {
+  if (image) return <img src={image} alt="" />
+  return <div className="brand-fall" aria-hidden="true"><span>{label.slice(0, 1)}</span></div>
+}
+
+function BandCopy({ kicker, title, detail }: { readonly kicker: string; readonly title: string; readonly detail?: string }) {
   return (
-    <button type="button" className="feature-hero" onClick={(event) => openFrom(event, tile, onOpen)}>
-      <Face image={tile.image} label={tile.name} />
-      <span>
-        <p className="tile-kicker">{tile.typeLabel}</p>
-        <strong>{tile.name}</strong>
-        <p>{tile.distance != undefined ? formatDistance(tile.distance) : 'Nearby'}</p>
-      </span>
-    </button>
+    <div className="feed-band-copy">
+      <p className="tile-kicker">{kicker}</p>
+      <strong>{title}</strong>
+      {detail ? <p className="feed-detail">{detail}</p> : null}
+    </div>
   )
 }
 
@@ -61,22 +63,29 @@ export function MarketFeed({
         if (block.type === 'circles') return <CategoryCircles key="circles" />
         if (block.type === 'statement') {
           return (
-            <section key={block.id} className="feed-say">
-              <p className="tile-kicker">{block.kicker}</p>
-              <h2>{block.text}</h2>
+            <section key={block.id} className="feed-band">
+              <BandArt image={block.image} label={block.label} />
+              <BandCopy kicker={block.kicker} title={block.text} />
             </section>
           )
         }
         if (block.type === 'callout') {
           return (
-            <button key={block.tile.id} type="button" className="feed-special" onClick={(event) => openFrom(event, block.tile, onOpen)}>
-              <p className="tile-kicker">Specials</p>
-              <strong>{block.tile.title}</strong>
-              <p>{block.tile.price} · {block.tile.storeName}</p>
+            <button key={block.tile.id} type="button" className="feed-band" onClick={(event) => openFrom(event, block.tile, onOpen)}>
+              <BandArt image={block.tile.image} label={block.tile.title} />
+              <BandCopy kicker="Specials" title={block.tile.title} detail={`${block.tile.price} · ${block.tile.storeName}`} />
             </button>
           )
         }
-        if (block.type === 'hero') return <Feature key={block.tile.id} tile={block.tile} onOpen={onOpen} />
+        if (block.type === 'hero') {
+          const distance = block.tile.distance != undefined ? formatDistance(block.tile.distance) : 'Nearby'
+          return (
+            <button key={block.tile.id} type="button" className="feed-band" onClick={(event) => openFrom(event, block.tile, onOpen)}>
+              <BandArt image={block.tile.image} label={block.tile.name} />
+              <BandCopy kicker={block.tile.typeLabel} title={block.tile.name} detail={distance} />
+            </button>
+          )
+        }
         return (
           <div key={block.id} className="portrait-grid">
             {block.tiles.map((tile) => <Portrait key={tile.id} tile={tile} onOpen={onOpen} />)}

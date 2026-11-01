@@ -84,15 +84,6 @@ export function DiscoveryPage() {
   return (
     <div className="discover">
       <PublicMaintenanceBanner />
-      <RecentFeed
-        orders={account.orders}
-        savedItems={account.favorites.items}
-        savedStores={account.favorites.stores}
-        stores={data.stores}
-        products={data.products}
-        tiles={composed.tiles}
-        onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-      />
       <LocationHero
         city={data.location?.city}
         zip={shownZip}
@@ -103,6 +94,15 @@ export function DiscoveryPage() {
         userLat={data.location?.latitude}
         userLng={data.location?.longitude}
         onSelectStore={openStore}
+      />
+      <RecentFeed
+        orders={account.orders}
+        savedItems={account.favorites.items}
+        savedStores={account.favorites.stores}
+        stores={data.stores}
+        products={data.products}
+        tiles={composed.tiles}
+        onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
 
       <MarketFeed

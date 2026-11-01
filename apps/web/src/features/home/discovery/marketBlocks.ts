@@ -5,7 +5,7 @@ export type MarketBlock =
   | { readonly type: 'circles' }
   | { readonly type: 'portraits'; readonly id: string; readonly tiles: readonly ProductTile[] }
   | { readonly type: 'hero'; readonly tile: StoreTile }
-  | { readonly type: 'statement'; readonly id: string; readonly kicker: string; readonly text: string }
+  | { readonly type: 'statement'; readonly id: string; readonly kicker: string; readonly text: string; readonly image?: string; readonly label: string }
   | { readonly type: 'callout'; readonly tile: ProductTile }
 
 export function marketBlocks(
@@ -23,6 +23,8 @@ export function marketBlocks(
       id: 'near',
       kicker: 'Around you',
       text: `${closest.name} is ${formatDistance(closest.distance)} from you.`,
+      image: closest.image,
+      label: closest.name,
     })
   }
 

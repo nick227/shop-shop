@@ -110,17 +110,14 @@
 }
 
 .recent-feed { margin-bottom: 2.4rem; }
-.recent-feed h2,
-.feed-say h2,
-.feed-special strong,
-.feature-hero strong {
+.recent-feed h2 {
   margin: 0;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 0.92;
+  font-size: clamp(2rem, 4vw, 3rem);
 }
-.recent-feed h2 { font-size: clamp(2rem, 4vw, 3rem); }
 .recent-row {
   display: grid;
   grid-auto-columns: 10.5rem;
@@ -129,16 +126,78 @@
   margin-top: 0.8rem;
   overflow-x: auto;
 }
-.portrait-card, .feed-special, .feature-hero {
+.portrait-card {
   border: 0;
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
-.portrait-card strong, .portrait-card p, .feature-hero p { display: block; }
+.portrait-card strong, .portrait-card p { display: block; }
 .portrait-card strong { margin-top: 0.45rem; font-size: 0.95rem; }
-.portrait-card p, .feature-hero p { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--quiet); }
+.portrait-card p { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--quiet); }
+
+.feed-band {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 22rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--leaf);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+section.feed-band { cursor: default; }
+.feed-band > img,
+.feed-band > .brand-fall {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: cover;
+}
+.feed-band > .brand-fall { justify-content: flex-end; padding-right: 6%; font-size: 8rem; }
+.feed-band-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  min-height: 22rem;
+  padding: 1.4rem;
+}
+.feed-band-copy .tile-kicker {
+  margin: 0;
+  background: var(--ink);
+  color: var(--air);
+  padding: 0.28rem 0.45rem;
+}
+.feed-band-copy strong {
+  max-width: 14ch;
+  background: var(--paper);
+  color: var(--ink);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0.04em 0.14em;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(2.4rem, 5.5vw, 4.6rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+.feed-detail {
+  margin: 0;
+  background: var(--ink);
+  color: var(--air);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.95rem;
+}
 
 .market-feed { display: flex; flex-direction: column; gap: 2.4rem; }
 .circle-row { display: flex; gap: 1.1rem; overflow-x: auto; }
@@ -162,15 +221,6 @@
   background: var(--field);
 }
 .circle-cat.is-on .circle-mark { background: var(--leaf); color: white; }
-.feed-say h2 { max-width: 14ch; font-size: clamp(2.6rem, 6vw, 4.6rem); }
-.feed-special strong { display: block; max-width: 12ch; font-size: clamp(3rem, 7vw, 5.5rem); }
-.feed-special p:last-child { margin-top: 0.6rem; color: var(--quiet); }
-.feature-hero {
-  display: grid;
-  gap: 1rem;
-  align-items: end;
-}
-.feature-hero strong { font-size: clamp(2.2rem, 4vw, 3.6rem); }
 .portrait-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -270,7 +320,6 @@
 @media (min-width: 900px) {
   .discover-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); min-height: 28rem; }
   .hero-map, .hero-map .discover-map { height: 100%; min-height: 28rem; }
-  .feature-hero { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr); }
   .portrait-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
