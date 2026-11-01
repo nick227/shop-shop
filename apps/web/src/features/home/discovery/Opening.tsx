@@ -5,7 +5,6 @@ import { NeighborhoodMap, type MapPoint } from './NeighborhoodMap'
 import type { StoreTile, StoryTile } from './tiles'
 
 export function LocationHero({
-  mode,
   city,
   zip,
   shopCount,
@@ -16,7 +15,6 @@ export function LocationHero({
   userLng,
   onSelectStore,
 }: {
-  readonly mode: 'home' | 'explore'
   readonly city?: string
   readonly zip?: string
   readonly shopCount: number
@@ -33,8 +31,8 @@ export function LocationHero({
   return (
     <section className="discover-hero" aria-label="Your neighborhood">
       <div className="hero-copy">
-        <p className="tile-kicker">{mode === 'home' ? 'Your neighborhood' : 'Explore'} / {label}</p>
-        <h1 className={mode === 'home' ? 'discover-display' : 'explore-title'}>{mode === 'home' ? place : 'Discover nearby.'}</h1>
+        <p className="tile-kicker">Your neighborhood / {label}</p>
+        <h1 className="discover-display">{place}</h1>
         <p className="discover-lede">
           {shopCount > 0 ? `${shopCount} shops delivering around ${place}.` : 'Food, goods, and everyday essentials from the businesses around you.'}
         </p>

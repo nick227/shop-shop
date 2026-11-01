@@ -12,7 +12,7 @@ import { LocationHero } from './Opening'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
 
-export function DiscoveryPage({ mode }: { readonly mode: 'home' | 'explore' }) {
+export function DiscoveryPage() {
   const [params, setParams] = useSearchParams()
   const data = useNeighborhoodData()
   const account = useSignedInHome()
@@ -55,7 +55,6 @@ export function DiscoveryPage({ mode }: { readonly mode: 'home' | 'explore' }) {
     <div className="discover">
       <PublicMaintenanceBanner />
       <LocationHero
-        mode={mode}
         city={data.location?.city}
         zip={shownZip}
         shopCount={composed.places.length}

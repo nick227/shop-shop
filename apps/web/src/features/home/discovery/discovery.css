@@ -42,14 +42,11 @@
   margin-bottom: 2.2rem;
 }
 
-.explore-title,
 .hero-story strong,
 .detail-copy h2 {
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   letter-spacing: -0.04em;
 }
-
-.explore-title { margin: 0; font-size: clamp(2.8rem, 5vw, 4.4rem); line-height: 0.95; }
 
 .hero-story {
   display: block;

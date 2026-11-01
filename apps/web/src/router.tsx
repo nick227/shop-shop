@@ -4,6 +4,7 @@ import { VendorAccessBoundary } from '@features/account/VendorAccessBoundary'
  * Router Configuration - Route definitions;
  */
 import { createBrowserRouter, Navigate, useLocation, useParams } from 'react-router-dom'
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { Layout } from './layouts/MainLayout'
 import {
   LegacyScopedRedirect,
@@ -23,8 +24,6 @@ import { lazy } from 'react'
 
 const LoginPage = lazy(() => import('./pages/public/Login.page'))
 const SignupPage = lazy(() => import('./pages/public/Signup.page'))
-const SearchPage = lazy(() => import('./pages/search/Search.page'))
-const UnifiedSearchPage = lazy(() => import('./pages/search/UnifiedSearch.page'))
 const StoreDetailPage = lazy(() => import('./pages/shared/StoreDetail.page'))
 const ItemDetailPage = lazy(() => import('./pages/shared/ItemDetail.page'))
 const CartPage = lazy(() => import('./pages/shared/Cart.page'))
@@ -94,6 +93,14 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const ErrorPage = lazy(() => import('./pages/ErrorPage'))
 
 /** Legacy `/river/*` (misnamed) → `/menu/*` (store menu = StoreDetail). */
+/** Settings are a section of the Overview now; old links land there on the same tab. */
+function StoreSettingsRedirect() {
+  const { storeId = '' } = useParams()
+  const { search } = useLocation()
+  const tab = new URLSearchParams(search).get('tab') ?? undefined
+  return <Navigate to={vendorPaths.settings(storeId, tab)} replace />
+}
+
 function LegacyRiverToMenuRedirect() {
   const { storeId } = useParams<{ storeId: string }>()
   return <Navigate to={`/menu/${storeId}`} replace />
@@ -101,6 +108,11 @@ function LegacyRiverToMenuRedirect() {
 
 /** Root URL forwards to the River landing (preserves query + hash for UTMs, etc.). */
 function LandingRedirect() {
+  const { search, hash } = useLocation()
+  return <Navigate to={`/river${search}${hash}`} replace />
+}
+
+function SearchRedirect() {
   const { search, hash } = useLocation()
   return <Navigate to={`/river${search}${hash}`} replace />
 }
@@ -158,8 +170,8 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         },
         {
           path: '/search',
-          element: lazyRoute(UnifiedSearchPage),
-          handle: { title: 'Search' },
+          element: <SearchRedirect />,
+          handle: { title: 'Home' },
         },
         {
           path: '/kitchen/:slug',
@@ -472,11 +484,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
                   element: <RequireAccess need="FULL_ACCESS" label="Team">{lazyRoute(VendorTeamPage)}</RequireAccess>,
                   handle: { title: 'Drivers' },
                 },
-                {
-                  path: 'settings',
-                  element: <RequireAccess need="owner" label="Settings">{lazyRoute(StoreFormPage)}</RequireAccess>,
-                  handle: { title: 'Settings' },
-                },
+                { path: 'settings', element: <StoreSettingsRedirect /> },
                 { path: '*', element: <Navigate to=".." relative="path" replace /> },
               ],
             },

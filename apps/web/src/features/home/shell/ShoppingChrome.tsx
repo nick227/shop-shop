@@ -54,7 +54,7 @@ export function ShoppingChrome() {
     if (trimmed) next.set('q', trimmed)
     else next.delete('q')
     next.delete('browse')
-    navigate({ pathname: '/search', search: next.toString() })
+    navigate({ pathname: '/river', search: next.toString() })
   }
 
   return (
