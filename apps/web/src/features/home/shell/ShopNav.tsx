@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
 import { cn } from '@shared/lib/cn'
+import { BrowseNav } from './BrowseNav'
 import { SHOP_NAV } from './navConfig'
 import { resetHomeTaste } from '../neighborhood/taste'
 
@@ -24,7 +25,7 @@ function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonl
               aria-current={active ? 'page' : undefined}
               title={item.label}
               className={cn(
-                'flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium',
+                'flex min-h-11 items-center gap-3 align-center rounded-xl px-3 text-sm font-medium',
                 active ? 'bg-[var(--ink)] text-[var(--air)]' : 'hover:bg-[var(--field)]',
               )}
             >
@@ -33,6 +34,7 @@ function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonl
             </Link>
           )
         })}
+        <BrowseNav expanded={expanded} />
       </div>
       {showReset ? (
         <button
@@ -53,7 +55,7 @@ export function RailNav() {
     <nav className="shop-rail" aria-label="Primary">
       <Link to="/river" className="shop-display mb-4 flex min-h-11 items-center px-3 text-lg font-bold">
         <span className="shop-rail-label">ShopShop</span>
-        <span className="shop-rail-mark">S</span>
+        <span className="shop-rail-mark" style={{ color: 'var(--quiet)', padding: '9px', marginLeft: '-9px', border: '1px solid var(--quiet)', borderRadius: '999px' }}>SH</span>
       </Link>
       <NavLinks expanded={false} showReset={false} />
     </nav>

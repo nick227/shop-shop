@@ -79,7 +79,7 @@
 .hero-near strong { font-size: 0.95rem; }
 .hero-near span { font-size: 0.82rem; white-space: nowrap; }
 
-.hero-map { min-height: 22rem; border-radius: 1rem; overflow: hidden; }
+.hero-map { min-height: 22rem; border-radius: 1.4rem 7.5rem; overflow: hidden; }
 .hero-map .discover-map { height: 100%; min-height: 22rem; border-radius: 0; }
 
 .detail-photo img,
@@ -91,35 +91,7 @@
   background: var(--leaf);
 }
 
-.discover-workspace {
-  display: grid;
-  gap: 1rem;
-  align-items: start;
-}
-
-.discover-cats {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-}
-
-.discover-cats button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.4rem;
-  padding: 0 0.8rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink);
-  font-size: 0.92rem;
-  white-space: nowrap;
-}
-
-.discover-cats button.is-on { background: var(--leaf); color: white; }
-
-.masonry { columns: 2; column-gap: 0.8rem; }
+.masonry { columns: 2; column-gap: 0.9rem; }
 .masonry-card {
   display: block;
   width: 100%;
@@ -151,10 +123,24 @@
   font-weight: 700;
   letter-spacing: -0.04em;
 }
-.is-store .brand-fall { background: #1c3d2e; }
-.is-story { background: var(--paper); border-radius: 0.85rem; padding-bottom: 0.8rem; }
-.is-story .tile-tall, .is-story .brand-fall { border-radius: 0.85rem 0.85rem 0 0; }
-.is-story .tile-kicker, .is-story strong, .is-story p { padding-inline: 0.75rem; }
+.is-story { padding-bottom: 0.2rem; }
+.is-story .tile-kicker, .is-story strong, .is-story p { padding-inline: 0.15rem; }
+
+.shape-round .tile-photo,
+.shape-round .tile-tall,
+.shape-round .brand-fall { aspect-ratio: 1; border-radius: 50%; }
+.shape-arch .tile-photo,
+.shape-arch .tile-tall,
+.shape-arch .brand-fall { aspect-ratio: 3 / 4; border-radius: 999px 999px 1rem 1rem; }
+.shape-arch .brand-fall { background: #0e3324; }
+.shape-slab .tile-photo,
+.shape-slab .tile-tall,
+.shape-slab .brand-fall { aspect-ratio: 5 / 3; border-radius: 0.35rem; }
+.shape-slab .brand-fall { background: #c45c26; color: #fff8f2; }
+.shape-petal .tile-photo,
+.shape-petal .tile-tall,
+.shape-petal .brand-fall { aspect-ratio: 1; border-radius: 3.4rem 0.45rem; }
+.shape-petal .brand-fall { background: #123526; }
 
 .discover-map { height: 100%; min-height: 22rem; overflow: hidden; }
 .map-pin, .map-you {
@@ -249,10 +235,11 @@
 @media (min-width: 900px) {
   .discover-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); min-height: 28rem; }
   .hero-map, .hero-map .discover-map { height: 100%; min-height: 28rem; }
-  .discover-workspace { grid-template-columns: 11.5rem minmax(0, 1fr); gap: 1.4rem; }
-  .discover-cats { position: sticky; top: 4.6rem; flex-direction: column; overflow: visible; }
-  .discover-cats button { justify-content: flex-start; border-radius: 0.7rem; }
   .masonry { columns: 3; }
+}
+
+@media (min-width: 1200px) {
+  .masonry { columns: 4; }
 }
 
 @media (prefers-reduced-motion: reduce) {

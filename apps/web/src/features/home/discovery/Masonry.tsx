@@ -1,6 +1,8 @@
 import { formatDistance } from '@shared/lib/utils/format'
 import type { DiscoveryTile } from './tiles'
 
+const SHAPES = ['round', 'arch', 'slab', 'petal'] as const
+
 function Frame({ image, label, tall }: { readonly image?: string; readonly label: string; readonly tall?: boolean }) {
   if (image) return <img src={image} alt="" className={tall ? 'tile-tall' : 'tile-photo'} />
   return <div className={tall ? 'brand-fall tile-tall' : 'brand-fall tile-photo'} aria-hidden="true"><span>{label.slice(0, 1)}</span></div>
@@ -18,11 +20,11 @@ export function Masonry({
   }
   return (
     <div className="masonry" id="market">
-      {tiles.map((tile) => (
+      {tiles.map((tile, index) => (
         <button
           key={`${tile.kind}-${tile.id}`}
           type="button"
-          className={`masonry-card is-${tile.kind}`}
+          className={`masonry-card is-${tile.kind} shape-${SHAPES[index % SHAPES.length]}`}
           onClick={(event) => {
             const frame = event.currentTarget.querySelector('img, .brand-fall')
             onOpen(tile, (frame ?? event.currentTarget).getBoundingClientRect())

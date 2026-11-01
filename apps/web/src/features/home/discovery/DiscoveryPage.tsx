@@ -5,7 +5,6 @@ import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
 import { useSignedInHome } from '../neighborhood/useSignedInHome'
 import { defaultAddressZip } from '../neighborhood/signedInSelect'
 import { HOME_RADIUS_MILES, placeZip, rememberedPlace } from '../shell/placeMemory'
-import { CategoryColumn } from './CategoryColumn'
 import { DetailPanel } from './DetailPanel'
 import { Masonry } from './Masonry'
 import { LocationHero } from './Opening'
@@ -66,15 +65,12 @@ export function DiscoveryPage() {
         onSelectStore={openStore}
       />
 
-      <div className="discover-workspace">
-        <CategoryColumn />
-        <Masonry
-          tiles={composed.stories[0]
-            ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
-            : composed.tiles}
-          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-        />
-      </div>
+      <Masonry
+        tiles={composed.stories[0]
+          ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
+          : composed.tiles}
+        onOpen={(tile, anchor) => setSelected({ tile, anchor })}
+      />
 
       {selected ? (
         <DetailPanel

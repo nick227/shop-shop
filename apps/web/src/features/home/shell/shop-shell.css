@@ -51,7 +51,8 @@
   background: var(--air);
   border-right: 1px solid var(--line);
   transition: width 180ms ease;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .shop-rail:hover,
@@ -75,6 +76,11 @@
 .shop-rail:hover .shop-rail-mark,
 .shop-rail:focus-within .shop-rail-mark {
   display: none;
+}
+
+.shop-browse {
+  margin-top: 0.65rem;
+  border-top: 1px solid var(--line);
 }
 
 .shop-main {
