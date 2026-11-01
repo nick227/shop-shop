@@ -78,7 +78,7 @@
 .hero-near strong { font-size: 0.95rem; }
 .hero-near span { font-size: 0.82rem; white-space: nowrap; }
 
-.hero-map { min-height: 22rem; border-radius: 0.85rem; overflow: hidden; }
+.hero-map { position: relative; z-index: 0; min-height: 22rem; border-radius: 0.85rem; overflow: hidden; isolation: isolate; }
 .hero-map .discover-map { height: 100%; min-height: 22rem; border-radius: 0; }
 
 .detail-photo img,
@@ -177,7 +177,7 @@
   gap: 1rem 0.85rem;
 }
 
-.discover-map { height: 100%; min-height: 22rem; overflow: hidden; }
+.discover-map { position: relative; z-index: 0; height: 100%; min-height: 22rem; overflow: hidden; isolation: isolate; }
 .map-pin, .map-you {
   display: block;
   width: 14px;
@@ -192,7 +192,7 @@
 .detail-scrim {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 80;
   border: 0;
   background: rgba(20, 32, 24, 0.38);
   cursor: pointer;
@@ -201,7 +201,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 46;
+  z-index: 81;
   width: min(26rem, 100%);
   height: 100%;
   overflow: auto;
@@ -259,7 +259,7 @@
 .detail-related li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-top: 1px solid var(--line); }
 .detail-flyer {
   position: fixed;
-  z-index: 47;
+  z-index: 82;
   object-fit: cover;
   border-radius: 0.75rem;
   pointer-events: none;
