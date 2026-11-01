@@ -10,7 +10,7 @@ import type { LocationData } from '@shared/types'
 async function loadStores(location: LocationData | undefined) {
   const envelope = await stores.listPage({
     page: '1',
-    limit: '12',
+    limit: '24',
     isPublished: 'true',
     latitude: location?.latitude,
     longitude: location?.longitude,

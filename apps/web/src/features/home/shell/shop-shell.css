@@ -1,11 +1,11 @@
 .shop-shell {
-  --air: #f2f5f1;
-  --ink: #132018;
-  --paper: #ffffff;
-  --field: #e2e8e0;
-  --quiet: #5c6b62;
-  --line: #d5ddd4;
-  --leaf: #1a6b46;
+  --air: #f6f3ec;
+  --ink: #142018;
+  --paper: #fffcf7;
+  --field: #efeae2;
+  --quiet: #5e675f;
+  --line: #e4ddd2;
+  --leaf: #145c38;
   --citrus: #e36a2c;
   min-height: 100vh;
   background: var(--air);
