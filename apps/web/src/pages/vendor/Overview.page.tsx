@@ -1,11 +1,10 @@
 /**
  * Overview — the store's landing page. What it shows follows the store's state:
- * setup steps for a draft, work in progress for an open store, a clear notice when paused or disabled.
+ * work in progress for an open store, a clear notice when paused or disabled.
+ * The owner edits the store's settings here too, below the rest.
  */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronRight } from 'lucide-react'
 import type { OrderResponse } from '@api/types'
 import {
   Button,
@@ -25,7 +24,6 @@ import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import {
   useStoreOrdering,
   useVendorOrders,
-  useVendorTeamRequest,
   useUpdateOrderStatus,
   type VendorStore,
 } from '@shared/hooks/hooks/vendor'
@@ -34,30 +32,7 @@ import { VendorPage } from '@layouts/VendorLayout/page'
 import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { canAccess } from '@layouts/VendorLayout/storeAccess'
 import { storeStatus } from '@layouts/VendorLayout/storeStatus'
-
-interface ReadinessCheck {
-  readonly key: string
-  readonly label: string
-  readonly passed: boolean
-  readonly required: boolean
-  readonly message?: string
-}
-
-interface Readiness {
-  readonly canPublish: boolean
-  readonly checks: readonly ReadinessCheck[]
-}
-
-/** Where each readiness check is fixed, and what to call it. */
-const CHECK_STEPS: Record<string, { readonly label: string; readonly to: (storeId: string) => string }> = {
-  identity: { label: 'Name, description, and contact', to: (id) => vendorPaths.settings(id, 'contact') },
-  address: { label: 'Street address', to: (id) => vendorPaths.settings(id, 'location') },
-  geocoding: { label: 'Map location', to: (id) => vendorPaths.settings(id, 'location') },
-  fulfillment: { label: 'Pickup or delivery', to: (id) => vendorPaths.settings(id, 'orders') },
-  deliveryZones: { label: 'Delivery area', to: (id) => vendorPaths.settings(id, 'orders') },
-  products: { label: 'At least one menu item', to: vendorPaths.newItem },
-  activationRequirements: { label: 'Store photo and listing details', to: (id) => vendorPaths.settings(id, 'store') },
-}
+import { OverviewStoreSettings } from './components/OverviewStoreSettings'
 
 const IN_PROGRESS = new Set(['ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'])
 const ORDER_TONE: Partial<Record<string, StatusTone>> = { PLACED: 'danger', READY: 'live' }
@@ -112,90 +87,6 @@ function OrderRow({ order, action }: { readonly order: OrderResponse; readonly a
       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{minutesAgo(order.createdAt)}</span>
       {action}
     </li>
-  )
-}
-
-function SetupSteps({ storeId, canEdit }: { readonly storeId: string; readonly canEdit: boolean }) {
-  const request = useVendorTeamRequest()
-  const readiness = useQuery({
-    queryKey: ['store-readiness', storeId],
-    queryFn: () => request<Readiness>(`/stores/${storeId}/readiness`),
-    enabled: canEdit,
-  })
-
-  if (!canEdit) {
-    return <p className="text-sm text-muted-foreground">This store isn’t published yet. The owner can finish setting it up.</p>
-  }
-  if (readiness.isLoading) return <p className="text-sm text-muted-foreground">Checking what’s left…</p>
-  if (readiness.error || !readiness.data) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Setup steps could not be loaded.{' '}
-        <button type="button" className="underline" onClick={() => void readiness.refetch()}>
-          Try again
-        </button>
-      </p>
-    )
-  }
-
-  const steps = readiness.data.checks.filter((check) => check.required)
-  const done = steps.filter((check) => check.passed).length
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <div className="flex items-baseline justify-between text-sm">
-          <span className="text-muted-foreground">Customers can’t see your store yet.</span>
-          <span className="tabular-nums text-muted-foreground">
-            {done} of {steps.length + 1} done
-          </span>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-foreground" style={{ width: `${(done / (steps.length + 1)) * 100}%` }} />
-        </div>
-      </div>
-      <ul className="divide-y divide-border rounded-xl border border-border">
-        {steps.map((check) => {
-          const step = CHECK_STEPS[check.key] ?? { label: check.label, to: (id: string) => vendorPaths.settings(id) }
-          return (
-            <li key={check.key}>
-              <Link
-                to={step.to(storeId)}
-                className={cn('flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted', check.passed && 'text-muted-foreground')}
-              >
-                <span
-                  className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                    check.passed ? 'border-success bg-success text-white' : 'border-border',
-                  )}
-                  aria-hidden
-                >
-                  {check.passed ? <Check className="h-3 w-3" /> : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className={cn('block', check.passed ? 'line-through' : 'font-medium')}>{step.label}</span>
-                  {!check.passed && check.message ? <span className="block text-xs text-muted-foreground">{check.message}</span> : null}
-                </span>
-                <span className="sr-only">{check.passed ? 'Done' : 'To do'}</span>
-                {!check.passed && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
-              </Link>
-            </li>
-          )
-        })}
-        <li>
-          <Link to={vendorPaths.settings(storeId, 'store')} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted">
-            <span className="flex h-5 w-5 shrink-0 rounded-full border border-border" aria-hidden />
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">Publish your store</span>
-              <span className="block text-xs text-muted-foreground">
-                {readiness.data.canPublish ? 'Ready. Turn the store on in Settings.' : 'Available once the steps above are done.'}
-              </span>
-            </span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-          </Link>
-        </li>
-      </ul>
-    </div>
   )
 }
 
@@ -353,7 +244,10 @@ function PauseDialog({
   )
 }
 
-/** Admin restrictions first, since the merchant can't lift them; then the merchant's own pause. */
+/**
+ * Restrictions the merchant can't lift come first, then the merchant's own pause.
+ * The copy says what the store can't do, never who did it: status doesn't record that.
+ */
 function AvailabilityNotices({
   store,
   canResume,
@@ -367,16 +261,17 @@ function AvailabilityNotices({
 }) {
   if (store.status === 'DISABLED') {
     return (
-      <Notice tone="danger" title={`${store.name} is disabled`}>
-        ShopShop turned this store off, so customers can’t see it or order from it. Contact support to have it turned back on.
+      <Notice tone="danger" title="Hidden from customers">
+        {store.name} is switched off on ShopShop: customers can’t find it or order from it. This switch isn’t in your
+        settings, so contact support to turn it back on.
       </Notice>
     )
   }
   if (store.status === 'PAUSED') {
     return (
-      <Notice tone="danger" title={`${store.name} is suspended`}>
-        ShopShop suspended this store, so it can’t take new orders. Orders already in progress still need to go out.
-        Contact support to lift the suspension.
+      <Notice tone="danger" title="New orders are on hold">
+        Customers can’t place new orders at {store.name}. Orders already in progress still need to go out. This hold
+        isn’t in your settings, so contact support to lift it.
       </Notice>
     )
   }
@@ -459,19 +354,15 @@ export default function VendorOverviewPage() {
           }
         />
 
-        {draft ? (
-          <Panel title="Finish setting up">
-            <SetupSteps storeId={selectedStoreId} canEdit={canEdit} />
-          </Panel>
-        ) : null}
-
         {showOrders ? (
           <OrdersAtAGlance storeId={selectedStoreId} canManage={canAccess(selectedStore, 'MANAGE_ORDERS')} />
         ) : null}
 
-        {!canSeeOrders && !draft ? (
+        {!showOrders && !canEdit ? (
           <p className="text-sm text-muted-foreground">Use the sidebar to get to the parts of this store you work on.</p>
         ) : null}
+
+        {canEdit ? <OverviewStoreSettings storeId={selectedStoreId} /> : null}
       </div>
     </VendorPage>
   )

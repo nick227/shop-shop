@@ -43,6 +43,7 @@ import { favoritesRoutes } from './routes/favorites.route.js'
 import { searchUnifiedRoutes } from './routes/search-unified.route.js'
 import { tagsRoutes } from './routes/tags.route.js'
 import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
+import { menuCategoryRoutes } from './routes/menu-categories.route.js'
 import { adminRoutes } from './routes/admin.route.js'
 import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
 import { adminStoresRoutes } from './routes/admin-stores.route.js'
@@ -225,6 +226,7 @@ await app.register(favoritesRoutes, { prefix: '/api' })
 
 // Item analytics must register before `/api/items/:id` so `/api/items/analytics` is not parsed as an id.
 await app.register(itemAnalyticsRoutes, { prefix: '/api' })
+await app.register(menuCategoryRoutes, { prefix: '/api' })
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })

@@ -10,6 +10,29 @@ import {
 import { prisma } from '@packages/db'
 import { checkBundleActivationRequirements } from '@packages/db/services'
 
+type BundleItemInput = { itemId: string; quantity: number; sortIndex?: number }
+
+/**
+ * Every item in a bundle must exist, be listed once, belong to the bundle's store, and be on sale.
+ * This is the authorization boundary for "which items can go in this bundle", not the client.
+ */
+async function assertBundleItems(items: BundleItemInput[], storeId: string): Promise<void> {
+  if (items.length < 2) throw new Error('Bundles must contain at least 2 items')
+  const itemIds = items.map((i) => i.itemId)
+  if (new Set(itemIds).size !== itemIds.length) throw new Error('Each item can appear in a bundle only once')
+
+  const found = await prisma.item.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, storeId: true, isActive: true, isSoldOut: true },
+  })
+  if (found.length !== itemIds.length) throw new Error('One or more bundle items not found')
+  if (found.some((i) => i.storeId !== storeId)) throw new Error('All bundle items must belong to the same store')
+  if (found.some((i) => !i.isActive || i.isSoldOut)) throw new Error('All bundle items must be active and not sold out')
+}
+
+const itemRows = (items: BundleItemInput[]) =>
+  items.map((i, idx) => ({ itemId: i.itemId, quantity: i.quantity, sortIndex: i.sortIndex ?? idx }))
+
 // ========================================
 // Bundle Resource Definition
 // ========================================
@@ -48,30 +71,15 @@ export const bundleResource = defineResource({
         throw new Error('Forbidden')
       }
 
-      if (Array.isArray(data.items) && data.items.length > 0) {
-        // Production validation: minimum 2 items required
-        if (data.items.length < 2) {
-          throw new Error('Bundles must contain at least 2 items')
-        }
+      const { items, pricing, ...bundle } = data as { storeId: string; items: BundleItemInput[]; pricing?: Record<string, unknown> }
+      await assertBundleItems(items, bundle.storeId)
 
-        const itemIds: string[] = data.items.map((i: any) => i.itemId)
-        const items = await prisma.item.findMany({
-          where: { id: { in: itemIds } },
-          select: { id: true, storeId: true, isActive: true, isSoldOut: true },
-        })
-        
-        if (items.length !== itemIds.length) throw new Error('One or more bundle items not found')
-        
-        // All items must belong to the same store
-        const wrong = items.filter((i) => i.storeId !== data.storeId)
-        if (wrong.length > 0) throw new Error('All bundle items must belong to the same store')
-        
-        // All items must be active and not sold out
-        const inactiveItems = items.filter((i) => !i.isActive || i.isSoldOut)
-        if (inactiveItems.length > 0) throw new Error('All bundle items must be active and not sold out')
+      // Prisma needs nested writes for the BundleItem and BundlePricing relations.
+      return {
+        ...bundle,
+        items: { create: itemRows(items) },
+        ...(pricing ? { pricing: { create: pricing } } : {}),
       }
-
-      return data
     },
 
     beforeUpdate: async (id: string, data: any, context: any) => {
@@ -86,28 +94,21 @@ export const bundleResource = defineResource({
         throw new Error('Forbidden')
       }
 
-      if (Array.isArray(data.items) && data.items.length > 0) {
-        // Production validation: minimum 2 items required
-        if (data.items.length < 2) {
-          throw new Error('Bundles must contain at least 2 items')
-        }
-
-        const itemIds: string[] = data.items.map((i: any) => i.itemId)
-        const items = await prisma.item.findMany({
-          where: { id: { in: itemIds } },
-          select: { id: true, storeId: true, isActive: true, isSoldOut: true },
-        })
-        
-        // All items must belong to the same store
-        const wrong = items.filter((i) => i.storeId !== bundle.storeId)
-        if (wrong.length > 0) throw new Error('All bundle items must belong to the same store')
-        
-        // All items must be active and not sold out
-        const inactiveItems = items.filter((i) => !i.isActive || i.isSoldOut)
-        if (inactiveItems.length > 0) throw new Error('All bundle items must be active and not sold out')
+      // storeId was checked above; it is never written, so a bundle cannot change store.
+      const { items, pricing, ...rest } = data as {
+        items?: BundleItemInput[]
+        pricing?: Record<string, unknown>
+        storeId?: string
       }
+      const changes = Object.fromEntries(Object.entries(rest).filter(([key]) => key !== 'storeId'))
+      if (items) await assertBundleItems(items, bundle.storeId)
 
-      return data
+      // Replace the item list and pricing as a whole; both run inside the bundle update.
+      return {
+        ...changes,
+        ...(items ? { items: { deleteMany: {}, create: itemRows(items) } } : {}),
+        ...(pricing ? { pricing: { upsert: { create: pricing, update: pricing } } } : {}),
+      }
     },
 
     beforeDelete: async (id: string, context: any) => {

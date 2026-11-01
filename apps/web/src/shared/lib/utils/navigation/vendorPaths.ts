@@ -3,6 +3,9 @@
  */
 const store = (storeId: string, rest = '') => `/vendor/${storeId}${rest}`
 
+/** Store settings are a section of the Overview; this is its element id. */
+export const STORE_SETTINGS_ANCHOR = 'settings'
+
 export const vendorPaths = {
   allStores: '/vendor/stores',
   newStore: '/vendor/new',
@@ -18,7 +21,7 @@ export const vendorPaths = {
   affiliates: (storeId: string) => store(storeId, '/affiliates'),
   team: (storeId: string) => store(storeId, '/team'),
   drivers: (storeId: string) => store(storeId, '/team/drivers'),
-  settings: (storeId: string, tab?: string) => store(storeId, tab ? `/settings?tab=${tab}` : '/settings'),
+  settings: (storeId: string, tab?: string) => store(storeId, `${tab ? `?tab=${tab}` : ''}#${STORE_SETTINGS_ANCHOR}`),
 } as const
 
 /** First path segments under /vendor that are not store ids. */

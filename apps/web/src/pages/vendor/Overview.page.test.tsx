@@ -24,14 +24,6 @@ vi.mock('@shared/hooks/hooks/vendor', async (importOriginal) => ({
   }),
   useUpdateOrderStatus: () => ({ mutate, isPending: false }),
   useStoreOrdering: () => ({ mutate: setOrdering, isPending: false }),
-  useVendorTeamRequest: () => async () => ({
-    canPublish: false,
-    checks: [
-      { key: 'identity', label: 'Store identity', passed: true, required: true },
-      { key: 'products', label: 'Products/menu', passed: false, required: true, message: 'Add at least one active product.' },
-      { key: 'deliveryZones', label: 'Delivery zones', passed: true, required: false },
-    ],
-  }),
 }))
 
 function store(overrides: Partial<VendorStore> = {}): VendorStore {
@@ -74,20 +66,19 @@ describe('Overview', () => {
     expect(mutate).toHaveBeenCalledWith({ orderId: 'aaaaaa1', status: 'ACCEPTED' })
   })
 
-  it('shows setup steps for a store that is not published', async () => {
+  it('shows settings, not a setup checklist, for a store that is not published', () => {
     renderOverview(store({ isPublished: false }))
 
-    expect(screen.getByRole('heading', { name: 'Finish setting up' })).toBeInTheDocument()
-    expect(await screen.findByText('At least one menu item')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /At least one menu item/ })).toHaveAttribute('href', '/vendor/s1/menu/items/new')
-    expect(screen.getByText('1 of 3 done')).toBeInTheDocument()
-    expect(screen.queryByText('Delivery area')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Store settings' })).toBeInTheDocument()
+    expect(screen.queryByText('Finish setting up')).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Incoming/ })).not.toBeInTheDocument()
   })
 
-  it('treats an admin suspension as something the merchant cannot lift', () => {
+  it('treats a restriction as something the merchant cannot lift, without saying who set it', () => {
     renderOverview(store({ status: 'PAUSED', acceptingOrders: true }))
-    expect(screen.getByText('Northside Bakery is suspended')).toBeInTheDocument()
+    expect(screen.getByText('New orders are on hold')).toBeInTheDocument()
+    expect(screen.queryByText(/ShopShop|suspend/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Resume orders' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Pause new orders' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'In progress' })).toBeInTheDocument()

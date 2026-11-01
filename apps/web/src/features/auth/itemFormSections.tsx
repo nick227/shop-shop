@@ -4,18 +4,9 @@
  */
 import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
-import { EnhancedMediaGalleryManager } from '@shared/ui/media'
+import { ProductMediaGrid } from './ProductMediaGrid'
 import type { FormSection } from '@shared/ui/templates'
 import type { ItemFormData } from '@api/types'
-import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
-import {
-  CATEGORIES,
-  getCategoriesForStoreType,
-  getAvailableItemTypes,
-  isTypeValidForCategory,
-  getAvailableSubTypes,
-  isSubTypeValidForCategoryType
-} from './itemClassificationData'
 
 
 
@@ -67,20 +58,19 @@ export function createItemFormSections(
   options?: {
     storeId?: string
     itemId?: string
-    storeType?: string
+    /** The store's own categories, offered as suggestions. Vendors can type a new one. */
+    storeCategories?: readonly string[]
+    pendingFiles?: readonly File[]
+    onPendingFiles?: (files: File[]) => void
   }
 ): FormSection[] {
-  // Get categories based on store type, fallback to legacy categories
-  const categories = options?.storeType 
-    ? getCategoriesForStoreType(options.storeType)
-    : CATEGORIES
+  const categoryListId = `store-categories-${options?.storeId ?? 'new'}`
 
   return [
     {
       id: 'basic',
       icon: '🍽️',
       title: 'Basic Information',
-      description: 'Describe your appetizing item with delicious information',
       content: (
         <>
           <FormRow>
@@ -93,69 +83,21 @@ export function createItemFormSections(
                 required
               />
               
-              <Select
+              <Input
+                label="Category"
                 value={formData.category || ''}
-                onValueChange={(value) => {
-                  onChange('category', value)
-                  // Reset type if it's not valid for new category
-                  if (formData.type && !isTypeValidForCategory(formData.type, value)) {
-                    onChange('type', '')
-                  }
-                  // Reset subtype if it's not valid for new category/type combination
-                  if (formData.subtype && !isSubTypeValidForCategoryType(formData.subtype, value, formData.type || '')) {
-                    onChange('subtype', '')
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-            <Select
-              value={formData.type || ''}
-              onValueChange={(value) => {
-                onChange('type', value)
-                // Reset subtype if it's not valid for the new category/type combination
-                if (formData.subtype && !isSubTypeValidForCategoryType(formData.subtype, formData.category || '', value)) {
-                  onChange('subtype', '')
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select item type" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableItemTypes(formData.category || '').map((itemType) => (
-                  <SelectItem key={itemType.value} value={itemType.value}>
-                    {itemType.label}
-                  </SelectItem>
+                onChange={(e) => onChange('category', e.target.value)}
+                placeholder="e.g. Tacos, Drinks, Specials"
+                list={categoryListId}
+                autoComplete="off"
+                maxLength={60}
+                helperText="Reuse existing category."
+              />
+              <datalist id={categoryListId}>
+                {(options?.storeCategories ?? []).map((name) => (
+                  <option key={name} value={name} />
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={formData.subtype || ''}
-              onValueChange={(value) => onChange('subtype', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select item subtype" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableSubTypes(formData.category || '', formData.type || '').map((subType) => (
-                  <SelectItem key={subType.value} value={subType.value}>
-                    {subType.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              </datalist>
             </div>
             
             <div className="space-y-2">
@@ -199,6 +141,21 @@ export function createItemFormSections(
 
         </>
       )},
+    {
+      id: 'media',
+      icon: '📸',
+      title: 'Product Media',
+      content: (
+        <ProductMediaGrid
+          storeId={options?.storeId}
+          itemId={options?.itemId}
+          imageUrl={formData.imageUrl}
+          onImageUrl={(url) => onChange('imageUrl', url)}
+          pendingFiles={options?.pendingFiles ?? []}
+          onPendingFiles={options?.onPendingFiles ?? (() => undefined)}
+        />
+      ),
+    },
     {
       id: 'availability',
       icon: '📊',
@@ -272,24 +229,6 @@ export function createItemFormSections(
           </div>
         </div>
       )},
-    {
-      id: 'media',
-      icon: '📸',
-      title: 'Product Media',
-      description: 'Upload high-quality photos and videos to showcase your item. The first image will be the primary display image.',
-      content: (
-        <EnhancedMediaGalleryManager
-          storeId={options?.storeId}
-          itemId={options?.itemId}
-          maxFiles={100}
-          thumbnailUrl={formData.imageUrl}
-          onThumbnailChange={(url) =>
-            onChange('imageUrl', url)
-          }
-          thumbnailLabel="Product thumbnail"
-        />
-      ),
-    },
   ]
 }
 

@@ -1,60 +1,121 @@
 /**
- * StoreItemsPage - Manage items for a specific store with sales analytics
+ * StoreItemsPage - the store's menu: every item, grouped by the store's own categories,
+ * with each item's sales for the chosen period on the same row.
  */
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
-import { useState, useCallback } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
-import { Button, SearchInput, Badge, Pagination, SegmentedControl } from '@shared/ui/primitives'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
+import {
+  Badge,
+  Button,
+  SearchInput,
+  SegmentedControl,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@shared/ui/primitives'
 import { VendorPage } from '@layouts/VendorLayout/page'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { Package, Edit, Trash2, Plus } from 'lucide-react'
-import { usePaginatedList } from '@shared/hooks/usePaginatedList'
+import { Edit, FolderCog, Package, Plus, Trash2 } from 'lucide-react'
 import type { ItemResponse } from '@api/types'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
-import { useHaptics } from '@shared/hooks/useHaptics'
-import { ItemAnalyticsTable } from './components/ItemAnalyticsTable'
+import { authGet } from '@shared/lib/auth/authFetch'
+import { storeItemsQueryKey, useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
 import { CsvImportButton } from './components/CsvImportButton'
 import { MenuTabs } from './components/MenuTabs'
+import { ManageCategoriesDialog } from './components/ManageCategoriesDialog'
+import { UNCATEGORIZED, inCategory, itemCategory, storeCategories } from './menuCategories'
+
+type Period = '7d' | '30d' | '90d' | 'all'
+type SortMode = 'menu' | 'best' | 'price' | 'name'
+
+const ALL = '__all__'
+
+const PERIODS: readonly { id: Period; label: string }[] = [
+  { id: '7d', label: '7d' },
+  { id: '30d', label: '30d' },
+  { id: '90d', label: '90d' },
+  { id: 'all', label: 'All time' },
+]
+
+interface ItemSales {
+  readonly itemId: string
+  readonly periodUnitsSold: number
+  readonly periodRevenue: number
+}
+
+/** The analytics endpoint pages at 100; a menu can be longer, so read every page. */
+async function fetchSales(storeId: string, period: Period): Promise<Map<string, ItemSales>> {
+  const sales = new Map<string, ItemSales>()
+  const pageSize = 100
+  for (let page = 0; page < 10; page += 1) {
+    const qs = new URLSearchParams({
+      storeId,
+      period,
+      sortBy: 'revenue',
+      sortOrder: 'desc',
+      limit: String(pageSize),
+      offset: String(page * pageSize),
+    })
+    const response = await authGet(`/api/items/analytics?${qs.toString()}`)
+    if (!response.ok) throw new Error('Failed to load sales')
+    const body = (await response.json()) as { data?: { items?: ItemSales[] } }
+    const rows = body.data?.items ?? []
+    for (const row of rows) sales.set(row.itemId, row)
+    if (rows.length < pageSize) break
+  }
+  return sales
+}
+
+function sortItems(items: ItemResponse[], mode: SortMode, sales: Map<string, ItemSales> | undefined) {
+  const byMenu = (a: ItemResponse, b: ItemResponse) =>
+    (a.sortIndex ?? 0) - (b.sortIndex ?? 0) || a.title.localeCompare(b.title)
+  const compare: Record<SortMode, (a: ItemResponse, b: ItemResponse) => number> = {
+    menu: byMenu,
+    name: (a, b) => a.title.localeCompare(b.title),
+    price: (a, b) => parsePrice(a.price) - parsePrice(b.price) || byMenu(a, b),
+    best: (a, b) =>
+      (sales?.get(b.id)?.periodRevenue ?? 0) - (sales?.get(a.id)?.periodRevenue ?? 0) || byMenu(a, b),
+  }
+  return [...items].sort(compare[mode])
+}
 
 export default function StoreItemsPage() {
   const { storeId } = useParams<{ storeId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
-  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'analytics' | 'cards'>('analytics')
+  const [category, setCategory] = useState<string>(ALL)
+  const [period, setPeriod] = useState<Period>('30d')
+  const [sortMode, setSortMode] = useState<SortMode>('menu')
+  const [managing, setManaging] = useState(false)
 
-  // Fetch store details
   const { data: store, isLoading: isLoadingStore } = useQuery({
     queryKey: ['store', storeId],
-    queryFn: async () => {
-      return await apiClient.stores().getStoreById({ id: storeId! })
-    },
+    queryFn: async () => await apiClient.stores().getStoreById({ id: storeId! }),
     enabled: !!storeId,
   })
 
-  // Fetch store items
-  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
-    queryKey: ['store-items', storeId],
-    queryFn: async () => {
-      return await apiClient.items().listItems({})
-    },
-    enabled: !!storeId,
+  const { data: items = [], isLoading: isLoadingItems } = useStoreItems(storeId)
+
+  const { data: sales } = useQuery({
+    queryKey: ['item-analytics', storeId, period],
+    queryFn: () => fetchSales(storeId!, period),
+    enabled: !!storeId && items.length > 0,
+    refetchInterval: 60_000,
   })
 
-  // Delete item mutation
   const deleteItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      return await apiClient.items().deleteItem({ id: itemId })
-    },
+    mutationFn: async (itemId: string) => await apiClient.items().deleteItem({ id: itemId }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
-      toast.success('Item deleted successfully!')
+      void queryClient.invalidateQueries({ queryKey: storeItemsQueryKey(storeId) })
+      toast.success('Item deleted')
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -62,23 +123,50 @@ export default function StoreItemsPage() {
     },
   })
 
-  const items = (itemsData?.data ?? []) as unknown as ItemResponse[]
+  const categories = useMemo(() => storeCategories(items), [items])
+  const uncategorizedCount = useMemo(() => items.filter((i) => !itemCategory(i)).length, [items])
 
-  const paginatedList = usePaginatedList({
-    items: items,
-    pageSize: 20,
-    searchQuery,
-    searchFields: ['title', 'description'],
-  })
+  // A category can disappear (renamed, last item deleted); fall back to the whole menu.
+  const activeCategory =
+    category === ALL ||
+    (category === UNCATEGORIZED && uncategorizedCount > 0) ||
+    categories.some((c) => c.name === category)
+      ? category
+      : ALL
 
-  const handleDeleteItem = useCallback((itemId: string, itemTitle: string) => {
-    if (confirm('Are you sure you want to delete "' + itemTitle + '"?')) {
-      setDeletingItemId(itemId)
-      deleteItemMutation.mutate(itemId, {
-        onSettled: () => setDeletingItemId(null),
-      })
-    }
-  }, [deleteItemMutation])
+  const sections = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const matches = (item: ItemResponse) =>
+      !query ||
+      item.title.toLowerCase().includes(query) ||
+      (item.description ?? '').toLowerCase().includes(query)
+    const names = [
+      ...categories.map((c) => c.name),
+      ...(uncategorizedCount > 0 ? [UNCATEGORIZED] : []),
+    ].filter((name) => activeCategory === ALL || name === activeCategory)
+    return names
+      .map((name) => ({
+        name,
+        items: sortItems(items.filter((item) => inCategory(item, name) && matches(item)), sortMode, sales),
+      }))
+      .filter((section) => section.items.length > 0)
+  }, [items, categories, uncategorizedCount, activeCategory, searchQuery, sortMode, sales])
+
+  const handleDeleteItem = (item: ItemResponse) => {
+    if (confirm(`Delete "${item.title}"?`)) deleteItemMutation.mutate(item.id)
+  }
+
+  const available = items.filter((i) => i.isActive && !i.isSoldOut).length
+  const soldOut = items.filter((i) => i.isSoldOut).length
+  const hidden = items.filter((i) => !i.isActive).length
+  const periodRevenue = [...(sales?.values() ?? [])].reduce((sum, s) => sum + s.periodRevenue, 0)
+  const periodUnits = [...(sales?.values() ?? [])].reduce((sum, s) => sum + s.periodUnitsSold, 0)
+
+  const categoryChoices = [
+    { id: ALL, label: 'All', count: items.length },
+    ...categories.map((c) => ({ id: c.name, label: c.name, count: c.count })),
+    ...(uncategorizedCount > 0 ? [{ id: UNCATEGORIZED, label: UNCATEGORIZED, count: uncategorizedCount }] : []),
+  ]
 
   return (
     <VendorPage
@@ -96,172 +184,169 @@ export default function StoreItemsPage() {
         </>
       }
     >
-      <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SegmentedControl
-          label="Item view"
-          items={[
-            { id: 'analytics', label: 'Sales' },
-            { id: 'cards', label: 'Cards' },
-          ]}
-          value={viewMode}
-          onChange={setViewMode}
-        />
-        <div className="w-full sm:w-72">
-          <SearchInput
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search items"
-            aria-label="Search items"
-          />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex flex-col items-center p-4 text-center mb-6">
-            <div className="text-2xl font-bold tracking-tight mb-0.5">{items.length}</div>
-            <div className="text-label">Total</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center p-4 text-center">
-            <div className="text-2xl font-bold tracking-tight mb-0.5">
-              {items.filter(i => i.isActive && !i.isSoldOut).length}
-            </div>
-            <div className="text-label">Available</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center p-4 text-center">
-            <div className="text-2xl font-bold tracking-tight text-destructive mb-0.5">
-              {items.filter(i => i.isSoldOut).length}
-            </div>
-            <div className="text-label">Sold Out</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center p-4 text-center">
-            <div className="text-2xl font-bold tracking-tight mb-0.5">
-              {items.filter(i => !i.isActive).length}
-            </div>
-            <div className="text-label">Inactive</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Items List */}
-      {viewMode === 'analytics' ? (
-        <ItemAnalyticsTable
-          storeId={storeId!}
-          onEditItem={(itemId) => navigate(vendorPaths.item(storeId!, itemId))}
-          onDeleteItem={handleDeleteItem}
+      {items.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="Your menu is empty"
+          description="Add your first item, or import a CSV. Give items a category (like “Tacos” or “Drinks”) and your menu groups itself."
+          action={
+            <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add your first item
+            </Button>
+          }
         />
       ) : (
-        <>
-          {paginatedList.counts.filtered === 0 ? (
-            <EmptyState
-              icon={Package}
-              title={searchQuery ? "No items found" : "No items yet"}
-              description={searchQuery ? "No items match your search criteria" : "Add your first menu item to start selling!"}
-              action={
-                !searchQuery && (
-                  <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
-                    <Plus className="mr-2 w-4 h-4" />
-                    Add Your First Item
-                  </Button>
-                )
-              }
+        <div className="space-y-5">
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <SegmentedControl
+              label="Menu categories"
+              items={categoryChoices}
+              value={activeCategory}
+              onChange={setCategory}
             />
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-3">
-                {paginatedList.items.map((item) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    onEdit={() => navigate(vendorPaths.item(storeId!, item.id))}
-                    onDelete={() => handleDeleteItem(item.id, item.title)}
-                    isDeleting={deleteItemMutation.isPending && deletingItemId === item.id}
-                  />
-                ))}
-              </div>
+          </div>
 
-              {paginatedList.pagination.totalPages > 1 && (
-                <Pagination
-                  currentPage={paginatedList.pagination.currentPage}
-                  totalItems={paginatedList.pagination.totalItems}
-                  pageSize={paginatedList.pagination.pageSize}
-                  onPageChange={paginatedList.pagination.goToPage}
-                  showPageSize
-                  pageSizeOptions={[10, 20, 50]}
-                  onPageSizeChange={paginatedList.pagination.setPageSize}
-                />
-              )}
-            </>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="w-full lg:w-72">
+              <SearchInput
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search items"
+                aria-label="Search items"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <SegmentedControl label="Sales period" items={PERIODS} value={period} onChange={setPeriod} />
+              <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                <SelectTrigger className="w-40" aria-label="Sort items">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="menu">Menu order</SelectItem>
+                  <SelectItem value="best">Best selling</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => setManaging(true)}>
+                <FolderCog className="mr-1.5 h-4 w-4" />
+                Categories
+              </Button>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            {items.length} items · {available} available
+            {soldOut > 0 && ` · ${soldOut} sold out`}
+            {hidden > 0 && ` · ${hidden} hidden`}
+            {sales && ` · ${periodUnits} sold for ${formatCurrency(periodRevenue)} (${period === 'all' ? 'all time' : `last ${period}`})`}
+          </p>
+
+          {sections.length === 0 ? (
+            <EmptyState icon={Package} title="No items found" description="No items match your search." />
+          ) : (
+            sections.map((section) => (
+              <section key={section.name} aria-labelledby={`cat-${section.name}`} className="space-y-2">
+                <h2 id={`cat-${section.name}`} className="flex items-baseline gap-2 text-base font-semibold">
+                  {section.name}
+                  <span className="text-sm font-normal text-muted-foreground">{section.items.length}</span>
+                </h2>
+                <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+                  {section.items.map((item) => (
+                    <MenuItemRow
+                      key={item.id}
+                      item={item}
+                      sales={sales?.get(item.id)}
+                      salesLoaded={!!sales}
+                      onEdit={() => navigate(vendorPaths.item(storeId!, item.id))}
+                      onDelete={() => handleDeleteItem(item)}
+                      isDeleting={deleteItemMutation.isPending && deleteItemMutation.variables === item.id}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))
           )}
-        </>
+        </div>
       )}
-      </div>
+
+      <ManageCategoriesDialog
+        open={managing}
+        onOpenChange={setManaging}
+        storeId={storeId!}
+        categories={categories}
+      />
     </VendorPage>
   )
 }
 
-// Item management card
-type ItemCardProps = Readonly<{
+type MenuItemRowProps = Readonly<{
   item: ItemResponse
+  sales: ItemSales | undefined
+  salesLoaded: boolean
   onEdit: () => void
   onDelete: () => void
   isDeleting: boolean
 }>
 
-function ItemCard({ item, onEdit, onDelete, isDeleting }: ItemCardProps) {
-  const price = parsePrice(item.price)
-  const haptics = useHaptics()
+function MenuItemRow({ item, sales, salesLoaded, onEdit, onDelete, isDeleting }: MenuItemRowProps) {
+  const extra = item as { imageUrl?: string | null; mediaAssets?: { url: string }[] }
+  const thumb = extra.imageUrl || extra.mediaAssets?.[0]?.url
+  let status: { label: string; variant: 'warning' | 'destructive' } | undefined
+  if (!item.isActive) status = { label: 'Hidden', variant: 'warning' }
+  else if (item.isSoldOut) status = { label: 'Sold out', variant: 'destructive' }
 
   return (
-    <Card className="flex flex-col h-full hover:border-primary/50 transition-colors tap-scale active:scale-[0.98]">
-      <CardHeader className="pb-3">
-        <div className="flex gap-4 justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="mb-1 text-lg line-clamp-1">{item.title}</CardTitle>
-            <span className="text-xl font-bold text-success">{formatCurrency(price)}</span>
+    <li className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/30">
+      <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        {thumb ? (
+          <img src={thumb} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+        ) : (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-muted">
+            <Package className="h-5 w-5 text-muted-foreground" />
           </div>
-          <div className="flex flex-col gap-1 items-end shrink-0">
-            {item.isActive && !item.isSoldOut && <Badge variant="success">Available</Badge>}
-            {item.isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
-            {!item.isActive && <Badge variant="warning">Inactive</Badge>}
-          </div>
-        </div>
-        {item.description && (
-          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{item.description}</p>
         )}
-      </CardHeader>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-medium">{item.title}</span>
+            {status && <Badge variant={status.variant}>{status.label}</Badge>}
+          </div>
+          {item.description && <p className="truncate text-sm text-muted-foreground">{item.description}</p>}
+          <p className="text-sm text-muted-foreground sm:hidden">
+            {formatCurrency(parsePrice(item.price))}
+            {salesLoaded && ` · ${sales?.periodUnitsSold ?? 0} sold`}
+          </p>
+        </div>
+      </button>
 
-      <CardContent className="flex-1 pb-0">
-        {/* Placeholder for future item details (e.g., categories, options) */}
-      </CardContent>
+      <div className="hidden w-20 text-right text-sm font-medium sm:block">{formatCurrency(parsePrice(item.price))}</div>
+      <div className="hidden w-24 text-right text-xs text-muted-foreground md:block">
+        {salesLoaded ? (
+          <>
+            <div>{sales?.periodUnitsSold ?? 0} sold</div>
+            <div>{formatCurrency(sales?.periodRevenue ?? 0)}</div>
+          </>
+        ) : (
+          '—'
+        )}
+      </div>
 
-      <CardFooter className="gap-2 pt-4 mt-auto border-t border-border">
+      <div className="flex shrink-0 items-center gap-1">
+        <Button variant="ghost" size="icon" onClick={onEdit} aria-label={`Edit ${item.title}`}>
+          <Edit className="h-4 w-4" />
+        </Button>
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          onClick={() => { haptics.heavy(); onDelete(); }}
+          onClick={onDelete}
           disabled={isDeleting}
-          className="shrink-0 text-destructive hover:bg-destructive/10"
+          aria-label={`Delete ${item.title}`}
+          className="text-destructive hover:bg-destructive/10"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
-        <Button 
-          variant="primary" 
-          className="flex-1" 
-          onClick={() => { haptics.light(); onEdit(); }}
-        >
-          <Edit className="mr-2 w-4 h-4" />
-          Edit Item
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </li>
   )
 }

@@ -31,11 +31,12 @@ export class StoreDomain {
             hasAddress &&
             hasFulfillment &&
             hasContact;
+        const { status: _status, disabledAt: _disabledAt, disabledByUserId: _disabledBy, disabledReason: _disabledReason, ...fields } = data;
         return {
-            ...data,
+            ...fields,
             slug: data.slug || this.generateSlug(data.name),
             ownerUserId: userId,
-            status: canActivateStore ? 'ACTIVE' : 'PAUSED',
+            status: 'ACTIVE',
             isPublished: canActivateStore,
         };
     }

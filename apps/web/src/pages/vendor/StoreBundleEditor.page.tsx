@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
+import { useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -63,13 +64,8 @@ export default function StoreBundleEditorPage() {
   const [selectedItems, setSelectedItems] = useState<BundleItemRow[]>([])
   const [itemSearchQuery, setItemSearchQuery] = useState('')
 
-  const { data: itemsData } = useQuery({
-    queryKey: ['items', storeId],
-    queryFn: () => apiClient.items().listItems({ storeId }),
-    enabled: !!storeId,
-  })
-
-  const storeItems = (itemsData?.data ?? []).filter((i: any) => i.isActive && !i.isSoldOut)
+  const { data: allStoreItems = [] } = useStoreItems(storeId)
+  const storeItems = allStoreItems.filter((i) => i.isActive && !i.isSoldOut)
   const filteredItems = storeItems.filter((i: any) =>
     i.title.toLowerCase().includes(itemSearchQuery.toLowerCase()),
   )

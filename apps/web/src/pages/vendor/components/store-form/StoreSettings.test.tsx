@@ -52,9 +52,9 @@ function renderSettings(path = '/vendor/stores/store-1/edit') {
 }
 
 describe('StoreSettings', () => {
-  it('titles the page Settings and keeps the store name as a field', () => {
+  it('heads the section Store settings and keeps the store name as a field', () => {
     renderSettings()
-    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Store settings' })).toBeInTheDocument()
     expect(screen.getByLabelText(/Store name/)).toHaveValue('Northside Bakery')
     expect(screen.getByText('Delete store')).toBeInTheDocument()
   })

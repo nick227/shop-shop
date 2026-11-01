@@ -20,7 +20,7 @@ function NavItem({ item, storeId, badge }: { readonly item: VendorNavItem; reado
       title={item.label}
       className={cn(
         'relative flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'bg-muted text-foreground shadow-[inset_2px_0_0_hsl(var(--foreground))]' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
       <Icon className="h-4 w-4 shrink-0" strokeWidth={1.9} />

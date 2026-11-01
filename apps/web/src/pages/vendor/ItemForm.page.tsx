@@ -3,7 +3,7 @@
  * ItemFormPage - Create or edit a menu item
  */
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
@@ -12,13 +12,19 @@ import { handleApiError } from '@api/errors'
 import { FormPageTemplate } from '@shared/ui/templates/FormPageTemplate'
 import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createItemFormSections } from '@features/auth'
+import { uploadItemPhoto } from '@features/auth/ProductMediaGrid'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
+import { storeItemsQueryKey, useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
+import { canonicalCategory, storeCategories } from './menuCategories'
 
 export default function ItemFormPage() {
   const { storeId, itemId } = useParams<{ storeId: string; itemId?: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const isEdit = Boolean(itemId)
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
+  const pendingPhotosRef = useRef(pendingPhotos)
+  pendingPhotosRef.current = pendingPhotos
 
   // Form state
   const [formData, setFormData] = useState({
@@ -44,6 +50,10 @@ export default function ItemFormPage() {
     },
     enabled: !!storeId,
   })
+
+  // The store's own categories, suggested on the category field
+  const { data: storeItems = [] } = useStoreItems(storeId)
+  const categories = storeCategories(storeItems)
 
   // Fetch existing item for editing
   const { data: item, isLoading: isLoadingItem } = useQuery({
@@ -83,7 +93,7 @@ export default function ItemFormPage() {
   // Create item mutation
   const createItemMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiClient.items().createItem({
+      const created = await apiClient.items().createItem({
         createItemRequest: {
           storeId: storeId!,
           title: data.title,
@@ -96,15 +106,36 @@ export default function ItemFormPage() {
           tags: data.tags,
           optionsJson: {
             ...(data.optionsJson || {}),
-            imageUrl: data.imageUrl || undefined,
-            category: data.category || undefined,
+            category: canonicalCategory(data.category || '', categories) || undefined,
             type: data.type || undefined,
           },
         },
       })
+      const newId = (created as { id?: string }).id
+      const queued = pendingPhotosRef.current
+      if (!newId || queued.length === 0) return created
+      let cover = ''
+      for (const file of queued) {
+        const url = await uploadItemPhoto(storeId!, newId, file)
+        if (!cover && url) cover = url
+      }
+      if (cover) {
+        await apiClient.items().updateItem({
+          id: newId,
+          updateItemRequest: {
+            optionsJson: {
+              ...(data.optionsJson || {}),
+              imageUrl: cover,
+              category: canonicalCategory(data.category || '', categories) || undefined,
+              type: data.type || undefined,
+            },
+          },
+        })
+      }
+      return created
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
+      queryClient.invalidateQueries({ queryKey: storeItemsQueryKey(storeId) })
       toast.success('Item created successfully!')
       navigate(vendorPaths.menu(storeId!))
     },
@@ -131,7 +162,7 @@ export default function ItemFormPage() {
           optionsJson: {
             ...(data.optionsJson || {}),
             imageUrl: data.imageUrl || undefined,
-            category: data.category || undefined,
+            category: canonicalCategory(data.category || '', categories) || undefined,
             type: data.type || undefined,
           },
         },
@@ -139,7 +170,7 @@ export default function ItemFormPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['item', itemId] })
-      queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
+      queryClient.invalidateQueries({ queryKey: storeItemsQueryKey(storeId) })
       toast.success('Item updated successfully!')
       navigate(vendorPaths.menu(storeId!))
     },
@@ -188,7 +219,9 @@ export default function ItemFormPage() {
     {
       storeId: storeId!,
       itemId: itemId,
-      storeType: (store as any)?.storeType,
+      storeCategories: categories.map((c) => c.name),
+      pendingFiles: pendingPhotos,
+      onPendingFiles: setPendingPhotos,
     }
   )
 

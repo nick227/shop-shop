@@ -13,7 +13,7 @@ export interface FormSection {
   id: string
   icon: string | ReactNode
   title: string
-  description: string
+  description?: string
   content: ReactNode
 }
 

@@ -39,11 +39,12 @@ export const ORDERS_ITEM: VendorNavItem = {
   requires: 'VIEW_ORDERS',
 }
 
+/** Store settings are a section of the Overview, so this isn't in the sidebar; the store menu links to it. */
 export const SETTINGS_ITEM: VendorNavItem = {
   label: 'Settings',
   icon: Settings,
   to: (storeId) => vendorPaths.settings(storeId),
-  match: under('/settings'),
+  match: () => false,
   requires: 'owner',
 }
 
@@ -66,7 +67,6 @@ export const VENDOR_NAV: readonly VendorNavGroup[] = [
     pinned: true,
     items: [
       { label: 'Team', icon: Users, to: vendorPaths.team, match: under('/team'), requires: 'FULL_ACCESS' },
-      SETTINGS_ITEM,
     ],
   },
 ]

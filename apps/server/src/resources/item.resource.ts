@@ -90,8 +90,14 @@ export const itemResource = defineResource({
       }
       
     },
-    beforeList: async (filters) => {
+    beforeList: async (filters, context) => {
       const nextFilters = sanitizeItemListWhere(filters as Record<string, unknown>)
+      // One store's menu: its team sees everything; everyone else sees only what is on sale.
+      if (typeof nextFilters.storeId === 'string') {
+        const canSeeHidden = !!context?.userId && await hasStorePermission(context.userId, nextFilters.storeId, 'VIEW_ITEMS')
+        if (!canSeeHidden) nextFilters.isActive = true
+        return nextFilters
+      }
       // Apply activation requirements for public listings
       if (!nextFilters.storeId) {
         // Exclude specific stores if needed (e.g. system stores)

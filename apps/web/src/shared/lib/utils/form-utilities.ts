@@ -27,6 +27,8 @@ const SOCIAL_FIELD_MAP: Record<string, keyof StoreFormData> = {
 export function storePayloadFromFormData(formData: StoreFormData): CreateStoreInput {
   const cleaned = cleanStoreFormData(formData)
   const payload = { ...cleaned } as Record<string, unknown>
+  // Admin restriction fields; the store form never changes them.
+  for (const key of ['status', 'disabledAt', 'disabledByUserId', 'disabledReason']) delete payload[key]
 
   for (const key of STORE_PAYLOAD_STRIP_IF_EMPTY) {
     const v = payload[key]

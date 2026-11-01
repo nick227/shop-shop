@@ -51,11 +51,14 @@ export class StoreDomain {
       hasFulfillment &&
       hasContact
     
+    // status is the admin restriction (PAUSED = suspended, DISABLED), so a new store always starts ACTIVE
+    // and the client can't set it; an unfinished store stays hidden through isPublished.
+    const { status: _status, disabledAt: _disabledAt, disabledByUserId: _disabledBy, disabledReason: _disabledReason, ...fields } = data
     return {
-      ...data,
+      ...fields,
       slug: data.slug || this.generateSlug(data.name),
       ownerUserId: userId,
-      status: canActivateStore ? 'ACTIVE' : 'PAUSED',
+      status: 'ACTIVE',
       isPublished: canActivateStore,
     }
   }

@@ -3,7 +3,6 @@
  */
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@api/client'
@@ -21,10 +20,12 @@ import { authPost } from '@shared/lib/auth/authFetch'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
 
 export function useStoreForm(storeId?: string) {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
-  const isEdit = Boolean(storeId)
+  // A store created from /vendor/new; later saves update it while the shopper keeps filling in the form.
+  const [createdStoreId, setCreatedStoreId] = useState<string | undefined>()
+  const targetStoreId = storeId ?? createdStoreId
+  const isEdit = Boolean(targetStoreId)
 
   const [pendingScopedMediaFiles, setPendingScopedMediaFiles] = useState<File[]>([])
   const [formData, setFormData] = useState<StoreFormData>(createInitialStoreFormData())
@@ -36,10 +37,11 @@ export function useStoreForm(storeId?: string) {
   const { data: store, isLoading: isLoadingStore } = useQuery({
     queryKey: ['store', storeId],
     queryFn: async () => apiClient.stores().getStoreById({ id: storeId! }),
-    enabled: isEdit,
+    // Only the store in the URL is loaded; a just-created store keeps what is in the form.
+    enabled: Boolean(storeId),
   })
 
-  const { data: storeMedia } = usePublicMediaList({ storeId: isEdit ? storeId! : undefined })
+  const { data: storeMedia } = usePublicMediaList({ storeId })
 
   useEffect(() => {
     if (store) {
@@ -72,6 +74,10 @@ export function useStoreForm(storeId?: string) {
       const newId = (result as any).id as string | undefined
 
       if (newId) {
+        setCreatedStoreId(newId)
+        if (submittedRef.current) setBaseline(submittedRef.current)
+        // Keep the form where it is; only the address changes, so a reload opens this store's Overview.
+        window.history.replaceState(window.history.state, '', vendorPaths.overview(newId))
         queryClient.setQueryData(
           ['vendor-managed-stores', user?.id],
           (stores: any[] | undefined) =>
@@ -103,9 +109,6 @@ export function useStoreForm(storeId?: string) {
 
       void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      if (newId) {
-        navigate(vendorPaths.overview(newId), { replace: true })
-      }
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -117,13 +120,13 @@ export function useStoreForm(storeId?: string) {
     mutationFn: async (data: StoreFormData) => {
       const payload = storePayloadFromFormData(data)
       return await apiClient.stores().updateStore({
-        id: storeId!,
+        id: targetStoreId!,
         updateStoreRequest: payload as any,
       })
     },
     onSuccess: () => {
       if (submittedRef.current) setBaseline(submittedRef.current)
-      queryClient.invalidateQueries({ queryKey: ['store', storeId] })
+      queryClient.invalidateQueries({ queryKey: ['store', targetStoreId] })
       queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
       toast.success('Saved')
@@ -137,7 +140,8 @@ export function useStoreForm(storeId?: string) {
   const handleChange = <K extends keyof StoreFormData>(field: K, value: StoreFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
-    if (field === 'name') {
+    // The slug follows the name only until the store exists; after that a rename keeps its public address.
+    if (field === 'name' && !isEdit) {
       const slug = String(value)
         .toLowerCase()
         .replaceAll(/[^\da-z]+/g, '-')
@@ -151,8 +155,8 @@ export function useStoreForm(storeId?: string) {
     if (!formData.name.trim()) return
     if (creatingRef.current || createStoreMutation.isPending || updateStoreMutation.isPending) return
     const cleanedData = cleanStoreFormData(formData)
+    submittedRef.current = formData
     if (isEdit) {
-      submittedRef.current = formData
       updateStoreMutation.mutate(cleanedData)
       return
     }
@@ -166,6 +170,7 @@ export function useStoreForm(storeId?: string) {
 
   return {
     isEdit,
+    storeId: targetStoreId,
     store,
     isLoadingStore,
     formData,
