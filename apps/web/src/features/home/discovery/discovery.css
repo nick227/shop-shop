@@ -27,7 +27,6 @@
 .discover-lede,
 .hero-story span,
 .hero-near span,
-.masonry-card p,
 .detail-copy p {
   color: var(--quiet);
 }
@@ -79,7 +78,7 @@
 .hero-near strong { font-size: 0.95rem; }
 .hero-near span { font-size: 0.82rem; white-space: nowrap; }
 
-.hero-map { min-height: 22rem; border-radius: 1.4rem 7.5rem; overflow: hidden; }
+.hero-map { min-height: 22rem; border-radius: 0.85rem; overflow: hidden; }
 .hero-map .discover-map { height: 100%; min-height: 22rem; border-radius: 0; }
 
 .detail-photo img,
@@ -91,24 +90,10 @@
   background: var(--leaf);
 }
 
-.masonry { columns: 2; column-gap: 0.9rem; }
-.masonry-card {
-  display: block;
-  width: 100%;
-  margin: 0 0 0.8rem;
-  break-inside: avoid;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.masonry-card strong { display: block; margin-top: 0.45rem; font-size: 1rem; }
-.masonry-card p { margin: 0.15rem 0 0; font-size: 0.82rem; }
 .tile-photo, .tile-tall, .brand-fall {
   width: 100%;
   object-fit: cover;
-  border-radius: 0.85rem;
+  border-radius: 0.65rem;
   background: var(--leaf);
 }
 .tile-photo { aspect-ratio: 4 / 3; }
@@ -123,24 +108,74 @@
   font-weight: 700;
   letter-spacing: -0.04em;
 }
-.is-story { padding-bottom: 0.2rem; }
-.is-story .tile-kicker, .is-story strong, .is-story p { padding-inline: 0.15rem; }
 
-.shape-round .tile-photo,
-.shape-round .tile-tall,
-.shape-round .brand-fall { aspect-ratio: 1; border-radius: 50%; }
-.shape-arch .tile-photo,
-.shape-arch .tile-tall,
-.shape-arch .brand-fall { aspect-ratio: 3 / 4; border-radius: 999px 999px 1rem 1rem; }
-.shape-arch .brand-fall { background: #0e3324; }
-.shape-slab .tile-photo,
-.shape-slab .tile-tall,
-.shape-slab .brand-fall { aspect-ratio: 5 / 3; border-radius: 0.35rem; }
-.shape-slab .brand-fall { background: #c45c26; color: #fff8f2; }
-.shape-petal .tile-photo,
-.shape-petal .tile-tall,
-.shape-petal .brand-fall { aspect-ratio: 1; border-radius: 3.4rem 0.45rem; }
-.shape-petal .brand-fall { background: #123526; }
+.recent-feed { margin-bottom: 2.4rem; }
+.recent-feed h2,
+.feed-say h2,
+.feed-special strong,
+.feature-hero strong {
+  margin: 0;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+.recent-feed h2 { font-size: clamp(2rem, 4vw, 3rem); }
+.recent-row {
+  display: grid;
+  grid-auto-columns: 10.5rem;
+  grid-auto-flow: column;
+  gap: 0.85rem;
+  margin-top: 0.8rem;
+  overflow-x: auto;
+}
+.portrait-card, .feed-special, .feature-hero {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.portrait-card strong, .portrait-card p, .feature-hero p { display: block; }
+.portrait-card strong { margin-top: 0.45rem; font-size: 0.95rem; }
+.portrait-card p, .feature-hero p { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--quiet); }
+
+.market-feed { display: flex; flex-direction: column; gap: 2.4rem; }
+.circle-row { display: flex; gap: 1.1rem; overflow-x: auto; }
+.circle-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.circle-mark {
+  display: grid;
+  place-items: center;
+  width: 4.4rem;
+  height: 4.4rem;
+  border-radius: 50%;
+  background: var(--field);
+}
+.circle-cat.is-on .circle-mark { background: var(--leaf); color: white; }
+.feed-say h2 { max-width: 14ch; font-size: clamp(2.6rem, 6vw, 4.6rem); }
+.feed-special strong { display: block; max-width: 12ch; font-size: clamp(3rem, 7vw, 5.5rem); }
+.feed-special p:last-child { margin-top: 0.6rem; color: var(--quiet); }
+.feature-hero {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+}
+.feature-hero strong { font-size: clamp(2.2rem, 4vw, 3.6rem); }
+.portrait-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0.85rem;
+}
 
 .discover-map { height: 100%; min-height: 22rem; overflow: hidden; }
 .map-pin, .map-you {
@@ -235,11 +270,8 @@
 @media (min-width: 900px) {
   .discover-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); min-height: 28rem; }
   .hero-map, .hero-map .discover-map { height: 100%; min-height: 28rem; }
-  .masonry { columns: 3; }
-}
-
-@media (min-width: 1200px) {
-  .masonry { columns: 4; }
+  .feature-hero { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr); }
+  .portrait-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

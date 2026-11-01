@@ -3,7 +3,7 @@ import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
 import { cn } from '@shared/lib/cn'
 import { placeTarget } from './placeMemory'
 
-export function BrowseNav({ expanded }: { readonly expanded: boolean }) {
+export function useBrowseChoice() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -16,6 +16,12 @@ export function BrowseNav({ expanded }: { readonly expanded: boolean }) {
     else next.delete('browse')
     navigate({ pathname: '/river', search: next.toString() })
   }
+
+  return { active, choose }
+}
+
+export function BrowseNav({ expanded }: { readonly expanded: boolean }) {
+  const { active, choose } = useBrowseChoice()
 
   return (
     <div className="shop-browse" role="group" aria-label="Shop by type">
@@ -30,13 +36,12 @@ export function BrowseNav({ expanded }: { readonly expanded: boolean }) {
             type="button"
             aria-pressed={pressed}
             title={label}
-            className={cn(
-              'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium',
-              pressed ? 'bg-[var(--leaf)] text-white' : 'hover:bg-[var(--field)]',
-            )}
+            className="shop-browse-btn"
             onClick={() => choose(slug)}
           >
-            <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+            <span className={pressed ? 'shop-circle is-on' : 'shop-circle'}>
+              <Icon className="h-4 w-4" strokeWidth={1.75} />
+            </span>
             <span className={expanded ? undefined : 'shop-rail-label'}>{label}</span>
           </button>
         )
