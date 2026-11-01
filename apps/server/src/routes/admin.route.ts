@@ -260,9 +260,10 @@ export const adminRoutes = async (app: FastifyInstance) => {
           where: { id },
           data: { status: 'APPROVED', reviewedAt: now, approvedAt: now },
         })
-        await tx.user.update({
-          where: { id: application.userId },
-          data: { role: 'VENDOR' },
+        await tx.vendorEnrollment.upsert({
+          where: { userId: application.userId },
+          create: { userId: application.userId, status: 'APPROVED', source: 'ADMIN', reviewedAt: now, reviewedByUserId: adminId },
+          update: { status: 'APPROVED', reviewedAt: now, reviewedByUserId: adminId },
         })
       } else {
         await tx.vendorVerification.update({

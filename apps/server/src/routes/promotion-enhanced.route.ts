@@ -1,3 +1,5 @@
+import { prisma, getAccountCapabilities, hasStorePermission } from '@packages/db'
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -99,12 +101,15 @@ export const promotionEnhancedRoutes = async (app: FastifyInstance) => {
 
   // GET /promotions/:id/analytics - Get promotion analytics
   app.get('/promotions/:id/analytics', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = req.params as { id: string }
 
-      // TODO: Verify user owns promotion or is admin
+      const promotion = await prisma.promotion.findUnique({ where: { id: params.id }, select: { storeId: true } })
+      if (!promotion) return reply.code(404).send({ error: 'Promotion not found' })
+      if (promotion.storeId ? !await hasStorePermission(req.user!.id, promotion.storeId, 'VIEW_ANALYTICS')
+        : !(await getAccountCapabilities(req.user!.id)).canAdministerStores) return reply.code(403).send({ error: 'Forbidden' })
 
       const analytics = await getPromotionAnalytics(params.id)
 

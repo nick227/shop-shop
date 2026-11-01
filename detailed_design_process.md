@@ -1,4 +1,4 @@
-# BagLunch Detailed Design Process: Intent-Driven Page Design
+# ShopShop Detailed Design Process: Intent-Driven Page Design
 
 ## Design Philosophy
 Every element must serve a specific purpose in the food discovery and ordering journey. No generic solutions.
@@ -13,7 +13,7 @@ Every element must serve a specific purpose in the food discovery and ordering j
 **Layout**:
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [BagLunch Logo]        [📍 Austin, TX]    [🔍 Search] [🛒 $0] [👤] │
+│ [ShopShop Logo]        [📍 Austin, TX]    [🔍 Search] [🛒 $0] [👤] │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -130,7 +130,7 @@ Every element must serve a specific purpose in the food discovery and ordering j
 **Layout**:
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              Join the BagLunch Community                    │
+│              Join the ShopShop Community                    │
 │              Share your food with your neighborhood        │
 │                                                             │
 │     [Create Owner Account]    [Learn More]                │

@@ -6,7 +6,7 @@ import type { ZodSchema } from 'zod'
 
 export type CrudOperation = 'create' | 'read' | 'update' | 'delete' | 'list'
 
-export type Role = 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
+export type Role = 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
 
 export interface ResourceSchemas {
   create?: ZodSchema

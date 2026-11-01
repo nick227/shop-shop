@@ -1,61 +1,105 @@
+import { canAccess } from './storeAccess'
+import { useAccountCapabilities } from '@features/account/useAccountCapabilities'
 /**
- * VendorLayout - Unified layout for all vendor pages
+ * VendorLayout — the seller workspace.
  *
- * Features:
- * - Persistent navigation (side nav)
- * - Centralized OrderCountWidget
- * - Active store scope (URL + context)
- * - Mobile responsive
+ * - One shell (AppShell): expanded sidebar, icon rail, phone drawer
+ * - Store identity at the top of the sidebar; the person in the top-right menu
+ * - Active store scope (URL + context), remembered per device
+ * - No store yet: a bare frame around the create page, without the sidebar
  */
-
-import { Outlet, useNavigate } from 'react-router-dom'
-import { useAuth } from '@features/auth/hooks/useAuth'
-import { Button } from '@shared/ui/primitives'
-import { OrderCountWidget } from '@features/orders/components/OrderCountWidget'
-import { useVendorStores, useVendorRealtimeOrders } from '@shared/hooks/hooks/vendor'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Button, Spinner } from '@shared/ui/primitives'
+import { AppShell } from '@shared/ui/layout/AppShell'
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
+import { useMemo } from 'react'
+import {
+  readOrderAlertChoice,
+  useVendorStores,
+  useVendorRealtimeOrders,
+  type VendorStore,
+} from '@shared/hooks/hooks/vendor'
 import { VendorActiveStoreProvider, useVendorActiveStore } from './VendorActiveStoreContext'
-import { VendorStoreSwitcher } from './VendorStoreSwitcher'
-import { VendorSideNav } from './VendorSideNav'
-import styles from './VendorLayout.module.css'
+import { VendorSidebar } from './VendorSidebar'
+import { VendorTopBar } from './VendorTopBar'
+import { AccountMenu } from './AccountMenu'
 
-function VendorLayoutShell() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
-  const { selectedStoreId } = useVendorActiveStore()
+const CREATE_STORE_PATHS: ReadonlySet<string> = new Set([vendorPaths.newStore])
+
+function VendorWorkspace() {
+  const { selectedStoreId, stores } = useVendorActiveStore()
+  // Every store whose orders you may see; sound and desktop alerts follow each store's choice.
+  const orderStores = useMemo(() => stores.filter((store) => canAccess(store, 'VIEW_ORDERS')), [stores])
 
   useVendorRealtimeOrders({
-    storeId: selectedStoreId || '',
-    enableSound: true,
-    enableDesktopNotification: true,
+    storeIds: orderStores.map((store) => store.id),
+    storeNames: Object.fromEntries(orderStores.map((store) => [store.id, store.name])),
+    alertsFor: (storeId) => readOrderAlertChoice(storeId, selectedStoreId),
   })
 
   return (
-    <div className={styles.layout}>
-      <header className={styles.topBar}>
-        <div className={styles.topRight}>
-          <span className={styles.vendorBadge}>Vendor Portal</span>
-          <VendorStoreSwitcher />
-          <OrderCountWidget />
-        </div>
+    <AppShell
+      navLabel="Store"
+      storageKey="vendor:sidebarCollapsed"
+      sidebar={<VendorSidebar />}
+      topBar={<VendorTopBar />}
+    >
+      <Outlet />
+    </AppShell>
+  )
+}
+
+function FirstStoreFrame() {
+  const { capabilities } = useAccountCapabilities()
+  const { pathname } = useLocation()
+  if (!capabilities?.canCreateStore) return <Navigate to="/" replace />
+  if (!CREATE_STORE_PATHS.has(pathname)) {
+    return <Navigate to={vendorPaths.newStore} replace />
+  }
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="flex min-h-14 items-center gap-3 border-b border-border px-4">
+        <Link to="/" className="text-lg font-bold tracking-tight">
+          ShopShop <span className="text-xs font-medium text-muted-foreground">for sellers</span>
+        </Link>
+        <span className="flex-1" />
+        <AccountMenu />
       </header>
-
-      <div className={styles.main}>
-        <VendorSideNav />
-
-        <main className={styles.content}>
-          <Outlet />
-        </main>
-      </div>
+      <Outlet />
     </div>
   )
 }
 
+function StoresUnavailable({ onRetry }: { readonly onRetry: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+      <p className="text-base font-semibold">Your stores could not be loaded</p>
+      <p className="text-sm text-muted-foreground">Check your connection, then try again.</p>
+      <Button variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
+  )
+}
+
+const NO_STORES: readonly VendorStore[] = []
+
 export function VendorLayout() {
-  const { data: stores = [] } = useVendorStores()
+  const { data: stores = NO_STORES, isLoading, error, refetch } = useVendorStores()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Spinner size="large" />
+      </div>
+    )
+  }
+
+  if (error) return <StoresUnavailable onRetry={() => void refetch()} />
 
   return (
     <VendorActiveStoreProvider stores={stores}>
-      <VendorLayoutShell />
+      {stores.length === 0 ? <FirstStoreFrame /> : <VendorWorkspace />}
     </VendorActiveStoreProvider>
   )
 }

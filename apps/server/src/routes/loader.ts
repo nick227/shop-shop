@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import type { ResourceDefinition } from '@packages/schemas'
 import { getResourceOperations, requiresAuthentication, getRequiredRoles } from '@packages/schemas'
 import { BaseCrudController } from '@packages/db'
+import { requireStoreCreation, requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import { requireRole } from '../middleware/rbac.js'
 
 // ========================================
@@ -17,6 +18,7 @@ export async function registerResource(
   resource: ResourceDefinition,
   prefix?: string
 ) {
+  const merchant = ['store', 'item', 'bundle', 'post', 'media', 'promotion'].includes(resource.name)
   const controller = new BaseCrudController(resource)
   const ops = getResourceOperations(resource)
   const fullPath = prefix ? `${prefix}${resource.path}` : resource.path
@@ -26,7 +28,9 @@ export async function registerResource(
   // CREATE - POST /resources
   if (ops.hasCreate) {
     const roles = getRequiredRoles(resource, 'create')
-    const preHandler = requiresAuthentication(resource, 'create')
+    const preHandler = merchant
+      ? [resource.name === 'store' ? requireStoreCreation : requireVendorWorkspace]
+      : requiresAuthentication(resource, 'create')
       ? [requireRole(roles)]
       : []
     
@@ -95,7 +99,9 @@ export async function registerResource(
   // UPDATE - PATCH /resources/:id
   if (ops.hasUpdate) {
     const roles = getRequiredRoles(resource, 'update')
-    const preHandler = requiresAuthentication(resource, 'update')
+    const preHandler = merchant
+      ? [requireVendorWorkspace]
+      : requiresAuthentication(resource, 'update')
       ? [requireRole(roles)]
       : []
     
@@ -119,7 +125,10 @@ export async function registerResource(
   // DELETE - DELETE /resources/:id
   if (ops.hasDelete) {
     const roles = getRequiredRoles(resource, 'delete')
-    const preHandler = requiresAuthentication(resource, 'delete')
+    const preHandler = merchant && resource.name !== 'store'
+      ? [requireVendorWorkspace]
+      : merchant ? [requireRole(roles), requireVendorWorkspace]
+      : requiresAuthentication(resource, 'delete')
       ? [requireRole(roles)]
       : []
     

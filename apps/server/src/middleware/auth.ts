@@ -4,7 +4,7 @@ import type { User } from '@packages/db'
 
 export interface AuthenticatedUser {
   id: string
-  role: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
+  role: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
   email: string
   name: string | null
   phone: string | null

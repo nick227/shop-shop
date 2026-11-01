@@ -21,6 +21,11 @@ export interface HomeAddress {
   readonly geo?: { lat?: number; lng?: number; latitude?: number; longitude?: number } | null
 }
 
+export function defaultAddressZip(addresses: readonly HomeAddress[]): string | undefined {
+  const chosen = addresses.find((address) => address.isDefault) ?? addresses[0]
+  return chosen?.postalCode?.slice(0, 5)
+}
+
 export interface SavedItem {
   readonly id: string
   readonly title: string

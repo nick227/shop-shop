@@ -19,11 +19,6 @@ async function assertCanDispatchOrder(
   order: { storeId: string; userId: string },
   reply: FastifyReply,
 ): Promise<boolean> {
-  if (user.role === 'ADMIN') return true
-  if (user.role !== 'VENDOR' && user.role !== 'STAFF') {
-    reply.code(403).send({ error: 'Forbidden', message: 'Insufficient permissions to dispatch deliveries' })
-    return false
-  }
   const allowed = await userHasStoreAccess(user.id, user.role, order.storeId, 'dispatch')
   if (!allowed) {
     reply.code(403).send({ error: 'Forbidden', message: 'You cannot dispatch deliveries for this store' })

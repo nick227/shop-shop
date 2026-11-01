@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -131,7 +132,7 @@ export default function StoreBundleEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bundles', storeId] })
       toast.success(isEditing ? 'Bundle updated' : 'Bundle created')
-      navigate(`/vendor/stores/${storeId}/bundles`)
+      navigate(vendorPaths.bundles(storeId!))
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -204,7 +205,7 @@ export default function StoreBundleEditorPage() {
           <Button
             variant="ghost"
             size="small"
-            onClick={() => navigate(`/vendor/stores/${storeId}/bundles`)}
+            onClick={() => navigate(vendorPaths.bundles(storeId!))}
             className="-ml-2 text-muted-foreground hover:bg-transparent"
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Bundles
@@ -434,7 +435,7 @@ export default function StoreBundleEditorPage() {
       </Card>
 
       <div className="flex gap-3 justify-end">
-        <Button variant="outline" onClick={() => navigate(`/vendor/stores/${storeId}/bundles`)}>
+        <Button variant="outline" onClick={() => navigate(vendorPaths.bundles(storeId!))}>
           Cancel
         </Button>
         <Button

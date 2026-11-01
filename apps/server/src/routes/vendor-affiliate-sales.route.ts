@@ -1,6 +1,6 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { requireRole } from '../middleware/rbac.js'
 import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers.js'
 import {
   getStoreAffiliateRecentOrders,
@@ -16,7 +16,7 @@ export const vendorAffiliateSalesRoutes = async (app: FastifyInstance) => {
   // GET /api/vendor/stores/:storeId/affiliate-sales
   app.get(
     '/api/vendor/stores/:storeId/affiliate-sales',
-    { preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])] },
+    { preHandler: [requireVendorWorkspace] },
     async (req, reply) => {
       const userId = req.user?.id
       const params = StoreIdParamsSchema.parse(req.params)

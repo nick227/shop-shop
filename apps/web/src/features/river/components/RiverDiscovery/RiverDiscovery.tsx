@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
 import { HomeNewestProducts } from '@features/home/components/HomeNewestProducts'
-import { HomeSellSection } from '@features/home/components/HomeSellSection'
 import { geocodeCity } from '@services/geocoding'
 import type { CityDirectoryEntry } from '@shared/hooks/hooks/store'
 import type { LocationData } from '@shared/types'
@@ -50,7 +49,6 @@ export function RiverDiscovery() {
     <div className="space-y-6">
       <NewestStores />
       <HomeNewestProducts />
-      <HomeSellSection />
     </div>
   )
 }

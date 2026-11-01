@@ -1,3 +1,4 @@
+import { hasStorePermission } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
   CreateItemInputSchema,
@@ -39,29 +40,21 @@ export const itemResource = defineResource({
     relationPath: 'store.ownerUserId',  // Check via store
   },
   customHooks: {
+    authorizeAccess: async (existing, context, operation) => {
+      if (operation === 'read') return
+      const storeId = (existing as { storeId: string }).storeId
+      if (!context?.userId || !await hasStorePermission(context.userId, storeId, 'MANAGE_ITEMS')) throw new Error('Forbidden')
+    },
     beforeCreate: async (data: any, context: any) => {
-      // Enforce VENDOR role for item creation
-      if (context.userRole !== 'VENDOR' && context.userRole !== 'ADMIN') {
-        throw new Error('Only VENDOR users can create items')
-      }
       
       // Verify user owns the store
-      const store = await prisma.store.findUnique({
-        where: { id: data.storeId },
-        select: { ownerUserId: true },
-      })
-      
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only store owner can create items')
+      if (!context.userId || !await hasStorePermission(context.userId, data.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
       
       return data
     },
     beforeUpdate: async (id: string, data: any, context: any) => {
-      // Enforce VENDOR role for item updates
-      if (context.userRole !== 'VENDOR' && context.userRole !== 'ADMIN') {
-        throw new Error('Only VENDOR users can update items')
-      }
       
       // Verify user owns the store
       const item = await prisma.item.findUnique({
@@ -69,26 +62,18 @@ export const itemResource = defineResource({
         select: { storeId: true },
       })
       
+      if (data.storeId && data.storeId !== item?.storeId) throw new Error('Store cannot be changed')
       if (!item) {
         throw new Error('Item not found')
       }
       
-      const store = await prisma.store.findUnique({
-        where: { id: item.storeId },
-        select: { ownerUserId: true },
-      })
-      
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only store owner can update items')
+      if (!context.userId || !await hasStorePermission(context.userId, item.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
       
       return data
     },
     beforeDelete: async (id: string, context: any) => {
-      // Enforce VENDOR role for item deletion
-      if (context.userRole !== 'VENDOR' && context.userRole !== 'ADMIN') {
-        throw new Error('Only VENDOR users can delete items')
-      }
       
       // Verify user owns the store
       const item = await prisma.item.findUnique({
@@ -100,13 +85,8 @@ export const itemResource = defineResource({
         throw new Error('Item not found')
       }
       
-      const store = await prisma.store.findUnique({
-        where: { id: item.storeId },
-        select: { ownerUserId: true },
-      })
-      
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only store owner can delete items')
+      if (!context.userId || !await hasStorePermission(context.userId, item.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
       
     },

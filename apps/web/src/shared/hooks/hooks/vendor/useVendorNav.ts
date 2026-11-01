@@ -1,19 +1,19 @@
 /**
  * useVendorNav - Type-safe vendor navigation;
  */
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useNavigate } from 'react-router-dom'
 
 export function useVendorNav() {
   const navigate = useNavigate()
 
   return {
-    toDashboard: () => navigate('/vendor/dashboard'),
-    toCreateStore: () => navigate('/vendor/store/new'),
-    toEditStore: (storeId: string) => navigate('/vendor/stores/' + storeId + '/edit'),
-    toStoreItems: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items'),
-    toCreateItem: (storeId: string) => navigate('/vendor/stores/' + storeId + '/items/new'),
-    toEditItem: (storeId: string, itemId: string) => 
-      navigate(`/vendor/stores/${storeId}/items/${itemId}/edit`),
+    toDashboard: () => navigate('/vendor'),
+    toCreateStore: () => navigate(vendorPaths.newStore),
+    toEditStore: (storeId: string) => navigate(vendorPaths.settings(storeId)),
+    toStoreItems: (storeId: string) => navigate(vendorPaths.menu(storeId)),
+    toCreateItem: (storeId: string) => navigate(vendorPaths.newItem(storeId)),
+    toEditItem: (storeId: string, itemId: string) => navigate(vendorPaths.item(storeId, itemId)),
     toHome: () => navigate('/')}
 }
 

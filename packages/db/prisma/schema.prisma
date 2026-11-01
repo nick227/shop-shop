@@ -241,6 +241,12 @@ model User {
   referredByAffiliateId  String?    @db.Char(36)
   referredByAffiliate    Affiliate? @relation("AffiliateCustomerReferrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
   referredByReferralCode String?
+  vendorEnrollment     VendorEnrollment?
+  /// Account-wide workspace revocation; never deletes merchant records.
+  vendorAccessRevokedAt DateTime?
+  /// Explicit platform-admin grants; role ADMIN alone does not grant merchant access.
+  adminVendorWorkspace Boolean @default(false)
+  adminCreateStores    Boolean @default(false)
   vendorVerification   VendorVerification?
   teamMemberships      TeamMember[]
   invitationsSent      Invitation[]          @relation("InvitationSender")
@@ -280,7 +286,13 @@ model Store {
   socialLinksJson Json?
 
   isPublished      Boolean     @default(false)
+  // Administrative state, changed only by admins (ACTIVE, PAUSED = suspended, DISABLED).
   status           StoreStatus @default(ACTIVE)
+  // Merchant-controlled pause; separate from status so a vendor can never lift an admin restriction.
+  acceptingOrders      Boolean   @default(true)
+  ordersPausedAt       DateTime?
+  ordersPausedByUserId String?   @db.Char(36)
+  ordersPausedReason   String?   @db.VarChar(200)
   storeType        StoreType?
   priceRange       PriceRange?
   disabledAt       DateTime?
@@ -1522,4 +1534,23 @@ model DeliveryTrackingPoint {
   @@index([provider])
   @@index([timestamp])
   @@index([latitude, longitude])
+}
+
+// Merchant enrollment is independent of platform role, KYC, and store membership.
+enum VendorEnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model VendorEnrollment {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status VendorEnrollmentStatus @default(PENDING)
+  source String @default("SELF_SERVICE")
+  requestedAt DateTime @default(now())
+  reviewedAt DateTime?
+  reviewedByUserId String?
+  updatedAt DateTime @updatedAt
 }

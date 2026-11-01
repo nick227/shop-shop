@@ -3,7 +3,8 @@
  */
 
 // Event types
-export type EventType = 
+export type EventType =
+  | 'account.access.changed' 
   | 'order.created'
   | 'order.status.changed'
   | 'order.updated'
@@ -151,7 +152,7 @@ export type VendorEventHandler = (
 ) => void
 
 export type CustomerEventHandler = (
-  event: OrderStatusChangedEvent | 
+  event: (RealtimeEvent & { type: 'account.access.changed' }) | OrderStatusChangedEvent | 
     OrderPaymentUpdatedEvent | 
     DeliveryDriverAssignedEvent | 
     DeliveryDriverLocationEvent | 

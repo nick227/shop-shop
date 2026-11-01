@@ -5,7 +5,7 @@
 
 export interface PolicyContext {
   userId: string
-  userRole: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
+  userRole: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
   email?: string
 }
 

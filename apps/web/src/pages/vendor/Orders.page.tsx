@@ -6,21 +6,21 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { OrderStatus, OrderResponse, StoreResponse } from '@api/types'
-import { useAuth } from '@features/auth/hooks/useAuth'
-import { useAuthStore } from '@stores/authStore'
+import type { OrderStatus, OrderResponse } from '@api/types'
 import { useVendorOrders, usePendingOrderCount } from '@shared/hooks/hooks/vendor/useVendorOrders'
+import { useVendorTeamRequest } from '@shared/hooks/hooks/vendor/useVendorTeamRequest'
 import { useVendorActiveStore } from '@layouts/VendorLayout/VendorActiveStoreContext'
 import { useUpdateOrderStatus } from '@shared/hooks/hooks/vendor/useUpdateOrderStatus'
 import { usePagination } from '@shared/hooks/hooks/usePagination'
-import { Button, Badge, Spinner, Pagination } from '@shared/ui/primitives'
-import { PageHeader, SectionHeader } from '@shared/ui/layout/PageLayout'
-import { PageShell } from '@shared/ui/layout/PageShell'
-import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/primitives/ui/Card/Card'
+import { Button, Badge, Pagination, SegmentedControl } from '@shared/ui/primitives'
+import { SectionHeader } from '@shared/ui/layout/PageLayout'
+import { VendorPage } from '@layouts/VendorLayout/page'
+import { useSearchParamState } from '@shared/hooks/useSearchParamState'
+import { Card, CardHeader, CardTitle } from '@shared/ui/primitives/ui/Card/Card'
 import { VendorOrderCard } from '@features/orders/components/vendor'
 import { formatPriceCurrency } from '@shared/lib/utils/format'
 import { partitionOrdersByStatus, sortOrdersByDateDesc } from '@shared/lib/utils/orderHelpers'
-import { ORDER_STATUS_CONFIG, getOrderStatusConfig } from '@features/orders/utils/orderUtils'
+import { ORDER_STATUS_CONFIG } from '@features/orders/utils/orderUtils'
 import { toast } from 'sonner'
 import { useStore } from '@shared/hooks/generated'
 import { StoreDestinationMap } from '@features/stores/components/StoreMap'
@@ -33,8 +33,7 @@ import {
 } from '@shared/lib/utils/maps'
 import { useOrderDeliveryLatLng } from '@shared/hooks/useOrderDeliveryLatLng'
 import { useHaptics } from '@shared/hooks/useHaptics'
-import { cn } from '@shared/lib/cn'
-import { Activity, Bell, BellOff, Layers, MousePointer2 } from 'lucide-react'
+import { Bell, BellOff, Layers } from 'lucide-react'
 import { VendorOrdersEmptyState } from './components/VendorOrdersEmptyState'
 import { useDeliveryTrackingPolicy } from '@/hooks/useDeliveryTrackingPolicy'
 
@@ -48,27 +47,8 @@ interface DeliveryDriver {
   }
 }
 
-function getApiBaseUrl() {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-}
-
-async function fetchStoreDrivers(storeId: string, token: string | undefined): Promise<DeliveryDriver[]> {
-  const response = await fetch(`${getApiBaseUrl()}/team/stores/${storeId}/drivers`, {
-    headers: {
-      Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new Error(data.error || data.message || 'Could not load drivers')
-  }
-  const data = await response.json()
-  return data.drivers || []
-}
-
 const STATUS_FILTERS: { value: OrderStatus | 'ALL'; label: string }[] = [
-  { value: 'ALL', label: 'All Orders' },
+  { value: 'ALL', label: 'All' },
   { value: 'PLACED', label: ORDER_STATUS_CONFIG.PLACED.label },
   { value: 'ACCEPTED', label: ORDER_STATUS_CONFIG.ACCEPTED.label },
   { value: 'PREPARING', label: ORDER_STATUS_CONFIG.PREPARING.label },
@@ -77,24 +57,25 @@ const STATUS_FILTERS: { value: OrderStatus | 'ALL'; label: string }[] = [
   { value: 'COMPLETED', label: ORDER_STATUS_CONFIG.COMPLETED.label },
 ]
 
+const FILTER_VALUES = STATUS_FILTERS.map((filter) => filter.value)
+
 export default function VendorOrdersPage() {
-  const [selectedFilter, setSelectedFilter] = useState<OrderStatus | 'ALL'>('ALL')
+  const [selectedFilter, setSelectedFilter] = useSearchParamState<OrderStatus | 'ALL'>('status', 'ALL', FILTER_VALUES)
   const [selectedOrder, setSelectedOrder] = useState<string | undefined>()
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [bulkMode, setBulkMode] = useState(false)
   const [autoAccept, setAutoAccept] = useState(false)
-  const { user } = useAuth()
-  const token = useAuthStore((state) => state.token)
   const haptics = useHaptics()
 
   const { selectedStoreId } = useVendorActiveStore()
 
+  const teamRequest = useVendorTeamRequest()
   const { data: driversByStore = {} } = useQuery({
     queryKey: ['store-delivery-drivers', selectedStoreId],
-    enabled: !!token && Boolean(selectedStoreId),
+    enabled: Boolean(selectedStoreId),
     queryFn: async () => {
-      const list = await fetchStoreDrivers(selectedStoreId, token)
-      return { [selectedStoreId]: list }
+      const { drivers = [] } = await teamRequest<{ drivers?: DeliveryDriver[] }>(`/team/stores/${selectedStoreId}/drivers`)
+      return { [selectedStoreId]: drivers }
     },
   })
 
@@ -212,13 +193,15 @@ export default function VendorOrdersPage() {
 
   const selectedOrderData = orders.find((o) => o.id === selectedOrder)
 
-  const { pending: pendingOrders, completed: completedOrders, canceled: canceledOrders } = useMemo(() => {
+  const { pending: pendingOrders } = useMemo(() => {
     return partitionOrdersByStatus(orders)
   }, [orders])
 
+  // Everything not under "Needs action", including out for delivery and delivered.
   const nonPendingOrders = useMemo(() => {
-    return [...completedOrders, ...canceledOrders].sort(sortOrdersByDateDesc)
-  }, [completedOrders, canceledOrders])
+    const pendingIds = new Set(pendingOrders.map((order) => order.id))
+    return orders.filter((order) => !pendingIds.has(order.id)).sort(sortOrdersByDateDesc)
+  }, [orders, pendingOrders])
 
   const ordersToShow = selectedFilter === 'ALL' ? nonPendingOrders : orders
   const {
@@ -230,106 +213,59 @@ export default function VendorOrdersPage() {
     goToPage,
   } = usePagination(ordersToShow, { pageSize: 20 })
 
-  if (isLoading) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <VendorOrdersEmptyState isLoading={true} />
-      </PageShell>
-    )
-  }
-
-  if (ordersError) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-4">
-          <h2 className="text-xl font-semibold">Failed to load orders</h2>
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            {(ordersError as any)?.message ?? 'Network error'}
-          </p>
-          <Button variant="outline" onClick={() => void refetchOrders()}>
-            Try Again
-          </Button>
-        </div>
-      </PageShell>
-    )
-  }
+  const filterItems = STATUS_FILTERS.map((filter) => ({
+    id: filter.value,
+    label: filter.label,
+    count: filter.value === 'PLACED' ? pendingCount : undefined,
+  }))
 
   return (
-    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
-      <PageHeader
-        title="Orders"
-        description={`${pendingCount} pending orders • Real-time processing`}
-        actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant={autoAccept ? "primary" : "outline"}
-              size="small"
-              onClick={() => { haptics.light(); setAutoAccept(!autoAccept); }}
-              className="h-9"
-            >
-              {autoAccept ? <Bell className="w-4 h-4 mr-2" /> : <BellOff className="w-4 h-4 mr-2" />}
-              {autoAccept ? 'Auto-Accept ON' : 'Auto-Accept'}
-            </Button>
-            <Badge variant="success" className="h-9 px-3 gap-1.5 bg-success/10 text-success border-success/20 animate-pulse-subtle">
-              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
-              Live
-            </Badge>
-          </div>
-        }
-      />
-
-      {/* Shortcuts & Info */}
-      <Card className="bg-muted/30 border-dashed">
-        <CardContent className="p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-2">
-            <MousePointer2 className="w-3 h-3" />
-            Quick Actions: <kbd className="px-1 py-0.5 bg-background rounded border shadow-sm">A</kbd> Accept • 
-            <kbd className="px-1 py-0.5 bg-background rounded border shadow-sm">P</kbd> Prepare • 
-            <kbd className="px-1 py-0.5 bg-background rounded border shadow-sm">R</kbd> Ready • 
-            <kbd className="px-1 py-0.5 bg-background rounded border shadow-sm">1-3</kbd> Select
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex bg-muted/50 p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar max-w-full">
-          {STATUS_FILTERS.map((filter) => (
-            <Button
-              key={filter.value}
-              variant={selectedFilter === filter.value ? 'primary' : 'ghost'}
-              size="small"
-              onClick={() => { haptics.light(); setSelectedFilter(filter.value); }}
-              className="capitalize text-xs h-9 px-4 whitespace-nowrap"
-            >
-              {filter.label}
-              {filter.value === 'PLACED' && pendingCount > 0 && (
-                <Badge variant="destructive" className="ml-2 h-4 min-w-4 px-1 text-[10px]">{pendingCount}</Badge>
-              )}
-            </Button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+    <VendorPage
+      title="Orders"
+      description={pendingCount > 0 ? `Live · ${pendingCount} waiting` : 'Live · nothing waiting'}
+      loading={isLoading}
+      error={ordersError ? { message: 'Orders could not be loaded', onRetry: () => void refetchOrders() } : undefined}
+      actions={
+        <>
           <Button
-            variant={bulkMode ? "primary" : "outline"}
+            variant="outline"
             size="small"
+            aria-pressed={bulkMode}
             onClick={() => { haptics.light(); setBulkMode(!bulkMode); setSelectedOrders([]); }}
-            className="flex-1 sm:flex-none h-9"
           >
-            <Layers className="w-4 h-4 mr-2" />
-            {bulkMode ? 'Exit Bulk' : 'Bulk Mode'}
+            <Layers className="mr-2 h-4 w-4" />
+            {bulkMode ? 'Done selecting' : 'Select'}
           </Button>
+          <Button
+            variant="outline"
+            size="small"
+            aria-pressed={autoAccept}
+            onClick={() => { haptics.light(); setAutoAccept(!autoAccept); }}
+          >
+            {autoAccept ? <Bell className="mr-2 h-4 w-4" /> : <BellOff className="mr-2 h-4 w-4" />}
+            {autoAccept ? 'Auto-accept on' : 'Auto-accept off'}
+          </Button>
+        </>
+      }
+      tabs={
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <SegmentedControl
+            label="Order status"
+            items={filterItems}
+            value={selectedFilter}
+            onChange={(value) => { haptics.light(); setSelectedFilter(value); }}
+          />
           {bulkMode && selectedOrders.length > 0 && (
-             <div className="flex items-center gap-1 animate-in slide-in-from-right-4 duration-300">
-               <Button size="small" variant="primary" onClick={() => handleBulkStatusUpdate('ACCEPTED')} className="h-9">{ORDER_STATUS_CONFIG.ACCEPTED.actionLabel || 'Accept'}</Button>
-               <Button size="small" variant="primary" onClick={() => handleBulkStatusUpdate('PREPARING')} className="h-9">{ORDER_STATUS_CONFIG.PREPARING.actionLabel || 'Prep'}</Button>
-               <Button size="small" variant="primary" onClick={() => handleBulkStatusUpdate('READY')} className="h-9">{ORDER_STATUS_CONFIG.READY.actionLabel || 'Ready'}</Button>
-             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{selectedOrders.length} selected</span>
+              <Button size="small" variant="outline" onClick={() => handleBulkStatusUpdate('ACCEPTED')}>{ORDER_STATUS_CONFIG.ACCEPTED.actionLabel || 'Accept'}</Button>
+              <Button size="small" variant="outline" onClick={() => handleBulkStatusUpdate('PREPARING')}>{ORDER_STATUS_CONFIG.PREPARING.actionLabel || 'Prep'}</Button>
+              <Button size="small" variant="outline" onClick={() => handleBulkStatusUpdate('READY')}>{ORDER_STATUS_CONFIG.READY.actionLabel || 'Ready'}</Button>
+            </div>
           )}
         </div>
-      </div>
-
+      }
+    >
       {/* Orders View */}
       {orders.length === 0 ? (
         <VendorOrdersEmptyState
@@ -342,7 +278,7 @@ export default function VendorOrdersPage() {
           {/* Priority/Pending Section */}
           {selectedFilter === 'ALL' && pendingOrders.length > 0 && (
             <div className="space-y-4">
-              <SectionHeader title="⚡ Priority Processing" />
+              <SectionHeader title="Needs action" />
               <div className="grid gap-3">
                 {pendingOrders.map((order) => (
                   <VendorOrderCard
@@ -404,13 +340,20 @@ export default function VendorOrdersPage() {
         </div>
       )}
 
+      <p className="mt-8 hidden text-xs text-muted-foreground md:block">
+        Keyboard: <kbd className="rounded border border-border px-1">A</kbd> accept ·{' '}
+        <kbd className="rounded border border-border px-1">P</kbd> prepare ·{' '}
+        <kbd className="rounded border border-border px-1">R</kbd> ready ·{' '}
+        <kbd className="rounded border border-border px-1">1</kbd>–<kbd className="rounded border border-border px-1">3</kbd> open
+      </p>
+
       {selectedOrderData && (
         <OrderDetailsModal
           order={selectedOrderData}
           onClose={() => setSelectedOrder(undefined)}
         />
       )}
-    </PageShell>
+    </VendorPage>
   )
 }
 

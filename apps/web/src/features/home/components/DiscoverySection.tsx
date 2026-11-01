@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { AvailableLocations, NewestStores } from '@features/stores/components'
 import { HomeNewestProducts } from './HomeNewestProducts'
-import { HomeSellSection } from './HomeSellSection'
 import { geocodeCity } from '@services/geocoding'
 import type { CityDirectoryEntry } from '@shared/hooks/hooks/store'
 import type { LocationData } from '@shared/types'
@@ -53,7 +52,6 @@ export function DiscoverySection() {
       <AvailableLocations onSelectCity={(entry) => void handleCitySelect(entry)} />
       <NewestStores />
       <HomeNewestProducts />
-      <HomeSellSection />
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="p-4 rounded-xl border border-border bg-card">
           <p className="text-sm font-semibold text-foreground">Local-first</p>

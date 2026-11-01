@@ -15,8 +15,8 @@ export interface RealtimeEvent {
 }
 
 export interface RealtimeBroker {
-  subscribe(topic: string, ws: WebSocket): void
-  unsubscribe(topic: string, ws: WebSocket): void
+  subscribe(topic: string, ws: WebSocket, authorize?: () => Promise<boolean>): void
+  unsubscribe(topic: string, ws: WebSocket, authorize?: () => Promise<boolean>): void
   unsubscribeAll(ws: WebSocket): void
   publish(topic: string, event: Omit<RealtimeEvent, 'topic'>): void
   getSubscriberCount(topic: string): number
@@ -24,10 +24,15 @@ export interface RealtimeBroker {
 }
 
 class InMemoryBroker implements RealtimeBroker {
+  private authorizers = new Map<WebSocket, Map<string, () => Promise<boolean>>>()
   private subscriptions = new Map<string, Set<WebSocket>>()
   private clientSubscriptions = new Map<WebSocket, Set<string>>()
 
-  subscribe(topic: string, ws: WebSocket): void {
+  subscribe(topic: string, ws: WebSocket, authorize?: () => Promise<boolean>): void {
+    if (authorize) {
+      if (!this.authorizers.has(ws)) this.authorizers.set(ws, new Map())
+      this.authorizers.get(ws)!.set(topic, authorize)
+    }
     // Add to topic → clients mapping
     if (!this.subscriptions.has(topic)) {
       this.subscriptions.set(topic, new Set())
@@ -43,7 +48,8 @@ class InMemoryBroker implements RealtimeBroker {
     console.log(`[Broker] Client subscribed to topic: ${topic}`)
   }
 
-  unsubscribe(topic: string, ws: WebSocket): void {
+  unsubscribe(topic: string, ws: WebSocket, authorize?: () => Promise<boolean>): void {
+    this.authorizers.get(ws)?.delete(topic)
     this.subscriptions.get(topic)?.delete(ws)
     this.clientSubscriptions.get(ws)?.delete(topic)
 
@@ -56,6 +62,7 @@ class InMemoryBroker implements RealtimeBroker {
   }
 
   unsubscribeAll(ws: WebSocket): void {
+    this.authorizers.delete(ws)
     const topics = this.clientSubscriptions.get(ws)
     if (topics) {
       topics.forEach(topic => {
@@ -83,7 +90,14 @@ class InMemoryBroker implements RealtimeBroker {
     let sentCount = 0
 
     subscribers.forEach(ws => {
-      if (ws.readyState === ws.OPEN) {
+      const authorize = this.authorizers.get(ws)?.get(topic)
+      if (authorize) {
+        // Recheck at delivery time: revoked subscriptions never retain access to future events.
+        void authorize().then((allowed) => {
+          if (!allowed) { this.unsubscribe(topic, ws); return }
+          if (this.subscriptions.get(topic)?.has(ws) && ws.readyState === ws.OPEN) ws.send(messageStr)
+        }).catch(() => this.unsubscribe(topic, ws))
+      } else if (ws.readyState === ws.OPEN) {
         ws.send(messageStr)
         sentCount++
       }
@@ -104,3 +118,10 @@ class InMemoryBroker implements RealtimeBroker {
 // Singleton instance
 export const realtimeBroker = new InMemoryBroker()
 
+
+/** Account metadata event; no merchant data is sent to the customer topic. */
+export function notifyAccountAccessChanged(userId: string) {
+  realtimeBroker.publish(`customer:${userId}`, {
+    type: 'account.access.changed', timestamp: new Date().toISOString(), payload: {},
+  })
+}

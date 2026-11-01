@@ -12,6 +12,7 @@ import {
   authHeaders,
   cleanupTestData,
   createAuthenticatedUser,
+  createWorkspaceAdmin,
   createTestStore,
   TEST_NAMESPACE,
 } from './helpers'
@@ -77,7 +78,7 @@ describe('River posts & marketplace (official store)', () => {
 
   describe('POST /api/v1/river/posts', () => {
     it('allows ADMIN to create a post for the official platform store', async () => {
-      const admin = await createAuthenticatedUser('ADMIN')
+      const admin = await createWorkspaceAdmin()
       const officialId = await getOrCreateOfficialStoreId(admin.id)
       const content = `${RIVER_TEST_PREFIX} admin-official`
 
@@ -97,7 +98,7 @@ describe('River posts & marketplace (official store)', () => {
     })
 
     it('allows ADMIN to create a post for any vendor store', async () => {
-      const admin = await createAuthenticatedUser('ADMIN')
+      const admin = await createWorkspaceAdmin()
       const vendor = await createAuthenticatedUser('VENDOR')
       const store = await createTestStore(vendor.id)
       const content = `${RIVER_TEST_PREFIX} admin-vendor-store`
@@ -180,7 +181,7 @@ describe('River posts & marketplace (official store)', () => {
 
   describe('Public marketplace search', () => {
     it('excludes the official store slug from unified store search results', async () => {
-      const admin = await createAuthenticatedUser('ADMIN')
+      const admin = await createWorkspaceAdmin()
       const officialId = await getOrCreateOfficialStoreId(admin.id)
       const mark = `${TEST_NAMESPACE}-mkt-official-${Date.now()}`
       await prisma.store.update({
@@ -220,7 +221,7 @@ describe('River posts & marketplace (official store)', () => {
 
   describe('River visibility', () => {
     it('still lists official store posts on GET /api/v1/river/posts', async () => {
-      const admin = await createAuthenticatedUser('ADMIN')
+      const admin = await createWorkspaceAdmin()
       const officialId = await getOrCreateOfficialStoreId(admin.id)
       const content = `${RIVER_TEST_PREFIX} river-visible`
 

@@ -1,3 +1,4 @@
+import { getAccountCapabilities } from './account-capabilities.service.js'
 ﻿import { prisma } from '../client.js'
 import { refundOrder } from './payment.service.js'
 import { publishOrderStatusChanged } from './order-realtime.publisher.js'
@@ -35,6 +36,7 @@ async function userCanManageOrdersOnStore(
   storeId: string,
   storeOwnerId: string,
 ): Promise<boolean> {
+  if (!(await getAccountCapabilities(userId)).canAccessVendorPortal) return false
   if (userId === storeOwnerId) return true
   const member = await prisma.teamMember.findFirst({
     where: { storeId, userId, isActive: true },
@@ -68,7 +70,7 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
     where: { id: input.userId },
     select: { role: true },
   })
-  const isAdmin = actor?.role === 'ADMIN'
+  const isAdmin = (await getAccountCapabilities(input.userId)).canAdministerStores
 
   const isCustomer = order.userId === input.userId
   const isStoreSide = await userCanManageOrdersOnStore(
@@ -260,7 +262,7 @@ export async function canCancelOrder(orderId: string, userId: string): Promise<{
     where: { id: userId },
     select: { role: true },
   })
-  const isAdmin = actor?.role === 'ADMIN'
+  const isAdmin = (await getAccountCapabilities(userId)).canAdministerStores
 
   const isCustomer = order.userId === userId
   const isStoreSide = await userCanManageOrdersOnStore(

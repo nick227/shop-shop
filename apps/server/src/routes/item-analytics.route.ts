@@ -1,8 +1,8 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { prisma } from '@packages/db'
 import { Prisma } from '@packages/db/generated/client'
 import { z } from 'zod'
-import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 import { VendorErrors } from './vendor/vendorHelpers.js'
 
@@ -197,7 +197,7 @@ async function handleItemAnalytics(request: FastifyRequest, reply: FastifyReply)
 
 export async function itemAnalyticsRoutes(app: FastifyInstance) {
   app.get('/items/analytics', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     const { storeId } = QuerySchema.parse(req.query)
     const userId = req.user?.id

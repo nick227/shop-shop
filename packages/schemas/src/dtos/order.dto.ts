@@ -127,6 +127,11 @@ export const OrderListResponseSchema = z.object({
 export const OrderQuerySchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
+  // Store staff must list one store at a time; the list hook checks access to it.
+  storeId: z.string().min(1).optional(),
+  status: z
+    .enum(['PENDING_PAYMENT', 'PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELED'])
+    .optional(),
 }).transform((data) => {
   const row = data as Record<string, unknown>
   const filters: Record<string, unknown> = {}

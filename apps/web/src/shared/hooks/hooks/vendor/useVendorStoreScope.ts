@@ -1,88 +1,62 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { storeIdFromPath, vendorPaths, withStore } from '@shared/lib/utils/navigation/vendorPaths'
 
 export interface VendorStorePick {
   readonly id: string
   readonly name?: string
 }
 
-const STORE_QUERY = 'storeId'
+const LAST_STORE_KEY = 'vendor:lastStoreId'
 
-const VENDOR_STORE_PATH = /^\/vendor\/stores\/([^/]+)(\/.*)?$/
+/** The store the user last worked in on this device, if storage is available. */
+export function readLastStoreId(): string {
+  try {
+    return localStorage.getItem(LAST_STORE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
 
-function pathStoreIdFromLocation(pathname: string, stores: readonly VendorStorePick[]): string {
-  const match = VENDOR_STORE_PATH.exec(pathname)
-  const id = match?.[1]
-  if (id && stores.some((s) => s.id === id)) return id
-  return ''
+function writeLastStoreId(storeId: string) {
+  try {
+    localStorage.setItem(LAST_STORE_KEY, storeId)
+  } catch {
+    // Storage blocked; the path still carries the store.
+  }
 }
 
 /**
- * Syncs `?storeId=` across vendor routes; respects `/vendor/stores/:id/...` path; auto-fills when missing or invalid.
+ * The active store: the `/vendor/:storeId` path segment when it names one of your stores,
+ * otherwise the store you last worked in, otherwise your first store.
  */
 export function useVendorStoreScope(stores: readonly VendorStorePick[]) {
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const location = useLocation()
+  const { pathname } = useLocation()
 
-  const urlStoreId = searchParams.get(STORE_QUERY) ?? ''
-  const pathStoreId = useMemo(
-    () => pathStoreIdFromLocation(location.pathname, stores),
-    [location.pathname, stores]
-  )
-
-  // Stable set of store IDs — prevents effect from firing on refetch when stores haven't changed
-  const storeIdSet = useMemo(() => new Set(stores.map((s) => s.id)), [stores])
-  const storeIdsKey = useMemo(() => [...storeIdSet].sort().join(','), [storeIdSet])
-
-  // Track the last explicitly confirmed selection so we don't fall back to stores[0] on refetch
-  const lastValidSelectionRef = useRef<string>('')
+  const pathStoreId = useMemo(() => {
+    const id = storeIdFromPath(pathname)
+    return id && stores.some((s) => s.id === id) ? id : ''
+  }, [pathname, stores])
 
   const selectedStoreId = useMemo(() => {
-    if (stores.length === 0) return ''
-    if (urlStoreId && storeIdSet.has(urlStoreId)) return urlStoreId
     if (pathStoreId) return pathStoreId
-    // Preserve last known selection across refetches before falling back to first store
-    if (lastValidSelectionRef.current && storeIdSet.has(lastValidSelectionRef.current)) {
-      return lastValidSelectionRef.current
-    }
+    const remembered = readLastStoreId()
+    if (remembered && stores.some((s) => s.id === remembered)) return remembered
     return stores[0]?.id ?? ''
-  }, [stores, urlStoreId, pathStoreId, storeIdSet])
-
-  // Keep the ref in sync whenever we have a confirmed valid selection
-  useEffect(() => {
-    if (selectedStoreId) lastValidSelectionRef.current = selectedStoreId
-  }, [selectedStoreId])
+  }, [pathStoreId, stores])
 
   useEffect(() => {
-    if (stores.length === 0) return
-    const urlValid = urlStoreId && storeIdSet.has(urlStoreId)
-    if (urlValid) return
-    const next = new URLSearchParams(searchParams)
-    next.set(STORE_QUERY, selectedStoreId)
-    navigate({ pathname: location.pathname, search: `?${next.toString()}` }, { replace: true })
-  }, [storeIdsKey, urlStoreId, selectedStoreId, searchParams, navigate, location.pathname, storeIdSet])
+    if (pathStoreId) writeLastStoreId(pathStoreId)
+  }, [pathStoreId])
 
   const setSelectedStoreId = useCallback(
     (storeId: string) => {
       if (!stores.some((s) => s.id === storeId)) return
-      const pathMatch = VENDOR_STORE_PATH.exec(location.pathname)
-      let pathname = location.pathname
-      if (pathMatch) {
-        const pathRest = pathMatch[2]
-        pathname = `/vendor/stores/${storeId}${pathRest ?? ''}`
-      }
-      const next = new URLSearchParams(searchParams)
-      next.set(STORE_QUERY, storeId)
-      navigate({ pathname, search: `?${next.toString()}` })
+      navigate(pathStoreId ? withStore(pathname, storeId) : vendorPaths.overview(storeId))
     },
-    [stores, searchParams, navigate, location.pathname]
+    [stores, navigate, pathStoreId, pathname],
   )
 
-  const selectedStore = useMemo(
-    () => (selectedStoreId ? stores.find((s) => s.id === selectedStoreId) : undefined),
-    [stores, selectedStoreId]
-  )
-
-  return { selectedStoreId, selectedStore, setSelectedStoreId, storeQueryParam: STORE_QUERY }
+  return { selectedStoreId, setSelectedStoreId, pathStoreId }
 }

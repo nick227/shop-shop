@@ -54,25 +54,8 @@ async function assertCanViewOrModifyOrder(
   order: OrderForAccess,
   reply: FastifyReply,
 ): Promise<boolean> {
-  if (user.role === 'ADMIN') return true
-
-  if (user.role === 'USER') {
-    if (order.customerId !== user.id) {
-      reply.code(403).send({ error: 'Forbidden', message: 'You can only access your own orders' })
-      return false
-    }
-    return true
-  }
-
-  if (user.role === 'VENDOR' || user.role === 'STAFF') {
-    const allowed = await userHasStoreAccess(user.id, user.role, order.storeId, 'orders')
-    if (!allowed) {
-      reply.code(403).send({ error: 'Forbidden', message: 'You can only access orders for stores you manage' })
-      return false
-    }
-    return true
-  }
-
+  if (order.customerId === user.id) return true
+  if (await userHasStoreAccess(user.id, user.role, order.storeId, 'orders')) return true
   reply.code(403).send({ error: 'Forbidden', message: 'Insufficient permissions for this order' })
   return false
 }

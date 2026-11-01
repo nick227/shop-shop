@@ -75,6 +75,8 @@ export async function authFetch<T = unknown>(
     headers,
   })
   
+  if (response.status === 403) window.dispatchEvent(new CustomEvent('account:access-denied'))
+
   // Handle 401 Unauthorized responses
   if (response.status === 401 && token && /^bearer\s+\S+$/i.test((headers.get('Authorization') ?? '').trim())) {
     try {

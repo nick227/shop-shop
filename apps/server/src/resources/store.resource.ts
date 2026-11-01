@@ -1,3 +1,4 @@
+import { getAccountCapabilities } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
   CreateStoreInputSchema,
@@ -17,6 +18,17 @@ import { getStoreReadiness } from '../services/store-readiness.service.js'
 // ========================================
 
 const storeDomain = new StoreDomain()
+
+/** Set by admins only; a merchant update must never change them. */
+const ADMIN_STATUS_FIELDS = ['status', 'disabledAt', 'disabledByUserId', 'disabledReason'] as const
+/** The merchant's pause; only PUT /stores/:id/ordering changes it. */
+const MERCHANT_PAUSE_FIELDS = ['acceptingOrders', 'ordersPausedAt', 'ordersPausedByUserId', 'ordersPausedReason'] as const
+
+function omitKeys(data: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
+  const next = { ...data }
+  for (const key of keys) delete next[key]
+  return next
+}
 
 const BROWSE_KEYWORDS: Record<string, string[]> = {
   'meal-prep': ['meal prep', 'meal', 'catering', 'cater', 'prepared'],
@@ -230,7 +242,7 @@ export const storeResource = defineResource({
     query: StoreQuerySchema,
   },
   access: {
-    create: ['USER', 'VENDOR', 'ADMIN'],  // Open vendor model: store creation converts USER -> VENDOR
+    create: ['USER', 'VENDOR', 'ADMIN'],  // Capability boundary enforced by loader and beforeCreate
     read: [],  // Public
     update: ['USER', 'VENDOR', 'ADMIN'],  // Ownership hook decides who can update
     delete: ['ADMIN'],  // Only admins can delete
@@ -243,8 +255,8 @@ export const storeResource = defineResource({
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
     beforeCreate: async (data: any, context: any) => {
-      if (!['USER', 'VENDOR', 'ADMIN'].includes(context.userRole)) {
-        throw new Error('Authenticated users can create stores')
+      if (!context.userId || !(await getAccountCapabilities(context.userId)).canCreateStore) {
+        throw new Error('Store creation is not authorized')
       }
 
       // Phase 4A — strip raw `referredByAffiliateId` (never trust the client) and
@@ -265,9 +277,15 @@ export const storeResource = defineResource({
         select: { ownerUserId: true, isPublished: true },
       })
       
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
+      const canAdministerStores = (await getAccountCapabilities(context.userId)).canAdministerStores
+      if (!store || (!canAdministerStores && store.ownerUserId !== context.userId)) {
         throw new Error('Only store owner can update store')
       }
+
+      // Administrative restrictions are admin-only, so a merchant can never lift a suspension.
+      // The merchant's own pause goes through PUT /stores/:id/ordering, which records who and why.
+      data = omitKeys(data, MERCHANT_PAUSE_FIELDS)
+      if (!canAdministerStores) data = omitKeys(data, ADMIN_STATUS_FIELDS)
 
       if (data.isPublished === true && store.isPublished !== true) {
         const readiness = await getStoreReadiness(id)
@@ -285,18 +303,13 @@ export const storeResource = defineResource({
         select: { ownerUserId: true },
       })
       
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
+      if (!store || (!(await getAccountCapabilities(context.userId)).canAdministerStores && store.ownerUserId !== context.userId)) {
         throw new Error('Only store owner can delete store')
       }
       
     },
     afterCreate: async (result, context) => {
-      if (context?.userId && context.userRole === 'USER') {
-        await prisma.user.update({
-          where: { id: context.userId },
-          data: { role: 'VENDOR' },
-        })
-      }
+
 
       // Phase 4A step 7 — emit a STORE_SIGNUP referral event when the store is
       // attributed. Snapshot referralCode/referralSlug so the event is meaningful

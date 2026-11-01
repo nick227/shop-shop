@@ -1,3 +1,4 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { ZodError } from 'zod'
 import { Prisma } from '@packages/db/generated/client'
@@ -31,7 +32,7 @@ import {
   prisma,
   type CreatePostInput,
 } from '@packages/db'
-import { requireAuth, requireRole } from '../middleware/rbac.js'
+import { requireAuth } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 
 function isPrismaUniqueViolation(error: unknown): boolean {
@@ -186,7 +187,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.post(
     '/river/posts',
     {
-      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireVendorWorkspace],
     },
     async (req, reply) => {
       try {
@@ -248,7 +249,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.patch(
     '/river/posts/:id',
     {
-      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireVendorWorkspace],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }
@@ -277,7 +278,7 @@ export const riverRoutes = async (app: FastifyInstance) => {
   app.delete(
     '/river/posts/:id',
     {
-      preHandler: [requireRole(['USER', 'VENDOR', 'STAFF', 'ADMIN'])],
+      preHandler: [requireVendorWorkspace],
     },
     async (req, reply) => {
       const { id } = req.params as { id: string }

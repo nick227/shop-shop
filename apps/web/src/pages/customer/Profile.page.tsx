@@ -1,3 +1,4 @@
+import { VendorEnrollmentSetting } from '@features/account/VendorEnrollmentSetting'
 /**
  * CustomerProfilePage - Refactored View and edit customer profile
  * 
@@ -159,6 +160,7 @@ export default function CustomerProfilePage() {
             <Button variant="ghost" className="w-full justify-start">Privacy Settings</Button>
             <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10">Delete Account</Button>
           </div>
+          <VendorEnrollmentSetting />
           <div className="mt-4 pt-4 border-t border-border">
             <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
               <LogOut className="w-4 h-4" />

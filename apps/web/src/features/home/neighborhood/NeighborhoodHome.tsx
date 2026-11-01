@@ -1,14 +1,18 @@
+import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { STORE_TYPE_LABEL } from '@features/search/config/storeTypes'
 import { HeroWindow } from './HeroWindow'
+import { SiteBranding } from './SiteBranding'
 import { StoreMosaic, StoryStrip } from './MosaicAndStories'
 import { PlaceField } from './PlaceField'
 import { RecentShelf } from './RecentShelf'
 import { SignedInShelves } from './SignedInShelves'
 import { ProductShelf, StoreShelf } from './Shelves'
 import { formatDistance } from '@shared/lib/utils/format'
-import { momentLine, selectHome } from './selectHome'
+import { HOME_RADIUS_MILES, placeZip, rememberedPlace } from '../shell/placeMemory'
+import { selectHome } from './selectHome'
+import { defaultAddressZip } from './signedInSelect'
 import { TypePlates } from './TypePlates'
 import { ProductRange } from './ProductRange'
 import { hideVertical, useHomeTaste } from './taste'
@@ -18,14 +22,27 @@ import { useSignedInHome } from './useSignedInHome'
 function placeTitle(city: string | undefined, zip: string | undefined): string {
   if (city) return city
   if (zip) return zip
-  return 'Name your block.'
+  return 'Location'
 }
 
 export function NeighborhoodHome() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const taste = useHomeTaste()
   const data = useNeighborhoodData()
   const account = useSignedInHome()
+  const accountZip = defaultAddressZip(account.addresses)
+  const shownZip = data.location?.zip || placeZip(params.toString()) || accountZip || ''
+
+  useEffect(() => {
+    const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
+    if (!zip) return
+    if (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES)) return
+    const next = new URLSearchParams(params)
+    next.set('zip', zip)
+    next.set('radius', String(HOME_RADIUS_MILES))
+    setParams(next, { replace: true })
+  }, [accountZip, params, setParams])
+
   const hasPlace = Boolean(data.location)
   const selection = selectHome(data.stores, data.products, taste, hasPlace)
   const explore = new URLSearchParams(params)
@@ -33,7 +50,7 @@ export function NeighborhoodHome() {
   explore.delete('browse')
 
   const merchantCount = data.stores.length
-  const title = placeTitle(data.location?.city, data.location?.zip)
+  const title = placeTitle(data.location?.city, shownZip)
   const placeName = data.location?.city ?? data.location?.zip
   const closest = data.stores
     .filter((store) => typeof store.distance === 'number' && store.id !== selection.hero?.id)
@@ -48,28 +65,28 @@ export function NeighborhoodHome() {
       <PublicMaintenanceBanner />
 
       <div className="lead">
-        <header className="opening">
-          <p className="shop-mono text-xs" style={{ color: 'var(--quiet)' }}>
-            {hasPlace
-              ? `${data.location?.zip ?? 'Nearby'} · ${Math.round(data.location?.radiusMiles ?? 5)} mi`
-              : 'Delivery area'}
-          </p>
-          <h1>{title}</h1>
-          <p className="max-w-md text-sm" style={{ color: 'var(--quiet)' }}>
-            {hasPlace ? account.usual ?? momentLine() : 'Enter a ZIP to see what’s close.'}
-          </p>
-          <div className="mt-4">
-            <PlaceField tone="hero" />
+        <header className="opening flex flex-col justify-start h-full">
+          <SiteBranding />
+          <div>  
+            <p className="shop-mono text-xs" style={{ color: 'var(--quiet)' }}>
+              {shownZip
+                ? `${shownZip} · ${HOME_RADIUS_MILES} mi`
+                : 'Delivery area'}
+            </p>
+            <h1>{title}</h1>
+            <div className="mt-4">
+              <PlaceField tone="hero" />
+            </div>
+            {hasPlace ? (
+              <Link
+                to={{ pathname: '/search', search: explore.toString() }}
+                className="mt-3 inline-flex min-h-11 items-center text-sm"
+                style={{ color: 'var(--quiet)' }}
+              >
+                See everything in range
+              </Link>
+            ) : null}
           </div>
-          {hasPlace ? (
-            <Link
-              to={{ pathname: '/search', search: explore.toString() }}
-              className="mt-3 inline-flex min-h-11 items-center text-sm"
-              style={{ color: 'var(--quiet)' }}
-            >
-              See everything in range
-            </Link>
-          ) : null}
         </header>
         <div className="lead-visual">
           {selection.hero && !data.storesLoading ? <HeroWindow store={selection.hero} /> : null}
@@ -126,7 +143,7 @@ export function NeighborhoodHome() {
 
       {!data.storesLoading && hasPlace && merchantCount === 0 ? (
         <p className="text-sm" style={{ color: 'var(--quiet)' }}>
-          No merchants in this radius yet. Widen the distance, or try the next ZIP over.
+          No merchants in this area yet. Try the next ZIP over.
         </p>
       ) : (
         <StoreMosaic
@@ -138,12 +155,6 @@ export function NeighborhoodHome() {
 
       <StoryStrip posts={data.stories} />
 
-      <div className="sell-line">
-        <p className="text-sm" style={{ color: 'var(--quiet)' }}>Have a storefront?</p>
-        <Link to="/vendor/store/new" className="min-h-11 text-sm font-semibold">
-          Sell on ShopShop
-        </Link>
-      </div>
     </div>
   )
 }

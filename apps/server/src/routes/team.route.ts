@@ -1,3 +1,4 @@
+import { notifyAccountAccessChanged } from '../services/realtime.broker.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -15,7 +16,9 @@ import {
   removeTeamMember,
 } from '@packages/db'
 import { prisma } from '@packages/db'
-import { requireRole } from '../middleware/rbac.js'
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
+import { getAccountCapabilities } from '@packages/db'
+import { requireAuth } from '../middleware/rbac.js'
 import { VendorErrors, requireVendorAuth, userHasStoreAccess } from './vendor/vendorHelpers.js'
 
 const PermissionSchema = z.enum([
@@ -60,7 +63,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // POST /team/invitations - Send team invitation
   app.post('/team/invitations', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -127,7 +130,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // POST /team/invitations/accept - Accept invitation
   app.post('/team/invitations/accept', {
-    preHandler: [requireRole(['USER', 'STAFF'])],
+    preHandler: [requireAuth],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -143,6 +146,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
         userId,
       })
 
+      notifyAccountAccessChanged(userId)
       return reply.code(200).send({ teamMember })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -153,6 +157,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
           error.message.includes('not found') ||
           error.message.includes('expired') ||
           error.message.includes('mismatch') ||
+          error.message.includes('revoked') ||
           error.message.includes('already')
         ) {
           return reply.code(400).send({ error: error.message })
@@ -182,7 +187,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/invitations/:id - Revoke invitation
   app.delete('/team/invitations/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -208,7 +213,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/members - Get store team members
   app.get('/team/stores/:storeId/members', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -226,7 +231,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/invitations - Get pending invitations for store
   app.get('/team/stores/:storeId/invitations', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -244,7 +249,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/stores/:storeId/drivers - Get active delivery assignment targets
   app.get('/team/stores/:storeId/drivers', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -262,7 +267,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/me/stores - Owned stores + stores where user is an active team member (admin: all stores)
   app.get('/team/me/stores', {
-    preHandler: [requireRole(['USER', 'STAFF', 'VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -270,9 +275,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
         return reply.code(401).send({ error: 'Unauthorized' })
       }
 
-      if (req.user!.role === 'ADMIN') {
+      if ((await getAccountCapabilities(userId)).canAdministerStores) {
         const allStores = await prisma.store.findMany({
-          select: { id: true, name: true, slug: true, isPublished: true },
+          select: { id: true, name: true, slug: true, isPublished: true, status: true, acceptingOrders: true, ordersPausedReason: true, imageUrl: true, addressCity: true, addressState: true },
           orderBy: { name: 'asc' },
           take: 500,
         })
@@ -280,6 +285,8 @@ export const teamRoutes = async (app: FastifyInstance) => {
           storeId: store.id,
           store,
           permissions: ['FULL_ACCESS'] as const,
+          // Admins can update any store, so they act as owner here.
+          isOwner: true,
           addedAt: new Date(),
         }))
         return reply.code(200).send({ stores })
@@ -295,7 +302,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // GET /team/me/invitations - Get invitations for current user
   app.get('/team/me/invitations', {
-    preHandler: [requireRole(['USER', 'STAFF'])],
+    preHandler: [requireAuth],
   }, async (req, reply) => {
     try {
       const email = req.user?.email
@@ -314,7 +321,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // PATCH /team/members/:id - Update team member
   app.patch('/team/members/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -332,6 +339,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
         actorRole: req.user!.role,
       })
 
+      notifyAccountAccessChanged(member.userId)
       return reply.code(200).send({ member })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -348,7 +356,7 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
   // DELETE /team/members/:id - Remove team member
   app.delete('/team/members/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -359,7 +367,9 @@ export const teamRoutes = async (app: FastifyInstance) => {
 
       const params = req.params as { id: string }
 
+      const removed = await prisma.teamMember.findUnique({ where: { id: params.id }, select: { userId: true } })
       await removeTeamMember(params.id, userId, req.user!.role)
+      if (removed) notifyAccountAccessChanged(removed.userId)
 
       return reply.code(204).send()
     } catch (error) {

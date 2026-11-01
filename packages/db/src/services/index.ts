@@ -42,6 +42,7 @@ export * from './team.service.js'
 export * from './affiliate-sales.service.js'
 export * from './affiliate-commission.service.js'
 export * from './storeActivation.service.js'
+export * from './storeOrdering.service.js'
 export * from './bundlePricing.service.js'
 export * from './promotion-enhanced.service.js'
 export * from './order-cancellation.service.js'
@@ -55,3 +56,5 @@ export const Decimal = PrismaDecimal
 // Note: Most services now use BaseCrudService via resource definitions
 // Only create custom services for complex business logic beyond CRUD
 
+
+export * from "./account-capabilities.service.js";

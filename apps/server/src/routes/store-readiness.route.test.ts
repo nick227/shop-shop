@@ -6,7 +6,7 @@ import { registerAllResources } from './loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
 import { deliveryZoneRoutes } from './delivery-zone.route.js'
 import { storeReadinessRoutes } from './store-readiness.route.js'
-import { authHeaders, cleanupTestData, createAuthenticatedUser, TEST_NAMESPACE } from '../__tests__/helpers.js'
+import { authHeaders, cleanupTestData, createAuthenticatedUser, createEnrolledVendor, TEST_NAMESPACE } from '../__tests__/helpers.js'
 
 function testSlug(label: string) {
   return `${TEST_NAMESPACE}-${label}-${randomUUID().slice(0, 8)}`
@@ -74,7 +74,7 @@ describe('Store readiness and coordinate marketplace behavior', () => {
   })
 
   beforeEach(async () => {
-    vendor = await createAuthenticatedUser('VENDOR')
+    vendor = await createEnrolledVendor()
   })
 
   afterAll(async () => {

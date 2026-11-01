@@ -1,15 +1,15 @@
-# BagLunch Redesign Plan: From Generic Marketplace to Food-First Experience
+# ShopShop Redesign Plan: From Generic Marketplace to Food-First Experience
 
 ## Executive Summary
 
-The current BagLunch interface is functional but lacks a strong "food marketplace" identity. This redesign plan addresses the core issue: the app feels like a generic SaaS template rather than a local food discovery platform. The solution is not cosmetic improvements but a complete brand identity overhaul applied consistently across all touchpoints.
+The current ShopShop interface is functional but lacks a strong "food marketplace" identity. This redesign plan addresses the core issue: the app feels like a generic SaaS template rather than a local food discovery platform. The solution is not cosmetic improvements but a complete brand identity overhaul applied consistently across all touchpoints.
 
 ## Core Problem Diagnosis
 
 ### Current State Issues
 - **Layout**: Narrow, centered content floating in excessive white space
 - **Typography**: Too small, neutral, lacking hierarchy
-- **Brand**: Generic marketplace feel, no "BagLunch" personality
+- **Brand**: Generic marketplace feel, no "ShopShop" personality
 - **Imagery**: Inconsistent placeholders (landscapes, trains) instead of food
 - **Cards**: Default white rectangles with minimal visual interest
 - **Navigation**: Admin controls competing with customer features
@@ -21,7 +21,7 @@ The interface prioritizes software patterns over food commerce patterns. Every p
 ## Brand Direction Strategy
 
 ### Recommended Direction: Warm Local Lunch Counter
-**Rationale**: Aligns with "BagLunch" name - casual, local, food-focused, trustworthy
+**Rationale**: Aligns with "ShopShop" name - casual, local, food-focused, trustworthy
 
 #### Brand Attributes
 - **Local**: Neighborhood kitchens, community focus
@@ -200,7 +200,7 @@ The interface prioritizes software patterns over food commerce patterns. Every p
 #### Full-Screen Hero Section
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [BagLunch Logo]                    [Location] [Cart] [Profile] │
+│ [ShopShop Logo]                    [Location] [Cart] [Profile] │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  Find lunch from local kitchens                             │
@@ -423,7 +423,7 @@ Professional imagery and consistent presentation build marketplace trust.
 
 ## Conclusion
 
-This redesign transforms BagLunch from a generic marketplace template into a distinctive food-first platform. The focus on brand identity, imagery systems, and content pacing addresses the core issues while maintaining the app's functional strengths.
+This redesign transforms ShopShop from a generic marketplace template into a distinctive food-first platform. The focus on brand identity, imagery systems, and content pacing addresses the core issues while maintaining the app's functional strengths.
 
 The implementation roadmap provides a clear path from current state to a professional, appetizing marketplace that users will trust and enjoy using. The phased approach allows for testing and refinement while delivering incremental improvements.
 

@@ -1,3 +1,4 @@
+import { requireStoreCreation } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -39,7 +40,7 @@ const ReviewVerificationSchema = z.object({
 export const vendorVerificationRoutes = async (app: FastifyInstance) => {
   // POST /vendor-verification - Create verification request
   app.post('/vendor-verification', {
-    preHandler: [requireRole(['VENDOR'])],
+    preHandler: [requireStoreCreation],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -66,7 +67,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
 
   // GET /vendor-verification/me - Get current user's verification
   app.get('/vendor-verification/me', {
-    preHandler: [requireRole(['VENDOR'])],
+    preHandler: [requireStoreCreation],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -87,7 +88,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
 
   // GET /vendor-verification/me/status - Check if vendor is verified
   app.get('/vendor-verification/me/status', {
-    preHandler: [requireRole(['VENDOR'])],
+    preHandler: [requireStoreCreation],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -104,7 +105,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
 
   // PATCH /vendor-verification/me - Update verification request
   app.patch('/vendor-verification/me', {
-    preHandler: [requireRole(['VENDOR'])],
+    preHandler: [requireStoreCreation],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id
@@ -137,7 +138,7 @@ export const vendorVerificationRoutes = async (app: FastifyInstance) => {
 
   // POST /vendor-verification/me/submit - Submit verification for review
   app.post('/vendor-verification/me/submit', {
-    preHandler: [requireRole(['VENDOR'])],
+    preHandler: [requireStoreCreation],
   }, async (req, reply) => {
     try {
       const userId = req.user?.id

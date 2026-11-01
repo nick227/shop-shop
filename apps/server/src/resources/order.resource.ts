@@ -1,3 +1,4 @@
+import { getAccountCapabilities } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
   CreateOrderInputSchema,
@@ -12,7 +13,7 @@ import {
   publishOrderStatusChanged,
   assertValidTransition,
 } from '@packages/db'
-import { snapshotBundle } from '@packages/db/services'
+import { assertStoreAcceptsOrders, snapshotBundle } from '@packages/db/services'
 import { assertOrderAccess } from './order-access.js'
 import {
   asOrderBeforeCreateInput,
@@ -46,6 +47,9 @@ async function userHasStorePermission(
   storeId: string,
   permissions: readonly string[],
 ): Promise<boolean> {
+  const access = await getAccountCapabilities(userId)
+  if (!access.canAccessVendorPortal) return false
+  if (access.canAdministerStores) return true
   const store = await prisma.store.findUnique({
     where: { id: storeId },
     select: { ownerUserId: true },
@@ -101,11 +105,11 @@ export const orderResource = defineResource({
     query: OrderQuerySchema,
   },
   access: {
-    create: ['USER', 'VENDOR', 'ADMIN'],
-    read: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
-    update: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
+    create: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    read: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    update: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
     delete: ['ADMIN'],
-    list: ['USER', 'VENDOR', 'ADMIN', 'STAFF', 'RIDER'],
+    list: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
   },
   ownership: {
     enabled: false,
@@ -132,34 +136,16 @@ export const orderResource = defineResource({
         throw new Error('Forbidden')
       }
 
-      if (role === 'ADMIN') {
-        return f
-      }
-
-      if (role === 'USER') {
-        const storeId = f.storeId as string | undefined
-        if (storeId && await userHasOrderListAccess(uid, storeId)) {
-          return { ...f, storeId }
-        }
-        return { ...f, userId: uid }
-      }
-
-      if (role === 'RIDER') {
-        return { ...f, assignedToUserId: uid }
-      }
-
-      if (role === 'VENDOR' || role === 'STAFF') {
-        const storeId = f.storeId as string | undefined
-        if (!storeId) {
-          throw new Error('Forbidden')
-        }
-        if (!(await userHasOrderListAccess(uid, storeId))) {
-          throw new Error('Forbidden')
-        }
+      const storeId = f.storeId as string | undefined
+      if (storeId) {
+        if (!await userHasOrderListAccess(uid, storeId)) throw new Error('Forbidden')
         return { ...f, storeId }
       }
+      // A customer's order history remains available regardless of merchant enrollment.
+      if (role === 'RIDER' && f.assignedToUserId) return { ...f, assignedToUserId: uid }
+      if ((await getAccountCapabilities(uid)).canAdministerStores && !f.userId) return f
+      return { ...f, userId: uid }
 
-      throw new Error('Forbidden')
     },
     beforeUpdate: async (id, input, context) => {
       const existing = await prisma.order.findUnique({ where: { id } })
@@ -280,13 +266,13 @@ export const orderResource = defineResource({
         }),
       )
 
-      return {
+      const orderData = {
         userId,
         storeId: totals.storeId,
         cartId: input.cartId,
         deliveryType: input.deliveryType,
-        status: 'PENDING_PAYMENT',
-        paymentStatus: 'UNPAID',
+        status: 'PENDING_PAYMENT' as const,
+        paymentStatus: 'UNPAID' as const,
         subtotal: totals.subtotal,
         fees: totals.fees,
         tax: totals.tax,
@@ -302,6 +288,15 @@ export const orderResource = defineResource({
         deliveryDistanceMiles,
         items: { create: orderItemCreates },
       }
+
+      // Create here, in one transaction with a locked availability check, so a store
+      // paused or suspended mid-checkout can't take the order.
+      const created = await prisma.$transaction(async (tx) => {
+        await assertStoreAcceptsOrders(tx, totals.storeId, { lock: true })
+        // Same payload the generic service passed through untyped before.
+        return tx.order.create({ data: orderData as Parameters<typeof tx.order.create>[0]['data'] })
+      })
+      return { _skipCreate: true, _result: created }
     },
     afterCreate: async (result) => {
       await prisma.cart.update({

@@ -1,6 +1,7 @@
 /**
  * useStoreForm - Encapsulates store form state, queries, media queue, and create/update mutations.
  */
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -23,12 +24,14 @@ export function useStoreForm(storeId?: string) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
-  const updateUser = useAuthStore((state) => state.updateUser)
   const isEdit = Boolean(storeId)
 
   const [pendingScopedMediaFiles, setPendingScopedMediaFiles] = useState<File[]>([])
   const [formData, setFormData] = useState<StoreFormData>(createInitialStoreFormData())
+  // The last saved values; the form is dirty when it differs from these.
+  const [baseline, setBaseline] = useState<StoreFormData | null>(null)
   const creatingRef = useRef(false)
+  const submittedRef = useRef<StoreFormData | null>(null)
 
   const { data: store, isLoading: isLoadingStore } = useQuery({
     queryKey: ['store', storeId],
@@ -48,6 +51,7 @@ export function useStoreForm(storeId?: string) {
         if (primaryImage) base.imageUrl = primaryImage
       }
       setFormData(base)
+      setBaseline(base)
     }
   }, [store, storeMedia])
 
@@ -62,7 +66,7 @@ export function useStoreForm(storeId?: string) {
       return await storesApi.create(payload as any)
     },
     onSuccess: async (result) => {
-      updateUser({ role: 'VENDOR' } as any)
+      void queryClient.invalidateQueries({ queryKey: ['account-capabilities', user?.id] })
       localStorage.removeItem('affiliateReferralCode')
       localStorage.removeItem('affiliateReferralId')
       const newId = (result as any).id as string | undefined
@@ -100,7 +104,7 @@ export function useStoreForm(storeId?: string) {
       void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
       if (newId) {
-        navigate(`/vendor/stores/${newId}/edit`, { replace: true })
+        navigate(vendorPaths.overview(newId), { replace: true })
       }
     },
     onError: async (error) => {
@@ -118,10 +122,11 @@ export function useStoreForm(storeId?: string) {
       })
     },
     onSuccess: () => {
+      if (submittedRef.current) setBaseline(submittedRef.current)
       queryClient.invalidateQueries({ queryKey: ['store', storeId] })
       queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
-      toast.success('Store updated successfully!')
+      toast.success('Saved')
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -147,6 +152,7 @@ export function useStoreForm(storeId?: string) {
     if (creatingRef.current || createStoreMutation.isPending || updateStoreMutation.isPending) return
     const cleanedData = cleanStoreFormData(formData)
     if (isEdit) {
+      submittedRef.current = formData
       updateStoreMutation.mutate(cleanedData)
       return
     }
@@ -168,6 +174,13 @@ export function useStoreForm(storeId?: string) {
     isSubmitting: createStoreMutation.isPending || updateStoreMutation.isPending,
     handleChange,
     handleSubmit,
-    onBack: () => navigate('/vendor/dashboard'),
+    isDirty:
+      isEdit &&
+      baseline !== null &&
+      (JSON.stringify(formData) !== JSON.stringify(baseline) || pendingScopedMediaFiles.length > 0),
+    discardChanges: () => {
+      if (baseline) setFormData(baseline)
+      setPendingScopedMediaFiles([])
+    },
   }
 }

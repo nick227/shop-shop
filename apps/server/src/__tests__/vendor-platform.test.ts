@@ -1,3 +1,4 @@
+import { enrollVendor, prisma } from '@packages/db'
 import { randomUUID } from 'crypto'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import Fastify, { FastifyInstance } from 'fastify'
@@ -15,18 +16,17 @@ import {
 } from './helpers.js'
 
 /**
- * Open Platform Vendor Test Suite
+ * Vendor Store Regression Suite
  * 
- * Tests the new open platform model where any authenticated user
- * can become a vendor by creating stores and items.
+ * Store functionality for explicitly enrolled accounts.
  * 
  * Key principles tested:
- * - Any user (USER, VENDOR, ADMIN) can create stores
+ * - Only enrolled merchants or explicitly authorized admins can create stores
  * - Ownership checks prevent unauthorized modifications
  * - Users can manage their own stores and items
  * - Cross-user access is properly blocked
  */
-describe('Open Platform - Vendor Functionality', () => {
+describe('Enrolled vendors - store functionality', () => {
   let app: FastifyInstance
   let regularUser: TestUser
   let vendorUser: TestUser
@@ -83,7 +83,9 @@ describe('Open Platform - Vendor Functionality', () => {
     // Create test users
     regularUser = await createAuthenticatedUser('USER')
     vendorUser = await createAuthenticatedUser('VENDOR')
+    await enrollVendor(vendorUser.id)
     adminUser = await createAuthenticatedUser('ADMIN')
+    await prisma.user.update({ where: { id: adminUser.id }, data: { adminVendorWorkspace: true, adminCreateStores: true } })
   })
   
   afterAll(async () => {
@@ -91,8 +93,8 @@ describe('Open Platform - Vendor Functionality', () => {
     await app.close()
   })
 
-  describe('Store Creation - Open Platform', () => {
-    it('should allow USER role to create stores', async () => {
+  describe('Store creation capability', () => {
+    it('should deny a default shopper store creation', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/stores',
@@ -100,10 +102,9 @@ describe('Open Platform - Vendor Functionality', () => {
         payload: newStorePayload('User Restaurant', `user-store-${Date.now()}`, 'Created by regular user'),
       })
 
-      expect(response.statusCode).toBe(201)
-      const store = JSON.parse(response.body)
-      expect(store.name).toBe('User Restaurant')
-      expect(store.ownerUserId).toBe(regularUser.id)
+      expect(response.statusCode).toBe(403)
+      // Subsequent ownership regressions exercise an explicitly activated account.
+      await enrollVendor(regularUser.id)
     })
 
     it('should allow VENDOR role to create stores', async () => {
@@ -435,7 +436,7 @@ describe('Open Platform - Vendor Functionality', () => {
 
   describe('Role Backwards Compatibility', () => {
     it('should continue to work with existing VENDOR role users', async () => {
-      // VENDOR role should work exactly like USER role in open platform
+      // Enrolled users retain the same scoped store operations regardless of legacy role.
       const store = await createTestStore(vendorUser.id, { slug: `compat-${Date.now()}` })
       
       const response = await app.inject({

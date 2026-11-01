@@ -14,7 +14,7 @@ export function SiteBranding({ className = '' }: Readonly<SiteBrandingProps>) {
       <div className="flex justify-center items-center w-8 h-8 bg-white rounded-lg">
         <img src="/logo.png" alt="Logo" className="object-contain w-full h-full" />
       </div>
-      <span className="text-green-900">BagLunch</span>
+      <span className="text-green-900">ShopShop</span>
     </Link>
   )
 }

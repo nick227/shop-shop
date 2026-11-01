@@ -1,4 +1,12 @@
-import { Decimal, prisma, processOrderPayment, publishOrderCreated, getAffiliateByReferralCode } from '@packages/db'
+import {
+  Decimal,
+  prisma,
+  processOrderPayment,
+  publishOrderCreated,
+  getAffiliateByReferralCode,
+  assertStoreAcceptsOrders,
+  StoreUnavailableError,
+} from '@packages/db'
 import { OrderDomain } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
@@ -30,6 +38,20 @@ type SessionMeta = {
   deliveryType: 'DELIVERY' | 'PICKUP'
   deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
   deliveryAddress?: DeliveryAddress | null
+}
+
+/** Store availability as a 409 the checkout client can show. */
+async function ensureStoreAcceptsOrders(
+  client: Parameters<typeof assertStoreAcceptsOrders>[0],
+  storeId: string,
+  options?: Parameters<typeof assertStoreAcceptsOrders>[2],
+) {
+  try {
+    await assertStoreAcceptsOrders(client, storeId, options)
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) throw new AppError(409, error.message)
+    throw error
+  }
 }
 
 async function fetchAndValidateItems(items: { itemId: string; quantity: number }[]) {
@@ -91,6 +113,7 @@ export async function createCheckoutSession(userId: string, input: CreateSession
   }
 
   const { dbItems, storeId } = await fetchAndValidateItems(input.items)
+  await ensureStoreAcceptsOrders(prisma, storeId)
 
   const meta: SessionMeta = {
     deliveryType: input.deliveryType,
@@ -199,6 +222,9 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   // Phase 1 — atomic: order row + cart state change together.
   // Cart is SUBMITTED only when the order record exists, preventing double-orders.
   const { order, attributionApplied } = await prisma.$transaction(async (tx) => {
+    // Re-check under a row lock: a pause or suspension since the session started wins.
+    await ensureStoreAcceptsOrders(tx, cart.storeId, { lock: true })
+
     let customerReferral = await tx.user.findUnique({
       where: { id: checkoutUserId },
       select: {

@@ -1,3 +1,4 @@
+import { hasStorePermission, getAccountCapabilities } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
   CreatePromotionInputSchema,
@@ -37,20 +38,26 @@ export const promotionResource = defineResource({
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
+    authorizeAccess: async (existing, context, operation) => {
+      if (operation === 'read') return
+      if (!context?.userId) throw new Error('Forbidden')
+      const storeId = (existing as { storeId?: string }).storeId
+      if (storeId ? !await hasStorePermission(context.userId, storeId, 'MANAGE_STORE_SETTINGS')
+        : !(await getAccountCapabilities(context.userId)).canAdministerStores) throw new Error('Forbidden')
+    },
+    beforeUpdate: async (_id, data) => {
+      const { storeId: _storeId, ...updates } = data as Record<string, unknown>
+      return updates
+    },
     beforeCreate: async (data, context) => {
       // Ensure context has required fields
       if (!context?.userId || !context?.userRole) {
         throw new Error('Authentication required')
       }
       
-      // Use policy for authorization
-      const canCreate = await promotionPolicy.canCreate(data, {
-        userId: context.userId,
-        userRole: context.userRole,
-      })
-      if (canCreate !== true) {
-        throw new Error(canCreate as string)
-      }
+      const storeId = (data as { storeId?: string }).storeId
+      if (storeId ? !await hasStorePermission(context.userId, storeId, 'MANAGE_STORE_SETTINGS')
+        : !(await getAccountCapabilities(context.userId)).canAdministerStores) throw new Error('Forbidden')
       
       // Use domain service for preparation
       return promotionDomain.prepareForCreation(data, context.userId)

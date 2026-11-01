@@ -150,9 +150,10 @@ export async function approveVendorApplication(
         approvedAt: new Date(),
       },
     }),
-    prisma.user.update({
-      where: { id: application.userId },
-      data: { role: 'VENDOR' as Role },
+    prisma.vendorEnrollment.upsert({
+      where: { userId: application.userId },
+      create: { userId: application.userId, status: 'APPROVED', source: 'ADMIN', reviewedAt: new Date() },
+      update: { status: 'APPROVED', reviewedAt: new Date() },
     }),
   ])
 

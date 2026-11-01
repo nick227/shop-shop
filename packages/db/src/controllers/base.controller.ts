@@ -10,7 +10,7 @@ import { BaseCrudService } from '../services/base.service.js'
 export interface AuthenticatedRequest extends FastifyRequest {
   user?: {
     id: string
-    role: 'USER' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
+    role: 'USER' | 'VENDOR_PENDING' | 'VENDOR' | 'ADMIN' | 'AFFILIATE' | 'RIDER' | 'STAFF'
     email: string
     name: string | null
     phone: string | null

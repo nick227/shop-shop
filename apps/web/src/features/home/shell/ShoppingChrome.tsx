@@ -1,10 +1,12 @@
+import { AccountMenu } from '@layouts/VendorLayout/AccountMenu'
+import { useAuthStore } from '@stores/authStore'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, ShoppingBag, X } from 'lucide-react'
 import { SearchInput } from '@shared/ui/primitives'
 import { useCartStore } from '@stores/cartStore'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
-import { rememberedPlace, rememberPlace } from './placeMemory'
+import { placeZip, rememberedPlace, rememberPlace } from './placeMemory'
 import { DrawerNav } from './ShopNav'
 
 function cartCount(raw: unknown): number {
@@ -18,12 +20,17 @@ function cartCount(raw: unknown): number {
 }
 
 export function ShoppingChrome() {
+  const authenticated = useAuthStore((s) => s.isAuthenticated)
   const navigate = useNavigate()
   const location = useLocation()
   const { location: place } = useUrlLocation()
   const cart = useCartStore((state) => state.cart)
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('q') ?? '')
+
+  useEffect(() => {
+    setQuery(new URLSearchParams(location.search).get('q') ?? '')
+  }, [location.search])
 
   useEffect(() => {
     setOpen(false)
@@ -34,7 +41,7 @@ export function ShoppingChrome() {
   }, [location.search])
 
   const placeSearch = location.search.includes('zip=') ? location.search : rememberedPlace()
-  const zip = place?.zip ?? new URLSearchParams(placeSearch).get('zip')
+  const zip = place?.zip || placeZip(location.search)
 
   const count = cartCount(cart?.items)
   const placeLabel = place?.zip
@@ -103,6 +110,7 @@ export function ShoppingChrome() {
             </span>
           ) : null}
         </Link>
+        {authenticated ? <AccountMenu /> : <Link to="/login" className="px-2 text-sm">Sign in</Link>}
       </header>
 
       {open ? (

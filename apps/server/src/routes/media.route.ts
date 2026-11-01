@@ -1,3 +1,4 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { AuthenticatedUser } from '../middleware/auth.js'
@@ -15,7 +16,6 @@ import {
   reorderMedia,
   type UploadFile,
 } from '@packages/db'
-import { requireRole } from '../middleware/rbac.js'
 import { VendorErrors } from './vendor/vendorHelpers.js'
 
 // ========================================
@@ -34,7 +34,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Upload image or video file
   // ========================================
   app.post('/media/upload', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can upload media
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can upload media
     schema: {
       tags: ['Media'],
       summary: 'Upload media file',
@@ -184,7 +184,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Delete media file
   // ========================================
   app.delete('/media/:id', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can delete their own media
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can delete their own media
     schema: {
       tags: ['Media'],
       summary: 'Delete media file',
@@ -229,7 +229,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Update media sort order
   // ========================================
   app.patch('/media/:id/sort', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can update their own media
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can update their own media
     schema: {
       tags: ['Media'],
       summary: 'Update media sort order',
@@ -270,7 +270,7 @@ export const mediaRoutes = async (app: FastifyInstance) => {
   // Bulk reorder media files
   // ========================================
   app.patch('/media/reorder', {
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
     schema: {
       tags: ['Media'],
       summary: 'Reorder media files',

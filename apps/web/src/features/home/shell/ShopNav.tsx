@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
 import { cn } from '@shared/lib/cn'
-import { SELL_ITEM, SHOP_NAV } from './navConfig'
+import { SHOP_NAV } from './navConfig'
 import { resetHomeTaste } from '../neighborhood/taste'
 
 function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonly showReset: boolean }) {
@@ -34,14 +34,6 @@ function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonl
           )
         })}
       </div>
-      <Link
-        to={SELL_ITEM.to}
-        className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm"
-        style={{ color: 'var(--quiet)' }}
-      >
-        <SELL_ITEM.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-        <span className={expanded ? undefined : 'shop-rail-label'}>{SELL_ITEM.label}</span>
-      </Link>
       {showReset ? (
         <button
           type="button"

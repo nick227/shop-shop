@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { Compass, Home, Receipt, Store, UserRound } from 'lucide-react'
+import { Compass, Home, Receipt, UserRound } from 'lucide-react'
 
 export interface ShopNavItem {
   readonly label: string
@@ -14,9 +14,3 @@ export const SHOP_NAV: readonly ShopNavItem[] = [
   { label: 'Orders', to: '/orders', icon: Receipt, match: (path) => path.startsWith('/orders') || path.startsWith('/account/orders') },
   { label: 'Account', to: '/account/profile', icon: UserRound, match: (path) => path.startsWith('/account') && !path.startsWith('/account/orders') },
 ]
-
-export const SELL_ITEM = {
-  label: 'Sell on ShopShop',
-  to: '/vendor/store/new',
-  icon: Store,
-}

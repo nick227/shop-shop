@@ -1,3 +1,4 @@
+import { AccountAccessSync } from '@features/account/AccountAccessSync'
 /**
  * Layout - Root layout with persistent elements and dynamic page titles;
  */
@@ -31,9 +32,14 @@ export function Layout() {
   }, [location.pathname])
 
   const shopping = isShoppingPath(location.pathname)
+  // The seller workspace brings its own shell; storefront chrome and the cart stay out of it.
+  const workspace = /^\/vendor(?:\/|$)/.test(location.pathname)
+
+  if (workspace) return <><AccountAccessSync /><Outlet /></>
 
   return (
     <HeaderAddressExtrasProvider>
+      <AccountAccessSync />
       {shopping ? (
         <ShoppingShell />
       ) : (

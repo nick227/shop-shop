@@ -18,8 +18,8 @@ export const userResource = defineResource({
     list: UserListResponseSchema,
   },
   access: {
-    read: ['USER', 'VENDOR', 'ADMIN'], // Users can read their own profile
-    update: ['USER', 'VENDOR', 'ADMIN'], // Users can update their own profile
+    read: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'], // Users can read their own profile
+    update: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'], // Users can update their own profile
     list: ['ADMIN'], // Only admins can list all users
   },
   ownership: {

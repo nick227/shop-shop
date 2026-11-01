@@ -4,6 +4,7 @@ import { registerAllResources } from './loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
 import {
   createAuthenticatedUser,
+  createWorkspaceAdmin,
   authHeaders,
   createTestStore,
   createTestItem,
@@ -28,7 +29,7 @@ describe('Item Routes E2E', () => {
 
     vendor = await createAuthenticatedUser('VENDOR')
     vendor2 = await createAuthenticatedUser('VENDOR')
-    admin = await createAuthenticatedUser('ADMIN')
+    admin = await createWorkspaceAdmin()
     
     const store = await createTestStore(vendor.id)
     storeId = store.id

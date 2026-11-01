@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import {
-  Search, MapPin, Star, X, LayoutList, Map as MapIcon,
+  MapPin, Star, X, LayoutList, Map as MapIcon,
   Truck, ShoppingBag, Clock, ArrowUpDown,
 } from 'lucide-react'
 import { useUnifiedSearchApi } from '@features/search/hooks/useUnifiedSearchApi'
@@ -12,8 +12,8 @@ import type { StoreSearchResult, ProductSearchResult } from '@features/search/ho
 import { useTagGroups } from '@features/search/hooks/useTagGroups'
 import { STORE_TYPE_CONFIG, SLUG_TO_STORE_TYPE, STORE_TYPE_LABEL } from '@features/search/config/storeTypes'
 import { SearchResultsMap } from '@features/search/components/SearchResultsMap'
-import { PageShell } from '@shared/ui/layout/PageShell'
 import { LocationUrlNotice, DiscoverySection } from '@features/home/components'
+import { SiteBranding } from '@features/home/neighborhood/SiteBranding'
 import { Badge } from '@shared/ui/primitives'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { formatDistance } from '@shared/lib/utils/format'
@@ -41,8 +41,8 @@ function Bone({ className }: { className?: string }) {
 function StoreCardSkeleton({ index }: { index: number }) {
   return (
     <div
-      className="overflow-hidden rounded-xl border border-border bg-card animate-fade-in"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="overflow-hidden rounded-xl border animate-fade-in"
+      style={{ borderColor: 'var(--line)', background: 'var(--paper)', animationDelay: `${index * 60}ms` }}
     >
       <div className="aspect-[16/10] animate-pulse bg-muted" />
       <div className="space-y-2.5 p-3">
@@ -69,8 +69,8 @@ function StoreCardSkeleton({ index }: { index: number }) {
 function ProductCardSkeleton({ index }: { index: number }) {
   return (
     <div
-      className="overflow-hidden rounded-xl border border-border bg-card animate-fade-in"
-      style={{ animationDelay: `${index * 40}ms` }}
+      className="overflow-hidden rounded-xl border animate-fade-in"
+      style={{ borderColor: 'var(--line)', background: 'var(--paper)', animationDelay: `${index * 40}ms` }}
     >
       <div className="animate-pulse aspect-square bg-muted" />
       <div className="space-y-1.5 p-3">
@@ -80,42 +80,6 @@ function ProductCardSkeleton({ index }: { index: number }) {
         <Bone className="w-3/4 h-3" />
       </div>
     </div>
-  )
-}
-
-// ─── Inline search refinement bar ────────────────────────────────────────────
-
-function SearchRefinementBar({
-  initialQuery,
-  onSearch,
-}: {
-  initialQuery: string
-  onSearch: (q: string) => void
-}) {
-  const [draft, setDraft] = useState(initialQuery)
-
-  return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); onSearch(draft.trim()) }}
-      className="flex gap-2"
-    >
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 pointer-events-none text-muted-foreground" />
-        <input
-          type="search"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Search products or stores"
-          className="pr-4 pl-10 w-full h-11 text-base rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        />
-      </div>
-      <button
-        type="submit"
-        className="inline-flex justify-center items-center px-5 h-11 text-sm font-semibold rounded-md transition-colors shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        Search
-      </button>
-    </form>
   )
 }
 
@@ -144,8 +108,8 @@ function SearchStoreCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className="overflow-hidden rounded-xl border transition-all cursor-pointer border-border bg-card tap-scale hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-up"
-      style={{ animationDelay: `${Math.min(index, 5) * 55}ms` }}
+      className="overflow-hidden cursor-pointer rounded-xl border tap-scale hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 animate-fade-up"
+      style={{ borderColor: 'var(--line)', background: 'var(--paper)', animationDelay: `${Math.min(index, 5) * 55}ms` }}
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         <img src={imageUrl} alt={store.name} className="object-cover w-full h-full" loading="lazy" />
@@ -234,8 +198,8 @@ function SearchProductCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className="flex overflow-hidden flex-col rounded-xl border transition-colors cursor-pointer border-border bg-card hover:border-primary/40 hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-up"
-      style={{ animationDelay: `${Math.min(index, 7) * 40}ms` }}
+      className="flex overflow-hidden flex-col cursor-pointer rounded-xl border focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 animate-fade-up"
+      style={{ borderColor: 'var(--line)', background: 'var(--paper)', animationDelay: `${Math.min(index, 7) * 40}ms` }}
     >
       <div className="overflow-hidden relative aspect-square bg-muted">
         <img
@@ -355,14 +319,6 @@ export default function UnifiedSearchPage() {
     setProductLimit(INITIAL_PRODUCT_LIMIT)
   }
 
-  const handleSearch = (newQ: string) => {
-    const next = new URLSearchParams(searchParams)
-    if (newQ) next.set('q', newQ); else next.delete('q')
-    resetLimits()
-    setActiveTags([])
-    navigate({ pathname: '/search', search: next.toString() })
-  }
-
   const handleStoreClick = (store: StoreSearchResult) =>
     navigate(getStoreRoute({ id: store.id, name: store.name }))
 
@@ -384,67 +340,63 @@ export default function UnifiedSearchPage() {
     resetLimits()
   }
 
+  const placeTitle = (() => {
+    const browseLabel = STORE_TYPE_CONFIG.find((type) => type.slug === activeBrowse)?.label
+    const place = location?.city
+      ? `${location.city}${location.state ? `, ${location.state}` : ''}`
+      : location?.zip
+    if (q) return `Results for “${q}”`
+    if (browseLabel && place) return `${browseLabel} in ${place}`
+    if (browseLabel) return browseLabel
+    if (place) return `Stores in ${place}`
+    return 'All stores'
+  })()
+
   return (
-    <PageShell
-      className="bg-background"
-      containerClassName="max-w-5xl"
-      contentClassName="space-y-6 py-6 md:space-y-8"
-    >
-      <LocationUrlNotice
-        notice={urlLocationNotice}
-        onDismiss={() => setUrlLocationNotice(undefined)}
-      />
+    <div className="home-stack">
+      <div>
+        <SiteBranding />
+        <LocationUrlNotice
+          notice={urlLocationNotice}
+          onDismiss={() => setUrlLocationNotice(undefined)}
+        />
 
-      {/* Search bar — key remounts draft when URL query changes */}
-      <SearchRefinementBar key={q ?? ''} initialQuery={q ?? ''} onSearch={handleSearch} />
-
-      {/* Context header */}
-      {q ? (
-        searchResults && !isFirstLoad && hasResults && (
-          <p className="text-sm animate-fade-in text-muted-foreground">
-            {storeTotal > 0 && `${storeTotal} ${storeTotal === 1 ? 'store' : 'stores'}`}
-            {storeTotal > 0 && productTotal > 0 && ' · '}
-            {productTotal > 0 && `${productTotal} menu ${productTotal === 1 ? 'item' : 'items'}`}
+        <header className="opening">
+          <p className="shop-mono text-xs" style={{ color: 'var(--quiet)' }}>
+            {location?.city ? 'Browsing near you' : 'Explore'}
           </p>
-        )
-      ) : (
-        <header className="space-y-0.5">
-          <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-            {location?.city ? 'Browsing near you' : 'Discover'}
-          </p>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {(() => {
-              const browseLabel = STORE_TYPE_CONFIG.find((type) => type.slug === activeBrowse)?.label
-              const place = location?.city
-                ? `${location.city}${location.state ? `, ${location.state}` : ''}`
-                : undefined
-              if (browseLabel && place) return `${browseLabel} in ${place}`
-              if (browseLabel) return browseLabel
-              if (place) return `Stores in ${place}`
-              return 'All stores'
-            })()}
-          </h1>
+          <h1>{placeTitle}</h1>
+          {q && searchResults && !isFirstLoad && hasResults ? (
+            <p className="text-sm" style={{ color: 'var(--quiet)' }}>
+              {storeTotal > 0 && `${storeTotal} ${storeTotal === 1 ? 'store' : 'stores'}`}
+              {storeTotal > 0 && productTotal > 0 && ' · '}
+              {productTotal > 0 && `${productTotal} menu ${productTotal === 1 ? 'item' : 'items'}`}
+            </p>
+          ) : null}
         </header>
-      )}
 
       {/* Active location chip */}
       {location && (
-        <div className="flex gap-2 items-center animate-fade-in">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm text-foreground">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <div className="mt-4 flex gap-2 items-center">
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm"
+            style={{ borderColor: 'var(--line)', background: 'var(--paper)', color: 'var(--ink)' }}
+          >
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
             <span className="font-medium">
               {location.displayName ?? (location.city
                 ? `${location.city}${location.state ? `, ${location.state}` : ''}`
                 : location.zip ?? 'Near you')}
             </span>
             {location.radiusMiles && (
-              <span className="text-muted-foreground">· {location.radiusMiles} mi</span>
+              <span style={{ color: 'var(--quiet)' }}>· {location.radiusMiles} mi</span>
             )}
             <button
               type="button"
               onClick={clearLocation}
               aria-label="Clear location filter"
-              className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="ml-0.5 rounded-full p-0.5"
+              style={{ color: 'var(--quiet)' }}
             >
               <X className="w-3 h-3" />
             </button>
@@ -456,7 +408,7 @@ export default function UnifiedSearchPage() {
       <div
         role="group"
         aria-label="Filter by category"
-        className="flex overflow-x-auto gap-2 px-4 pb-1 -mx-4 sm:mx-0 sm:flex-wrap sm:px-0"
+        className="mt-5 flex overflow-x-auto gap-2 pb-1 sm:flex-wrap"
       >
         {STORE_TYPE_CONFIG.map(({ slug, label, Icon }) => {
           const isActive = activeBrowse === slug
@@ -465,14 +417,14 @@ export default function UnifiedSearchPage() {
               key={slug || 'all'}
               type="button"
               onClick={() => handleCategoryClick(slug)}
-              className={cn(
-                'inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/40',
-              )}
+              className="inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium"
+              style={{
+                borderColor: isActive ? 'var(--ink)' : 'var(--line)',
+                background: isActive ? 'var(--ink)' : 'var(--paper)',
+                color: isActive ? 'var(--air)' : 'var(--ink)',
+              }}
             >
-              <Icon className={cn('h-3.5 w-3.5', isActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
+              <Icon className="h-3.5 w-3.5" />
               {label}
             </button>
           )
@@ -496,12 +448,12 @@ export default function UnifiedSearchPage() {
                     key={tag.slug}
                     type="button"
                     onClick={() => handleTagToggle(tag.slug)}
-                    className={cn(
-                      'inline-flex flex-none items-center px-3 py-1 text-xs font-medium whitespace-nowrap rounded-full border transition-colors',
-                      isActive
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground',
-                    )}
+                      className="inline-flex flex-none items-center px-3 py-1 text-xs font-medium whitespace-nowrap rounded-full border"
+                      style={{
+                        borderColor: isActive ? 'var(--ink)' : 'var(--line)',
+                        background: isActive ? 'var(--ink)' : 'var(--paper)',
+                        color: isActive ? 'var(--air)' : 'var(--quiet)',
+                      }}
                   >
                     {tag.label}
                   </button>
@@ -567,27 +519,28 @@ export default function UnifiedSearchPage() {
           {/* ── Kitchens ── */}
           {storeTotal > 0 && (
             <section>
-              <div className="flex flex-wrap gap-y-2 gap-x-3 items-center mb-4">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">Kitchens</h2>
-                <span className="text-sm text-muted-foreground">{storeTotal}</span>
+              <div className="section-head flex-wrap">
+                <div className="flex items-baseline gap-3">
+                  <h2>Kitchens</h2>
+                  <span className="text-sm" style={{ color: 'var(--quiet)' }}>{storeTotal}</span>
+                </div>
 
-                <div className="ml-auto flex items-center gap-1.5">
-                  <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpDown className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--quiet)' }} />
                   {(['distance', 'newest', 'name'] as SortOption[]).map((opt) => {
                     const disabled = opt === 'distance' && !location?.latitude
+                    const active = sort === opt
                     return (
                       <button
                         key={opt}
                         type="button"
                         disabled={disabled}
                         onClick={() => setSort(opt)}
-                        className={cn(
-                          'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                          sort === opt
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:text-foreground',
-                          disabled && 'cursor-not-allowed opacity-40',
-                        )}
+                        className={cn('rounded-full px-3 py-1 text-xs font-medium', disabled && 'cursor-not-allowed opacity-40')}
+                        style={{
+                          background: active ? 'var(--ink)' : 'var(--field)',
+                          color: active ? 'var(--air)' : 'var(--quiet)',
+                        }}
                       >
                         {opt === 'distance' ? 'Nearest' : (opt === 'newest' ? 'Newest' : 'A–Z')}
                       </button>
@@ -595,14 +548,12 @@ export default function UnifiedSearchPage() {
                   })}
 
                   {storesWithCoords.length > 0 && (
-                    <div className="flex overflow-hidden ml-1 rounded-full border border-border bg-card">
+                    <div className="ml-1 flex overflow-hidden rounded-full border" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
                       <button
                         type="button"
                         onClick={() => setView('list')}
-                        className={cn(
-                          'flex items-center gap-1 px-2.5 py-1 text-xs transition-colors',
-                          view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-                        )}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs"
+                        style={{ background: view === 'list' ? 'var(--ink)' : 'transparent', color: view === 'list' ? 'var(--air)' : 'var(--quiet)' }}
                       >
                         <LayoutList className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">List</span>
@@ -610,10 +561,8 @@ export default function UnifiedSearchPage() {
                       <button
                         type="button"
                         onClick={() => setView('map')}
-                        className={cn(
-                          'flex items-center gap-1 px-2.5 py-1 text-xs transition-colors',
-                          view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-                        )}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs"
+                        style={{ background: view === 'map' ? 'var(--ink)' : 'transparent', color: view === 'map' ? 'var(--air)' : 'var(--quiet)' }}
                       >
                         <MapIcon className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">Map</span>
@@ -650,7 +599,8 @@ export default function UnifiedSearchPage() {
                     <button
                       type="button"
                       onClick={() => setStoreLimit((l) => l + INITIAL_STORE_LIMIT)}
-                      className="py-3 mt-4 w-full text-sm font-medium rounded-xl border transition-colors border-border bg-card text-muted-foreground hover:bg-muted/40"
+                      className="py-3 mt-4 w-full text-sm font-medium rounded-xl border"
+                      style={{ borderColor: 'var(--line)', background: 'var(--paper)', color: 'var(--quiet)' }}
                     >
                       Show more stores · {storeTotal - storeLimit} remaining
                     </button>
@@ -663,8 +613,8 @@ export default function UnifiedSearchPage() {
           {/* ── Menu items ── */}
           {productTotal > 0 && (
             <section>
-              <div className="flex gap-4 justify-between items-baseline mb-4">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">Menu items</h2>
+              <div className="section-head">
+                <h2>Menu items</h2>
                 <span className="text-sm shrink-0 text-muted-foreground">{productTotal}</span>
               </div>
               <div key={productGridKey} className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -681,7 +631,8 @@ export default function UnifiedSearchPage() {
                 <button
                   type="button"
                   onClick={() => setProductLimit((l) => l + INITIAL_PRODUCT_LIMIT)}
-                  className="py-3 mt-4 w-full text-sm font-medium rounded-xl border transition-colors border-border bg-card text-muted-foreground hover:bg-muted/40"
+                  className="py-3 mt-4 w-full text-sm font-medium rounded-xl border"
+                  style={{ borderColor: 'var(--line)', background: 'var(--paper)', color: 'var(--quiet)' }}
                 >
                   Show more items · {productTotal - productLimit} remaining
                 </button>
@@ -691,12 +642,13 @@ export default function UnifiedSearchPage() {
 
           {/* ── No results ── */}
           {!hasResults && q && (
-            <div className="p-8 text-center rounded-2xl border animate-fade-in border-border bg-card">
-              <p className="text-base font-medium text-foreground">No results for &ldquo;{q}&rdquo;</p>
-              <p className="mt-1 text-sm text-muted-foreground">Try different words, or browse kitchens below.</p>
+            <div className="p-8 text-center rounded-2xl border" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+              <p className="text-base font-medium">No results for &ldquo;{q}&rdquo;</p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--quiet)' }}>Try different words, or browse kitchens below.</p>
               <Link
                 to="/search"
-                className="inline-flex justify-center items-center px-4 mt-4 h-9 text-sm font-medium rounded-md border transition-colors border-border hover:bg-muted"
+                className="inline-flex justify-center items-center px-4 mt-4 h-9 text-sm font-medium rounded-md border"
+                style={{ borderColor: 'var(--line)' }}
               >
                 Clear search
               </Link>
@@ -712,6 +664,7 @@ export default function UnifiedSearchPage() {
           <DiscoverySection />
         </>
       )}
-    </PageShell>
+      </div>
+    </div>
   )
 }

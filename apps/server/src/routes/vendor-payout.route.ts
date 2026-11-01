@@ -1,3 +1,4 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -54,7 +55,7 @@ const CreateAdjustmentSchema = z.object({
 export const vendorPayoutRoutes = async (app: FastifyInstance) => {
   // GET /vendor-payouts/summary - Get payout summary for a store
   app.get('/vendor-payouts/summary', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = PayoutSummarySchema.parse(req.query)
@@ -87,7 +88,7 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
   // GET /vendor-payouts/stores/:storeId/pending - Get pending payout amount
   app.get('/vendor-payouts/stores/:storeId/pending', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = req.params as { storeId: string }
@@ -108,7 +109,7 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
   // GET /vendor-payouts/stores/:storeId/history - Get payout history
   app.get('/vendor-payouts/stores/:storeId/history', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = StoreIdParamsSchema.parse(req.params)
@@ -133,7 +134,7 @@ export const vendorPayoutRoutes = async (app: FastifyInstance) => {
 
   // GET /vendor-payouts/stores/:storeId/payouts/:payoutId - Get payout detail (finance access)
   app.get('/vendor-payouts/stores/:storeId/payouts/:payoutId', {
-    preHandler: [requireRole(['VENDOR', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const params = z.object({ storeId: z.string().uuid(), payoutId: z.string().uuid() }).parse(req.params)

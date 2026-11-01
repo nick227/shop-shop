@@ -1,54 +1,63 @@
 /**
- * StoreFormPage - Store name stays as the title. Sections live in tabs.
+ * StoreFormPage - Settings for an existing store; a focused name-first page for a new one.
  */
-import { useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
-import { Button, Spinner } from '@shared/ui/primitives'
-import { PageShell } from '@shared/ui/layout/PageShell'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import type { VendorStore } from '@shared/hooks/hooks/vendor'
 import { StoreFormDocument } from './components/store-form/StoreFormDocument'
+import { StoreSettings } from './components/store-form/StoreSettings'
 import { useStoreForm } from './hooks/useStoreForm'
 
 export default function StoreFormPage() {
   const { storeId } = useParams<{ storeId?: string }>()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const {
-    isEdit,
+    store,
     isLoadingStore,
     formData,
     pendingScopedMediaFiles,
     setPendingScopedMediaFiles,
     isSubmitting,
+    isDirty,
+    discardChanges,
     handleChange,
     handleSubmit,
-    onBack,
   } = useStoreForm(storeId)
 
-  if (isLoadingStore) {
+  if (storeId) {
     return (
-      <PageShell nested contentClassName="py-8 md:py-10">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <Spinner size="large" />
-        </div>
-      </PageShell>
+      <StoreSettings
+        storeId={storeId}
+        storeName={store?.name ?? formData.name}
+        loading={isLoadingStore}
+        formData={formData}
+        onChange={handleChange}
+        isSubmitting={isSubmitting}
+        isDirty={isDirty}
+        onSubmit={handleSubmit}
+        onDiscard={discardChanges}
+        pendingFiles={pendingScopedMediaFiles}
+        onPendingFiles={setPendingScopedMediaFiles}
+        onDeleted={() => {
+          queryClient.setQueriesData<VendorStore[]>({ queryKey: ['vendor-managed-stores'] }, (stores) =>
+            stores?.filter((s) => s.id !== storeId),
+          )
+          void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+          void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+          queryClient.removeQueries({ queryKey: ['store', storeId] })
+          toast.success('Store deleted')
+          navigate('/vendor', { replace: true })
+        }}
+      />
     )
   }
 
   return (
-    <PageShell nested contentClassName="space-y-8 py-8 md:py-10">
-      <div className="flex items-center justify-between gap-4">
-        <Button
-          variant="ghost"
-          size="small"
-          onClick={onBack}
-          className="-ml-2 text-muted-foreground hover:bg-transparent"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Stores
-        </Button>
-      </div>
-
+    <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-8 md:px-8 md:pt-10">
       <StoreFormDocument
-        isEdit={isEdit}
-        storeId={storeId}
+        isEdit={false}
         formData={formData}
         onChange={handleChange}
         onSubmit={handleSubmit}
@@ -56,6 +65,6 @@ export default function StoreFormPage() {
         pendingFiles={pendingScopedMediaFiles}
         onPendingFiles={setPendingScopedMediaFiles}
       />
-    </PageShell>
+    </div>
   )
 }

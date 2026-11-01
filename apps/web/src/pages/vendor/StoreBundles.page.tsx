@@ -1,16 +1,17 @@
 // @ts-nocheck
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
-import { Button, SearchInput, Badge, Spinner, Pagination } from '@shared/ui/primitives'
+import { Button, SearchInput, Badge, Pagination } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
-import { PageHeader } from '@shared/ui/layout/PageLayout'
-import { PageShell } from '@shared/ui/layout/PageShell'
+import { VendorPage } from '@layouts/VendorLayout/page'
+import { MenuTabs } from './components/MenuTabs'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { Layers, Edit, Trash2, ArrowLeft, Plus } from 'lucide-react'
+import { Layers, Edit, Trash2, Plus } from 'lucide-react'
 import { usePaginatedList } from '@shared/hooks/usePaginatedList'
 import { formatCurrency } from '@shared/lib/utils/format'
 import { useHaptics } from '@shared/hooks/useHaptics'
@@ -36,7 +37,7 @@ export default function StoreBundlesPage() {
   const deleteMutation = useMutation({
     mutationFn: (bundleId: string) => apiClient.bundles().deleteBundle({ id: bundleId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bundles', storeId] })
+      void queryClient.invalidateQueries({ queryKey: ['bundles', storeId] })
       toast.success('Bundle deleted')
     },
     onError: async (error) => {
@@ -61,61 +62,28 @@ export default function StoreBundlesPage() {
     [deleteMutation],
   )
 
-  if (isLoadingStore || isLoadingBundles) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
-          <Spinner size="large" />
-          <p className="mt-4 text-muted-foreground">Loading bundles…</p>
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!store) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
-          <h2 className="mb-2 text-xl font-bold text-destructive">Store not found</h2>
-          <Button variant="primary" onClick={() => navigate('/vendor/dashboard')}>
-            <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
-          </Button>
-        </div>
-      </PageShell>
-    )
-  }
-
   return (
-    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
-      <PageHeader
-        title={`${store.name} — Bundles`}
-        description="Create and manage combo bundles for your store"
-        backButton={
-          <Button
-            variant="ghost"
-            size="small"
-            onClick={() => navigate(`/vendor/stores/${storeId}/items`)}
-            className="-ml-2 text-muted-foreground hover:bg-transparent"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" /> Items
-          </Button>
-        }
-      />
-
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
+    <VendorPage
+      title="Menu"
+      loading={isLoadingStore || isLoadingBundles}
+      error={!isLoadingStore && !store ? { message: 'This store could not be loaded' } : undefined}
+      tabs={<MenuTabs storeId={storeId!} />}
+      actions={
+        <Button variant="primary" onClick={() => navigate(vendorPaths.newBundle(storeId!))}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          New bundle
+        </Button>
+      }
+    >
+      <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">Bundles combine items from your menu into one listing at one price.</p>
+      <div className="w-full sm:w-72">
         <SearchInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search bundles…"
-          className="flex-1 w-full max-w-md"
+          placeholder="Search bundles"
+          aria-label="Search bundles"
         />
-        <Button
-          variant="primary"
-          onClick={() => navigate(`/vendor/stores/${storeId}/bundles/new`)}
-          className="w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" /> Create Bundle
-        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -144,7 +112,7 @@ export default function StoreBundlesPage() {
           }
           action={
             !searchQuery && (
-              <Button variant="primary" onClick={() => navigate(`/vendor/stores/${storeId}/bundles/new`)}>
+              <Button variant="primary" onClick={() => navigate(vendorPaths.newBundle(storeId!))}>
                 <Plus className="w-4 h-4 mr-2" /> Create First Bundle
               </Button>
             )
@@ -157,7 +125,7 @@ export default function StoreBundlesPage() {
               <BundleListCard
                 key={bundle.id}
                 bundle={bundle}
-                onEdit={() => navigate(`/vendor/stores/${storeId}/bundles/${bundle.id}/edit`)}
+                onEdit={() => navigate(vendorPaths.bundle(storeId!, bundle.id))}
                 onDelete={() => handleDelete(bundle.id, bundle.name)}
                 isDeleting={deleteMutation.isPending}
               />
@@ -174,7 +142,8 @@ export default function StoreBundlesPage() {
           )}
         </>
       )}
-    </PageShell>
+      </div>
+    </VendorPage>
   )
 }
 

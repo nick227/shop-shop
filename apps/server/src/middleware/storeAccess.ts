@@ -1,5 +1,5 @@
 import type { TeamMemberPermission } from '@packages/db'
-import { prisma } from '@packages/db'
+import { getAccountCapabilities, prisma } from '@packages/db'
 
 export type StoreAccessScope =
   | 'settings'
@@ -37,7 +37,9 @@ export async function userHasStoreAccess(
   storeId: string,
   scope: StoreAccessScope
 ): Promise<boolean> {
-  if (userRole === 'ADMIN') return true
+  const access = await getAccountCapabilities(userId)
+  if (!access.canAccessVendorPortal) return false
+  if (access.canAdministerStores) return true
 
   const store = await prisma.store.findUnique({
     where: { id: storeId },

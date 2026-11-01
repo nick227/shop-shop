@@ -2,6 +2,7 @@
 /**
  * ItemFormPage - Create or edit a menu item
  */
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -105,7 +106,7 @@ export default function ItemFormPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
       toast.success('Item created successfully!')
-      navigate('/vendor/stores/' + storeId + '/items')
+      navigate(vendorPaths.menu(storeId!))
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -140,7 +141,7 @@ export default function ItemFormPage() {
       queryClient.invalidateQueries({ queryKey: ['item', itemId] })
       queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
       toast.success('Item updated successfully!')
-      navigate('/vendor/stores/' + storeId + '/items')
+      navigate(vendorPaths.menu(storeId!))
     },
     onError: async (error) => {
       const appError = await handleApiError(error)
@@ -199,7 +200,7 @@ export default function ItemFormPage() {
       title={isEdit ? '✏️ Edit Item' : '+ Add Item'}
       subtitle={store?.name || ''}
       backLabel="← Back to Items"
-      onBack={() => navigate('/vendor/stores/' + storeId + '/items')}
+      onBack={() => navigate(vendorPaths.menu(storeId!))}
       sections={sectionsWithMedia}
       onSubmit={handleSubmit}
       submitLabel={isEdit ? 'Update Item' : 'Create Item'}

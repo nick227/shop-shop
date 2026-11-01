@@ -5,6 +5,7 @@ import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
+import { accountAccessRoutes } from './routes/account-access.route.js'
 import { authRoutes } from './routes/auth.route.js'
 import checkoutRoutes from './routes/checkout.js'
 import orderStatusRoutes from './routes/orderStatus.js'
@@ -23,6 +24,7 @@ import { tipRoutes } from './routes/tip.route.js'
 import { affiliateRoutes } from './routes/affiliate.route.js'
 import { deliveryZoneRoutes } from './routes/delivery-zone.route.js'
 import { storeReadinessRoutes } from './routes/store-readiness.route.js'
+import { storeOrderingRoutes } from './routes/store-ordering.route.js'
 import { storeDeliveryOptionsRoutes } from './routes/store-delivery-options.route.js'
 import { deliveryQuoteRoutes } from './routes/delivery-quote.route.js'
 import { deliveryDispatchRoutes } from './routes/delivery-dispatch.route.js'
@@ -176,6 +178,7 @@ app.addHook('preHandler', optionalAuthenticate)
 app.get('/healthz', async () => ({ ok: true }))
 
 // Register routes
+await app.register(accountAccessRoutes, { prefix: '/api' })
 await app.register(authRoutes, { prefix: '/api/auth/v1' })
 await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
 await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
@@ -199,7 +202,10 @@ await app.register(geocodingRoutes)
 await app.register(tipRoutes)      
 await app.register(affiliateRoutes, { prefix: '/api' }) 
 await app.register(deliveryZoneRoutes) 
-await app.register(storeReadinessRoutes) 
+await app.register(storeReadinessRoutes)
+// The web client calls these under /api (the dev proxy forwards /api unchanged).
+await app.register(storeReadinessRoutes, { prefix: '/api' })
+await app.register(storeOrderingRoutes, { prefix: '/api' })
 await app.register(storeDeliveryOptionsRoutes) 
 await app.register(deliveryQuoteRoutes) 
 await app.register(deliveryDispatchRoutes) 

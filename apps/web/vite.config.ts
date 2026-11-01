@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
       'Cache-Control': 'no-store',
     },
     proxy: {
+      '/realtime': { target: apiTarget, ws: true },
       '/geocode': {
         target: apiTarget,
         changeOrigin: true,

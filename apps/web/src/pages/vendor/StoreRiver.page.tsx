@@ -52,7 +52,7 @@ export default function VendorStoreRiverPage() {
   }
 
   if (!storeId || !store) {
-    return <Navigate to="/vendor/dashboard" replace />
+    return <Navigate to="/vendor" replace />
   }
 
   const rows = (recentQuery.data?.data ?? []) as RiverPostRow[]

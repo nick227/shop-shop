@@ -58,9 +58,8 @@ export const vendorApplicationRoutes = async (app: FastifyInstance) => {
       })
 
       // Update user role to VENDOR_PENDING
-      await prisma.user.update({
-        where: { id: userId },
-        data: { role: 'VENDOR_PENDING' as Role }
+      await prisma.vendorEnrollment.upsert({
+        where: { userId }, update: {}, create: { userId, status: 'PENDING' }
       })
 
       return reply.code(201).send({ application })

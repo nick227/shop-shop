@@ -51,6 +51,7 @@ function generateHeader(): string {
 /* eslint-disable */
 
 import { apiClient } from './client'
+import { readHttpErrorFromResponse } from './readHttpError'
 import type {
   StoreResponse as Store,
   ItemResponse as Item,
@@ -146,6 +147,12 @@ async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
 
     if (isResponseError(error)) {
       throw new APIError(error.message ?? error.statusText, error.status, 'HTTP_ERROR', error, { cause: error })
+    }
+
+    // SDK ResponseError wraps a Fetch Response, not an Axios data object.
+    if (error && typeof error === 'object' && 'response' in error && error.response instanceof Response) {
+      const { message, body } = await readHttpErrorFromResponse(error.response.clone())
+      throw new APIError(message, error.response.status, 'HTTP_ERROR', body, { cause: error })
     }
 
     if (isAxiosError(error)) {

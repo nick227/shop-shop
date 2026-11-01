@@ -489,3 +489,5 @@ export {
 
 // Export the loader function for the build script
 export { registerAllResourcesInOpenAPI } from './core/openapi.loader.js'
+
+export type { AccountCapabilities } from './dtos/account-capabilities.dto.js'

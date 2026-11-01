@@ -1,80 +1,44 @@
 import { Button } from '@shared/ui/primitives'
 import { useHaptics } from '@shared/hooks/useHaptics'
-import type { StoreResponse } from '@api/types'
-import { ActiveStoreOperations } from './ActiveStoreOperations'
+import type { VendorStore } from '@shared/hooks/hooks/vendor'
+import { StoreAvatar } from '@layouts/VendorLayout/StoreAvatar'
 
 interface StoreDirectoryRowProps {
-  readonly store: StoreResponse
+  readonly store: VendorStore
   readonly meta: string
-  readonly isWorking: boolean
-  readonly onSelect: () => void
-  readonly onOpenMenu: () => void
-  readonly onEdit: () => void
+  readonly isCurrent: boolean
+  readonly onOpen: () => void
+  readonly onSettings: () => void
 }
 
-export function StoreDirectoryRow({
-  store,
-  meta,
-  isWorking,
-  onSelect,
-  onOpenMenu,
-  onEdit,
-}: StoreDirectoryRowProps) {
+export function StoreDirectoryRow({ store, meta, isCurrent, onOpen, onSettings }: StoreDirectoryRowProps) {
   const haptics = useHaptics()
 
   return (
     <li className="border-b border-border">
-      <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3 py-3">
         <button
           type="button"
           onClick={() => {
             haptics.light()
-            onSelect()
+            onOpen()
           }}
-          className="flex min-w-0 items-start gap-3 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-pressed={isWorking}
-          aria-label={isWorking ? `${store.name} is the working store` : `Work in ${store.name}`}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Open ${store.name}`}
         >
-          <span
-            className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-foreground"
-            aria-hidden
-          >
-            {isWorking ? <span className="h-2 w-2 rounded-full bg-foreground" /> : null}
-          </span>
+          <StoreAvatar name={store.name} imageUrl={store.imageUrl} />
           <span className="min-w-0">
-            <span className="block truncate text-base font-medium text-foreground">{store.name}</span>
-            <span className="mt-0.5 block text-sm text-muted-foreground">
+            <span className="block truncate text-sm font-medium text-foreground">{store.name}</span>
+            <span className="block truncate text-xs text-muted-foreground">
               {meta}
-              {isWorking ? ' · Working' : ''}
+              {isCurrent ? ' · Current' : ''}
             </span>
           </span>
         </button>
-        <div className="flex shrink-0 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="small"
-            onClick={() => {
-              haptics.light()
-              onOpenMenu()
-            }}
-          >
-            Menu
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="small"
-            onClick={() => {
-              haptics.light()
-              onEdit()
-            }}
-          >
-            Edit store
-          </Button>
-        </div>
+        <Button type="button" variant="outline" size="small" onClick={onSettings}>
+          Settings
+        </Button>
       </div>
-      {isWorking ? <ActiveStoreOperations storeId={store.id} storeName={store.name} /> : null}
     </li>
   )
 }

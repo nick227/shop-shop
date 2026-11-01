@@ -98,6 +98,11 @@
   letter-spacing: -0.03em;
 }
 
+h1.site-header-title {
+  font-size: 5rem;
+  font-weight: 900;
+}
+
 .plate-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

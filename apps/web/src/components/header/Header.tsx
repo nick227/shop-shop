@@ -9,7 +9,6 @@ import { SiteBranding } from './SiteBranding'
 import { SiteSearch } from './SiteSearch'
 import { AuthBlock } from './AuthBlock'
 import { AddressDisplay } from './AddressDisplay'
-import { VendorStoreManager } from './VendorStoreManager'
 import { useHeaderAddressExtrasForMerge } from './HeaderAddressExtrasContext'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@stores/authStore'
@@ -88,9 +87,6 @@ export function Header({ className = '' }: HeaderProps) {
     navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
-  const handleVendorNavigate = () => {
-    navigate('/vendor/dashboard')
-  }
 
   return (
     <>
@@ -113,7 +109,7 @@ export function Header({ className = '' }: HeaderProps) {
                   Driver Deliveries
                 </Link>
               )}
-              <VendorStoreManager onNavigateToVendor={handleVendorNavigate} />
+
               
               <AddressDisplay 
                 locationDisplayName={addressDisplayProps.locationDisplayName}

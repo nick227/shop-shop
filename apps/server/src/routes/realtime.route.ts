@@ -6,7 +6,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from 'ws'
 import fastifyWebsocket from '@fastify/websocket'
-import { verifyJWT } from '@packages/db'
+import { getAccountCapabilities, hasStorePermission, prisma, verifyJWT } from '@packages/db'
 import { realtimeBroker } from '../services/realtime.broker.js'
 
 const PROTOCOL_VERSION = 1
@@ -74,69 +74,30 @@ export const realtimeRoutes = async (app: FastifyInstance) => {
         if (message.type === 'subscribe') {
           const topic: string = message.topic
 
-          // Validate topic permissions
-          if (topic.startsWith('vendor:')) {
-            const storeId = topic.split(':')[1]
-            
-            // Check if user is VENDOR/ADMIN role OR owns the store
-            if (userRole === 'VENDOR' || userRole === 'ADMIN') {
-              realtimeBroker.subscribe(topic, socket)
-              subscriptions.add(topic)
-              socket.send(JSON.stringify({ type: 'subscribed', topic }))
-              app.log.info(`[Realtime] Client ${clientId} subscribed to ${topic}`)
-            } else {
-              // Verify user owns this store (for USER role)
-              const { prisma } = await import('@packages/db')
-              const store = await prisma.store.findFirst({
-                where: {
-                  id: storeId,
-                  ownerUserId: userId,
-                },
-                select: { id: true },
-              })
-              
-              if (store) {
-                realtimeBroker.subscribe(topic, socket)
-                subscriptions.add(topic)
-                socket.send(JSON.stringify({ type: 'subscribed', topic }))
-                app.log.info(`[Realtime] Client ${clientId} (store owner) subscribed to ${topic}`)
-              } else {
-                socket.send(JSON.stringify({
-                  type: 'error',
-                  message: 'Unauthorized topic',
-                  code: 'FORBIDDEN_TOPIC',
-                }))
-                app.log.warn(`[Realtime] Client ${clientId} - unauthorized topic: ${topic}`)
-              }
+          const authorize = async () => {
+            const current = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, suspendedAt: true } })
+            if (!current || current.suspendedAt) return false
+            if (topic === `customer:${userId}`) return true
+            if (topic.startsWith('vendor:')) {
+              const storeId = topic.slice('vendor:'.length)
+              return await hasStorePermission(userId, storeId, 'VIEW_ORDERS') ||
+                await hasStorePermission(userId, storeId, 'MANAGE_ORDERS')
             }
+            if (topic.startsWith('order:')) {
+              const order = await prisma.order.findUnique({ where: { id: topic.slice('order:'.length) }, select: { userId: true, storeId: true, assignedToUserId: true } })
+              if (!order) return false
+              if (order.userId === userId || (current.role === 'RIDER' && order.assignedToUserId === userId)) return true
+              return await hasStorePermission(userId, order.storeId, 'VIEW_ORDERS') ||
+                await hasStorePermission(userId, order.storeId, 'MANAGE_ORDERS')
+            }
+            return topic.startsWith('admin:') && (await getAccountCapabilities(userId)).canAdministerStores
           }
-          else if (topic.startsWith('customer:') && topic === `customer:${userId}`) {
-            // Customer can only subscribe to their own topic
-            realtimeBroker.subscribe(topic, socket)
+          if (typeof topic === 'string' && await authorize()) {
+            realtimeBroker.subscribe(topic, socket, authorize)
             subscriptions.add(topic)
             socket.send(JSON.stringify({ type: 'subscribed', topic }))
-            app.log.info(`[Realtime] Client ${clientId} subscribed to ${topic}`)
-          }
-          else if (topic.startsWith('order:')) {
-            // TODO: Verify user has access to this order
-            realtimeBroker.subscribe(topic, socket)
-            subscriptions.add(topic)
-            socket.send(JSON.stringify({ type: 'subscribed', topic }))
-            app.log.info(`[Realtime] Client ${clientId} subscribed to ${topic}`)
-          }
-          else if (topic.startsWith('admin:') && userRole === 'ADMIN') {
-            realtimeBroker.subscribe(topic, socket)
-            subscriptions.add(topic)
-            socket.send(JSON.stringify({ type: 'subscribed', topic }))
-            app.log.info(`[Realtime] Client ${clientId} subscribed to ${topic}`)
-          }
-          else {
-            socket.send(JSON.stringify({
-              type: 'error',
-              message: 'Unauthorized topic',
-              code: 'FORBIDDEN_TOPIC',
-            }))
-            app.log.warn(`[Realtime] Client ${clientId} - unauthorized topic: ${topic}`)
+          } else {
+            socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized topic', code: 'FORBIDDEN_TOPIC' }))
           }
         }
 

@@ -1,9 +1,18 @@
+import AcceptStoreInvitationPage from './pages/public/AcceptStoreInvitation.page'
+import { VendorAccessBoundary } from '@features/account/VendorAccessBoundary'
 /**
  * Router Configuration - Route definitions;
  */
 import { createBrowserRouter, Navigate, useLocation, useParams } from 'react-router-dom'
 import { Layout } from './layouts/MainLayout'
-import { VendorLayout } from './layouts/VendorLayout'
+import {
+  LegacyScopedRedirect,
+  LegacyStorePathRedirect,
+  RequireAccess,
+  StoreRoute,
+  VendorHomeRedirect,
+  VendorLayout,
+} from './layouts/VendorLayout'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { AffiliateLayout } from './layouts/AffiliateLayout'
 import { AdminLayout } from './layouts/AdminLayout'
@@ -60,7 +69,7 @@ const AdminRiverComposerPage = lazy(() => import('./pages/admin/RiverComposer.pa
 
 // Vendor pages;
 const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
-const VendorStoreOnboardingPage = lazy(() => import('./pages/vendor/StoreOnboarding.page'))
+const VendorOverviewPage = lazy(() => import('./pages/vendor/Overview.page'))
 const StoreFormPage = lazy(() => import('./pages/vendor/StoreForm.page'))
 const StoreItemsPage = lazy(() => import('./pages/vendor/StoreItems.page'))
 const ItemFormPage = lazy(() => import('./pages/vendor/ItemForm.page'))
@@ -68,10 +77,8 @@ const StoreBundlesPage = lazy(() => import('./pages/vendor/StoreBundles.page'))
 const StoreBundleEditorPage = lazy(() => import('./pages/vendor/StoreBundleEditor.page'))
 const VendorOrdersPage = lazy(() => import('./pages/vendor/Orders.page'))
 const VendorTeamPage = lazy(() => import('./pages/vendor/Team.page'))
-const VendorDriversPage = lazy(() => import('./pages/vendor/Drivers.page'))
 const VendorAffiliatesPage = lazy(() => import('./pages/vendor/Affiliates.page'))
 const StoreRiverPage = lazy(() => import('./pages/vendor/StoreRiver.page'))
-import VendorTeamStoreRedirectPage from './pages/vendor/VendorTeamStoreRedirect.page'
 
 // Customer account pages;
 const CustomerDashboardPage = lazy(() => import('./pages/customer/Dashboard.page'))
@@ -132,12 +139,16 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         },
         // Vendor application routes;
         {
+          path: '/invitations/store/:token',
+          element: <AcceptStoreInvitationPage />,
+        },
+        {
           path: '/vendor/apply',
-          element: <Navigate to="/vendor/store/new" replace />,
+          element: <Navigate to="/vendor/new" replace />,
         },
         {
           path: '/vendor/application-status',
-          element: <Navigate to="/vendor/dashboard" replace />,
+          element: <Navigate to="/vendor" replace />,
         },
         // Public shopping routes;
         {
@@ -367,103 +378,107 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           ],
         },
         // Vendor routes (wrapped in VendorLayout)
-        // Open vendor model: any authenticated user can create or manage their stores.
+        // Workspace access and store creation are independent capabilities.
+        // Store pages live under /vendor/:storeId; older URLs redirect into that shape.
         {
           path: '/vendor',
           element: (
             <ProtectedRoute>
-              <VendorLayout />
+              <VendorAccessBoundary><VendorLayout /></VendorAccessBoundary>
             </ProtectedRoute>
           ),
           children: [
+            { index: true, element: <VendorHomeRedirect /> },
+            { path: 'dashboard', element: <VendorHomeRedirect /> },
             {
-              index: true,
-              element: <Navigate to="/vendor/dashboard" replace />,
-            },
-            {
-              path: 'dashboard',
+              path: 'stores',
               element: lazyRoute(VendorDashboardPage),
-              handle: { title: 'Vendor Dashboard' },
+              handle: { title: 'All stores' },
             },
             {
-              path: 'onboarding/store',
-              element: lazyRoute(VendorStoreOnboardingPage),
-              handle: { title: 'Store Onboarding' },
+              path: 'new',
+              element: <VendorAccessBoundary createStore>{lazyRoute(StoreFormPage)}</VendorAccessBoundary>,
+              handle: { title: 'New store' },
             },
+            { path: 'stores/new', element: <Navigate to="/vendor/new" replace /> },
+            { path: 'store/new', element: <Navigate to="/vendor/new" replace /> },
+            { path: 'onboarding/store', element: <Navigate to="/vendor/new" replace /> },
+            { path: 'orders', element: <LegacyScopedRedirect section="orders" /> },
+            { path: 'affiliates', element: <LegacyScopedRedirect section="affiliates" /> },
+            { path: 'team', element: <LegacyScopedRedirect section="team" /> },
+            { path: 'drivers', element: <LegacyScopedRedirect section="drivers" /> },
+            { path: 'stores/:storeId/*', element: <LegacyStorePathRedirect /> },
             {
-              path: 'stores/new',
-              element: lazyRoute(StoreFormPage),
-              handle: { title: 'New Store' },
-            },
-            {
-              path: 'store/new',
-              element: lazyRoute(StoreFormPage),
-              handle: { title: 'New Store' },
-            },
-            {
-              path: 'stores/:storeId/edit',
-              element: lazyRoute(StoreFormPage),
-              handle: { title: 'Edit Store' },
-            },
-            {
-              path: 'stores/:storeId/items',
-              element: lazyRoute(StoreItemsPage),
-              handle: { title: 'Store Items' },
-            },
-            {
-              path: 'stores/:storeId/river',
-              element: lazyRoute(StoreRiverPage),
-              handle: { title: 'River' },
-            },
-            {
-              path: 'stores/:storeId/items/new',
-              element: lazyRoute(ItemFormPage),
-              handle: { title: 'New Item' },
-            },
-            {
-              path: 'stores/:storeId/items/:itemId/edit',
-              element: lazyRoute(ItemFormPage),
-              handle: { title: 'Edit Item' },
-            },
-            {
-              path: 'stores/:storeId/bundles',
-              element: lazyRoute(StoreBundlesPage),
-              handle: { title: 'Store Bundles' },
-            },
-            {
-              path: 'stores/:storeId/bundles/new',
-              element: lazyRoute(StoreBundleEditorPage),
-              handle: { title: 'Create Bundle' },
-            },
-            {
-              path: 'stores/:storeId/bundles/:bundleId/edit',
-              element: lazyRoute(StoreBundleEditorPage),
-              handle: { title: 'Edit Bundle' },
-            },
-            {
-              path: 'orders',
-              element: lazyRoute(VendorOrdersPage),
-              handle: { title: 'Vendor Orders' },
-            },
-            {
-              path: 'affiliates',
-              element: lazyRoute(VendorAffiliatesPage),
-              handle: { title: 'Affiliate Sales' },
-            },
-            {
-              path: 'team',
-              element: lazyRoute(VendorTeamPage),
-              handle: { title: 'Team' },
-            },
-            {
-              path: 'drivers',
-              element: lazyRoute(VendorDriversPage),
-              handle: { title: 'Drivers' },
-            },
-            {
-              path: 'stores/:storeId/team',
-              element: <VendorTeamStoreRedirectPage />,
-              handle: { title: 'Team' },
+              path: ':storeId',
+              element: <StoreRoute />,
+              children: [
+                {
+                  index: true,
+                  element: lazyRoute(VendorOverviewPage),
+                  handle: { title: 'Overview' },
+                },
+                {
+                  path: 'orders',
+                  element: <RequireAccess need="VIEW_ORDERS" label="Orders">{lazyRoute(VendorOrdersPage)}</RequireAccess>,
+                  handle: { title: 'Orders' },
+                },
+                {
+                  path: 'menu',
+                  element: <RequireAccess need="VIEW_ITEMS" label="Menu">{lazyRoute(StoreItemsPage)}</RequireAccess>,
+                  handle: { title: 'Menu' },
+                },
+                {
+                  path: 'menu/items/new',
+                  element: <RequireAccess need="MANAGE_ITEMS" label="menu editing">{lazyRoute(ItemFormPage)}</RequireAccess>,
+                  handle: { title: 'New item' },
+                },
+                {
+                  path: 'menu/items/:itemId',
+                  element: <RequireAccess need="MANAGE_ITEMS" label="menu editing">{lazyRoute(ItemFormPage)}</RequireAccess>,
+                  handle: { title: 'Edit item' },
+                },
+                {
+                  path: 'menu/bundles',
+                  element: <RequireAccess need="VIEW_ITEMS" label="Menu">{lazyRoute(StoreBundlesPage)}</RequireAccess>,
+                  handle: { title: 'Bundles' },
+                },
+                {
+                  path: 'menu/bundles/new',
+                  element: <RequireAccess need="MANAGE_ITEMS" label="menu editing">{lazyRoute(StoreBundleEditorPage)}</RequireAccess>,
+                  handle: { title: 'New bundle' },
+                },
+                {
+                  path: 'menu/bundles/:bundleId',
+                  element: <RequireAccess need="MANAGE_ITEMS" label="menu editing">{lazyRoute(StoreBundleEditorPage)}</RequireAccess>,
+                  handle: { title: 'Edit bundle' },
+                },
+                {
+                  path: 'river',
+                  element: <RequireAccess need="FULL_ACCESS" label="River">{lazyRoute(StoreRiverPage)}</RequireAccess>,
+                  handle: { title: 'River' },
+                },
+                {
+                  path: 'affiliates',
+                  element: <RequireAccess need="VIEW_FINANCE" label="Affiliates">{lazyRoute(VendorAffiliatesPage)}</RequireAccess>,
+                  handle: { title: 'Affiliates' },
+                },
+                {
+                  path: 'team',
+                  element: <RequireAccess need="FULL_ACCESS" label="Team">{lazyRoute(VendorTeamPage)}</RequireAccess>,
+                  handle: { title: 'Team' },
+                },
+                {
+                  path: 'team/drivers',
+                  element: <RequireAccess need="FULL_ACCESS" label="Team">{lazyRoute(VendorTeamPage)}</RequireAccess>,
+                  handle: { title: 'Drivers' },
+                },
+                {
+                  path: 'settings',
+                  element: <RequireAccess need="owner" label="Settings">{lazyRoute(StoreFormPage)}</RequireAccess>,
+                  handle: { title: 'Settings' },
+                },
+                { path: '*', element: <Navigate to=".." relative="path" replace /> },
+              ],
             },
           ],
         },

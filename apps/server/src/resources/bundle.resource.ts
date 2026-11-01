@@ -1,3 +1,4 @@
+import { hasStorePermission } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
   CreateBundleInputSchema,
@@ -37,13 +38,14 @@ export const bundleResource = defineResource({
   },
   operations: ['create', 'read', 'update', 'delete', 'list'],
   customHooks: {
+    authorizeAccess: async (existing, context, operation) => {
+      if (operation === 'read') return
+      const storeId = (existing as { storeId: string }).storeId
+      if (!context?.userId || !await hasStorePermission(context.userId, storeId, 'MANAGE_ITEMS')) throw new Error('Forbidden')
+    },
     beforeCreate: async (data: any, context: any) => {
-      const store = await prisma.store.findUnique({
-        where: { id: data.storeId },
-        select: { ownerUserId: true },
-      })
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only the store owner can create bundles')
+      if (!context.userId || !await hasStorePermission(context.userId, data.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
 
       if (Array.isArray(data.items) && data.items.length > 0) {
@@ -77,14 +79,11 @@ export const bundleResource = defineResource({
         where: { id },
         select: { storeId: true },
       })
+      if (data.storeId && data.storeId !== bundle?.storeId) throw new Error('Store cannot be changed')
       if (!bundle) throw new Error('Bundle not found')
 
-      const store = await prisma.store.findUnique({
-        where: { id: bundle.storeId },
-        select: { ownerUserId: true },
-      })
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only the store owner can update bundles')
+      if (!context.userId || !await hasStorePermission(context.userId, bundle.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
 
       if (Array.isArray(data.items) && data.items.length > 0) {
@@ -118,12 +117,8 @@ export const bundleResource = defineResource({
       })
       if (!bundle) throw new Error('Bundle not found')
 
-      const store = await prisma.store.findUnique({
-        where: { id: bundle.storeId },
-        select: { ownerUserId: true },
-      })
-      if (!store || (context.userRole !== 'ADMIN' && store.ownerUserId !== context.userId)) {
-        throw new Error('Only the store owner can delete bundles')
+      if (!context.userId || !await hasStorePermission(context.userId, bundle.storeId, 'MANAGE_ITEMS')) {
+        throw new Error('Forbidden')
       }
     },
 

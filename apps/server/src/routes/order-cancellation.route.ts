@@ -1,3 +1,5 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
+import { getAccountCapabilities } from '@packages/db'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -93,12 +95,12 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
 
   // GET /orders/cancellations/recent - Get recent cancellations
   app.get('/orders/cancellations/recent', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = req.query as { storeId?: string; limit?: string; offset?: string }
 
-      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+      if (!(await getAccountCapabilities(req.user!.id)).canAdministerStores) {
         if (!query.storeId) {
           return reply.code(400).send({ error: 'Vendors must specify storeId' })
         }
@@ -123,12 +125,12 @@ export const orderCancellationRoutes = async (app: FastifyInstance) => {
 
   // GET /orders/cancellations/stats - Get cancellation statistics
   app.get('/orders/cancellations/stats', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = CancellationStatsSchema.parse(req.query)
 
-      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+      if (!(await getAccountCapabilities(req.user!.id)).canAdministerStores) {
         const store = await prisma.store.findUnique({ where: { id: query.storeId }, select: { id: true } })
         if (!store) return reply.code(404).send({ error: 'Store not found' })
         if (!(await userHasStoreAccess(req.user!.id, req.user!.role, query.storeId, 'orders'))) {

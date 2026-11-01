@@ -2,7 +2,7 @@ import Fastify, { FastifyInstance } from 'fastify'
 import swagger from '@fastify/swagger'
 import swaggerUI from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
-import { prisma, generateJWT, Decimal } from '@packages/db'
+import { prisma, generateJWT, Decimal, enrollVendor } from '@packages/db'
 import type { Prisma } from '@packages/db/generated/client'
 import type { Role } from '@packages/db/generated/client'
 
@@ -96,6 +96,23 @@ export const createAuthenticatedUser = async (
 /**
  * Quick helper to get auth headers for requests
  */
+/**
+ * A merchant as production sees one: an APPROVED vendor enrollment. Role alone no longer
+ * grants the vendor workspace or store creation.
+ */
+export const createEnrolledVendor = async (overrides?: Parameters<typeof createAuthenticatedUser>[1]): Promise<TestUser> => {
+  const user = await createAuthenticatedUser('VENDOR', overrides)
+  await enrollVendor(user.id)
+  return user
+}
+
+/** A platform admin with the explicit workspace and store-creation grants production requires. */
+export const createWorkspaceAdmin = async (overrides?: Parameters<typeof createAuthenticatedUser>[1]): Promise<TestUser> => {
+  const user = await createAuthenticatedUser('ADMIN', overrides)
+  await prisma.user.update({ where: { id: user.id }, data: { adminVendorWorkspace: true, adminCreateStores: true } })
+  return user
+}
+
 export const authHeaders = (token: string) => ({
   authorization: `Bearer ${token}`,
 })

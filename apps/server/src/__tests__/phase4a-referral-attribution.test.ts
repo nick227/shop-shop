@@ -11,7 +11,7 @@
  */
 import { randomUUID } from 'crypto'
 import { describe, it, expect, afterAll, vi } from 'vitest'
-import { prisma, Decimal, getAffiliateBySlugOrCode } from '@packages/db'
+import { prisma, Decimal, enrollVendor, getAffiliateBySlugOrCode } from '@packages/db'
 import { storeResource } from '../resources/store.resource.js'
 
 vi.mock('../config/stripeConnectUrls.js', () => ({
@@ -35,6 +35,13 @@ const createdStoreIds: string[] = []
 async function makeUser() {
   const u = await createAuthenticatedUser('USER')
   createdUserIds.push(u.id)
+  return u
+}
+
+/** A store owner: production requires an approved vendor enrollment to create stores. */
+async function makeMerchant() {
+  const u = await makeUser()
+  await enrollVendor(u.id)
   return u
 }
 
@@ -253,7 +260,7 @@ describe('store creation — referral attribution + STORE_SIGNUP event (steps 6-
 
   it('resolves affiliateReferralCode on create and writes a STORE_SIGNUP event', async () => {
     const aff = await makeAffiliate()
-    const owner = await makeUser()
+    const owner = await makeMerchant()
 
     const created = await createStoreThroughHooks(
       hooks,
@@ -280,7 +287,7 @@ describe('store creation — referral attribution + STORE_SIGNUP event (steps 6-
 
   it('falls back to the creating user’s User.referredByAffiliateId when no code is supplied', async () => {
     const aff = await makeAffiliate()
-    const owner = await makeUser()
+    const owner = await makeMerchant()
     await prisma.user.update({
       where: { id: owner.id },
       data: { referredByAffiliateId: aff.id, referredByReferralCode: aff.referralCode },
@@ -309,7 +316,7 @@ describe('store creation — referral attribution + STORE_SIGNUP event (steps 6-
 
   it('drops raw referredByAffiliateId from the body (mass-assignment protection)', async () => {
     const realAff = await makeAffiliate()
-    const owner = await makeUser()
+    const owner = await makeMerchant()
     const malicious = await makeAffiliate()
 
     const created = await createStoreThroughHooks(
@@ -338,7 +345,7 @@ describe('store creation — referral attribution + STORE_SIGNUP event (steps 6-
   })
 
   it('produces no ReferralEvent when the store is unattributed', async () => {
-    const owner = await makeUser()
+    const owner = await makeMerchant()
 
     const created = await createStoreThroughHooks(
       hooks,

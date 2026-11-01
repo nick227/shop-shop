@@ -1,3 +1,5 @@
+import { getAccountCapabilities } from '@packages/db'
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
@@ -96,13 +98,13 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/orders - Export orders to CSV (small datasets)
   app.get('/exports/orders', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = OrdersExportSchema.parse(req.query)
 
       let storeId = query.storeId
-      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+      if (!(await getAccountCapabilities(req.user!.id)).canAdministerStores) {
         if (!storeId) {
           return reply.code(400).send({ error: 'Vendors must specify storeId' })
         }
@@ -136,13 +138,13 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/orders/stream - Stream orders export for large datasets
   app.get('/exports/orders/stream', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = OrdersExportSchema.parse(req.query)
 
       let storeId = query.storeId
-      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+      if (!(await getAccountCapabilities(req.user!.id)).canAdministerStores) {
         if (!storeId) {
           return reply.code(400).send({ error: 'Vendors must specify storeId' })
         }
@@ -183,13 +185,13 @@ export const exportRoutes = async (app: FastifyInstance) => {
 
   // GET /exports/tax-summary - Export tax summary to CSV
   app.get('/exports/tax-summary', {
-    preHandler: [requireRole(['ADMIN', 'VENDOR', 'STAFF'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     try {
       const query = TaxSummarySchema.parse(req.query)
 
       let storeId = query.storeId
-      if (req.user!.role === 'VENDOR' || req.user!.role === 'STAFF') {
+      if (!(await getAccountCapabilities(req.user!.id)).canAdministerStores) {
         if (!storeId) {
           return reply.code(400).send({ error: 'Vendors must specify storeId' })
         }

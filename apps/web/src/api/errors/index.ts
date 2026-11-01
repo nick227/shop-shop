@@ -5,33 +5,24 @@ import { APIError } from '../apiWrapper'
 import { ApiContractError } from '../client'
 import { AppError } from './types'
 import { httpErrorHandlers } from './handlers'
+import { readHttpErrorFromResponse } from '../readHttpError'
 
 export { AppError } from './types'
 export type { ValidationIssue } from './types'
-
-/**
- * Parse response body safely
- */
-async function getResponseBody(response: Response): Promise<Record<string, unknown> | undefined> {
-  try {
-    return await response.clone().json() as Record<string, unknown>
-  } catch {
-    return undefined
-  }
-}
 
 /**
  * Handle HTTP errors (ResponseError from SDK)
  */
 async function handleResponseError(error: { response: Response }): Promise<AppError> {
   const status = error.response.status
-  const body = await getResponseBody(error.response)
+  const { message, body } = await readHttpErrorFromResponse(error.response.clone())
 
   const handler = httpErrorHandlers[status] || httpErrorHandlers[500]
   if (!handler) {
     return new AppError('Unknown error', 'UNKNOWN', status, body || undefined)
   }
-  return handler(body || undefined)
+  const mapped = handler(body)
+  return new AppError(body ? message : mapped.message, mapped.code, status, body, mapped.issues)
 }
 
 /**

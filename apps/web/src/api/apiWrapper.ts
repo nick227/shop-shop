@@ -154,6 +154,12 @@ async function handleRequest<T>(fn: () => Promise<T>): Promise<T> {
     }
     
     // Handle Axios-like errors
+    // SDK ResponseError wraps a Fetch Response, not an Axios data object.
+    if (error && typeof error === 'object' && 'response' in error && error.response instanceof Response) {
+      const { message, body } = await readHttpErrorFromResponse(error.response.clone())
+      throw new APIError(message, error.response.status, 'HTTP_ERROR', body, { cause: error })
+    }
+
     if (isAxiosError(error)) {
       const status = error.response?.status
       const message = error.response?.data?.message ?? error.message ?? 'Request failed'

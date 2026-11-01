@@ -5,6 +5,7 @@ import { registerAllResources } from './loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
 import {
   createAuthenticatedUser,
+  createWorkspaceAdmin,
   authHeaders,
   createTestStore,
   createTestItem,
@@ -32,7 +33,7 @@ describe('Order Routes E2E', () => {
   beforeEach(async () => {
     user = await createAuthenticatedUser('USER')
     vendor = await createAuthenticatedUser('VENDOR')
-    admin = await createAuthenticatedUser('ADMIN')
+    admin = await createWorkspaceAdmin()
     
     const store = await createTestStore(vendor.id)
     storeId = store.id
@@ -140,6 +141,39 @@ describe('Order Routes E2E', () => {
 
       expect(body.data).toBeTruthy()
       expect(Array.isArray(body.data)).toBe(true)
+    })
+
+    it('should list a store owner\'s orders for that store', async () => {
+      const order = await createTestOrder(user.id, storeId)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/orders?storeId=${storeId}&status=${order.status}`,
+        headers: authHeaders(vendor.token),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.data.map((row: { id: string }) => row.id)).toContain(order.id)
+      expect(body.data.every((row: { storeId: string }) => row.storeId === storeId)).toBe(true)
+    })
+
+    it('should keep store orders out of an unscoped vendor listing and refuse other stores', async () => {
+      const storeOrder = await createTestOrder(user.id, storeId)
+      const otherVendor = await createAuthenticatedUser('VENDOR')
+      const otherStore = await createTestStore(otherVendor.id)
+
+      const unscoped = await app.inject({ method: 'GET', url: '/orders', headers: authHeaders(vendor.token) })
+      const otherStoreList = await app.inject({
+        method: 'GET',
+        url: `/orders?storeId=${otherStore.id}`,
+        headers: authHeaders(vendor.token),
+      })
+
+      // Without a store, a vendor sees only orders they placed as a customer.
+      expect(unscoped.statusCode).toBe(200)
+      expect(JSON.parse(unscoped.body).data.map((row: { id: string }) => row.id)).not.toContain(storeOrder.id)
+      expect(otherStoreList.statusCode).toBe(403)
     })
   })
 

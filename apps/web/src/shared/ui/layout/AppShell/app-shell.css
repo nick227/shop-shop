@@ -1,0 +1,145 @@
+/*
+ * AppShell — one responsive shell: overlay drawer below 1024px, an icon rail
+ * that expands on hover or focus from 1024px, and a pinned expanded sidebar
+ * from 1280px unless the user collapses it.
+ */
+.app-shell {
+  --app-shell-rail: 4.5rem;
+  --app-shell-wide: 15rem;
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.app-shell-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  display: none;
+  width: var(--app-shell-rail);
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem 0.625rem;
+  overflow: hidden;
+  background: hsl(var(--muted) / 0.4);
+  border-right: 1px solid hsl(var(--border));
+  transition: width 180ms ease;
+}
+
+.app-shell-sidebar:hover,
+.app-shell-sidebar:focus-within {
+  width: var(--app-shell-wide);
+  background: hsl(var(--background));
+  box-shadow: 8px 0 24px -16px rgb(0 0 0 / 0.25);
+}
+
+.app-shell-sidebar .app-shell-label {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.app-shell-sidebar:hover .app-shell-label,
+.app-shell-sidebar:focus-within .app-shell-label {
+  max-width: 12rem;
+  opacity: 1;
+}
+
+.app-shell-sidebar .app-shell-expanded-only,
+.app-shell-rail-only {
+  display: none;
+}
+
+.app-shell-main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.5rem;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--background) / 0.92);
+  border-bottom: 1px solid hsl(var(--border));
+  backdrop-filter: blur(8px);
+}
+
+.app-shell-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.app-shell-drawer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: min(86vw, 18rem);
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem;
+  overflow-y: auto;
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+@media (min-width: 1024px) {
+  .app-shell-sidebar {
+    display: flex;
+  }
+
+  .app-shell-main {
+    padding-left: var(--app-shell-rail);
+  }
+
+  .app-shell-drawer-layer {
+    display: none;
+  }
+
+  .app-shell-sidebar .app-shell-rail-only {
+    display: block;
+  }
+
+  .app-shell-sidebar:hover .app-shell-rail-only,
+  .app-shell-sidebar:focus-within .app-shell-rail-only {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-shell:not([data-collapsed='true']) .app-shell-sidebar {
+    width: var(--app-shell-wide);
+    background: hsl(var(--muted) / 0.4);
+    box-shadow: none;
+  }
+
+  .app-shell:not([data-collapsed='true']) .app-shell-sidebar .app-shell-label {
+    max-width: 12rem;
+    opacity: 1;
+  }
+
+  .app-shell:not([data-collapsed='true']) .app-shell-main {
+    padding-left: var(--app-shell-wide);
+  }
+
+  .app-shell:not([data-collapsed='true']) .app-shell-sidebar .app-shell-rail-only {
+    display: none;
+  }
+
+  .app-shell-sidebar .app-shell-expanded-only {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-sidebar {
+    transition: none;
+  }
+}

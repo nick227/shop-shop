@@ -79,11 +79,10 @@ function KitchenContainer() {
   )
 
   const { data: managedStores = [] } = useVendorStores()
-  const managedStoreIds = useMemo(() => new Set(managedStores.map((s) => s.id)), [managedStores])
 
   const canComposeRiver = useMemo(
-    () => Boolean(store && user && (user.role === 'ADMIN' || managedStoreIds.has(store.id))),
-    [store, user, managedStoreIds],
+    () => Boolean(store && user && (managedStores.some((s) => s.id === store.id && (s.isOwner || s.permissions.includes('FULL_ACCESS') || s.permissions.includes('MANAGE_ITEMS'))))),
+    [store, user, managedStores],
   )
 
   const handleRiverPost = useCallback(

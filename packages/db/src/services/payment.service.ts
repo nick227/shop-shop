@@ -1,3 +1,4 @@
+import { getAccountCapabilities } from './account-capabilities.service.js'
 import { prisma } from '../client.js'
 import { Decimal } from 'decimal.js'
 import {
@@ -27,7 +28,9 @@ export async function assertUserCanManageStoreFinance(userId: string, storeId: s
     where: { id: userId },
     select: { role: true },
   })
-  if (user?.role === 'ADMIN') return
+  const access = await getAccountCapabilities(userId)
+  if (!access.canAccessVendorPortal) throw new Error('Unauthorized: Workspace access is revoked')
+  if (access.canAdministerStores) return
 
   const store = await prisma.store.findUnique({
     where: { id: storeId },
@@ -345,7 +348,7 @@ export const refundOrder = async (input: RefundOrderInput) => {
   }
 
   // Only vendor or admin can refund
-  if (order.store.ownerUserId !== input.userId) {
+  if (!(await getAccountCapabilities(input.userId)).canAccessVendorPortal || order.store.ownerUserId !== input.userId) {
     throw new Error('Unauthorized: Only store owner can issue refunds')
   }
 

@@ -1,3 +1,4 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import {
   CreatePaymentIntentInputSchema,
@@ -11,7 +12,7 @@ import {
   checkStripeConnectStatus,
   refundOrder,
 } from '@packages/db'
-import { requireAuth, requireRole } from '../middleware/rbac.js'
+import { requireAuth } from '../middleware/rbac.js'
 import { rateLimits } from '../constants/rateLimits.js'
 import { resolveStripeConnectUrls } from '../config/stripeConnectUrls.js'
 import 'dotenv/config'
@@ -85,7 +86,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentConnect,
     },
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can set up payments for their store
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can set up payments for their store
     schema: {
       tags: ['Payments'],
       summary: 'Initiate Stripe Connect onboarding',
@@ -134,7 +135,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentConnectStatus,
     },
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can check payment status for their store
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can check payment status for their store
     schema: {
       tags: ['Payments'],
       summary: 'Check Stripe Connect status',
@@ -168,7 +169,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
     config: {
       rateLimit: rateLimits.paymentRefund,
     },
-    preHandler: [requireRole(['USER', 'VENDOR', 'ADMIN'])],  // Open platform: any user can refund orders from their store
+    preHandler: [requireVendorWorkspace],  // Open platform: any user can refund orders from their store
     schema: {
       tags: ['Payments'],
       summary: 'Refund an order',

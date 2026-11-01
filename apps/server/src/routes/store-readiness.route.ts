@@ -1,11 +1,11 @@
+import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 ﻿import type { FastifyInstance } from 'fastify'
-import { requireRole } from '../middleware/rbac.js'
 import { requireVendorAuth } from './vendor/vendorHelpers.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
 export const storeReadinessRoutes = async (app: FastifyInstance) => {
   app.get('/stores/:id/readiness', {
-    preHandler: [requireRole(['VENDOR', 'STAFF', 'ADMIN'])],
+    preHandler: [requireVendorWorkspace],
   }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const readiness = await getStoreReadiness(id)

@@ -22,11 +22,11 @@ export const addressResource = defineResource({
     list: AddressListResponseSchema,
   },
   access: {
-    create: ['USER', 'VENDOR', 'ADMIN'],
-    read: ['USER', 'VENDOR', 'ADMIN'],
-    update: ['USER', 'VENDOR', 'ADMIN'],
-    delete: ['USER', 'VENDOR', 'ADMIN'],
-    list: ['USER', 'VENDOR', 'ADMIN'],
+    create: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    read: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    update: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    delete: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
+    list: ['USER', 'VENDOR_PENDING', 'VENDOR', 'ADMIN', 'STAFF', 'AFFILIATE', 'RIDER'],
   },
   ownership: {
     enabled: true,

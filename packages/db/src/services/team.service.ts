@@ -1,4 +1,5 @@
-﻿import { nanoid } from 'nanoid'
+﻿import { getAccountCapabilities } from './account-capabilities.service.js'
+import { nanoid } from 'nanoid'
 import { prisma } from '../client.js'
 
 export type TeamMemberPermission =
@@ -36,7 +37,7 @@ export interface UpdateTeamMemberInput {
 }
 
 async function canManageStoreMembers(userId: string, storeId: string, actorRole?: string): Promise<boolean> {
-  if (actorRole === 'ADMIN') return true
+  if ((await getAccountCapabilities(userId)).canAdministerStores) return true
   return hasStorePermission(userId, storeId, 'MANAGE_STORE_SETTINGS')
 }
 
@@ -145,86 +146,28 @@ export async function getInvitationByToken(token: string) {
  * Accept team invitation
  */
 export async function acceptInvitation(input: AcceptInvitationInput) {
-  const invitation = await prisma.invitation.findUnique({
-    where: { token: input.token },
-  })
-
-  if (!invitation) {
-    throw new Error('Invitation not found')
-  }
-
-  if (invitation.status !== 'PENDING') {
-    throw new Error('Invitation is no longer valid')
-  }
-
-  if (invitation.expiresAt < new Date()) {
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: 'EXPIRED' },
+  return prisma.$transaction(async (tx) => {
+    const invitation = await tx.invitation.findUnique({ where: { token: input.token } })
+    if (!invitation) throw new Error('Invitation not found')
+    const user = await tx.user.findUnique({ where: { id: input.userId },
+      select: { email: true, suspendedAt: true, vendorAccessRevokedAt: true } })
+    if (!user || user.email.trim().toLowerCase() !== invitation.recipientEmail.trim().toLowerCase()) {
+      throw new Error('Email mismatch - this invitation was sent to a different email')
+    }
+    if (user.suspendedAt || user.vendorAccessRevokedAt) throw new Error('Workspace access is revoked')
+    // Claim once, atomically; possession of the invitation token plus matching login is required.
+    const claimed = await tx.invitation.updateMany({
+      where: { id: invitation.id, status: 'PENDING', expiresAt: { gt: new Date() } },
+      data: { status: 'ACCEPTED', acceptedAt: new Date(), recipientUserId: input.userId },
     })
-    throw new Error('Invitation has expired')
-  }
-
-  // Check if user email matches invitation
-  const user = await prisma.user.findUnique({
-    where: { id: input.userId },
-    select: { email: true },
+    if (claimed.count !== 1) throw new Error('Invitation is expired or already used')
+    return tx.teamMember.upsert({
+      where: { storeId_userId: { storeId: invitation.storeId, userId: input.userId } },
+      create: { storeId: invitation.storeId, userId: input.userId, permissionsJson: invitation.permissionsJson as object },
+      update: { isActive: true, permissionsJson: invitation.permissionsJson as object },
+      include: { store: { select: { id: true, name: true, slug: true } } },
+    })
   })
-
-  if (!user || user.email !== invitation.recipientEmail) {
-    throw new Error('Email mismatch - this invitation was sent to a different email')
-  }
-
-  // Check if already a member
-  const existingMember = await prisma.teamMember.findUnique({
-    where: {
-      storeId_userId: {
-        storeId: invitation.storeId,
-        userId: input.userId,
-      },
-    },
-  })
-
-  if (existingMember) {
-    throw new Error('You are already a member of this store')
-  }
-
-  // Create team member and update invitation
-  const [teamMember] = await prisma.$transaction([
-    prisma.teamMember.create({
-      data: {
-        storeId: invitation.storeId,
-        userId: input.userId,
-        permissionsJson: invitation.permissionsJson as object,
-      },
-      include: {
-        store: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-      },
-    }),
-    prisma.invitation.update({
-      where: { id: invitation.id },
-      data: {
-        status: 'ACCEPTED',
-        acceptedAt: new Date(),
-        recipientUserId: input.userId,
-      },
-    }),
-  ])
-
-  return teamMember
 }
 
 /**
@@ -341,11 +284,18 @@ export async function getStoreDeliveryDrivers(storeId: string) {
  * Owners often have no TeamMember row; include owned stores so vendor dashboards resolve stores.
  */
 export async function getUserStoreAccess(userId: string) {
+  if (!(await getAccountCapabilities(userId)).canAccessVendorPortal) return []
   const storeSelect = {
     id: true,
     name: true,
     slug: true,
     isPublished: true,
+    status: true,
+    acceptingOrders: true,
+    ordersPausedReason: true,
+    imageUrl: true,
+    addressCity: true,
+    addressState: true,
   } as const
 
   const [memberships, ownedStores] = await Promise.all([
@@ -364,7 +314,13 @@ export async function getUserStoreAccess(userId: string) {
 
   const byStoreId = new Map<
     string,
-    { storeId: string; store: (typeof memberships)[0]['store']; permissions: TeamMemberPermission[]; addedAt: Date }
+    {
+      storeId: string
+      store: (typeof memberships)[0]['store']
+      permissions: TeamMemberPermission[]
+      isOwner: boolean
+      addedAt: Date
+    }
   >()
 
   for (const store of ownedStores) {
@@ -372,6 +328,7 @@ export async function getUserStoreAccess(userId: string) {
       storeId: store.id,
       store,
       permissions: ['FULL_ACCESS'],
+      isOwner: true,
       addedAt: new Date(0),
     })
   }
@@ -382,6 +339,7 @@ export async function getUserStoreAccess(userId: string) {
       storeId: m.storeId,
       store: m.store,
       permissions: m.permissionsJson as TeamMemberPermission[],
+      isOwner: false,
       addedAt: m.addedAt,
     })
   }
@@ -512,6 +470,9 @@ export async function hasStorePermission(
   storeId: string,
   requiredPermission: TeamMemberPermission
 ): Promise<boolean> {
+  const access = await getAccountCapabilities(userId)
+  if (!access.canAccessVendorPortal) return false
+  if (access.canAdministerStores) return true
   // Check if user is owner
   const store = await prisma.store.findUnique({
     where: { id: storeId },

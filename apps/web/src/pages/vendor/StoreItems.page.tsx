@@ -1,24 +1,25 @@
 /**
  * StoreItemsPage - Manage items for a specific store with sales analytics
  */
+import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
-import { Button, SearchInput, Badge, Spinner, Pagination } from '@shared/ui/primitives'
+import { Button, SearchInput, Badge, Pagination, SegmentedControl } from '@shared/ui/primitives'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
-import { PageHeader } from '@shared/ui/layout/PageLayout'
-import { PageShell } from '@shared/ui/layout/PageShell'
+import { VendorPage } from '@layouts/VendorLayout/page'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { Package, Edit, Trash2, ArrowLeft, Plus, BarChart3, Grid } from 'lucide-react'
+import { Package, Edit, Trash2, Plus } from 'lucide-react'
 import { usePaginatedList } from '@shared/hooks/usePaginatedList'
 import type { ItemResponse } from '@api/types'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 import { useHaptics } from '@shared/hooks/useHaptics'
 import { ItemAnalyticsTable } from './components/ItemAnalyticsTable'
 import { CsvImportButton } from './components/CsvImportButton'
+import { MenuTabs } from './components/MenuTabs'
 
 export default function StoreItemsPage() {
   const { storeId } = useParams<{ storeId: string }>()
@@ -79,85 +80,40 @@ export default function StoreItemsPage() {
     }
   }, [deleteItemMutation])
 
-  if (isLoadingStore || isLoadingItems) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4">
-          <Spinner size="large" />
-          <p className="mt-4 text-muted-foreground">Loading store items...</p>
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!store) {
-    return (
-      <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="py-6 md:py-6">
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center">
-          <h2 className="mb-2 text-xl font-bold text-destructive">Store not found</h2>
-          <Button variant="primary" onClick={() => navigate('/vendor/dashboard')}>
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Back to Dashboard
-          </Button>
-        </div>
-      </PageShell>
-    )
-  }
-
   return (
-    <PageShell nested className="bg-background" containerClassName="max-w-7xl" contentClassName="space-y-5 py-6 md:py-6">
-      <PageHeader
-        title={`${store.name} - Menu Items`}
-        description="Manage your menu items with sales analytics"
-        backButton={
-          <Button variant="ghost" size="small" onClick={() => navigate('/vendor/dashboard')} className="-ml-2 text-muted-foreground hover:bg-transparent">
-            <ArrowLeft className="mr-1 w-4 h-4" />
-            Dashboard
+    <VendorPage
+      title="Menu"
+      loading={isLoadingStore || isLoadingItems}
+      error={!isLoadingStore && !store ? { message: 'This store could not be loaded' } : undefined}
+      tabs={<MenuTabs storeId={storeId!} />}
+      actions={
+        <>
+          <CsvImportButton storeId={storeId!} />
+          <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add item
           </Button>
-        }
-      />
-
-      {/* Actions Bar */}
-      <div className="flex flex-col gap-3 items-start sm:items-center sm:flex-row">
-        <div className="flex gap-2 items-center">
-          <Button
-            variant={viewMode === 'analytics' ? 'primary' : 'outline'}
-            size="small"
-            onClick={() => setViewMode('analytics')}
-            className="text-xs"
-          >
-            <BarChart3 className="w-4 h-4 mr-1" />
-            Analytics
-          </Button>
-          <Button
-            variant={viewMode === 'cards' ? 'primary' : 'outline'}
-            size="small"
-            onClick={() => setViewMode('cards')}
-            className="text-xs"
-          >
-            <Grid className="w-4 h-4 mr-1" />
-            Cards
-          </Button>
-        </div>
-        
-        <div className="flex gap-3 items-center w-full sm:w-auto">
+        </>
+      }
+    >
+      <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SegmentedControl
+          label="Item view"
+          items={[
+            { id: 'analytics', label: 'Sales' },
+            { id: 'cards', label: 'Cards' },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+        />
+        <div className="w-full sm:w-72">
           <SearchInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search items..."
-            className="flex-1 w-full max-w-md"
+            placeholder="Search items"
+            aria-label="Search items"
           />
-          <Button
-            variant="primary"
-            onClick={() => navigate('/vendor/stores/' + storeId + '/items/new')}
-            className="w-full sm:w-auto flex-shrink-0"
-          >
-            <Plus className="mr-2 w-4 h-4" />
-            Add Item
-          </Button>
-          <div className="flex flex-col items-center flex-shrink-0 h-[40px]">
-            <CsvImportButton storeId={storeId!} />
-          </div>
         </div>
       </div>
 
@@ -199,7 +155,7 @@ export default function StoreItemsPage() {
       {viewMode === 'analytics' ? (
         <ItemAnalyticsTable
           storeId={storeId!}
-          onEditItem={(itemId) => navigate(`/vendor/stores/${storeId}/items/${itemId}/edit`)}
+          onEditItem={(itemId) => navigate(vendorPaths.item(storeId!, itemId))}
           onDeleteItem={handleDeleteItem}
         />
       ) : (
@@ -211,7 +167,7 @@ export default function StoreItemsPage() {
               description={searchQuery ? "No items match your search criteria" : "Add your first menu item to start selling!"}
               action={
                 !searchQuery && (
-                  <Button variant="primary" onClick={() => navigate('/vendor/stores/' + storeId + '/items/new')}>
+                  <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
                     <Plus className="mr-2 w-4 h-4" />
                     Add Your First Item
                   </Button>
@@ -225,7 +181,7 @@ export default function StoreItemsPage() {
                   <ItemCard
                     key={item.id}
                     item={item}
-                    onEdit={() => navigate(`/vendor/stores/${storeId}/items/${item.id}/edit`)}
+                    onEdit={() => navigate(vendorPaths.item(storeId!, item.id))}
                     onDelete={() => handleDeleteItem(item.id, item.title)}
                     isDeleting={deleteItemMutation.isPending && deletingItemId === item.id}
                   />
@@ -247,7 +203,8 @@ export default function StoreItemsPage() {
           )}
         </>
       )}
-    </PageShell>
+      </div>
+    </VendorPage>
   )
 }
 

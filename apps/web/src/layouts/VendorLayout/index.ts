@@ -1,3 +1,5 @@
 export { VendorLayout } from './VendorLayout'
 export { VendorActiveStoreProvider, useVendorActiveStore } from './VendorActiveStoreContext'
 export type { VendorActiveStoreContextValue } from './VendorActiveStoreContext'
+export { VendorHomeRedirect } from './VendorHomeRedirect'
+export { LegacyScopedRedirect, LegacyStorePathRedirect, RequireAccess, StoreRoute } from './StoreRoute'
