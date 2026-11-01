@@ -149,7 +149,7 @@ export function createItemFormSections(
         <ProductMediaGrid
           storeId={options?.storeId}
           itemId={options?.itemId}
-          imageUrl={formData.imageUrl}
+          imageUrl={formData.imageUrl ?? ''}
           onImageUrl={(url) => onChange('imageUrl', url)}
           pendingFiles={options?.pendingFiles ?? []}
           onPendingFiles={options?.onPendingFiles ?? (() => undefined)}
