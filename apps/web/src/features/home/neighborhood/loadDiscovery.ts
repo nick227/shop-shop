@@ -68,9 +68,20 @@ export async function loadStories(location: LocationData | undefined) {
 
 export async function loadNeighborhoodsByZip(zip: string): Promise<NeighborhoodCard[]> {
   const response = await fetch(`${apiOrigin()}/api/places/by-zip/${zip}`)
-  if (!response.ok) return []
-  const body = await response.json() as { neighborhoods?: NeighborhoodCard[] }
-  return body.neighborhoods ?? []
+  const byZip = response.ok
+    ? ((await response.json() as { neighborhoods?: NeighborhoodCard[] }).neighborhoods ?? [])
+    : []
+  if (byZip.length >= 4) return byZip
+  const published = await loadPublishedNeighborhoods()
+  const seen = new Set(byZip.map((area) => area.slug))
+  const combined = [...byZip]
+  for (const area of published) {
+    if (seen.has(area.slug)) continue
+    seen.add(area.slug)
+    combined.push(area)
+    if (combined.length >= 4) break
+  }
+  return combined
 }
 
 export async function loadPublishedNeighborhoods(q = ''): Promise<PublishedNeighborhoodRow[]> {

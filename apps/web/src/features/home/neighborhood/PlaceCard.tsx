@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { realPhoto } from '../discovery/photo'
+import { creditForUrl } from '../discovery/editorialMedia'
 import { neighborhoodPath, type NeighborhoodCard } from './neighborhoodHero'
 import { placeTone } from './placeTone'
 
@@ -13,6 +14,7 @@ export type PlaceCardData = {
   readonly categoryLabel: string
   readonly meta?: string | null
   readonly imageUrl?: string | null
+  readonly credit?: string | null
 }
 
 export type PlaceCardVariant = 'auto' | 'neighborhood' | 'business' | 'attraction' | 'feature'
@@ -22,13 +24,15 @@ export function placeCardFromNeighborhood(area: NeighborhoodCard & {
   readonly postalCodes?: readonly string[]
 }): PlaceCardData {
   const meta = [area.headline, area.city?.name, area.postalCodes?.join(', ')].filter(Boolean).join(' · ')
+  const photo = realPhoto(area.coverUrl)
   return {
     id: area.id,
     href: neighborhoodPath(area.slug),
     name: area.name,
     categoryLabel: 'Neighborhood',
     meta: meta || null,
-    imageUrl: realPhoto(area.coverUrl) ?? null,
+    imageUrl: photo ?? null,
+    credit: photo ? creditForUrl(photo) ?? null : null,
   }
 }
 
@@ -110,6 +114,7 @@ export function PlaceCard({
         <span className="place-card-copy">
           <strong>{place.name}</strong>
           {place.meta ? <span>{place.meta}</span> : null}
+          {photo && place.credit ? <span className="media-credit">{place.credit}</span> : null}
         </span>
       </Link>
     )

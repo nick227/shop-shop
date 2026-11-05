@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowUpRight, MapPin, Sparkles } from 'lucide-react'
 import { PlaceField } from '../neighborhood/PlaceField'
 import { homepageTitle, neighborhoodPath, type NeighborhoodCard } from '../neighborhood/neighborhoodHero'
 import { formatDistance } from '@shared/lib/utils/format'
@@ -13,6 +14,7 @@ export function LocationHero({
   zip,
   error,
   pending,
+  shopCount,
   story,
   nearest,
   points,
@@ -37,49 +39,135 @@ export function LocationHero({
 }) {
   const [editing, setEditing] = useState(false)
   const resolved = Boolean(city && state && zip && !error && !pending)
-  const storyImage = story ? realPhoto(story.image) : null
-  const featureStore = nearest.find((store) => store.image)
-  const featureImage = featureStore?.image
+  const featureStore = nearest.find((store) => store.image) ?? nearest[0]
   const featureArea = neighborhoods.find((area) => realPhoto(area.coverUrl))
-  const featureCover = featureArea ? realPhoto(featureArea.coverUrl) : null
+  const featureCover = featureArea ? realPhoto(featureArea.coverUrl) : undefined
+  const storyImage = (story ? realPhoto(story.image) : undefined) ?? featureStore?.image ?? featureCover
+  const featureImage = featureStore?.image ?? featureCover
+
+  const kicker = resolved && zip ? `${city ?? 'Austin'}, ${state ?? 'TX'} · ${zip}` : 'Austin Local Guide'
+  const areaNames = neighborhoods.slice(0, 3).map((n) => n.name).join(', ')
+  const lede = resolved
+    ? `${shopCount > 0 ? `${shopCount} local storefronts` : 'Neighborhood kitchens & markets'} around ${areaNames || city}.`
+    : 'Enter a ZIP code for neighborhood delivery, or explore Austin’s neighborhoods below.'
 
   return (
     <section className="discover-hero" aria-label="Shops near you">
-      <div className="hero-copy">
-        <h1 className="discover-display">{resolved && city && state ? homepageTitle(city, state, neighborhoods) : 'Find shops'}</h1>
-        {error ? <p className="discover-lede" role="alert">{error}</p> : null}
-        {pending ? <p className="discover-lede">Looking up {zip}…</p> : null}
-        {resolved ? (
-          <button type="button" className="location-change-btn" aria-expanded={editing} onClick={() => setEditing((open) => !open)}>
-            Change ZIP
+      <div className="hero-editorial-panel">
+        {story ? (
+          <button
+            type="button"
+            className={`hero-story${storyImage ? ' has-photo' : ' is-typographic'}`}
+            onClick={() => story.storeId && onSelectStore(story.storeId)}
+          >
+            {storyImage ? <img src={storyImage} alt="" className="hero-cover" /> : null}
+            <div className="hero-story-copy">
+              <span className="hero-highlight-kicker">
+                <Sparkles className="h-3.5 w-3.5" />
+                Neighborhood Highlight
+              </span>
+              <div className="hero-story-main">
+                <strong>{story.title}</strong>
+                <span>{story.body}</span>
+                <span className="hero-story-cta">
+                  View kitchen &amp; menu <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </div>
+            </div>
           </button>
-        ) : null}
-        {!resolved || editing ? <div className="mt-4 max-w-sm"><PlaceField tone="hero" /></div> : null}
-        {story && storyImage ? (
-          <button type="button" className="hero-story" onClick={() => story.storeId && onSelectStore(story.storeId)}>
-            <img src={storyImage} alt="" className="hero-cover" />
-            <strong>{story.title}</strong>
-            <span>{story.body}</span>
-          </button>
-        ) : featureStore && featureImage ? (
-          <button type="button" className="hero-story" onClick={() => onSelectStore(featureStore.id)}>
-            <img src={featureImage} alt="" className="hero-cover" />
-            <strong>{featureStore.name}</strong>
-            <span>
-              {featureStore.typeLabel}
-              {featureStore.distance != undefined ? ` · ${formatDistance(featureStore.distance)}` : ''}
-            </span>
+        ) : featureStore ? (
+          <button
+            type="button"
+            className={`hero-story${featureImage ? ' has-photo' : ' is-typographic'}`}
+            onClick={() => onSelectStore(featureStore.id)}
+          >
+            {featureImage ? <img src={featureImage} alt="" className="hero-cover" /> : null}
+            <div className="hero-story-copy">
+              <span className="hero-highlight-kicker">Featured Storefront</span>
+              <div className="hero-story-main">
+                <strong>{featureStore.name}</strong>
+                <span>
+                  {featureStore.typeLabel}
+                  {featureStore.distance != undefined ? ` · ${formatDistance(featureStore.distance)}` : ''}
+                </span>
+                <span className="hero-story-cta">
+                  Explore storefront <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </div>
+            </div>
           </button>
         ) : featureArea && featureCover ? (
-          <Link to={neighborhoodPath(featureArea.slug)} className="hero-story">
+          <Link to={neighborhoodPath(featureArea.slug)} className="hero-story has-photo">
             <img src={featureCover} alt="" className="hero-cover" />
-            <strong>{featureArea.name}</strong>
-            {featureArea.headline ? <span>{featureArea.headline}</span> : null}
+            <div className="hero-story-copy">
+              <span className="hero-highlight-kicker">Neighborhood Spotlight</span>
+              <div className="hero-story-main">
+                <strong>{featureArea.name}</strong>
+                {featureArea.headline ? <span>{featureArea.headline}</span> : null}
+                <span className="hero-story-cta">
+                  Explore {featureArea.name} <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </div>
+            </div>
           </Link>
-        ) : null}
+        ) : (
+          <div className="hero-story is-typographic">
+            <div className="hero-story-copy">
+              <span className="hero-highlight-kicker">Austin Field Guide</span>
+              <div className="hero-story-main">
+                <strong>Neighborhood kitchens, markets &amp; daily goods</strong>
+                <span>Browse independent storefronts and local places across South Congress, Zilker, and East Austin.</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="hero-map">
-        <NeighborhoodMap points={points} userLat={userLat} userLng={userLng} onSelect={onSelectStore} />
+
+      <div className="hero-side-column">
+        <div className="hero-copy hero-identity-panel">
+          <div className="hero-identity-top">
+            <div className="hero-kicker-row">
+              <p className="tile-kicker hero-location-kicker">
+                <MapPin className="h-3.5 w-3.5" />
+                <span>{kicker}</span>
+              </p>
+              {resolved ? (
+                <button
+                  type="button"
+                  className="location-change-btn"
+                  aria-expanded={editing}
+                  onClick={() => setEditing((open) => !open)}
+                >
+                  {editing ? 'Close' : 'Change ZIP'}
+                </button>
+              ) : null}
+            </div>
+            <h1 className="discover-display">
+              {resolved && city && state ? homepageTitle(city, state, neighborhoods) : 'Find shops'}
+            </h1>
+            {error ? (
+              <p className="discover-lede is-error" role="alert">
+                {error}
+              </p>
+            ) : pending ? (
+              <p className="discover-lede">Looking up {zip}…</p>
+            ) : (
+              <p className="discover-lede">{lede}</p>
+            )}
+          </div>
+
+          {!resolved || editing ? (
+            <div className="hero-location-controls">
+              <div className="hero-zip-field">
+                <PlaceField tone="hero" />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="hero-map">
+          <NeighborhoodMap points={points} userLat={userLat} userLng={userLng} onSelect={onSelectStore} />
+        </div>
       </div>
     </section>
   )

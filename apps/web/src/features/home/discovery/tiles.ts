@@ -1,5 +1,6 @@
 import type { RiverPost, StoreWithDistance } from '@api/types'
 import { STORE_TYPE_GROUPS, STORE_TYPE_LABEL } from '@features/search/config/storeTypes'
+import { editorialFor } from './editorialMedia'
 import { realPhoto } from './photo'
 
 export interface DiscoveryStore {
@@ -26,6 +27,7 @@ export interface DiscoveryItem {
   readonly description?: string
   readonly isSoldOut?: boolean
   readonly isActive?: boolean
+  readonly mediaAssets?: readonly { readonly url?: string | null; readonly kind?: string | null }[]
 }
 
 export interface StoryTile {
@@ -35,6 +37,7 @@ export interface StoryTile {
   readonly title: string
   readonly body: string
   readonly image?: string
+  readonly credit?: string
   readonly storeId?: string
   readonly storeName?: string
 }
@@ -45,6 +48,7 @@ export interface StoreTile {
   readonly name: string
   readonly typeLabel: string
   readonly image?: string
+  readonly credit?: string
   readonly distance?: number
   readonly store: DiscoveryStore
 }
@@ -55,6 +59,7 @@ export interface ProductTile {
   readonly title: string
   readonly price: string
   readonly image?: string
+  readonly credit?: string
   readonly storeId: string
   readonly storeName: string
   readonly item: DiscoveryItem
@@ -62,9 +67,36 @@ export interface ProductTile {
 
 export type DiscoveryTile = StoryTile | StoreTile | ProductTile
 
-function storePhoto(store: DiscoveryStore): string | undefined {
-  const media = store.mediaAssets?.find((asset) => asset.url)?.url
+function ownStorePhoto(store: DiscoveryStore): string | undefined {
+  const media = store.mediaAssets?.find((asset) => asset.url && asset.kind !== 'VIDEO')?.url
   return realPhoto(media) ?? realPhoto(store.imageUrl)
+}
+
+function pictured(own: string | undefined, text: string, seed: string): { readonly image?: string; readonly credit?: string } {
+  if (own) return { image: own }
+  const editorial = editorialFor(text, seed)
+  return editorial ? { image: editorial.url, credit: editorial.attribution } : {}
+}
+
+function productPicture(item: DiscoveryItem): { readonly image?: string; readonly credit?: string } {
+  const media = item.mediaAssets?.find((asset) => asset.url && asset.kind !== 'VIDEO')?.url
+  return pictured(realPhoto(item.imageUrl) ?? realPhoto(media), `${item.title} ${item.description ?? ''}`, item.id)
+}
+
+function variedDish(item: DiscoveryItem, used: Set<string>): { readonly image?: string; readonly credit?: string } {
+  const media = item.mediaAssets?.find((asset) => asset.url && asset.kind !== 'VIDEO')?.url
+  const own = realPhoto(item.imageUrl) ?? realPhoto(media)
+  if (own) return { image: own }
+  const text = `${item.title} ${item.description ?? ''}`
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const editorial = editorialFor(text, `${item.id}:${attempt}`)
+    if (!editorial) return {}
+    if (!used.has(editorial.url) || attempt === 3) {
+      used.add(editorial.url)
+      return { image: editorial.url, credit: editorial.attribution }
+    }
+  }
+  return {}
 }
 
 function merchantType(store: DiscoveryStore): string | undefined {
@@ -102,16 +134,22 @@ function storyFromPost(post: RiverPost): StoryTile | undefined {
   const body = post.content?.trim()
   if (!body) return undefined
   const media = (post.mediaUrls ?? post.media)?.find((item) => item.url)?.url
+  const picture = pictured(realPhoto(media), `${post.storeName ?? ''} ${body}`, post.id)
   return {
     kind: 'story',
     id: `post-${post.id}`,
+    kicker: post.storeName ? `From ${post.storeName}` : 'Local story',
     title: post.storeName ?? 'Notice',
     body,
-    image: realPhoto(media),
+    image: picture.image,
+    credit: picture.credit,
     storeId: post.storeId,
     storeName: post.storeName,
   }
 }
+
+const TEST_ARTIFACT_STORE =
+  /^(Test Store [0-9a-f-]{8}|Multi Store \d+|Not Austin In Name|First Store|Second Store|Vendor Restaurant|Admin Restaurant|Empty Store|Corner Market QA|Seed Bistro|River Market Kitchen|Duval Corner Market|Northside Kitchen)|(\s(West Campus|Hyde Park|Hancock|Georgian Acres|Windsor Park|North Central|North Loop|Allandale)(\s+\d+)?)$/i
 
 export function composeDiscovery(input: {
   readonly stores: readonly StoreWithDistance[]
@@ -128,54 +166,88 @@ export function composeDiscovery(input: {
   readonly nearest: readonly StoreTile[]
 } {
   const q = input.query.trim().toLowerCase()
-  const stores = (input.stores as readonly DiscoveryStore[]).filter((store) => {
+  const rawStores = input.stores as readonly DiscoveryStore[]
+  const nonArtifactStores = rawStores.filter((store) => !TEST_ARTIFACT_STORE.test(store.name.trim()))
+  const candidateStores = nonArtifactStores.length > 0 ? nonArtifactStores : rawStores
+  const filteredStores = candidateStores.filter((store) => {
     if (!inVertical(store, input.browse)) return false
     if (!q) return true
     return `${store.name} ${store.description ?? ''}`.toLowerCase().includes(q)
   })
-  const storeById = new Map(stores.map((store) => [store.id, store]))
-  const products = input.products.filter((item) => {
-    const store = storeById.get(item.storeId)
-    if (!store) return false
-    if (!q) return true
-    return `${item.title} ${item.description ?? ''} ${store.name}`.toLowerCase().includes(q)
+  const stores = [...filteredStores].sort((a, b) => {
+    const aPhoto = ownStorePhoto(a) ? 1 : 0
+    const bPhoto = ownStorePhoto(b) ? 1 : 0
+    if (aPhoto !== bPhoto) return bPhoto - aPhoto
+    return (a.distance ?? 99) - (b.distance ?? 99)
   })
+  const storeById = new Map(stores.map((store) => [store.id, store]))
+  const products = input.products
+    .filter((item) => {
+      const store = storeById.get(item.storeId)
+      if (!store) return false
+      if (!q) return true
+      return `${item.title} ${item.description ?? ''} ${store.name}`.toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      const aPhoto = productPicture(a).image ? 1 : 0
+      const bPhoto = productPicture(b).image ? 1 : 0
+      return bPhoto - aPhoto
+    })
 
-  const storeTiles: StoreTile[] = stores.map((store) => ({
-    kind: 'store',
-    id: store.id,
-    name: store.name,
-    typeLabel: typeLabel(store),
-    image: storePhoto(store),
-    distance: store.distance,
-    store,
-  }))
+  const storeTiles: StoreTile[] = stores.map((store) => {
+    const own = ownStorePhoto(store)
+    return {
+      kind: 'store',
+      id: store.id,
+      name: store.name,
+      typeLabel: typeLabel(store),
+      image: own,
+      distance: store.distance,
+      store,
+    }
+  })
   const hero = storeTiles.find((tile) => tile.image) ?? storeTiles[0]
-  const newest = [...stores].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0]
+  const newest = [...stores].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    .find((store) => store.description?.trim())
   const opened: StoryTile | undefined = newest
     ? {
         kind: 'story',
         id: `opened-${newest.id}`,
+        kicker: `From ${newest.name}`,
         title: newest.name,
-        body: newest.description?.trim() || `${typeLabel(newest)} now serving`,
-        image: storePhoto(newest),
+        body: newest.description.trim(),
+        ...pictured(ownStorePhoto(newest), newest.description, newest.id),
         storeId: newest.id,
         storeName: newest.name,
       }
     : undefined
   const neighborStories = input.stories.map(storyFromPost).filter((story): story is StoryTile => Boolean(story))
-  const stories = [opened, ...neighborStories].filter((story): story is StoryTile => Boolean(story)).slice(0, 3)
+  const seenStoryStores = new Set<string>()
+  const stories: StoryTile[] = []
+  for (const candidate of [...neighborStories, opened]) {
+    if (!candidate) continue
+    const key = candidate.storeId ?? candidate.id
+    if (seenStoryStores.has(key)) continue
+    seenStoryStores.add(key)
+    stories.push(candidate)
+    if (stories.length >= 4) break
+  }
 
-  const productTiles: ProductTile[] = products.slice(0, 16).map((item) => ({
-    kind: 'product',
-    id: item.id,
-    title: item.title,
-    price: money(item.price),
-    image: realPhoto(item.imageUrl),
-    storeId: item.storeId,
-    storeName: storeById.get(item.storeId)?.name ?? 'Nearby shop',
-    item,
-  }))
+  const usedDishes = new Set<string>()
+  const productTiles: ProductTile[] = products.slice(0, 16).map((item) => {
+    const picture = variedDish(item, usedDishes)
+    return {
+      kind: 'product',
+      id: item.id,
+      title: item.title,
+      price: money(item.price),
+      image: picture.image,
+      credit: picture.credit,
+      storeId: item.storeId,
+      storeName: storeById.get(item.storeId)?.name ?? 'Nearby shop',
+      item,
+    }
+  })
 
   const tiles: DiscoveryTile[] = []
   const restStores = storeTiles.filter((tile) => tile.id !== hero?.id)

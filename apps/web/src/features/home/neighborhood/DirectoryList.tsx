@@ -12,6 +12,7 @@ export type DirectoryListing = {
   readonly addressStreet: string | null
   readonly distance: number
   readonly website: string | null
+  readonly phone?: string | null
   readonly latitude: number | null
   readonly longitude: number | null
   readonly attribution: string | null

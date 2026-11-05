@@ -186,7 +186,8 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.queryByRole('region', { name: 'For You' })).not.toBeInTheDocument()
 
     expect(screen.getByRole('region', { name: 'Shops on Shop-Shop' })).toBeInTheDocument()
-    expect(container.querySelector('.featured-lead-card')).not.toBeInTheDocument()
+    expect(container.querySelector('.featured-lead-card.is-typographic')).toBeInTheDocument()
+    expect(container.querySelector('.featured-lead-media')).not.toBeInTheDocument()
     expect(screen.getAllByText('Bouldin Market').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Taco Heaven').length).toBeGreaterThan(0)
 
@@ -201,7 +202,7 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.getByText('Barton Springs Pool')).toBeInTheDocument()
     expect(container.querySelector('.feed-product-card')).toBeInTheDocument()
     expect(container.querySelector('.place-card.is-business')).toBeInTheDocument()
-    expect(container.querySelector('.place-card.is-attraction')).toBeInTheDocument()
+    expect(container.querySelector('.directory-row')).toBeInTheDocument()
 
     const saveButtons = screen.getAllByRole('button', { name: /save steak burrito to collection/i })
     await user.click(saveButtons[0]!)

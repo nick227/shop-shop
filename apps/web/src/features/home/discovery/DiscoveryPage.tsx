@@ -16,9 +16,49 @@ import { MarketFeed } from './MarketFeed'
 import { LocationHero } from './Opening'
 import { MemberShops } from '../neighborhood/MemberShops'
 import { PlaceCard, placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
+import type { NeighborhoodCard } from '../neighborhood/neighborhoodHero'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
+
+const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly postalCodes: readonly string[] })[] = [
+  {
+    id: 'fallback-zilker',
+    name: 'Zilker',
+    slug: 'austin-tx-zilker',
+    headline: 'Barton Springs, parkland trails, and neighborhood food trailers',
+    about: null,
+    coverUrl: null,
+    postalCodes: ['78704'],
+  },
+  {
+    id: 'fallback-south-congress',
+    name: 'South Congress',
+    slug: 'austin-tx-south-congress',
+    headline: 'Independent boutiques, live music rooms, and sidewalk cafes',
+    about: null,
+    coverUrl: null,
+    postalCodes: ['78704'],
+  },
+  {
+    id: 'fallback-south-lamar',
+    name: 'South Lamar',
+    slug: 'austin-tx-south-lamar',
+    headline: 'Neighborhood taquerias, record shops, and indie cinema',
+    about: null,
+    coverUrl: null,
+    postalCodes: ['78704'],
+  },
+  {
+    id: 'fallback-east-austin',
+    name: 'East Austin',
+    slug: 'austin-tx-east-austin',
+    headline: 'Craft roasters, smokehouses, and creative studios',
+    about: null,
+    coverUrl: null,
+    postalCodes: ['78702'],
+  },
+]
 
 export function DiscoveryPage() {
   const [params, setParams] = useSearchParams()
@@ -95,17 +135,26 @@ export function DiscoveryPage() {
     : composed.tiles
   const listings = directory.data ?? []
   const hasLocation = Boolean(data.location)
+  const visibleNeighborhoods = data.neighborhoods.length > 0 ? data.neighborhoods : FALLBACK_AUSTIN_NEIGHBORHOODS
+
   const views = useRecentViews()
   const personalStoreIds = new Set([
     ...account.orders.map((order) => order.storeId),
     ...account.favorites.stores.map((store) => store.id),
     ...views.filter((view) => view.kind === 'store').map((view) => view.id),
   ])
-  const heroStoreId = composed.nearest.find((store) => store.image)?.id
-  const memberStores = composed.storeTiles.filter((store) => store.id !== heroStoreId && !personalStoreIds.has(store.id))
+  const heroStoreId = composed.stories[0]?.storeId ?? (composed.nearest.find((store) => store.image) ?? composed.nearest[0])?.id
+  const nonPersonalStores = composed.storeTiles.filter((store) => !personalStoreIds.has(store.id))
+  const memberStores = nonPersonalStores.length > 2
+    ? nonPersonalStores.filter((store) => store.id !== heroStoreId)
+    : nonPersonalStores
   const featuredStoreIds = new Set(memberStores.slice(0, 4).map((store) => `store:${store.id}`))
   for (const id of personalStoreIds) featuredStoreIds.add(`store:${id}`)
   if (heroStoreId) featuredStoreIds.add(`store:${heroStoreId}`)
+  for (const listing of listings.filter((item) => item.featured).slice(0, Math.max(0, 4 - memberStores.length))) {
+    featuredStoreIds.add(`directory:${listing.id}`)
+  }
+  const feedStories = composed.stories.slice(1).filter((story) => !heroStoreId || story.storeId !== heroStoreId)
 
   return (
     <div className="discover">
@@ -125,34 +174,37 @@ export function DiscoveryPage() {
         userLat={data.location?.latitude}
         userLng={data.location?.longitude}
         onSelectStore={openStore}
-        neighborhoods={data.neighborhoods}
+        neighborhoods={visibleNeighborhoods}
       />
 
-      {data.neighborhoods.length > 0 ? (
-        <section
-          className="surface-band neighborhoods-anchor"
-          aria-label={hasLocation ? 'Nearby Neighborhoods' : 'Austin neighborhoods'}
-        >
-          <div className="surface-head">
+      {/* Surface 2 (Visual Anchor): Explore Neighborhoods */}
+      <section
+        className="surface-band neighborhoods-anchor"
+        aria-label={hasLocation ? 'Nearby Neighborhoods' : 'Austin neighborhoods'}
+      >
+        <div className="surface-head">
+          <div className="surface-head-titles">
+            <p className="tile-kicker">Explore Austin</p>
             <h2 className="surface-title">
               {hasLocation ? 'Neighborhoods around this area' : 'Austin neighborhoods'}
             </h2>
-            <Link to="/neighborhoods" className="browse-all-link">
-              Browse all neighborhoods
-            </Link>
           </div>
-          <div className="neighborhood-showcase-row">
-            {data.neighborhoods.slice(0, 4).map((area) => (
-              <PlaceCard
-                key={area.id}
-                place={placeCardFromNeighborhood(area)}
-                variant="neighborhood"
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
+          <Link to="/neighborhoods" className="browse-all-link">
+            Browse all neighborhoods
+          </Link>
+        </div>
+        <div className="neighborhood-showcase-row">
+          {visibleNeighborhoods.slice(0, 4).map((area) => (
+            <PlaceCard
+              key={area.id}
+              place={placeCardFromNeighborhood(area)}
+              variant="neighborhood"
+            />
+          ))}
+        </div>
+      </section>
 
+      {/* Surfaces 3 & 4 Combined: Personal Area (For You + Your Collection) */}
       <ForYouSurface
         tiles={composed.tiles}
         storeTiles={composed.storeTiles}
@@ -167,6 +219,7 @@ export function DiscoveryPage() {
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
 
+      {/* Surface 5: Featured Local Businesses */}
       <MemberShops stores={memberStores} curatedListings={listings} />
 
       {/* Surface 6: Browse by Category */}
@@ -177,7 +230,7 @@ export function DiscoveryPage() {
         tiles={marketTiles}
         nearest={composed.nearest}
         storeTiles={composed.storeTiles}
-        stories={composed.stories}
+        stories={feedStories}
         listings={listings}
         browse={browse}
         query={query}

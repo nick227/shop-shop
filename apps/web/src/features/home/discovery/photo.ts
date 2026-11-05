@@ -4,5 +4,7 @@ const STOCK = /picsum\.photos|placehold\.co|unsplash\.com|images\.unsplash|lorem
 export function realPhoto(url: string | undefined | null): string | undefined {
   const value = url?.trim()
   if (!value || STOCK.test(value)) return undefined
+  const editorial = value.indexOf('/editorial/')
+  if (editorial >= 0) return value.slice(editorial)
   return value
 }

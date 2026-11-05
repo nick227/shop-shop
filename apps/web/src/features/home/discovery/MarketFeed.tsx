@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { Heart, BookOpen } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Heart } from 'lucide-react'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { formatDistance } from '@shared/lib/utils/format'
 import type { DirectoryListing } from '../neighborhood/DirectoryList'
-import { PlaceCard } from '../neighborhood/PlaceCard'
 import {
   isInCollection,
   toggleSavedCollection,
@@ -11,10 +11,9 @@ import {
 } from '../neighborhood/savedCollection'
 import { CategoryCircles } from './CategoryCircles'
 import { buildInfiniteFeed, type InfiniteFeedEntry } from './infiniteFeed'
-import { marketBlocks } from './marketBlocks'
 import type { DiscoveryTile, ProductTile, StoreTile, StoryTile } from './tiles'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 16
 
 function openFrom(event: MouseEvent<HTMLButtonElement>, tile: DiscoveryTile, onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void) {
   const frame = event.currentTarget.querySelector('img, .product-fallback, .business-monogram')
@@ -25,16 +24,27 @@ function ProductFeedCard({ tile, onOpen }: { readonly tile: ProductTile; readonl
   const saved = isInCollection('item', tile.id)
   return (
     <div className="feed-card-wrap is-product-cell">
-      <button type="button" className="feed-product-card" onClick={(event) => openFrom(event, tile, onOpen)}>
-      {tile.image ? (
-        <div className="product-media-box">
-          <img src={tile.image} alt="" className="product-square-img" />
-          <span className="product-price-tag">{tile.price}</span>
-        </div>
-      ) : null}
+      <button
+        type="button"
+        className={`feed-product-card${tile.image ? ' has-photo' : ' is-typographic'}`}
+        onClick={(event) => openFrom(event, tile, onOpen)}
+      >
+        {tile.image ? (
+          <div className="product-media-box">
+            <img src={tile.image} alt="" className="product-square-img" />
+            <span className="product-price-tag">{tile.price}</span>
+          </div>
+        ) : (
+          <div className="product-typo-head">
+            <span className="product-store-kicker">{tile.storeName}</span>
+            <span className="product-price-pill">{tile.price}</span>
+          </div>
+        )}
         <div className="product-card-body">
           <strong>{tile.title}</strong>
-          <p>{tile.price} · {tile.storeName}</p>
+          <p>{tile.storeName}</p>
+          <span className="product-add">{tile.price} · Add</span>
+          {tile.credit ? <span className="media-credit">{tile.credit}</span> : null}
         </div>
       </button>
       <button
@@ -66,15 +76,19 @@ function StoreFeedCard({ tile, onOpen }: { readonly tile: StoreTile; readonly on
     <div className={`feed-card-wrap is-business-cell${tile.image ? ' has-photo' : ' is-quiet'}`}>
       <button
         type="button"
-        className={`feed-business-card${tile.image ? ' has-photo' : ' is-quiet'}`}
+        className="feed-business-card is-brand"
         onClick={(event) => openFrom(event, tile, onOpen)}
       >
         {tile.image ? (
           <img src={tile.image} alt="" className="feed-business-img" />
-        ) : null}
+        ) : (
+          <span className="store-mark" aria-hidden="true">{tile.name.slice(0, 1)}</span>
+        )}
         <div className="feed-business-body">
+          <span className="place-card-kicker">{tile.typeLabel}{distance}</span>
           <strong>{tile.name}</strong>
-          <p>{tile.typeLabel}{distance}</p>
+          {tile.credit ? <span className="media-credit">{tile.credit}</span> : null}
+          <span className="store-action">Order</span>
         </div>
       </button>
       <button
@@ -103,58 +117,93 @@ function StoryFeedCard({ tile, onOpen }: { readonly tile: StoryTile; readonly on
   return (
     <button
       type="button"
-      className="feed-story-card is-wide-cell"
+      className={`feed-story-card${tile.image ? ' has-photo' : ' is-typographic'}`}
       onClick={(event) => openFrom(event, tile, onOpen)}
     >
-      {tile.image ? <img src={tile.image} alt="" className="feed-story-img" /> : null}
       <div className="feed-story-body">
-        <span className="story-kicker-pill">
-          <BookOpen className="h-3.5 w-3.5" />
-          {tile.kicker ?? 'Local story'}
-        </span>
+        <span className="story-kicker-pill">{tile.kicker ?? 'Local story'}</span>
         <strong>{tile.title}</strong>
         <p>{tile.body}</p>
-        {tile.storeName ? <span className="story-attribution">From {tile.storeName}</span> : null}
+        {tile.credit ? <span className="media-credit">{tile.credit}</span> : null}
+        <span className="story-read">Read</span>
       </div>
+      {tile.image ? <img src={tile.image} alt="" className="feed-story-img" /> : null}
     </button>
   )
 }
 
-function BandArt({ image, label }: { readonly image?: string; readonly label: string }) {
-  if (image) return <img src={image} alt="" />
+function DirectoryFeedCard({ listing }: { readonly listing: DirectoryListing }) {
+  const miles = listing.distance == null ? null : `${listing.distance.toFixed(1)} mi`
+  const directions = listing.latitude != null && listing.longitude != null
+    ? `https://www.google.com/maps/dir/?api=1&destination=${listing.latitude},${listing.longitude}`
+    : null
   return (
-    <div className="feed-band-monogram" aria-hidden="true">
-      <span>{label.slice(0, 2).toUpperCase()}</span>
-    </div>
+    <article className="directory-row">
+      <Link className="directory-row-name" to={`/directory/${listing.slug}`}>
+        <strong>{listing.name}</strong>
+        <span>{[listing.categoryLabel, listing.addressStreet, miles].filter(Boolean).join(' · ')}</span>
+      </Link>
+      <span className="directory-row-actions">
+        {listing.phone ? <a href={`tel:${listing.phone}`}>Call</a> : null}
+        {directions ? <a href={directions} target="_blank" rel="noreferrer">Directions</a> : null}
+        {listing.website ? <a href={listing.website} target="_blank" rel="noreferrer">Website</a> : null}
+      </span>
+    </article>
   )
 }
 
-function BandCopy({ kicker, title, detail }: { readonly kicker: string; readonly title: string; readonly detail?: string }) {
-  return (
-    <div className="feed-band-copy">
-      <p className="tile-kicker">{kicker}</p>
-      <strong>{title}</strong>
-      {detail ? <p className="feed-detail">{detail}</p> : null}
-    </div>
-  )
+type EditorialRow =
+  | { readonly kind: 'products'; readonly key: string; readonly items: readonly (InfiniteFeedEntry & { readonly kind: 'product' })[] }
+  | { readonly kind: 'story'; readonly key: string; readonly item: InfiniteFeedEntry & { readonly kind: 'story' } }
+  | { readonly kind: 'stores'; readonly key: string; readonly items: readonly (InfiniteFeedEntry & { readonly kind: 'store' })[] }
+  | { readonly kind: 'directory'; readonly key: string; readonly items: readonly (InfiniteFeedEntry & { readonly kind: 'directory' | 'attraction' })[] }
+
+function takeRow<T>(items: readonly T[], index: number, size: number): { readonly slice: readonly T[]; readonly next: number } | undefined {
+  if (index >= items.length) return undefined
+  const slice = items.slice(index, index + size)
+  if (slice.length === 0) return undefined
+  return { slice, next: index + slice.length }
 }
 
-function renderMixedEntry(
-  entry: InfiniteFeedEntry,
-  onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void,
-) {
-  if (entry.kind === 'product') return <ProductFeedCard key={entry.key} tile={entry.tile} onOpen={onOpen} />
-  if (entry.kind === 'store') return <StoreFeedCard key={entry.key} tile={entry.tile} onOpen={onOpen} />
-  if (entry.kind === 'story') return <StoryFeedCard key={entry.key} tile={entry.tile} onOpen={onOpen} />
-  const isAttraction = entry.kind === 'attraction'
-  return (
-    <div key={entry.key} className={`feed-place-cell${isAttraction ? ' is-attraction-cell' : ' is-directory-cell'}`}>
-      <PlaceCard
-        variant={isAttraction ? 'attraction' : 'business'}
-        place={entry.card}
-      />
-    </div>
-  )
+function groupIntoEditorialRows(entries: readonly InfiniteFeedEntry[]): readonly EditorialRow[] {
+  const products = entries.filter((entry): entry is InfiniteFeedEntry & { readonly kind: 'product' } => entry.kind === 'product')
+  const stories = entries.filter((entry): entry is InfiniteFeedEntry & { readonly kind: 'story' } => entry.kind === 'story')
+  const stores = entries.filter((entry): entry is InfiniteFeedEntry & { readonly kind: 'store' } => entry.kind === 'store')
+  const directory = entries.filter((entry): entry is InfiniteFeedEntry & { readonly kind: 'directory' | 'attraction' } => entry.kind === 'directory' || entry.kind === 'attraction')
+
+  const rows: EditorialRow[] = []
+  let pIdx = 0
+  let sIdx = 0
+  let storeIdx = 0
+  let dirIdx = 0
+  let cycle = 0
+
+  while (pIdx < products.length || sIdx < stories.length || storeIdx < stores.length || dirIdx < directory.length) {
+    const productRow = takeRow(products, pIdx, 4)
+    if (productRow) {
+      pIdx = productRow.next
+      rows.push({ kind: 'products', key: `row-products-${cycle}`, items: productRow.slice })
+    }
+    const storeRow = takeRow(stores, storeIdx, 2)
+    if (storeRow) {
+      storeIdx = storeRow.next
+      rows.push({ kind: 'stores', key: `row-stores-${cycle}`, items: storeRow.slice })
+    }
+    const story = stories[sIdx]
+    if (story) {
+      sIdx += 1
+      rows.push({ kind: 'story', key: `row-story-${story.key}`, item: story })
+    }
+    const directoryRow = takeRow(directory, dirIdx, 3)
+    if (directoryRow) {
+      dirIdx = directoryRow.next
+      rows.push({ kind: 'directory', key: `row-directory-${cycle}`, items: directoryRow.slice })
+    }
+    cycle += 1
+    if (cycle > entries.length + 2) break
+  }
+
+  return rows
 }
 
 export function MarketFeed({
@@ -218,53 +267,59 @@ export function MarketFeed({
     return () => observer.disconnect()
   }, [mixedEntries.length, visibleCount])
 
-  const allBlocks = marketBlocks(tiles, nearest)
-  const blocks = showCategories ? allBlocks : allBlocks.filter((block) => block.type !== 'circles')
-  if (blocks.length === 0 && mixedEntries.length === 0) return null
+  if (mixedEntries.length === 0) return null
 
   const visibleEntries = mixedEntries.slice(0, visibleCount)
+  const editorialRows = groupIntoEditorialRows(visibleEntries)
   const hasMore = visibleCount < mixedEntries.length
   const credit = listings.find((listing) => listing.attribution)?.attribution
 
   return (
     <section className="market-feed surface-band" id="market" aria-label="Infinite Discovery Feed">
       <div className="surface-head">
-        <h2 className="surface-title">Discover</h2>
+        <div className="surface-head-titles">
+          <p className="tile-kicker">Local Marketplace &amp; Guide</p>
+          <h2 className="surface-title">Discover</h2>
+        </div>
+        <p className="surface-note">Products, neighborhood businesses, and local places.</p>
       </div>
       {showCategories ? <CategoryCircles /> : null}
-      {blocks.slice(0, 1).map((block) => {
-        if (block.type === 'statement' && block.image) {
+      <div className="discovery-mixed-grid">
+        {editorialRows.map((row) => {
+          if (row.kind === 'products') {
+            return (
+              <div key={row.key} className={`feed-row-products cols-${row.items.length}`}>
+                {row.items.map((entry) => (
+                  <ProductFeedCard key={entry.key} tile={entry.tile} onOpen={onOpen} />
+                ))}
+              </div>
+            )
+          }
+          if (row.kind === 'story') {
+            return (
+              <div key={row.key} className="feed-row-story">
+                <StoryFeedCard tile={row.item.tile} onOpen={onOpen} />
+              </div>
+            )
+          }
+          if (row.kind === 'stores') {
+            return (
+              <div key={row.key} className={`feed-row-places cols-${row.items.length}`}>
+                {row.items.map((entry) => (
+                  <StoreFeedCard key={entry.key} tile={entry.tile} onOpen={onOpen} />
+                ))}
+              </div>
+            )
+          }
           return (
-            <section key={block.id} className="feed-band">
-              <BandArt image={block.image} label={block.label} />
-              <BandCopy kicker={block.kicker} title={block.text} />
-            </section>
+            <div key={row.key} className="feed-row-directory">
+              {row.items.map((entry) => (
+                <DirectoryFeedCard key={entry.key} listing={entry.listing} />
+              ))}
+            </div>
           )
-        }
-        if (block.type === 'callout' && block.tile.image) {
-          return (
-            <button key={block.tile.id} type="button" className="feed-band" onClick={(event) => openFrom(event, block.tile, onOpen)}>
-              <BandArt image={block.tile.image} label={block.tile.title} />
-              <BandCopy kicker="Specials" title={block.tile.title} detail={`${block.tile.price} · ${block.tile.storeName}`} />
-            </button>
-          )
-        }
-        if (block.type === 'hero' && block.tile.image) {
-          const distance = block.tile.distance != undefined ? formatDistance(block.tile.distance) : 'Nearby'
-          return (
-            <button key={block.tile.id} type="button" className="feed-band" onClick={(event) => openFrom(event, block.tile, onOpen)}>
-              <BandArt image={block.tile.image} label={block.tile.name} />
-              <BandCopy kicker={block.tile.typeLabel} title={block.tile.name} detail={distance} />
-            </button>
-          )
-        }
-        return null
-      })}
-      {visibleEntries.length > 0 ? (
-        <div className="discovery-mixed-grid">
-          {visibleEntries.map((entry) => renderMixedEntry(entry, onOpen))}
-        </div>
-      ) : null}
+        })}
+      </div>
       {hasMore ? (
         <div ref={sentinelRef} className="feed-more">
           <button
@@ -276,7 +331,7 @@ export function MarketFeed({
           </button>
         </div>
       ) : null}
-      {credit ? <p className="discover-lede">{credit}</p> : null}
+      {credit ? <p className="discover-credit">{credit}</p> : null}
     </section>
   )
 }

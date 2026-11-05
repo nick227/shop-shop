@@ -1,0 +1,102 @@
+{
+  "zilker": {
+    "key": "zilker",
+    "localUrl": "/editorial/zilker.jpg",
+    "wikiTitle": "File:360 Barton Springs 5July08 (9).JPG",
+    "attribution": "Photo: Downtown Austin · Public domain",
+    "bytes": 382927
+  },
+  "south-congress": {
+    "key": "south-congress",
+    "localUrl": "/editorial/south-congress.jpg",
+    "wikiTitle": "File:SoCo.jpg",
+    "attribution": "Photo: Justin Jensen · CC BY 2.0",
+    "bytes": 212461
+  },
+  "south-lamar": {
+    "key": "south-lamar",
+    "localUrl": "/editorial/south-lamar.jpg",
+    "wikiTitle": "File:Town lake hike bike.jpg",
+    "attribution": "Photo: Larry D. Moore · CC BY 4.0",
+    "bytes": 277851
+  },
+  "east-austin": {
+    "key": "east-austin",
+    "localUrl": "/editorial/east-austin.jpg",
+    "wikiTitle": "File:Sixth Street Austin.jpg",
+    "attribution": "Photo: Larry D. Moore · CC BY 4.0",
+    "bytes": 363371
+  },
+  "tacos-pastor": {
+    "key": "tacos-pastor",
+    "localUrl": "/editorial/tacos-pastor.jpg",
+    "wikiTitle": "File:001 Tacos de carnitas, carne asada y al pastor.jpg",
+    "attribution": "Photo: Larry Miller · CC BY-SA 2.0",
+    "bytes": 322743
+  },
+  "tacos-migas": {
+    "key": "tacos-migas",
+    "localUrl": "/editorial/tacos-migas.jpg",
+    "wikiTitle": "File:Breakfast tacos at Lowell's (17072537858).jpg",
+    "attribution": "Photo: Ruth Hartnup from Vancouver, Canada · CC BY 2.0",
+    "bytes": 278037
+  },
+  "guacamole": {
+    "key": "guacamole",
+    "error": "Not found"
+  },
+  "brisket": {
+    "key": "brisket",
+    "localUrl": "/editorial/brisket.jpg",
+    "wikiTitle": "File:Smoked Brisket with smoke ring.jpg",
+    "attribution": "Photo: Johnsparks75 · CC BY-SA 4.0",
+    "bytes": 456812
+  },
+  "coffee-latte": {
+    "key": "coffee-latte",
+    "localUrl": "/editorial/coffee-latte.jpg",
+    "wikiTitle": "File:Soymilk caffe latte art flickr user avlxyz.jpg",
+    "attribution": "Photo: avlxyz · CC BY-SA 2.0",
+    "bytes": 187667
+  },
+  "iced-coffee": {
+    "key": "iced-coffee",
+    "error": "Not found"
+  },
+  "bakery-pastry": {
+    "key": "bakery-pastry",
+    "localUrl": "/editorial/bakery-pastry.jpg",
+    "wikiTitle": "File:Danish pastry.JPG",
+    "attribution": "Photo: RhinoMind · CC BY-SA 3.0",
+    "bytes": 438133
+  },
+  "fresh-bread": {
+    "key": "fresh-bread",
+    "error": "Not found"
+  },
+  "farmers-produce": {
+    "key": "farmers-produce",
+    "localUrl": "/editorial/farmers-produce.jpg",
+    "wikiTitle": "File:DFC 1752 A vendor wearing a face mask hands a bag of fresh fruit to a customer at a bustling outdoor market stall filled with bananas grapes and other produce.jpg",
+    "attribution": "Photo: PattayaPatrol · CC BY-SA 4.0",
+    "bytes": 297071
+  },
+  "fresh-peaches": {
+    "key": "fresh-peaches",
+    "localUrl": "/editorial/fresh-peaches.jpg",
+    "wikiTitle": "File:1951 our sixty-seventh year - growers of America's best quality fruit trees (1951) (16484474699).jpg",
+    "attribution": "Photo: Harrison's Nurseries (Berlin, Md.);\n\nHenry G. Gilbert Nursery and Seed Trade Catalog Collection · No restrictions",
+    "bytes": 1116549
+  },
+  "ramen-bowl": {
+    "key": "ramen-bowl",
+    "error": "Not found"
+  },
+  "wood-pizza": {
+    "key": "wood-pizza",
+    "localUrl": "/editorial/wood-pizza.jpg",
+    "wikiTitle": "File:Margherita Originale.JPG",
+    "attribution": "Photo: Mario56 · CC BY-SA 3.0",
+    "bytes": 295329
+  }
+}
