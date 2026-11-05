@@ -259,7 +259,7 @@ function AddressForm({ initial, signedIn, saving, onCancel, onUse, onSaveAndUse 
  * The street field, suggesting full addresses as the shopper types when an address provider is set up.
  * Picking one fills street, city, state and ZIP; the unit and instructions stay the shopper's.
  */
-function StreetInput({ id, value, invalid, onType, onPick }: {
+export function StreetInput({ id, value, invalid, onType, onPick }: {
   readonly id: string
   readonly value: string
   readonly invalid: boolean

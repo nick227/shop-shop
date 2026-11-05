@@ -102,7 +102,7 @@ export function StoreSettings({
               </>
             )}
             {tab === 'location' && <StoreLocationSection formData={formData} onChange={onChange} />}
-            {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} />}
+            {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} storeId={storeId} />}
             {tab === 'contact' && <StoreContactSection formData={formData} onChange={onChange} />}
             {tab === 'payments' && <VendorStripeConnectSection storeId={storeId} />}
             <SaveBar dirty={isDirty} saving={isSubmitting} onDiscard={onDiscard} />

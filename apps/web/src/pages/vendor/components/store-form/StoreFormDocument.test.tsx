@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import type { StoreFormData } from '@api/types'
 import { createInitialStoreFormData } from '@shared/lib/utils/form-utilities'
@@ -40,7 +41,11 @@ describe('StoreFormDocument', () => {
   it('keeps the store name above the tabs and shows one section at a time', async () => {
     const user = userEvent.setup()
 
-    render(<Harness />)
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Harness />
+      </QueryClientProvider>,
+    )
 
     expect(screen.getByRole('textbox', { name: 'Store name' })).toBeInTheDocument()
     expect(screen.queryByText('New store')).not.toBeInTheDocument()
@@ -71,8 +76,8 @@ describe('StoreFormDocument', () => {
     expect(screen.queryByLabelText('Add photo')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: 'Orders' }))
-    expect(screen.getByRole('heading', { name: 'Orders' })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Fulfillment' }))
+    expect(screen.getByRole('heading', { name: 'Fulfillment' })).toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: 'Enabled' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Delivery fee ($)')).not.toBeInTheDocument()
     await user.click(screen.getByLabelText('Delivery'))

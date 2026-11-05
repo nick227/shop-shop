@@ -82,7 +82,7 @@ export function StoreFormDocument({
           </div>
         )}
         {tab === 'location' && <StoreLocationSection formData={formData} onChange={onChange} />}
-        {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} />}
+        {tab === 'orders' && <StoreOrdersSection formData={formData} onChange={onChange} storeId={storeId} />}
         {tab === 'contact' && <StoreContactSection formData={formData} onChange={onChange} />}
       </div>
 

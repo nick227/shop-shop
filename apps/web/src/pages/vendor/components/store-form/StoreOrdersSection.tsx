@@ -3,14 +3,11 @@
  * store sells for sales tax. Shoppers see delivery only where these settings allow it.
  */
 import { Checkbox, Input } from '@shared/ui/primitives'
-import { FormRow } from '@shared/ui/templates'
 import type { StoreFieldProps } from './storeFieldProps'
 import { TAX_CATEGORY_OPTIONS } from '@shared/lib/tax/taxCategories'
+import { DeliveryAreaEditor } from './delivery/DeliveryAreaEditor'
 
-
-export function StoreOrdersSection({ formData, onChange }: StoreFieldProps) {
-  const radius = Number.parseFloat(formData.deliveryDistance || '0')
-  const missingArea = formData.deliveryEnabled && (Number.isNaN(radius) || radius <= 0)
+export function StoreOrdersSection({ formData, onChange, storeId }: StoreFieldProps & { readonly storeId?: string }) {
   const neither = !formData.deliveryEnabled && !formData.pickupEnabled
 
   return (
@@ -49,44 +46,10 @@ export function StoreOrdersSection({ formData, onChange }: StoreFieldProps) {
       />
 
       {formData.deliveryEnabled ? (
-        <div className="space-y-2">
-          <FormRow>
-            <Input
-              label="Delivery radius (miles)"
-              type="number"
-              value={formData.deliveryDistance}
-              onChange={(e) => onChange('deliveryDistance', e.target.value)}
-              min="0"
-              step="0.1"
-              placeholder="5"
-            />
-            <Input
-              label="Delivery fee ($)"
-              type="number"
-              value={formData.deliveryCharge}
-              onChange={(e) => onChange('deliveryCharge', e.target.value)}
-              min="0"
-              step="0.01"
-              placeholder="3.99"
-            />
-            <Input
-              label="Delivery minimum ($)"
-              type="number"
-              value={formData.deliveryMinimum ?? ''}
-              onChange={(e) => onChange('deliveryMinimum', e.target.value)}
-              min="0"
-              step="0.01"
-              placeholder="No minimum"
-            />
-          </FormRow>
-          {missingArea ? (
-            <p role="alert" className="text-sm text-amber-700 dark:text-amber-400">
-              Set a delivery radius. Until then shoppers see pickup only.
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">Shoppers within {radius} miles can choose delivery.</p>
-          )}
-        </div>
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-sm font-medium">Where you deliver</legend>
+          <DeliveryAreaEditor storeId={storeId} formData={formData} onChange={onChange} />
+        </fieldset>
       ) : null}
 
       <div className="space-y-1.5">
