@@ -6,6 +6,8 @@ export type DirectoryListing = {
   readonly slug: string
   readonly name: string
   readonly categoryLabel: string
+  readonly category?: string
+  readonly merchant?: boolean
   readonly addressStreet: string | null
   readonly distance: number
   readonly website: string | null

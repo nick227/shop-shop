@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
 import { Button } from '@shared/ui/primitives'
@@ -9,12 +10,15 @@ import { emptyNeighborhood, NeighborhoodForm, type CityOption, type Neighborhood
 type NeighborhoodRow = {
   readonly id: string
   readonly name: string
+  readonly slug: string
   readonly headline: string | null
   readonly about: string | null
   readonly published: boolean
   readonly city: { readonly id: string; readonly name: string; readonly state: string | null } | null
   readonly postalCodes: readonly string[]
   readonly imageUrls: readonly string[]
+  readonly videoUrls: readonly string[]
+  readonly ready: boolean
 }
 
 function apiBase() {
@@ -60,6 +64,7 @@ export default function AdminNeighborhoodsPage() {
         headline: value.headline,
         about: value.about,
         imageUrls: imageList(value.imageUrls),
+        videoUrls: imageList(value.videoUrls),
         published: value.published,
       }
       const response = await fetch(`${apiBase()}/api/admin/neighborhoods${editingId ? `/${editingId}` : ''}`, {
@@ -81,6 +86,24 @@ export default function AdminNeighborhoodsPage() {
 
   const rows = list.data?.neighborhoods ?? []
   const cityOptions = cities.data?.cities ?? []
+  const [q, setQ] = useState('')
+  const [status, setStatus] = useState('all')
+  const [picked, setPicked] = useState<string[]>([])
+  const shown = rows.filter((row) => {
+    const text = `${row.name} ${row.city?.name ?? ''} ${row.postalCodes.join(' ')}`.toLowerCase()
+    if (q && !text.includes(q.toLowerCase())) return false
+    if (status === 'published') return row.published
+    if (status === 'draft') return !row.published
+    return true
+  })
+  const publishPicked = async () => {
+    const response = await fetch(`${apiBase()}/api/admin/neighborhoods/publish`, { method: 'POST', headers, body: JSON.stringify({ ids: picked }) })
+    const body = await response.json().catch(() => ({})) as { error?: string; published?: number; skipped?: number }
+    if (!response.ok) { setError(body.error || 'Publish failed'); return }
+    setError(body.skipped ? `Published ${body.published}. Skipped ${body.skipped} without a headline and description.` : undefined)
+    setPicked([])
+    await queryClient.invalidateQueries({ queryKey: ['admin-neighborhoods'] })
+  }
 
   const startCreate = () => {
     setEditingId(null)
@@ -98,6 +121,7 @@ export default function AdminNeighborhoodsPage() {
       headline: row.headline ?? '',
       about: row.about ?? '',
       imageUrls: row.imageUrls.join('\n'),
+      videoUrls: row.videoUrls.join('\n'),
       published: row.published,
     })
   }
@@ -107,6 +131,15 @@ export default function AdminNeighborhoodsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Neighborhoods</h1>
         <Button size="small" onClick={startCreate}>New neighborhood</Button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <input className="rounded-md border border-border px-3 py-2 text-sm" placeholder="Name, city, or ZIP" value={q} onChange={(event) => setQ(event.target.value)} />
+        <select className="rounded-md border border-border px-3 py-2 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="all">All</option>
+          <option value="published">Published</option>
+          <option value="draft">Drafts</option>
+        </select>
+        <Button size="small" variant="outline" disabled={picked.length === 0} onClick={publishPicked}>Publish selected</Button>
       </div>
       {draft ? (
         <NeighborhoodForm
@@ -121,13 +154,14 @@ export default function AdminNeighborhoodsPage() {
       ) : null}
       <AdminTable
         columns={[
+          { label: '', className: 'px-4 py-3' },
           { label: 'Neighborhood', className: 'px-4 py-3' },
           { label: 'City', className: 'px-4 py-3' },
           { label: 'Zips', className: 'px-4 py-3' },
           { label: 'Status', className: 'px-4 py-3' },
           { label: '', className: 'px-4 py-3' },
         ]}
-        rows={rows}
+        rows={shown}
         isLoading={list.isLoading}
         emptyIcon={MapPin}
         emptyTitle="No neighborhoods yet"
@@ -135,11 +169,16 @@ export default function AdminNeighborhoodsPage() {
         getRowKey={(row) => row.id}
         renderRow={(row) => (
           <>
+            <td className="px-4 py-3"><input type="checkbox" checked={picked.includes(row.id)} onChange={() => setPicked((current) => current.includes(row.id) ? current.filter((id) => id !== row.id) : [...current, row.id])} /></td>
             <td className="px-4 py-3 text-sm font-medium">{row.name}</td>
             <td className="px-4 py-3 text-sm">{row.city ? `${row.city.name}${row.city.state ? `, ${row.city.state}` : ''}` : ''}</td>
             <td className="px-4 py-3 text-sm">{row.postalCodes.join(', ')}</td>
-            <td className="px-4 py-3 text-sm">{row.published ? 'Published' : 'Draft'}</td>
-            <td className="px-4 py-3 text-right"><Button variant="outline" size="small" onClick={() => startEdit(row)}>Edit</Button></td>
+            <td className="px-4 py-3 text-sm">{row.published ? 'Published' : 'Draft'}{row.ready ? '' : ' · Incomplete'}</td>
+            <td className="px-4 py-3 text-right">
+              <Link className="mr-3 text-sm underline" to={`/admin/neighborhoods/preview/${row.id}`}>Preview</Link>
+              {row.published ? <Link className="mr-3 text-sm underline" to={`/neighborhoods/${row.slug}`}>Public</Link> : null}
+              <Button variant="outline" size="small" onClick={() => startEdit(row)}>Edit</Button>
+            </td>
           </>
         )}
       />

@@ -4,6 +4,7 @@ import { haversineMiles, prisma } from '@packages/db'
 type ListingRow = {
   slug: string
   name: string
+  category: string
   categoryLabel: string
   phone: string | null
   website: string | null
@@ -38,6 +39,7 @@ function publicListing(row: ListingRow) {
     id: row.id,
     slug: row.slug,
     name: row.name,
+    category: row.category,
     categoryLabel: row.categoryLabel,
     phone: row.phone,
     website: websiteUrl(row.website),
@@ -58,6 +60,7 @@ const listingSelect = {
   id: true,
   slug: true,
   name: true,
+  category: true,
   categoryLabel: true,
   phone: true,
   website: true,
@@ -71,6 +74,27 @@ const listingSelect = {
   storeId: true,
   source: true,
 } as const
+
+async function nearbyListings(latitude: number, longitude: number, exceptId: string) {
+  const span = 2 / 69
+  const rows = await prisma.businessListing.findMany({
+    where: {
+      published: true,
+      id: { not: exceptId },
+      latitude: { gte: latitude - span, lte: latitude + span },
+      longitude: { gte: longitude - span, lte: longitude + span },
+    },
+    select: listingSelect,
+    take: 30,
+  })
+  return rows.flatMap((row) => {
+    const listing = publicListing(row)
+    if (listing.latitude == null || listing.longitude == null) return []
+    const distance = haversineMiles({ latitude, longitude }, { latitude: listing.latitude, longitude: listing.longitude })
+    if (distance > 2) return []
+    return [{ id: listing.id, slug: listing.slug, name: listing.name, categoryLabel: listing.categoryLabel, distance, orderable: false as const }]
+  }).sort((left, right) => left.distance - right.distance).slice(0, 6)
+}
 
 export async function directoryRoutes(app: FastifyInstance) {
   app.get('/directory', async (req, reply) => {
@@ -101,8 +125,36 @@ export async function directoryRoutes(app: FastifyInstance) {
 
   app.get('/directory/listings/:slug', async (req, reply) => {
     const { slug } = req.params as { slug: string }
-    const row = await prisma.businessListing.findUnique({ where: { slug }, select: { ...listingSelect, published: true } })
+    const row = await prisma.businessListing.findUnique({
+      where: { slug },
+      select: {
+        ...listingSelect,
+        published: true,
+        featured: true,
+        description: true,
+        place: { select: { name: true, slug: true, kind: true, parent: { select: { name: true, slug: true } } } },
+        store: { select: { name: true, slug: true } },
+        media: { orderBy: { sortIndex: 'asc' }, select: { kind: true, url: true } },
+        neighborhoodLinks: { include: { place: { select: { name: true, slug: true, published: true } } } },
+      },
+    })
     if (!row?.published) return reply.code(404).send({ error: 'Listing not found' })
-    return { listing: publicListing(row) }
+    const listing = publicListing(row)
+    const nearby = listing.latitude == null || listing.longitude == null ? [] : await nearbyListings(listing.latitude, listing.longitude, row.id)
+    const city = row.place?.kind === 'CITY' ? row.place : row.place?.parent
+    const neighborhood = row.place?.kind === 'NEIGHBORHOOD' ? { name: row.place.name, slug: row.place.slug } : null
+    return {
+      listing: {
+        ...listing,
+        featured: row.featured,
+        images: row.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
+        videos: row.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),
+        neighborhood,
+        city: city ? { name: city.name, slug: city.slug } : null,
+        neighborhoods: row.neighborhoodLinks.filter((link) => link.place.published).map((link) => ({ name: link.place.name, slug: link.place.slug })),
+        store: row.store ? { name: row.store.name, slug: row.store.slug } : null,
+        nearby,
+      },
+    }
   })
 }

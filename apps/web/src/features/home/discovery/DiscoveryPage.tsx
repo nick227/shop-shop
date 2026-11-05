@@ -12,6 +12,7 @@ import { MarketFeed } from './MarketFeed'
 import { LocationHero } from './Opening'
 import { RecentFeed } from './RecentFeed'
 import { DirectoryList } from '../neighborhood/DirectoryList'
+import { DirectorySections } from '../neighborhood/DirectorySections'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
@@ -103,6 +104,7 @@ export function DiscoveryPage() {
         neighborhoods={data.neighborhoods}
       />
       <DirectoryList listings={directory.data ?? []} />
+      <DirectorySections listings={directory.data ?? []} />
       <RecentFeed
         orders={account.orders}
         savedItems={account.favorites.items}

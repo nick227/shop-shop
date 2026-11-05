@@ -8,9 +8,8 @@ import { MarketFeed } from '../discovery/MarketFeed'
 import { NeighborhoodMap } from '../discovery/NeighborhoodMap'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from '../discovery/tiles'
 import '../discovery/discovery.css'
-import { DirectoryList } from './DirectoryList'
+import { NeighborhoodGuide } from './NeighborhoodGuide'
 import { neighborhoodPath, type NeighborhoodCard } from './neighborhoodHero'
-import { useDirectory } from './useDirectory'
 import { apiOrigin, loadProducts, loadStores, loadStories } from './loadDiscovery'
 
 type NeighborhoodProfile = {
@@ -24,6 +23,7 @@ type NeighborhoodProfile = {
   readonly city: { readonly name: string; readonly state: string | null }
   readonly postalCodes: readonly string[]
   readonly images: readonly string[]
+  readonly videos: readonly string[]
   readonly nearby: readonly NeighborhoodCard[]
 }
 
@@ -43,7 +43,6 @@ export function NeighborhoodProfile() {
     queryFn: () => loadProfile(slug),
   })
   const profile = profileQuery.data
-  const directory = useDirectory(profile?.latitude ?? undefined, profile?.longitude ?? undefined)
   const location = profile?.latitude != null && profile.longitude != null
     ? { latitude: profile.latitude, longitude: profile.longitude, radiusMiles: HOME_RADIUS_MILES, source: 'manual' as const }
     : undefined
@@ -96,6 +95,11 @@ export function NeighborhoodProfile() {
               {profile.images.map((url) => <img key={url} src={url} alt="" />)}
             </div>
           ) : null}
+          {profile.videos.length > 0 ? (
+            <ul className="hero-areas">
+              {profile.videos.map((url) => <li key={url}><a href={url} target="_blank" rel="noreferrer">Video</a></li>)}
+            </ul>
+          ) : null}
           {profile.postalCodes.length > 0 ? (
             <p className="discover-lede">Associated ZIP codes: {profile.postalCodes.join(', ')}. A ZIP can cover more than one neighborhood, so these codes are not a boundary.</p>
           ) : null}
@@ -117,7 +121,7 @@ export function NeighborhoodProfile() {
           }} />
         </div>
       </section>
-      <DirectoryList listings={directory.data ?? []} />
+      <NeighborhoodGuide slug={profile.slug} />
       {location ? (
         <MarketFeed tiles={composed.tiles} nearest={composed.nearest} onOpen={open} />
       ) : null}

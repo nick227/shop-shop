@@ -51,6 +51,7 @@ export function LocationHero({
                   {neighborhoods.map((area) => (
                     <li key={area.id}>
                       <Link to={neighborhoodPath(area.slug)}>
+                        {area.coverUrl ? <img src={area.coverUrl} alt="" className="mb-2 h-16 w-full rounded-md object-cover" /> : null}
                         <strong>{area.name}</strong>
                         {area.headline ? <span>{area.headline}</span> : null}
                       </Link>
@@ -59,6 +60,7 @@ export function LocationHero({
                 </ul>
               </>
             ) : null}
+            <p className="discover-lede"><Link to="/neighborhoods">Browse Austin neighborhoods</Link></p>
             {shopCount === 0 ? <p className="discover-lede">No shops in this radius yet.</p> : null}
           </>
         ) : (

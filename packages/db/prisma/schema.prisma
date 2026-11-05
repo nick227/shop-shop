@@ -407,6 +407,7 @@ model Place {
   stores       Store[]
   media        MediaAsset[]
   listings     BusinessListing[]
+  curatedListings ListingNeighborhood[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -485,12 +486,29 @@ model BusinessListing {
   sourceId      String   @unique @db.VarChar(80)
   sourceFetchedAt DateTime @default(now())
   published     Boolean  @default(false)
+  featured      Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   imports       BusinessImportEntry[]
+  media         MediaAsset[]
+  neighborhoodLinks ListingNeighborhood[]
 
   @@index([published, latitude])
   @@index([placeId])
+  @@index([addressZip])
+  @@index([published, category])
+}
+
+/// Editorial neighborhood placement. Distinct from BusinessListing.placeId.
+model ListingNeighborhood {
+  listingId String          @db.Char(36)
+  placeId   String          @db.Char(36)
+  featured  Boolean         @default(false)
+  listing   BusinessListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  place     Place           @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, placeId])
+  @@index([placeId, featured])
 }
 
 model BusinessImportBatch {
@@ -619,10 +637,12 @@ model MediaAsset {
   itemId    String?   @db.Char(36)
   bundleId  String?   @db.Char(36)
   placeId   String?   @db.Char(36)
+  listingId String?   @db.Char(36)
   store     Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   bundle    Bundle?   @relation("BundleMedia", fields: [bundleId], references: [id], onDelete: Cascade)
   place     Place?    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  listing   BusinessListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   kind      MediaKind
   url       String    @db.Text
   altText   String?
@@ -634,6 +654,7 @@ model MediaAsset {
   @@index([itemId])
   @@index([bundleId])
   @@index([placeId])
+  @@index([listingId])
 }
 
 model Cart {

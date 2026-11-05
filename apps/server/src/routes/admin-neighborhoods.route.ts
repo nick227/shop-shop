@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import { prisma } from '@packages/db'
 import { requireAdmin } from '../middleware/rbac.js'
 import { createNeighborhood, parseNeighborhoodBody, updateNeighborhood } from './neighborhood-profile.js'
@@ -29,14 +30,19 @@ export async function adminNeighborhoodRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get('/admin/neighborhoods', async () => {
+  app.get('/admin/neighborhoods', async (req) => {
+    const query = req.query as { q?: string; published?: string }
     const rows = await prisma.place.findMany({
-      where: { kind: 'NEIGHBORHOOD' },
+      where: {
+        kind: 'NEIGHBORHOOD',
+        ...(query.published === 'true' || query.published === 'false' ? { published: query.published === 'true' } : {}),
+        ...(query.q ? { OR: [{ name: { contains: query.q } }, { postalLinks: { some: { postalCode: query.q } } }] } : {}),
+      },
       orderBy: { name: 'asc' },
       include: {
         parent: { select: { id: true, name: true, state: true, slug: true } },
         postalLinks: { select: { postalCode: true }, orderBy: { postalCode: 'asc' } },
-        media: { where: { kind: 'IMAGE' }, orderBy: { sortIndex: 'asc' }, select: { url: true } },
+        media: { orderBy: { sortIndex: 'asc' }, select: { url: true, kind: true } },
       },
     })
     return {
@@ -47,11 +53,27 @@ export async function adminNeighborhoodRoutes(app: FastifyInstance) {
         headline: row.headline,
         about: row.about,
         published: row.published,
+        latitude: row.latitude == null ? null : Number(row.latitude),
+        longitude: row.longitude == null ? null : Number(row.longitude),
         city: row.parent,
         postalCodes: row.postalLinks.map((link) => link.postalCode),
-        imageUrls: row.media.map((media) => media.url),
+        imageUrls: row.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
+        videoUrls: row.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),
+        ready: Boolean(row.headline && row.about),
       })),
     }
+  })
+
+  app.post('/admin/neighborhoods/publish', async (req, reply) => {
+    const parsed = z.object({ ids: z.array(z.string()).min(1).max(200) }).safeParse(req.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'Choose neighborhoods to publish' })
+    const rows = await prisma.place.findMany({
+      where: { id: { in: parsed.data.ids }, kind: 'NEIGHBORHOOD' },
+      select: { id: true, headline: true, about: true },
+    })
+    const ready = rows.filter((row) => row.headline && row.about).map((row) => row.id)
+    if (ready.length > 0) await prisma.place.updateMany({ where: { id: { in: ready } }, data: { published: true } })
+    return { published: ready.length, skipped: rows.length - ready.length }
   })
 
   app.post('/admin/neighborhoods', async (req, reply) => {

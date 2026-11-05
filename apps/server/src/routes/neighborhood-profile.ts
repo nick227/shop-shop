@@ -9,6 +9,7 @@ const ProfileBody = z.object({
   headline: z.string().trim().max(160).nullable().optional(),
   about: z.string().trim().max(8000).nullable().optional(),
   imageUrls: z.array(z.string().trim().url()).max(8).optional(),
+  videoUrls: z.array(z.string().trim().url()).max(4).optional(),
   published: z.boolean().optional(),
 })
 
@@ -68,7 +69,15 @@ function view(id: string, slug: string, input: NeighborhoodInput, city: CityRow,
     city: { id: city.id, name: city.name, state: city.state, slug: city.slug },
     postalCodes: codes,
     imageUrls: input.imageUrls ?? [],
+    videoUrls: input.videoUrls ?? [],
   }
+}
+
+function mediaRows(placeId: string, imageUrls: readonly string[], videoUrls: readonly string[]) {
+  return [
+    ...imageUrls.map((url, sortIndex) => ({ placeId, kind: 'IMAGE' as const, url, sortIndex })),
+    ...videoUrls.map((url, sortIndex) => ({ placeId, kind: 'VIDEO' as const, url, sortIndex })),
+  ]
 }
 
 export async function createNeighborhood(input: NeighborhoodInput) {
@@ -79,6 +88,7 @@ export async function createNeighborhood(input: NeighborhoodInput) {
   const point = centroid(loaded.postals)
   const id = randomUUID()
   const imageUrls = input.imageUrls ?? []
+  const videoUrls = input.videoUrls ?? []
   try {
     await prisma.$transaction(async (tx) => {
       await tx.place.create({
@@ -98,11 +108,8 @@ export async function createNeighborhood(input: NeighborhoodInput) {
         },
       })
       await tx.placePostalCode.createMany({ data: loaded.codes.map((postalCode) => ({ placeId: id, postalCode })) })
-      if (imageUrls.length > 0) {
-        await tx.mediaAsset.createMany({
-          data: imageUrls.map((url, sortIndex) => ({ placeId: id, kind: 'IMAGE' as const, url, sortIndex })),
-        })
-      }
+      const media = mediaRows(id, imageUrls, videoUrls)
+      if (media.length > 0) await tx.mediaAsset.createMany({ data: media })
     })
   } catch (error) {
     if (uniqueSlug(error)) return { error: 'A neighborhood with this name already exists in that city' as const, status: 409 as const }
@@ -120,6 +127,7 @@ export async function updateNeighborhood(id: string, input: NeighborhoodInput) {
   if (slug === loaded.city.slug || slug.endsWith('-')) return { error: 'Name needs letters or numbers' as const }
   const point = centroid(loaded.postals)
   const imageUrls = input.imageUrls ?? []
+  const videoUrls = input.videoUrls ?? []
   try {
     await prisma.$transaction(async (tx) => {
       await tx.place.update({
@@ -140,11 +148,8 @@ export async function updateNeighborhood(id: string, input: NeighborhoodInput) {
       await tx.placePostalCode.deleteMany({ where: { placeId: id } })
       await tx.placePostalCode.createMany({ data: loaded.codes.map((postalCode) => ({ placeId: id, postalCode })) })
       await tx.mediaAsset.deleteMany({ where: { placeId: id } })
-      if (imageUrls.length > 0) {
-        await tx.mediaAsset.createMany({
-          data: imageUrls.map((url, sortIndex) => ({ placeId: id, kind: 'IMAGE' as const, url, sortIndex })),
-        })
-      }
+      const media = mediaRows(id, imageUrls, videoUrls)
+      if (media.length > 0) await tx.mediaAsset.createMany({ data: media })
     })
   } catch (error) {
     if (uniqueSlug(error)) return { error: 'A neighborhood with this name already exists in that city' as const, status: 409 as const }

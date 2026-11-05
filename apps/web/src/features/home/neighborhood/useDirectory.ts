@@ -8,7 +8,7 @@ export function useDirectory(latitude?: number, longitude?: number) {
     queryKey: ['directory', latitude, longitude],
     enabled: latitude != null && longitude != null,
     queryFn: async () => {
-      const response = await fetch(`${apiOrigin()}/api/directory?latitude=${latitude}&longitude=${longitude}&radiusMiles=${HOME_RADIUS_MILES}`)
+      const response = await fetch(`${apiOrigin()}/api/directory?latitude=${latitude}&longitude=${longitude}&radiusMiles=${HOME_RADIUS_MILES}&limit=40`)
       if (!response.ok) return []
       const body = await response.json() as { listings?: DirectoryListing[] }
       return body.listings ?? []

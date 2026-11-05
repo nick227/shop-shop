@@ -14,13 +14,14 @@ export type NeighborhoodFormValue = {
   headline: string
   about: string
   imageUrls: string
+  videoUrls: string
   published: boolean
 }
 
 const fieldClass = 'w-full rounded-md border border-border bg-background px-3 py-2 text-sm'
 
 export function emptyNeighborhood(parentId: string): NeighborhoodFormValue {
-  return { name: '', parentId, postalCodes: [], headline: '', about: '', imageUrls: '', published: false }
+  return { name: '', parentId, postalCodes: [], headline: '', about: '', imageUrls: '', videoUrls: '', published: false }
 }
 
 export function NeighborhoodForm({
@@ -100,6 +101,10 @@ export function NeighborhoodForm({
       <label className="block space-y-1 text-sm">
         <span className="font-medium">Image URLs</span>
         <textarea className={fieldClass} rows={3} placeholder="One image URL per line. The first is the cover." value={value.imageUrls} onChange={(event) => onChange({ ...value, imageUrls: event.target.value })} />
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-medium">Video URLs</span>
+        <textarea className={fieldClass} rows={2} placeholder="One video URL per line." value={value.videoUrls} onChange={(event) => onChange({ ...value, videoUrls: event.target.value })} />
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={value.published} onChange={(event) => onChange({ ...value, published: event.target.checked })} />

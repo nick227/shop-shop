@@ -35,6 +35,7 @@ const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 const RiverPage = lazy(() => import('./pages/public/River.page'))
 const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
+const NeighborhoodsIndexPage = lazy(() => import('./pages/public/Neighborhoods.page'))
 const DirectoryListingPage = lazy(() => import('./pages/public/DirectoryListing.page'))
 
 // Affiliate pages;
@@ -56,6 +57,9 @@ const AdminVendorApplicationsPage = lazy(() => import('./pages/admin/VendorAppli
 const AdminVendorDetailPage = lazy(() => import('./pages/admin/VendorDetail.page'))
 const AdminCatalogPage = lazy(() => import('./pages/admin/Catalog.page'))
 const AdminNeighborhoodsPage = lazy(() => import('./pages/admin/Neighborhoods.page'))
+const AdminNeighborhoodPreviewPage = lazy(() => import('./pages/admin/NeighborhoodPreview.page'))
+const AdminBusinessesPage = lazy(() => import('./pages/admin/Businesses.page'))
+const AdminBusinessEditorPage = lazy(() => import('./pages/admin/BusinessEditor.page'))
 const AdminBusinessImportPage = lazy(() => import('./pages/admin/BusinessImport.page'))
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AuditLog.page'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/Settings.page'))
@@ -227,6 +231,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           handle: { title: 'Home' },
         },
         {
+          path: '/neighborhoods',
+          element: lazyRoute(NeighborhoodsIndexPage),
+          handle: { title: 'Neighborhoods' },
+        },
+        {
           path: '/neighborhoods/:slug',
           element: lazyRoute(NeighborhoodPage),
           handle: { title: 'Neighborhood' },
@@ -348,9 +357,24 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               handle: { title: 'Admin - Neighborhoods' },
             },
             {
+              path: 'neighborhoods/preview/:id',
+              element: lazyRoute(AdminNeighborhoodPreviewPage),
+              handle: { title: 'Admin - Neighborhood preview' },
+            },
+            {
+              path: 'businesses',
+              element: lazyRoute(AdminBusinessesPage),
+              handle: { title: 'Admin - Directory' },
+            },
+            {
               path: 'businesses/import',
               element: lazyRoute(AdminBusinessImportPage),
               handle: { title: 'Admin - Directory import' },
+            },
+            {
+              path: 'businesses/:id',
+              element: lazyRoute(AdminBusinessEditorPage),
+              handle: { title: 'Admin - Listing' },
             },
             {
               path: 'river',

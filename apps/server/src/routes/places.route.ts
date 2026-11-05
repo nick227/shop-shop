@@ -1,7 +1,46 @@
 import type { FastifyInstance } from 'fastify'
-import { prisma } from '@packages/db'
+import { haversineMiles, prisma } from '@packages/db'
+import { neighborhoodGuide } from '../directory/neighborhood-guide.js'
 
 export async function placeRoutes(app: FastifyInstance) {
+  app.get('/places/neighborhoods', async (req) => {
+    const q = String((req.query as { q?: string }).q ?? '').trim()
+    const rows = await prisma.place.findMany({
+      where: {
+        kind: 'NEIGHBORHOOD',
+        published: true,
+        ...(q ? {
+          OR: [
+            { name: { contains: q } },
+            { parent: { name: { contains: q } } },
+            { postalLinks: { some: { postalCode: q } } },
+          ],
+        } : {}),
+      },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        headline: true,
+        parent: { select: { name: true, state: true, slug: true } },
+        postalLinks: { select: { postalCode: true } },
+        media: { where: { kind: 'IMAGE' }, orderBy: { sortIndex: 'asc' }, take: 1, select: { url: true } },
+      },
+    })
+    return {
+      neighborhoods: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        headline: row.headline,
+        city: row.parent,
+        postalCodes: row.postalLinks.map((link) => link.postalCode),
+        coverUrl: row.media[0]?.url ?? null,
+      })),
+    }
+  })
+
   app.get('/places/by-zip/:code', async (req, reply) => {
     const { code } = req.params as { code: string }
     if (!/^\d{5}$/.test(code)) return reply.code(400).send({ error: 'ZIP code must be 5 digits' })
@@ -47,22 +86,38 @@ export async function placeRoutes(app: FastifyInstance) {
       include: {
         parent: { select: { id: true, name: true, state: true } },
         postalLinks: { select: { postalCode: true }, orderBy: { postalCode: 'asc' } },
-        media: { where: { kind: 'IMAGE' }, orderBy: { sortIndex: 'asc' }, select: { url: true } },
+        media: { orderBy: { sortIndex: 'asc' }, select: { url: true, kind: true } },
       },
     })
     if (!place?.parent) return reply.code(404).send({ error: 'Neighborhood not found' })
-    const nearby = await prisma.place.findMany({
+    const origin = place.latitude != null && place.longitude != null
+      ? { latitude: Number(place.latitude), longitude: Number(place.longitude) }
+      : null
+    const candidates = await prisma.place.findMany({
       where: { kind: 'NEIGHBORHOOD', published: true, parentId: place.parent.id, id: { not: place.id } },
-      orderBy: { name: 'asc' },
-      take: 8,
       select: {
         id: true,
         name: true,
         slug: true,
         headline: true,
+        latitude: true,
+        longitude: true,
         media: { where: { kind: 'IMAGE' }, orderBy: { sortIndex: 'asc' }, take: 1, select: { url: true } },
       },
     })
+    const nearby = candidates
+      .map((area) => ({
+        id: area.id,
+        name: area.name,
+        slug: area.slug,
+        headline: area.headline,
+        coverUrl: area.media[0]?.url ?? null,
+        distance: origin && area.latitude != null && area.longitude != null
+          ? haversineMiles(origin, { latitude: Number(area.latitude), longitude: Number(area.longitude) })
+          : null,
+      }))
+      .sort((left, right) => (left.distance ?? 999) - (right.distance ?? 999) || left.name.localeCompare(right.name))
+      .slice(0, 6)
     return {
       id: place.id,
       name: place.name,
@@ -73,14 +128,22 @@ export async function placeRoutes(app: FastifyInstance) {
       longitude: place.longitude == null ? null : Number(place.longitude),
       city: place.parent,
       postalCodes: place.postalLinks.map((link) => link.postalCode),
-      images: place.media.map((media) => media.url),
+      images: place.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
+      videos: place.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),
       nearby: nearby.map((area) => ({
         id: area.id,
         name: area.name,
         slug: area.slug,
         headline: area.headline,
-        coverUrl: area.media[0]?.url ?? null,
+        coverUrl: area.coverUrl,
       })),
     }
+  })
+
+  app.get('/places/:slug/guide', async (req, reply) => {
+    const { slug } = req.params as { slug: string }
+    const guide = await neighborhoodGuide(slug)
+    if (!guide) return reply.code(404).send({ error: 'Neighborhood not found' })
+    return guide
   })
 }

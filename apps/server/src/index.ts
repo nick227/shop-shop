@@ -51,6 +51,7 @@ import { adminStoresRoutes } from './routes/admin-stores.route.js'
 import { adminBulkRoutes } from './routes/admin-bulk.route.js'
 import { adminNeighborhoodRoutes } from './routes/admin-neighborhoods.route.js'
 import { placeRoutes } from './routes/places.route.js'
+import { adminBusinessRoutes } from './routes/admin-businesses.route.js'
 import { adminBusinessImportRoutes } from './routes/admin-business-imports.route.js'
 import { directoryRoutes } from './routes/directory.route.js'
 import { settingsPublicRoutes } from './routes/settings-public.route.js'
@@ -244,6 +245,7 @@ await app.register(adminStoresRoutes, { prefix: '/api/admin' })
 await app.register(adminBulkRoutes, { prefix: '/api/admin' })
 await app.register(adminNeighborhoodRoutes, { prefix: '/api' })
 await app.register(placeRoutes, { prefix: '/api' })
+await app.register(adminBusinessRoutes, { prefix: '/api' })
 await app.register(adminBusinessImportRoutes(), { prefix: '/api' })
 await app.register(directoryRoutes, { prefix: '/api' })
 // Public settings (no auth)
