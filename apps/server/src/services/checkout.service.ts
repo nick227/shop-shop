@@ -6,8 +6,9 @@ import {
   getAffiliateByReferralCode,
   assertStoreAcceptsOrders,
   StoreUnavailableError,
+  computeBundlePrice,
 } from '@packages/db'
-import { OrderDomain } from '@packages/domain'
+import { OrderDomain, computeCheckoutTotals } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
 
@@ -54,27 +55,125 @@ async function ensureStoreAcceptsOrders(
   }
 }
 
-async function fetchAndValidateItems(items: { itemId: string; quantity: number }[]) {
-  const dbItems = await Promise.all(
-    items.map(async ({ itemId }) => {
-      const item = await prisma.item.findUnique({ where: { id: itemId } })
-      if (!item) throw new AppError(400, `Item ${itemId} not found`)
+/** A cart line as the shopper sends it: one item, or one bundle. */
+export type CheckoutLineInput = {
+  itemId?: string | null
+  bundleId?: string | null
+  quantity: number
+  specialInstructions?: string
+}
+
+/** A line priced from the database, never from the client. */
+type ResolvedLine = {
+  itemId: string | null
+  bundleId: string | null
+  quantity: number
+  unitPrice: InstanceType<typeof Decimal>
+  titleSnapshot: string
+  notes?: string
+}
+
+/**
+ * Prices every line from the database: an item at its current price, a bundle at the price its pricing
+ * rules resolve. Every line must be on sale and from the same store.
+ */
+export async function resolveCheckoutLines(lines: CheckoutLineInput[]): Promise<{ storeId: string; lines: ResolvedLine[] }> {
+  if (!Array.isArray(lines) || lines.length === 0) throw new AppError(400, 'Your cart is empty')
+  const resolved = await Promise.all(
+    lines.map(async (line): Promise<ResolvedLine & { storeId: string }> => {
+      const quantity = Math.floor(Number(line.quantity))
+      if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) throw new AppError(400, 'Each quantity must be between 1 and 99')
+      if (line.bundleId) {
+        const bundle = await prisma.bundle.findUnique({
+          where: { id: line.bundleId },
+          include: { items: { include: { item: { select: { isActive: true, isSoldOut: true, storeId: true } } } } },
+        })
+        if (!bundle || !bundle.isActive) throw new AppError(400, 'A bundle in your cart is no longer available')
+        if (bundle.items.length === 0 || bundle.items.some((bi) => !bi.item.isActive || bi.item.isSoldOut || bi.item.storeId !== bundle.storeId)) {
+          throw new AppError(400, `"${bundle.name}" is not available right now`)
+        }
+        const price = await computeBundlePrice(bundle.id)
+        return {
+          storeId: bundle.storeId,
+          itemId: null,
+          bundleId: bundle.id,
+          quantity,
+          unitPrice: new Decimal(price.resolvedPrice.toFixed(2)),
+          titleSnapshot: bundle.name,
+          notes: line.specialInstructions,
+        }
+      }
+      if (!line.itemId) throw new AppError(400, 'Each cart line needs an item or a bundle')
+      const item = await prisma.item.findUnique({ where: { id: line.itemId } })
+      if (!item) throw new AppError(400, 'An item in your cart is no longer available')
       if (!item.isActive || item.isSoldOut) throw new AppError(400, `Item "${item.title}" is not available`)
-      return item
+      return {
+        storeId: item.storeId,
+        itemId: item.id,
+        bundleId: null,
+        quantity,
+        unitPrice: item.price,
+        titleSnapshot: item.title,
+        notes: line.specialInstructions,
+      }
     }),
   )
-
-  const storeIds = [...new Set(dbItems.map((i) => i.storeId))]
+  const storeIds = [...new Set(resolved.map((line) => line.storeId))]
   if (storeIds.length > 1) throw new AppError(400, 'All items must be from the same store')
-
   const storeId = storeIds[0]
   if (!storeId) throw new AppError(400, 'Could not determine store from items')
+  return { storeId, lines: resolved.map(({ storeId: _store, ...line }) => line) }
+}
 
-  return { dbItems, storeId }
+export type CheckoutQuoteInput = {
+  items: CheckoutLineInput[]
+  deliveryType: 'PICKUP' | 'DELIVERY'
+  tipAmount?: number
+}
+
+/**
+ * The exact totals checkout would charge for these lines right now, from the same pricing code that
+ * creates the order. Shoppers see these numbers; nothing is stored.
+ */
+export async function quoteCheckout(input: CheckoutQuoteInput) {
+  const deliveryType = input.deliveryType === 'DELIVERY' ? 'DELIVERY' : 'PICKUP'
+  const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
+  const { storeId, lines } = await resolveCheckoutLines(input.items)
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: { id: true, deliveryCharge: true, commissionRate: true, latitude: true, longitude: true, deliveryEnabled: true, pickupEnabled: true },
+  })
+  if (!store) throw new AppError(404, 'Store not found')
+  // The totals only read line prices and the store's fee settings.
+  const totals = computeCheckoutTotals(
+    { items: lines, store } as unknown as Parameters<typeof computeCheckoutTotals>[0],
+    deliveryType,
+    tip,
+    { taxRate: TAX_RATE, defaultDeliveryFee: DEFAULT_DELIVERY_FEE, platformFeePercent: PLATFORM_FEE_PERCENT },
+  )
+  const subtotal = totals.subtotal.toNumber()
+  return {
+    storeId,
+    deliveryType,
+    lines: lines.map((line) => ({
+      itemId: line.itemId,
+      bundleId: line.bundleId,
+      title: line.titleSnapshot,
+      quantity: line.quantity,
+      unitPrice: Number(line.unitPrice),
+    })),
+    subtotal,
+    deliveryFee: totals.fees.toNumber(),
+    tax: totals.tax.toNumber(),
+    serviceFee: totals.serviceFeeAmount.toNumber(),
+    tip: totals.tip.toNumber(),
+    total: totals.total.toNumber(),
+    fulfillment: { pickup: store.pickupEnabled, delivery: store.deliveryEnabled },
+  }
 }
 
 export type CreateSessionInput = {
-  items: { itemId: string; quantity: number; specialInstructions?: string }[]
+  items: CheckoutLineInput[]
   deliveryType: 'PICKUP' | 'DELIVERY'
   deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
   deliveryAddress?: DeliveryAddress
@@ -112,7 +211,7 @@ export async function createCheckoutSession(userId: string, input: CreateSession
     throw new AppError(400, 'Delivery address is required for delivery orders')
   }
 
-  const { dbItems, storeId } = await fetchAndValidateItems(input.items)
+  const { lines, storeId } = await resolveCheckoutLines(input.items)
   await ensureStoreAcceptsOrders(prisma, storeId)
 
   const meta: SessionMeta = {
@@ -129,12 +228,13 @@ export async function createCheckoutSession(userId: string, input: CreateSession
       note: JSON.stringify(meta),
       expiresAt: new Date(Date.now() + SESSION_TTL_MS),
       items: {
-        create: input.items.map((oi, i) => ({
-          itemId: oi.itemId,
-          quantity: oi.quantity,
-          unitPrice: dbItems[i]!.price,
-          titleSnapshot: dbItems[i]!.title,
-          notes: oi.specialInstructions,
+        create: lines.map((line) => ({
+          itemId: line.itemId,
+          bundleId: line.bundleId,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          titleSnapshot: line.titleSnapshot,
+          notes: line.notes,
         })),
       },
     },
@@ -168,6 +268,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       items: {
         select: {
           itemId: true,
+          bundleId: true,
           quantity: true,
           unitPrice: true,
           titleSnapshot: true,
@@ -302,6 +403,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         items: {
           create: cart.items.map((ci) => ({
             itemId: ci.itemId,
+            bundleId: ci.bundleId,
             quantity: ci.quantity,
             unitPrice: ci.unitPrice,
             titleSnapshot: ci.titleSnapshot,

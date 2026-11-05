@@ -1,5 +1,7 @@
 import { type CheckoutTotalsConfig } from '../order/checkout.js';
 export type { CheckoutCart, CheckoutTotals } from '../order/checkout.js';
+/** The one checkout pricing calculation; quotes and orders both use it. */
+export { computeCheckoutTotals } from '../order/checkout.js';
 export declare class OrderDomain {
     private readonly totalsConfig;
     constructor(config?: Partial<CheckoutTotalsConfig>);

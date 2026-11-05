@@ -1,14 +1,15 @@
 /**
  * CheckoutPage - Order checkout and placement with payment
  */
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCart } from '@shared/hooks/hooks/useCart'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
-import { calculateOrderPricing } from '@shared/lib/utils/pricing'
+import { checkoutLines, useCheckoutQuote } from '@features/checkout/hooks/useCheckoutQuote'
+import { DELIVERY_AT_CHECKOUT } from '@features/checkout/fulfillment'
 type CreateCheckoutSessionResponse = Awaited<ReturnType<typeof apiClient.checkout.createSession>>
 type CompleteCheckoutResponse = Awaited<ReturnType<typeof apiClient.checkout.complete>>
 import { Button, Spinner } from '@shared/ui/primitives'
@@ -72,26 +73,14 @@ export default function CheckoutPage() {
     navigate('/cart')
   }, [navigate])
 
-  // Memoized calculations using pricing utilities
-  const calculations = useMemo(() => {
-    const subtotal = Number.parseFloat(cart?.subtotal?.toString() || '0')
-    const tipPercentage = tip && subtotal > 0 ? Number.parseFloat(tip) / subtotal : 0
-    const pricing = calculateOrderPricing({
-      subtotal,
-      tipPercentage,
-      includeServiceFee: false
-    })
-    
-    return { 
-      subtotal, 
-      deliveryFee: pricing.deliveryFee, 
-      tax: pricing.tax, 
-      tipAmount: pricing.tip, 
-      totalAmount: pricing.total 
-    }
-  }, [cart?.subtotal, tip])
-  
-  const { subtotal, deliveryFee, tax, tipAmount, totalAmount } = calculations
+  // The totals checkout charges, from the server's pricing code; the tip is a dollar amount.
+  const requestedTip = Math.max(0, Number.parseFloat(tip || '0') || 0)
+  const quote = useCheckoutQuote(cart, { deliveryType, tipAmount: requestedTip })
+  const subtotal = quote.data?.subtotal ?? 0
+  const deliveryFee = quote.data?.deliveryFee ?? 0
+  const tax = quote.data?.tax ?? 0
+  const tipAmount = quote.data?.tip ?? requestedTip
+  const totalAmount = quote.data?.total ?? 0
 
   const enableCod = import.meta.env.VITE_ENABLE_COD_PAYMENTS === 'true'
   const lastPaymentPayloadRef = useRef<CheckoutPaymentPayload | null>(null)
@@ -103,10 +92,7 @@ export default function CheckoutPage() {
       }
       const token = payload.rail === 'COD' ? 'cod' : payload.paymentMethodId
       return apiClient.checkout.createSession({
-        items: cart.items.map((item) => ({
-          itemId: item.itemId,
-          quantity: item.quantity,
-        })),
+        items: checkoutLines(cart),
         deliveryType,
         deliveryMode,
         paymentMethod: {
@@ -277,7 +263,7 @@ export default function CheckoutPage() {
                 <ActionCard
                   checked={deliveryType === 'DELIVERY'}
                   onClick={() => setDeliveryType('DELIVERY')}
-                  disabled
+                  disabled={!DELIVERY_AT_CHECKOUT}
                 >
                   <input
                     type="radio"
@@ -288,7 +274,9 @@ export default function CheckoutPage() {
                   />
                   <div className="flex flex-col">
                     <strong className="text-foreground">Delivery</strong>
-                    <span className="text-muted-foreground text-sm">Coming soon - Address management required</span>
+                    {DELIVERY_AT_CHECKOUT ? null : (
+                      <span className="text-muted-foreground text-sm">Coming soon - Address management required</span>
+                    )}
                   </div>
                 </ActionCard>
               </CardContent>
@@ -337,21 +325,18 @@ export default function CheckoutPage() {
         <div className="lg:col-span-1 space-y-6 sticky top-[env(safe-area-inset-top)] pt-4">
           {currentStep === 'details' ? (
             <>
-              {cart && <CartSummary cart={cart} onCheckout={handleContinueToPayment} />}
+              {cart && (
+                <CartSummary
+                  cart={cart}
+                  onCheckout={handleContinueToPayment}
+                  deliveryType={deliveryType}
+                  tipAmount={requestedTip}
+                  quote={quote}
+                />
+              )}
               <p className="text-sm text-muted-foreground text-center">
                 Review your order, then proceed to payment
               </p>
-              {/* Multi-Store Warning */}
-              {cart && cart.items.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-yellow-800">⚠️</span>
-                    <span className="text-sm font-medium text-yellow-800">
-                      Each store fulfills its own order separately. You may receive multiple deliveries.
-                    </span>
-                  </div>
-                </div>
-              )}
             </>
           ) : (
             <>

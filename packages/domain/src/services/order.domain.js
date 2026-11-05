@@ -1,5 +1,7 @@
 import { prisma, canTransitionTo as checkTransition } from '@packages/db';
 import { CHECKOUT_CART_INCLUDE, computeCheckoutTotals, placementFailureReason, } from '../order/checkout.js';
+/** The one checkout pricing calculation; quotes and orders both use it. */
+export { computeCheckoutTotals } from '../order/checkout.js';
 // ========================================
 // Order Domain Service — orchestration + I/O at this boundary
 // ========================================

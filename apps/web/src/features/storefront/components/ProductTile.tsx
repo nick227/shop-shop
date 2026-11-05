@@ -71,27 +71,36 @@ export function ProductTile({ item, variant = 'card', className }: {
   }
 
   if (variant === 'row') {
+    // One compact shape for every row, pictured or not, so a section reads as an even list:
+    // text, then a small photo when there is one, then add.
     return (
-      <article className={cn('relative flex min-h-[6.5rem] gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40', className)}>
+      <article
+        className={cn(
+          'relative flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-primary/40',
+          image ? 'min-h-[4.75rem]' : 'min-h-[3.5rem]',
+          className,
+        )}
+      >
         {open}
         <div className="pointer-events-none relative min-w-0 flex-1">
-          <h3 className="font-semibold leading-snug text-foreground line-clamp-2">{item.title}</h3>
-          {item.description ? (
-            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+          <h3 className="truncate text-sm font-medium text-foreground">{item.title}</h3>
+          {item.description ? <p className="truncate text-xs text-muted-foreground">{item.description}</p> : null}
+          {image ? (
+            <p className="mt-0.5 flex items-center gap-2 text-sm font-semibold tabular-nums text-foreground">
+              {price}
+              {soldOut}
+            </p>
           ) : null}
-          <div className="mt-1.5 flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{price}</span>
-            {soldOut}
-          </div>
         </div>
         {image ? (
-          <div className="pointer-events-none relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-            <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
-            <div className="pointer-events-auto absolute bottom-1 right-1">{add}</div>
-          </div>
+          <img src={image} alt="" loading="lazy" className="pointer-events-none relative h-14 w-14 shrink-0 rounded-md object-cover" />
         ) : (
-          <div className="relative self-end">{add}</div>
+          <div className="pointer-events-none relative flex shrink-0 items-center gap-2">
+            {soldOut}
+            <span className="text-sm font-semibold tabular-nums text-foreground">{price}</span>
+          </div>
         )}
+        <div className="relative">{add}</div>
       </article>
     )
   }

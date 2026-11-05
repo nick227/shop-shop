@@ -155,14 +155,14 @@ export function Announcements({ panels, itemsById }: {
   )
 }
 
-/** One tile per menu section, pictured by its first item with a photo; tapping jumps to the section. */
+/** A directory of the store's sections for big catalogs: name, size, and a photo when one exists. */
 export function CategoryTiles({ groups, onJump }: {
   readonly groups: readonly MenuGroup<ItemResponse>[]
   readonly onJump: (groupId: string) => void
 }) {
   if (groups.length < 2) return null
   return (
-    <RowSection title="Menu" id="sf-category-tiles">
+    <RowSection title="Shop by section" id="sf-category-tiles">
       <ul className="sf-category-tiles">
         {groups.map((group) => {
           const pictured = group.items.map(itemImage).find(Boolean)
@@ -171,19 +171,12 @@ export function CategoryTiles({ groups, onJump }: {
               <button
                 type="button"
                 onClick={() => onJump(group.id)}
-                className="group relative flex h-24 w-full items-end overflow-hidden rounded-xl bg-muted p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-16 w-full items-center gap-3 rounded-xl border border-border bg-card p-2 pr-3 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                {pictured ? (
-                  <>
-                    <img src={pictured} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105" />
-                    <span className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/5" aria-hidden />
-                  </>
-                ) : (
-                  <span className="absolute inset-0" style={{ background: 'var(--sf-primary)', opacity: 0.12 }} aria-hidden />
-                )}
-                <span className={pictured ? 'relative text-white' : 'relative text-foreground'}>
-                  <span className="block font-semibold leading-tight">{group.name}</span>
-                  <span className="text-xs opacity-80">
+                {pictured ? <img src={pictured} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : null}
+                <span className={pictured ? 'min-w-0' : 'min-w-0 pl-2'}>
+                  <span className="block truncate text-sm font-semibold leading-tight">{group.name}</span>
+                  <span className="text-xs text-muted-foreground">
                     {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
                   </span>
                 </span>

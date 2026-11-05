@@ -78,7 +78,10 @@ interface ContractAttemptSignal {
   signal: AbortSignal
 }
 
-type CreateCheckoutSessionRequest = components['schemas']['CreateCheckoutSessionRequest']
+type CreateCheckoutSessionRequest = Omit<components['schemas']['CreateCheckoutSessionRequest'], 'items'> & {
+  /** One item or one bundle per line; the server prices both. */
+  items: ({ itemId: string; quantity: number; specialInstructions?: string } | { bundleId: string; quantity: number; specialInstructions?: string })[]
+}
 type CreateCheckoutSessionResponse = components['schemas']['CreateCheckoutSessionResponse']
 type CompleteCheckoutRequest = components['schemas']['CompleteCheckoutRequest']
 type CompleteCheckoutResponse = components['schemas']['CompleteCheckoutResponse']

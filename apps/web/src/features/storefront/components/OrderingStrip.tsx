@@ -9,6 +9,7 @@ import { Bike, ChevronDown, Clock, ShoppingBag } from 'lucide-react'
 import { cn } from '@shared/lib/cn'
 import type { StorefrontHours, StorefrontOrdering } from '../api'
 import { formatClock, hoursStatus } from '../hoursLabel'
+import { DELIVERY_AT_CHECKOUT } from '@features/checkout/fulfillment'
 
 export { formatClock } from '../hoursLabel'
 
@@ -30,8 +31,8 @@ export function OrderingStrip({ ordering, hours }: {
   const open = useMemo(() => hoursStatus(hours?.week, hours?.timezone ?? null), [hours])
 
   return (
-    <section aria-label="Ordering" className="rounded-2xl border border-border bg-card p-4">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+    <section aria-label="Ordering" className="border-y border-border py-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             className={cn('h-2.5 w-2.5 rounded-full', ordering.acceptingOrders ? 'bg-emerald-500' : 'bg-muted-foreground')}
@@ -101,7 +102,8 @@ function Fulfillment({ ordering }: { readonly ordering: StorefrontOrdering }) {
           </span>
         </p>
       ) : null}
-      {ordering.deliveryEnabled ? (
+      {/* Offered only when the store delivers and checkout can take a delivery order. */}
+      {ordering.deliveryEnabled && DELIVERY_AT_CHECKOUT ? (
         <p className="flex items-center gap-2 text-sm">
           <Bike className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span>

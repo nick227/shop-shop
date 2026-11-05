@@ -14,13 +14,14 @@ import {
   FEATURED_DEFAULT_COUNT,
   resolveBundleIds,
   resolveFeaturedItemIds,
+  type AfterMenuSection,
   type BeforeMenuSection,
   type StorefrontConfig,
 } from '@packages/shared/storefront'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { cn } from '@shared/lib/cn'
-import { groupItemsBySection, type MenuSection } from '@shared/lib/menu/menuSections'
+import { groupItemsBySection, matchesMenuSearch, type MenuSection } from '@shared/lib/menu/menuSections'
 import type { StorefrontData } from './api'
 import { StorefrontProvider, canOrderItem, type StorefrontActions, type StorefrontMode } from './context'
 import { storefrontAppearanceClass, storefrontThemeStyle } from './theme'
@@ -28,7 +29,7 @@ import { BusinessHeader } from './components/BusinessHeader'
 import { OrderingStrip } from './components/OrderingStrip'
 import { MediaMosaic, type ResolvedMosaicTile } from './components/MediaMosaic'
 import { Announcements, BundlesRow, CategoryTiles, FeaturedRow, type StorefrontBundle } from './components/Merchandising'
-import { StorefrontMenu, scrollToSection } from './components/StorefrontMenu'
+import { LARGE_CATALOG_ITEMS, MenuBar, MenuSections, scrollToSection, useActiveSection } from './components/StorefrontMenu'
 import { AboutSection, GallerySection, UpdatesSection } from './components/BusinessContent'
 import { ItemSheet } from './components/ItemSheet'
 import { CartBar } from './components/CartBar'
@@ -36,6 +37,10 @@ import { itemImage } from './components/ProductTile'
 import './storefront.css'
 
 const CAROUSEL_COUNT = 5
+/** Side tiles the mosaic fills on its own when the vendor hasn't arranged any. */
+const AUTO_TILES = 4
+/** Category tiles help find a department in a big store; a short menu has the section links. */
+const CATEGORY_TILES_MIN_SECTIONS = 8
 
 export interface StorefrontProps {
   readonly store: StoreHeaderStore
@@ -55,6 +60,8 @@ export interface StorefrontProps {
   readonly onEditSection?: (key: StorefrontPartKey) => void
   /** Editor only: the part to outline, so the vendor sees what the open settings change. */
   readonly highlight?: StorefrontPartKey | null
+  /** Editor only: show or hide an optional section from the preview itself. */
+  readonly onToggleSection?: (key: BeforeMenuSection | AfterMenuSection, visible: boolean) => void
   readonly className?: string
 }
 
@@ -88,13 +95,34 @@ export function Storefront({
   updates,
   onEditSection,
   highlight = null,
+  onToggleSection,
   className,
 }: StorefrontProps) {
-  const part = (key: StorefrontPartKey, children: ReactNode) => (
-    <Part key={key} partKey={key} onEdit={onEditSection} highlighted={highlight === key}>
+  const part = (key: StorefrontPartKey, children: ReactNode, onHide?: () => void) => (
+    <Part key={key} partKey={key} onEdit={onEditSection} onHide={onHide} highlighted={highlight === key}>
       {children}
     </Part>
   )
+  /** An optional section: shown, or (in the editor only) a slim bar to bring it back. */
+  const optional = <K extends BeforeMenuSection | AfterMenuSection>(section: { key: K; visible: boolean }, children: ReactNode) => {
+    if (section.visible) return part(section.key, children, onToggleSection ? () => onToggleSection(section.key, false) : undefined)
+    if (!onToggleSection) return null
+    return (
+      <div
+        key={section.key}
+        data-storefront-section={section.key}
+        className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground"
+      >
+        <span>
+          <span className="font-medium text-foreground">{PART_LABELS[section.key][0].toUpperCase() + PART_LABELS[section.key].slice(1)}</span> · hidden from
+          shoppers
+        </span>
+        <button type="button" onClick={() => onToggleSection(section.key, true)} className="text-sm font-semibold text-primary hover:underline">
+          Show
+        </button>
+      </div>
+    )
+  }
   const addToCart = useAddToCart()
   const [searchParams, setSearchParams] = useSearchParams()
   const [previewItemId, setPreviewItemId] = useState<string | null>(null)
@@ -186,15 +214,54 @@ export function Storefront({
 
   const tiles = useMemo(() => {
     const mediaById = new Map(data.media.map((m) => [m.id, m]))
-    return config.mosaic.tiles.flatMap((tile): ResolvedMosaicTile[] => {
+    const chosen = config.mosaic.tiles.flatMap((tile): ResolvedMosaicTile[] => {
       if (tile.type === 'media') {
         const media = mediaById.get(tile.mediaId)
         return media ? [{ type: 'media', media }] : []
       }
       const item = itemsById.get(tile.itemId)
-      return item ? [{ type: 'item', item }] : []
+      return item && itemImage(item) ? [{ type: 'item', item }] : []
     })
-  }, [config.mosaic.tiles, data.media, itemsById])
+    if (config.mosaic.tiles.length > 0) return chosen
+    // Nothing arranged yet: the store's own photos and videos first, then pictured products not
+    // already in the carousel. Only real media; never a placeholder.
+    const inCarousel = new Set(carousel.map((item) => item.id))
+    const products = groups
+      .flatMap((group) => group.items)
+      .filter((item) => !inCarousel.has(item.id) && canOrderItem(item) && itemImage(item))
+    return [
+      ...data.media.map((media): ResolvedMosaicTile => ({ type: 'media', media })),
+      ...products.map((item): ResolvedMosaicTile => ({ type: 'item', item })),
+    ].slice(0, AUTO_TILES)
+  }, [config.mosaic.tiles, data.media, itemsById, carousel, groups])
+
+  // Products already in the carousel aren't repeated in the Featured row.
+  const featuredRow = useMemo(() => {
+    const inCarousel = new Set(carousel.map((item) => item.id))
+    return featured.filter((item) => !inCarousel.has(item.id))
+  }, [featured, carousel])
+
+  const [query, setQuery] = useState('')
+  const searching = query.trim().length > 0
+  const shownGroups = useMemo(
+    () =>
+      searching
+        ? groups
+            .map((group) => ({ ...group, items: group.items.filter((item) => matchesMenuSearch(item, query)) }))
+            .filter((group) => group.items.length > 0)
+        : groups,
+    [groups, query, searching],
+  )
+  const resultCount = shownGroups.reduce((sum, group) => sum + group.items.length, 0)
+  const totalItems = groups.reduce((sum, group) => sum + group.items.length, 0)
+  const [barHeight, setBarHeight] = useState(104)
+  const jumpOffset = stickyTop + barHeight + 8
+  const activeId = useActiveSection(
+    shownGroups.map((group) => group.id),
+    scrollRoot,
+    jumpOffset,
+  )
+  const jump = useCallback((id: string) => scrollToSection(id, scrollRoot, jumpOffset), [scrollRoot, jumpOffset])
 
   const shownBundles = useMemo(() => {
     const active = bundles.filter((bundle) => bundle.isActive !== false)
@@ -202,13 +269,12 @@ export function Storefront({
     return resolveBundleIds(config.featured, active.map((bundle) => bundle.id)).map((id) => byId.get(id)!)
   }, [bundles, config.featured])
 
-  const jumpOffset = stickyTop + 104
   const beforeMenu: Record<BeforeMenuSection, ReactNode> = {
     mosaic: <MediaMosaic products={carousel} tiles={tiles} storeName={store.name} />,
     announcements: <Announcements panels={config.announcements} itemsById={itemsById} />,
     bundles: <BundlesRow bundles={shownBundles} />,
-    featured: <FeaturedRow items={featured} />,
-    categories: <CategoryTiles groups={groups} onJump={(id) => scrollToSection(id, scrollRoot, jumpOffset)} />,
+    featured: <FeaturedRow items={featuredRow} />,
+    categories: groups.length >= CATEGORY_TILES_MIN_SECTIONS ? <CategoryTiles groups={groups} onJump={jump} /> : null,
   }
   const afterMenu = {
     about: <AboutSection store={store} hours={data.hours} showMap={mode === 'live'} />,
@@ -223,20 +289,49 @@ export function Storefront({
           {part('header', <BusinessHeader store={store} tagline={config.brand.tagline} logoUrl={store.imageUrl ?? null} />)}
           {part('ordering', <OrderingStrip ordering={data.ordering} hours={data.hours} />)}
 
-          {config.sections.beforeMenu.filter((section) => section.visible).map((section) => part(section.key, beforeMenu[section.key]))}
+          {/* The menu bar sits high so every section is a tap away, and sticks for the rest of the page. */}
+          <div className="space-y-8">
+            {groups.length > 1 || totalItems > 6 ? (
+              <MenuBar
+                groups={shownGroups}
+                query={query}
+                onQuery={setQuery}
+                activeId={activeId}
+                onJump={jump}
+                onHeight={setBarHeight}
+              />
+            ) : null}
 
-          {part(
-            'menu',
-            groups.length > 0 ? (
-              <StorefrontMenu groups={groups} presentation={config.presentation} />
-            ) : (
-              <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                Nothing on the menu right now. Check back soon.
+            {searching ? (
+              <p className="text-sm text-muted-foreground" role="status">
+                {resultCount === 0
+                  ? `Nothing on the menu matches “${query.trim()}”.`
+                  : `${resultCount} ${resultCount === 1 ? 'item matches' : 'items match'} “${query.trim()}”`}
               </p>
-            ),
-          )}
+            ) : (
+              config.sections.beforeMenu.map((section) => optional(section, beforeMenu[section.key]))
+            )}
 
-          {config.sections.afterMenu.filter((section) => section.visible).map((section) => part(section.key, afterMenu[section.key]))}
+            {part(
+              'menu',
+              groups.length > 0 ? (
+                <MenuSections
+                  groups={shownGroups}
+                  presentation={config.presentation}
+                  jumpOffset={jumpOffset}
+                  large={!searching && totalItems > LARGE_CATALOG_ITEMS}
+                />
+              ) : (
+                <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  Nothing on the menu right now. Check back soon.
+                </p>
+              ),
+            )}
+
+            {searching
+              ? null
+              : config.sections.afterMenu.map((section) => optional(section, afterMenu[section.key]))}
+          </div>
 
           {mode === 'live' ? <CartBar storeId={store.id} /> : null}
         </div>
@@ -250,9 +345,10 @@ export function Storefront({
  * One part of the page. In the editor it can be outlined and offers an "Edit" button; parts that render
  * nothing (no announcements, no bundles) take no space.
  */
-function Part({ partKey, onEdit, highlighted, children }: {
+function Part({ partKey, onEdit, onHide, highlighted, children }: {
   readonly partKey: StorefrontPartKey
   readonly onEdit?: (key: StorefrontPartKey) => void
+  readonly onHide?: () => void
   readonly highlighted: boolean
   readonly children: ReactNode
 }) {
@@ -270,13 +366,24 @@ function Part({ partKey, onEdit, highlighted, children }: {
       className="sf-part group/part relative rounded-2xl has-[>div:empty]:hidden"
     >
       <div>{children}</div>
-      <button
-        type="button"
-        onClick={() => onEdit(partKey)}
-        className="sf-part-edit absolute right-2 top-2 z-30 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background shadow-md"
-      >
-        Edit {PART_LABELS[partKey]}
-      </button>
+      <div className="sf-part-edit absolute right-2 top-2 z-30 flex gap-1">
+        {onHide ? (
+          <button
+            type="button"
+            onClick={onHide}
+            className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-foreground shadow-md ring-1 ring-border"
+          >
+            Hide
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => onEdit(partKey)}
+          className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background shadow-md"
+        >
+          Edit {PART_LABELS[partKey]}
+        </button>
+      </div>
     </div>
   )
 }

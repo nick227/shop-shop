@@ -1,59 +1,82 @@
 /**
- * CartSummary - Cart totals and checkout button;
- * Modern implementation with Tailwind;
+ * CartSummary - what the order costs, as checkout will charge it.
+ *
+ * Every number comes from the checkout quote (the server's pricing code), never from the cart. Before
+ * the shopper picks pickup or delivery, only the subtotal is final; the rest is added at checkout.
  */
 import { Link } from 'react-router-dom'
-import { Button } from '@shared/ui/primitives'
 import { CreditCard } from 'lucide-react'
+import { Button, Spinner } from '@shared/ui/primitives'
 import { formatCurrency } from '@shared/lib/format'
-import { calculateOrderPricing, getPricingBreakdown } from '@shared/lib/utils/pricing'
-import type { PricingLineItem } from '@shared/lib/utils/pricing'
 import type { CartWithTotals } from '@api/types'
+import { useCheckoutQuote, type CheckoutQuote } from '@features/checkout/hooks/useCheckoutQuote'
 
 export interface CartSummaryProps {
-  cart: CartWithTotals;
-  onCheckout: () => void;
+  cart: CartWithTotals
+  onCheckout: () => void
+  /** Known at checkout; without it the summary shows the subtotal and says the rest comes later. */
+  deliveryType?: 'PICKUP' | 'DELIVERY'
+  tipAmount?: number
+  /** The quote, when the parent already has it. */
+  quote?: ReturnType<typeof useCheckoutQuote>
 }
 
-export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
-  const subtotal = Number.parseFloat(cart.subtotal?.toString() || '0')
-  const itemCount = cart.itemCount || 0;
-  
-  // Use pricing utilities for all calculations
-  const pricing = calculateOrderPricing({
-    subtotal,
-    tipPercentage: 0, // Cart summary doesn't include tip
-    includeServiceFee: false
-  })
-  
-  const breakdown = getPricingBreakdown(pricing)
+function Row({ label, value, strong = false }: { readonly label: string; readonly value: string; readonly strong?: boolean }) {
+  return (
+    <div className={strong ? 'flex items-center justify-between border-t border-border pt-2 text-base font-bold' : 'flex items-center justify-between text-sm'}>
+      <span className={strong ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+      <span className={strong ? 'text-foreground' : 'font-medium'}>{value}</span>
+    </div>
+  )
+}
+
+function Breakdown({ quote, itemCount, full }: { readonly quote: CheckoutQuote; readonly itemCount: number; readonly full: boolean }) {
+  const items = `${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
+  if (!full) {
+    return (
+      <>
+        <Row label={`Subtotal (${items})`} value={formatCurrency(quote.subtotal)} />
+        <p className="text-xs text-muted-foreground">Delivery, tax and fees are added at checkout.</p>
+      </>
+    )
+  }
+  return (
+    <>
+      <Row label={`Subtotal (${items})`} value={formatCurrency(quote.subtotal)} />
+      {quote.deliveryType === 'DELIVERY' ? <Row label="Delivery" value={formatCurrency(quote.deliveryFee)} /> : null}
+      <Row label="Tax" value={formatCurrency(quote.tax)} />
+      {quote.serviceFee > 0 ? <Row label="Service fee" value={formatCurrency(quote.serviceFee)} /> : null}
+      {quote.tip > 0 ? <Row label="Tip" value={formatCurrency(quote.tip)} /> : null}
+      <Row label="Total" value={formatCurrency(quote.total)} strong />
+    </>
+  )
+}
+
+export function CartSummary({ cart, onCheckout, deliveryType, tipAmount, quote: given }: CartSummaryProps) {
+  const own = useCheckoutQuote(cart, { deliveryType: deliveryType ?? 'PICKUP', tipAmount })
+  const quote = given ?? own
+  const itemCount = cart.itemCount || 0
+
   return (
     <div className="space-y-4 rounded-xl border border-border bg-card p-4">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">Order Summary</h2>
+      <h2 className="text-lg font-semibold tracking-tight text-foreground">Order summary</h2>
 
-      <div className="space-y-2 rounded-lg bg-muted/30 p-3">
-        {/* Render pricing breakdown */}
-        {breakdown.map((item: PricingLineItem, index: number) => (
-          <div key={index} className="flex items-center justify-between text-sm">
-            <span className={item.isTotal ? 'text-lg font-bold text-foreground' : (item.isSubtotal ? 'text-muted-foreground' : 'text-muted-foreground')}>
-              {item.label}
-              {item.isSubtotal && ` (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`}
-            </span>
-            <span className={item.isTotal ? 'text-lg font-bold text-primary' : 'font-medium'}>
-              {formatCurrency(item.amount)}
-            </span>
+      <div className="space-y-2" aria-live="polite">
+        {quote.data ? <Breakdown quote={quote.data} itemCount={itemCount} full={deliveryType !== undefined} /> : null}
+        {!quote.data && !quote.error ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner size="small" />
+            Checking prices…
           </div>
-        ))}
+        ) : null}
+        {quote.error ? (
+          <p role="alert" className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+            {quote.error.message}
+          </p>
+        ) : null}
       </div>
 
-      {/* Checkout Button */}
-      <Button
-        variant="primary" 
-        size="large"
-        fullWidth
-        onClick={onCheckout}
-        className="shadow-sm"
-      >
+      <Button variant="primary" size="large" fullWidth onClick={onCheckout} disabled={!quote.data || !!quote.error} className="shadow-sm">
         <CreditCard className="h-4 w-4" />
         Continue to Payment
       </Button>

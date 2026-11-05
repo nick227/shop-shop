@@ -113,8 +113,8 @@ describe('Storefront', () => {
     const ordering = screen.getByRole('region', { name: 'Ordering' })
     expect(ordering).toHaveTextContent('Taking orders')
     expect(ordering).toHaveTextContent('Pickup · ready in about 15 min')
-    // Delivery time depends on the courier and address; the storefront doesn't invent one.
-    expect(ordering).toHaveTextContent('Delivery · time and fee at checkout')
+    // Checkout takes pickup orders only today, so the storefront doesn't offer delivery.
+    expect(ordering).not.toHaveTextContent('Delivery')
     expect(ordering).not.toHaveTextContent(/\d+–\d+ min/)
     // No posted hours, so no claim about being open.
     expect(ordering).not.toHaveTextContent(/Open now|Closed now/)
@@ -178,9 +178,13 @@ describe('Storefront', () => {
     renderStorefront({
       config: { ...base, featured: { ...base.featured, itemIds: ['d1'], excludedItemIds: ['b1'] } },
     })
+    // Pinned and popular pictured items lead the mosaic carousel; the Featured row doesn't repeat them.
+    const carousel = screen.getByRole('region', { name: 'Featured products' })
+    expect(carousel).toHaveTextContent('Breakfast Burrito')
+    expect(carousel).not.toHaveTextContent('Breakfast Sandwich')
     const featured = screen.getByRole('region', { name: 'Featured' })
     const names = within(featured).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(names).toEqual(['Horchata', 'Breakfast Burrito'])
+    expect(names).toEqual(['Horchata'])
   })
 
   it('opens an item in a sheet and adds the chosen quantity', async () => {
@@ -241,6 +245,40 @@ describe('Storefront in the editor', () => {
   it('offers no editing on the live page', () => {
     renderStorefront()
     expect(screen.queryByRole('button', { name: /^Edit / })).not.toBeInTheDocument()
+  })
+})
+
+describe('Storefront for big catalogs', () => {
+  const many = Array.from({ length: 8 }, (_, d) => section(`d${d}`, `Dept ${d}`, d))
+  const stock = many.flatMap((dept, d) =>
+    Array.from({ length: 20 }, (_, k) => item(`${dept.id}-${k}`, `Dept ${d} thing ${k}`, dept.id, { mediaAssets: [] })),
+  )
+  const renderBig = () =>
+    render(
+      <MemoryRouter>
+        <Storefront store={store} data={data({ popularItemIds: [] })} items={stock} sections={many} bundles={[]} mode="live" stickyTop={0} />
+      </MemoryRouter>,
+    )
+
+  it('shows long sections in part with a Show all, and lists every section in a directory', async () => {
+    renderBig()
+    const first = screen.getByRole('region', { name: /^Dept 0/ })
+    expect(within(first).getAllByRole('article')).toHaveLength(9)
+    await userEvent.click(within(first).getByRole('button', { name: 'Show all 20 in Dept 0' }))
+    expect(within(first).getAllByRole('article')).toHaveLength(20)
+
+    await userEvent.click(screen.getByRole('button', { name: 'All' }))
+    const directory = await screen.findByRole('dialog')
+    expect(within(directory).getAllByRole('button').filter((b) => /^Dept/.test(b.textContent ?? ''))).toHaveLength(8)
+  })
+
+  it('finds any item by search, even one beyond a section’s first rows', async () => {
+    renderBig()
+    await userEvent.type(screen.getByRole('searchbox'), 'thing 19')
+    expect(screen.getByRole('status')).toHaveTextContent('8 items match')
+    expect(screen.getByText('Dept 7 thing 19')).toBeInTheDocument()
+    // While searching, results replace the merchandising above the menu.
+    expect(document.querySelector('[data-storefront-section="mosaic"]')).toBeNull()
   })
 })
 

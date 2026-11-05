@@ -14,7 +14,9 @@ import {
   defaultStorefrontConfig,
   normalizeStorefrontConfig,
   sameStorefrontConfig,
+  STOREFRONT_PALETTES,
   type StorefrontConfig,
+  type StorefrontPalette,
 } from '@packages/shared/storefront'
 import { VendorPage } from '@layouts/VendorLayout/page'
 import { Badge, Button } from '@shared/ui/primitives'
@@ -49,6 +51,13 @@ const TABS = [
   ['business', 'Business'],
 ] as const
 type Tab = (typeof TABS)[number][0]
+
+/** The draft with one optional section shown or hidden. */
+function withSectionVisible(draft: StorefrontConfig, key: string, visible: boolean): StorefrontConfig {
+  const set = <T extends { key: string; visible: boolean }>(list: readonly T[]) =>
+    list.map((section) => (section.key === key ? { ...section, visible } : section))
+  return { ...draft, sections: { beforeMenu: set(draft.sections.beforeMenu), afterMenu: set(draft.sections.afterMenu) } }
+}
 
 /** Which settings tab changes each part of the storefront. */
 const PART_TAB: Record<StorefrontPartKey, Tab> = {
@@ -172,7 +181,14 @@ export default function StorefrontEditorPage() {
           />
 
           <section aria-label="Preview" className="min-w-0 space-y-2">
-            <PreviewToolbar device={device} onDevice={setDevice} />
+            <PreviewToolbar
+              device={device}
+              onDevice={setDevice}
+              paletteId={normalized.brand.paletteId}
+              onPalette={(palette) =>
+                update((d) => ({ ...d, brand: { ...d.brand, paletteId: palette.id, primary: palette.primary, accent: palette.accent } }))
+              }
+            />
             <PreviewFrame device={device} focusPart={focusPart}>
               {(scrollRoot) => (
                 <Storefront
@@ -190,6 +206,7 @@ export default function StorefrontEditorPage() {
                     setFocusPart(key)
                   }}
                   highlight={focusPart}
+                  onToggleSection={(key, visible) => update((d) => withSectionVisible(d, key, visible))}
                 />
               )}
             </PreviewFrame>
@@ -241,10 +258,38 @@ function SettingsColumn({ tab, onTab, panelProps, store, hours, sections }: {
   )
 }
 
-function PreviewToolbar({ device, onDevice }: { readonly device: Device; readonly onDevice: (device: Device) => void }) {
+function PreviewToolbar({ device, onDevice, paletteId, onPalette }: {
+  readonly device: Device
+  readonly onDevice: (device: Device) => void
+  readonly paletteId: string
+  readonly onPalette: (palette: StorefrontPalette) => void
+}) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <p className="text-sm text-muted-foreground">Preview · not yet live</p>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-3">
+        <p className="text-sm text-muted-foreground">Preview</p>
+        {/* Colors change on one click, right where their effect shows. */}
+        <div role="radiogroup" aria-label="Palette" className="flex gap-1">
+          {STOREFRONT_PALETTES.map((palette) => (
+            <button
+              key={palette.id}
+              type="button"
+              role="radio"
+              aria-checked={paletteId === palette.id}
+              aria-label={`${palette.name} palette`}
+              title={palette.name}
+              onClick={() => onPalette(palette)}
+              className={cn(
+                'flex h-6 w-6 overflow-hidden rounded-full ring-offset-2 ring-offset-background',
+                paletteId === palette.id ? 'ring-2 ring-foreground' : 'ring-1 ring-border hover:ring-foreground/50',
+              )}
+            >
+              <span className="flex-[3]" style={{ background: palette.primary }} />
+              <span className="flex-[2]" style={{ background: palette.accent }} />
+            </button>
+          ))}
+        </div>
+      </div>
       <div role="radiogroup" aria-label="Preview size" className="flex rounded-lg bg-muted p-1">
         {(
           [
@@ -382,7 +427,10 @@ function PreviewFrame({ device, focusPart, children }: {
     if (!frame || !focusPart) return
     const target = frame.querySelector<HTMLElement>(`[data-storefront-section="${focusPart}"]`)
     if (!target) return
-    const top = target.getBoundingClientRect().top - frame.getBoundingClientRect().top + frame.scrollTop - 16
+    // Leave room for the storefront's sticky menu bar when the part sits below it.
+    const bar = frame.querySelector<HTMLElement>('.sf-menubar')
+    const barAbove = bar && bar.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING ? bar.getBoundingClientRect().height : 0
+    const top = target.getBoundingClientRect().top - frame.getBoundingClientRect().top + frame.scrollTop - 16 - barAbove
     frame.scrollTo?.({ top: Math.max(0, top), behavior: 'smooth' })
   }, [frame, focusPart])
   const [available, setAvailable] = useState(0)

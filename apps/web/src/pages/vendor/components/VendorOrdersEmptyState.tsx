@@ -60,9 +60,6 @@ export function VendorOrdersEmptyState({
       </div>
       <div className="space-y-2 max-w-md">
         <h3 className="text-lg font-semibold">No orders yet</h3>
-        <p className="text-muted-foreground">
-          When customers place orders, they'll appear here in real-time. You'll receive notifications for new orders automatically.
-        </p>
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -73,10 +70,6 @@ export function VendorOrdersEmptyState({
             <span>Real-time processing</span>
           </div>
         </div>
-      </div>
-      <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground">
-        <p className="font-medium mb-1">💡 Pro tip:</p>
-        <p>Enable Auto-Accept in the header to automatically accept new orders as they come in.</p>
       </div>
     </div>
   )

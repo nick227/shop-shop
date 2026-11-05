@@ -74,26 +74,51 @@
   gap: 0.5rem;
   grid-template-columns: 1fr;
 }
+/* Phones: the tiles are one swipeable strip under the carousel, so the menu stays close. */
+/* min-width: 0 lets the strip scroll inside its column instead of widening the page. */
+.sf-mosaic > * {
+  min-width: 0;
+}
 .sf-mosaic-tiles {
+  min-width: 0;
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: 44%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
+.sf-mosaic-tiles::-webkit-scrollbar {
+  display: none;
+}
+.sf-mosaic-tiles > * {
+  scroll-snap-align: start;
+  min-height: 8.5rem;
+}
+.sf-mosaic-tiles[data-count='1'] {
+  grid-auto-columns: 100%;
+}
+/* Wider: the carousel leads, and the tiles sit beside it as a grid. */
 @container storefront (min-width: 48rem) {
   .sf-mosaic {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: stretch;
   }
   .sf-mosaic-tiles {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: 1fr;
+    overflow: visible;
   }
   .sf-mosaic-tiles[data-count='1'] {
     grid-template-columns: 1fr;
   }
-}
-.sf-mosaic-tiles[data-count='1'] > *,
-.sf-mosaic-tiles[data-count='3'] > :first-child {
-  grid-column: 1 / -1;
+  .sf-mosaic-tiles[data-count='1'] > *,
+  .sf-mosaic-tiles[data-count='3'] > :first-child {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ── Category tiles ─────────────────────────────────────────────────────── */
@@ -122,7 +147,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .sf-grid[data-size='feature'] {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @container storefront (min-width: 40rem) {
   .sf-grid {
@@ -141,11 +166,31 @@
 .sf-list {
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: 1fr;
+  /* minmax(0, …) so long names truncate inside the row instead of widening the page. */
+  grid-template-columns: minmax(0, 1fr);
 }
 @container storefront (min-width: 44rem) {
   .sf-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container storefront (min-width: 64rem) {
+  .sf-list[data-dense] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ── Menu bar: search above the section links on phones, beside them when wider ── */
+
+.sf-menubar {
+  display: grid;
+  gap: 0.5rem;
+}
+@container storefront (min-width: 48rem) {
+  .sf-menubar {
+    grid-template-columns: 17rem minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
   }
 }
 

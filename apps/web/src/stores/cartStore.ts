@@ -95,10 +95,12 @@ function recalculateCart(cart: CartWithTotals): CartWithTotals {
     return sum + price * (item.quantity ?? 0)
   }, 0)
   const itemCount = items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
-  const tax = subtotal * 0.1
-  const deliveryFee = subtotal > 0 ? 5.99 : 0
-  const fees = deliveryFee
-  const total = subtotal + tax + fees
+  // The cart knows only what was added. Tax, delivery and fees come from the checkout quote, which
+  // uses the same pricing as the order; guessing them here showed shoppers totals they'd never pay.
+  const tax = 0
+  const deliveryFee = 0
+  const fees = 0
+  const total = subtotal
 
   return {
     ...cart,

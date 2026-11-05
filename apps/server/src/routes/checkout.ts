@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { type ZodTypeProvider } from 'fastify-type-provider-zod'
 import { setupIdempotency } from '../api/checkout/idempotency.js'
 import {
+  quoteCheckout,
+  type CheckoutQuoteInput,
   createCheckoutSession,
   completeCheckout,
   getCheckoutStatus,
@@ -86,6 +88,13 @@ export default async function checkoutRoutes(fastify: FastifyInstance) {
 
   // Typed instance: body/params/response schemas infer TypeScript types from Zod
   const f = fastify.withTypeProvider<ZodTypeProvider>()
+
+  // POST /api/v1/checkout/quote — the totals checkout would charge, from the same pricing code.
+  // Public: prices are public, and nothing is stored.
+  f.post('/quote', async (request, reply) => {
+    const result = await quoteCheckout(request.body as CheckoutQuoteInput)
+    return reply.status(200).send(result)
+  })
 
   // POST /api/v1/checkout/session
   f.post(

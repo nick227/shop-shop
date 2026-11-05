@@ -7,6 +7,8 @@ import {
 } from '../order/checkout.js'
 
 export type { CheckoutCart, CheckoutTotals } from '../order/checkout.js'
+/** The one checkout pricing calculation; quotes and orders both use it. */
+export { computeCheckoutTotals } from '../order/checkout.js'
 
 // ========================================
 // Order Domain Service — orchestration + I/O at this boundary
