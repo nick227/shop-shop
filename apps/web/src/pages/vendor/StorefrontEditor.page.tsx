@@ -6,10 +6,10 @@
  * draft to what is live.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ExternalLink, Monitor, Smartphone } from 'lucide-react'
+import { ChevronLeft, Monitor, Smartphone } from 'lucide-react'
 import {
   defaultStorefrontConfig,
   normalizeStorefrontConfig,
@@ -24,33 +24,23 @@ import { cn } from '@shared/lib/cn'
 import { useStore } from '@shared/hooks/hooks/useStores'
 import { useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
 import { useMenuSections } from '@shared/hooks/hooks/useMenuSections'
-import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { Storefront, type StorefrontPartKey } from '@features/storefront/Storefront'
 import { storefrontQueryKey, useStorefront, useStorefrontEditor } from '@features/storefront/api'
 import { BrandPanel } from './components/storefront-editor/BrandPanel'
 import { MosaicPanel } from './components/storefront-editor/MosaicPanel'
 import { FeaturedPanel } from './components/storefront-editor/FeaturedPanel'
-import { LayoutPanel } from './components/storefront-editor/LayoutPanel'
+import { MenuPanel } from './components/storefront-editor/MenuPanel'
+import { PANEL_TITLES, PART_PANEL, PageOutline, type OutlineSummary, type PanelKey } from './components/storefront-editor/PageOutline'
 import { AnnouncementsPanel } from './components/storefront-editor/AnnouncementsPanel'
 import { BusinessPanel } from './components/storefront-editor/BusinessPanel'
 import type { PanelProps } from './components/storefront-editor/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
-import type { StorefrontHours } from '@features/storefront/api'
+import type { StorefrontData, StorefrontHours } from '@features/storefront/api'
 import type { MenuSection } from '@shared/lib/menu/menuSections'
 
 const AUTOSAVE_MS = 700
 const DEVICE_WIDTH = { mobile: 390, desktop: 1200 } as const
 type Device = keyof typeof DEVICE_WIDTH
-
-const TABS = [
-  ['brand', 'Brand'],
-  ['mosaic', 'Mosaic'],
-  ['featured', 'Featured'],
-  ['layout', 'Layout'],
-  ['announcements', 'Announcements'],
-  ['business', 'Business'],
-] as const
-type Tab = (typeof TABS)[number][0]
 
 /** The draft with one optional section shown or hidden. */
 function withSectionVisible(draft: StorefrontConfig, key: string, visible: boolean): StorefrontConfig {
@@ -58,25 +48,6 @@ function withSectionVisible(draft: StorefrontConfig, key: string, visible: boole
     list.map((section) => (section.key === key ? { ...section, visible } : section))
   return { ...draft, sections: { beforeMenu: set(draft.sections.beforeMenu), afterMenu: set(draft.sections.afterMenu) } }
 }
-
-/** Which settings tab changes each part of the storefront. */
-const PART_TAB: Record<StorefrontPartKey, Tab> = {
-  header: 'brand',
-  ordering: 'business',
-  mosaic: 'mosaic',
-  announcements: 'announcements',
-  bundles: 'featured',
-  featured: 'featured',
-  categories: 'layout',
-  menu: 'layout',
-  about: 'business',
-  gallery: 'layout',
-  updates: 'layout',
-}
-/** The parts each tab affects, the first being where the preview scrolls to. */
-const TAB_PARTS = Object.fromEntries(
-  TABS.map(([tab]) => [tab, (Object.keys(PART_TAB) as StorefrontPartKey[]).filter((key) => PART_TAB[key] === tab)]),
-) as Record<Tab, StorefrontPartKey[]>
 
 type SaveState = 'saved' | 'pending' | 'saving' | 'error'
 
@@ -91,13 +62,15 @@ export default function StorefrontEditorPage() {
   const bundles = useMemo(() => preview?.bundles ?? [], [preview?.bundles])
   const items = useMemo(() => rawItems.filter((item) => item.isActive !== false), [rawItems])
 
-  const [tab, setTab] = useState<Tab>('brand')
-  const [device, setDevice] = useState<Device>('desktop')
+  // The rail shows the page outline, or one part's settings.
+  const [panel, setPanel] = useState<PanelKey | null>(null)
+  // A desktop preview needs room to be readable; narrower screens start with the phone view.
+  const [device, setDevice] = useState<Device>(() => (typeof window !== 'undefined' && window.innerWidth < 1280 ? 'mobile' : 'desktop'))
   // The part of the preview the open settings change; outlined briefly so the effect is visible.
   const [focusPart, setFocusPart] = useState<StorefrontPartKey | null>(null)
   useEffect(() => {
     if (!focusPart) return
-    const clear = setTimeout(() => setFocusPart(null), 1800)
+    const clear = setTimeout(() => setFocusPart(null), 2500)
     return () => clearTimeout(clear)
   }, [focusPart])
   const { draft, update, save, reset, saveState } = useDraftAutosave(state.data?.draft, saveDraft.mutateAsync)
@@ -140,44 +113,40 @@ export default function StorefrontEditorPage() {
   return (
     <VendorPage
       title="Storefront"
-      description="Design how shoppers see your store. Changes stay in a draft until you publish."
       width="full"
       loading={loading}
       error={state.error ? { message: state.error.message, onRetry: () => void state.refetch() } : undefined}
       actions={
         <>
           <SaveStatus state={saveState} hasChanges={hasChanges} publishedAt={state.data?.publishedAt ?? null} />
-          {store ? (
-            <Link
-              to={getStoreRoute({ id: store.id, name: store.name })}
-              target="_blank"
-              className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium hover:bg-accent"
-            >
-              View live
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-            </Link>
+          {hasChanges ? (
+            <Button variant="ghost" onClick={() => void onDiscard()} disabled={discard.isPending}>
+              Discard
+            </Button>
           ) : null}
-          <Button variant="outline" onClick={() => void onDiscard()} disabled={!hasChanges || discard.isPending}>
-            Discard
-          </Button>
-          <Button variant="primary" onClick={() => void onPublish()} disabled={!hasChanges || publish.isPending} isLoading={publish.isPending}>
-            Publish
-          </Button>
+          {/* Publishing is the one primary action; with nothing new it simply isn't offered. */}
+          {hasChanges || !state.data?.publishedAt ? (
+            <Button variant="primary" onClick={() => void onPublish()} disabled={publish.isPending} isLoading={publish.isPending}>
+              Publish
+            </Button>
+          ) : null}
         </>
       }
     >
       {loading || !panelProps ? null : (
         <div className="grid gap-5 lg:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[21rem_minmax(0,1fr)]">
-          <SettingsColumn
-            tab={tab}
-            onTab={(next) => {
-              setTab(next)
-              setFocusPart(TAB_PARTS[next][0])
+          <EditorRail
+            panel={panel}
+            onClose={() => setPanel(null)}
+            onOpenPart={(part) => {
+              setPanel(PART_PANEL[part])
+              setFocusPart(part)
             }}
             panelProps={panelProps}
             store={store}
             hours={preview.hours}
             sections={sections}
+            summary={outlineSummary(normalized, preview, sections, items.length)}
           />
 
           <section aria-label="Preview" className="min-w-0 space-y-2">
@@ -202,7 +171,7 @@ export default function StorefrontEditorPage() {
                   stickyTop={0}
                   scrollRoot={scrollRoot}
                   onEditSection={(key) => {
-                    setTab(PART_TAB[key])
+                    setPanel(PART_PANEL[key])
                     setFocusPart(key)
                   }}
                   highlight={focusPart}
@@ -217,43 +186,77 @@ export default function StorefrontEditorPage() {
   )
 }
 
-function SettingsColumn({ tab, onTab, panelProps, store, hours, sections }: {
-  readonly tab: Tab
-  readonly onTab: (tab: Tab) => void
+/** A short state of each part for the outline, so it reads without opening anything. */
+function outlineSummary(
+  config: StorefrontConfig,
+  data: StorefrontData,
+  sections: readonly MenuSection[],
+  itemCount: number,
+): OutlineSummary {
+  const palette = STOREFRONT_PALETTES.find((p) => p.id === config.brand.paletteId)?.name ?? 'Custom colors'
+  const pins = config.featured.itemIds.length
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  return {
+    header: [palette, config.brand.tagline || 'No tagline'].join(' · '),
+    ordering: 'Hours, contact, location',
+    mosaic: config.mosaic.tiles.length > 0 ? plural(config.mosaic.tiles.length, 'tile') : 'Automatic',
+    announcements: config.announcements.length > 0 ? plural(config.announcements.length, 'panel') : 'None yet',
+    bundles: data.bundles.length > 0 ? plural(data.bundles.length, 'bundle') : 'None yet',
+    featured: pins > 0 ? `${plural(pins, 'pin')}${config.featured.autoFill ? ' + popular' : ''}` : 'Popular items',
+    categories: 'Shown for big menus',
+    menu: `${plural(sections.filter((section) => section.isVisible).length, 'section')} · ${plural(itemCount, 'item')}`,
+    about: 'Description, hours, map',
+    gallery: plural(data.media.filter((m) => m.kind !== 'VIDEO').length, 'photo'),
+    updates: 'Your River posts',
+  }
+}
+
+function EditorRail({ panel, onClose, onOpenPart, panelProps, store, hours, sections, summary }: {
+  readonly panel: PanelKey | null
+  readonly onClose: () => void
+  readonly onOpenPart: (part: StorefrontPartKey) => void
   readonly panelProps: PanelProps
   readonly store: StoreHeaderStore
   readonly hours: StorefrontHours | null
   readonly sections: readonly MenuSection[]
+  readonly summary: OutlineSummary
 }) {
   return (
-    <aside className="space-y-4" aria-label="Storefront settings">
-      <div role="tablist" aria-label="Storefront settings" className="flex flex-wrap gap-1 border-b border-border pb-2">
-        {TABS.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => onTab(id)}
-            className={cn(
-              'rounded-md px-2.5 py-1.5 text-sm',
-              tab === id ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" aria-label={TABS.find(([id]) => id === tab)?.[1]} className="lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1 lg:[scrollbar-width:thin]">
-        {tab === 'brand' ? (
-          <BrandPanel {...panelProps} storeName={store.name} logoUrl={(store as { imageUrl?: string | null }).imageUrl ?? null} />
-        ) : null}
-        {tab === 'mosaic' ? <MosaicPanel {...panelProps} /> : null}
-        {tab === 'featured' ? <FeaturedPanel {...panelProps} /> : null}
-        {tab === 'layout' ? <LayoutPanel {...panelProps} /> : null}
-        {tab === 'announcements' ? <AnnouncementsPanel {...panelProps} /> : null}
-        {tab === 'business' ? <BusinessPanel storeId={panelProps.storeId} store={store} hours={hours} sections={sections} /> : null}
-      </div>
+    <aside aria-label="Storefront settings" className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto lg:pr-1 lg:[scrollbar-width:thin]">
+      {panel === null ? (
+        <>
+          <p className="px-2 pb-1 text-sm text-muted-foreground">Choose a part to edit, or click it in the preview.</p>
+          <PageOutline
+            draft={panelProps.draft}
+            summary={summary}
+            onOpen={onOpenPart}
+            onChange={(next) => panelProps.update((d) => ({ ...d, sections: next }))}
+          />
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-1 border-b border-border pb-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+              aria-label="Back to all parts"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <h2 className="text-base font-semibold">{PANEL_TITLES[panel]}</h2>
+          </div>
+          {panel === 'brand' ? (
+            <BrandPanel {...panelProps} storeName={store.name} logoUrl={(store as { imageUrl?: string | null }).imageUrl ?? null} />
+          ) : null}
+          {panel === 'mosaic' ? <MosaicPanel {...panelProps} /> : null}
+          {panel === 'featured' ? <FeaturedPanel {...panelProps} focus="items" /> : null}
+          {panel === 'bundles' ? <FeaturedPanel {...panelProps} focus="bundles" /> : null}
+          {panel === 'menu' ? <MenuPanel {...panelProps} sections={sections} /> : null}
+          {panel === 'announcements' ? <AnnouncementsPanel {...panelProps} /> : null}
+          {panel === 'business' ? <BusinessPanel storeId={panelProps.storeId} store={store} hours={hours} /> : null}
+        </div>
+      )}
     </aside>
   )
 }

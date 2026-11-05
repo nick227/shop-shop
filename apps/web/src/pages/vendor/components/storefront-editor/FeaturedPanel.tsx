@@ -8,7 +8,7 @@ import type { PanelProps } from './types'
 
 const without = (list: readonly string[], id: string) => list.filter((other) => other !== id)
 
-export function FeaturedPanel({ draft, update, items, bundles }: PanelProps) {
+export function FeaturedPanel({ draft, update, items, bundles, focus }: PanelProps & { readonly focus: 'items' | 'bundles' }) {
   const featured = draft.featured
   const setFeatured = (patch: Partial<typeof featured>) => update((d) => ({ ...d, featured: { ...d.featured, ...patch } }))
   const itemsById = new Map(items.map((item) => [item.id, item]))
@@ -20,7 +20,9 @@ export function FeaturedPanel({ draft, update, items, bundles }: PanelProps) {
 
   return (
     <div className="space-y-5">
-      <PanelSection title="Featured products" description="Pinned products come first, in this order.">
+      {focus === 'items' ? (
+        <>
+      <PanelSection title="Pinned" description="Pinned products lead, in this order.">
         {featured.itemIds.length > 0 ? (
           <ol className="space-y-2">
             {featured.itemIds.map((id, index) => {
@@ -110,6 +112,9 @@ export function FeaturedPanel({ draft, update, items, bundles }: PanelProps) {
         ) : null}
       </PanelSection>
 
+        </>
+      ) : (
+        <>
       <PanelSection
         title="Bundles"
         description={bundles.length === 0 ? 'No active bundles yet. Create them under Menu → Bundles.' : 'Pinned bundles lead; the rest follow unless hidden.'}
@@ -171,6 +176,8 @@ export function FeaturedPanel({ draft, update, items, bundles }: PanelProps) {
           </ul>
         ) : null}
       </PanelSection>
+        </>
+      )}
     </div>
   )
 }

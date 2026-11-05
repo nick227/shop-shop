@@ -85,7 +85,10 @@ export function BusinessHeader({ store, tagline, logoUrl }: {
 
       <div className="min-w-0 space-y-1">
         <h1 className="sf-heading text-3xl font-bold leading-tight text-foreground text-balance sm:text-4xl">{store.name}</h1>
-        {tagline ? <p className="text-base text-muted-foreground">{tagline}</p> : null}
+        {/* A tagline if the vendor wrote one; otherwise the start of their description, so a new store still reads as finished. */}
+        {tagline || store.description ? (
+          <p className="max-w-2xl text-base text-muted-foreground line-clamp-2">{tagline || store.description}</p>
+        ) : null}
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           {rating !== null ? (
             <span className="inline-flex items-center gap-1 font-medium text-foreground">

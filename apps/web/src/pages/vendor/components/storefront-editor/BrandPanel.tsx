@@ -31,27 +31,21 @@ export function BrandPanel({ storeId, draft, update, storeName, logoUrl }: Panel
 
   return (
     <div className="space-y-5">
-      <PanelSection
-        title="Business"
-        description={
-          <>
-            Your name and logo appear everywhere on ShopShop, so they’re changed in{' '}
-            <Link to={vendorPaths.settings(storeId)} className="font-medium text-primary hover:underline">
-              store settings
-            </Link>{' '}
-            and go live right away.
-          </>
-        }
-      >
+      <PanelSection title="Name & tagline">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-12 w-12 rounded-xl object-cover ring-1 ring-border" />
+            <img src={logoUrl} alt="" className="h-10 w-10 rounded-lg object-cover ring-1 ring-border" />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-xs text-muted-foreground">No logo</div>
+            <div className="h-10 w-10 rounded-lg bg-muted" aria-hidden />
           )}
-          <p className="font-semibold">{storeName}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{storeName}</p>
+            <Link to={vendorPaths.settings(storeId)} className="text-xs font-medium text-primary hover:underline">
+              Change name or logo
+            </Link>
+          </div>
         </div>
-        <Field label="Tagline" hint={`${brand.tagline.length}/${STOREFRONT_LIMITS.tagline} · shown under your name`}>
+        <Field label="Tagline" hint={`${brand.tagline.length}/${STOREFRONT_LIMITS.tagline}`}>
           {(id) => (
             <input
               id={id}
@@ -65,7 +59,7 @@ export function BrandPanel({ storeId, draft, update, storeName, logoUrl }: Panel
         </Field>
       </PanelSection>
 
-      <PanelSection title="Colors" description="Pairings chosen to stay readable. Your primary color fills buttons; the accent marks highlights.">
+      <PanelSection title="Colors">
         <ul className="grid grid-cols-4 gap-2" aria-label="Color palettes">
           {STOREFRONT_PALETTES.map((palette) => {
             const selected = brand.paletteId === palette.id

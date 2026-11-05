@@ -93,6 +93,7 @@ beforeEach(() => {
 describe('StorefrontEditorPage', () => {
   it('shows a change in the preview at once, saves it as a draft, and publishes on request', async () => {
     renderEditor()
+    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
     const tagline = await screen.findByRole('textbox', { name: 'Tagline' })
     await userEvent.type(tagline, 'Breakfast all day')
 
@@ -108,20 +109,32 @@ describe('StorefrontEditorPage', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Live'))
   })
 
+  it('opens a part’s settings from the preview and goes back to the outline', async () => {
+    renderEditor()
+    const preview = await screen.findByRole('region', { name: 'Preview' })
+    await userEvent.click(within(preview).getByRole('button', { name: 'Edit brand' }))
+    expect(screen.getByRole('heading', { name: 'Brand & colors' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Back to all parts' }))
+    expect(screen.getByRole('navigation', { name: 'Storefront parts' })).toBeInTheDocument()
+  })
+
   it('switches palettes and keeps the menu fixed between page sections', async () => {
     renderEditor()
-    await userEvent.click(await screen.findByRole('button', { name: 'Harbor' }))
+    await userEvent.click(await screen.findByRole('radio', { name: 'Harbor palette' }))
     const preview = screen.getByRole('region', { name: 'Preview' })
     expect(preview.querySelector<HTMLElement>('.sf-root')!.style.getPropertyValue('--sf-primary')).toBe('#0b4f6c')
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Layout' }))
-    expect(screen.getByText('Menu — always shown')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Hide Featured products' }))
-    expect(screen.getByRole('button', { name: 'Show Featured products' })).toBeInTheDocument()
+    // The outline lists every part; optional ones hide in place and the preview follows.
+    const outline = screen.getByRole('navigation', { name: 'Storefront parts' })
+    expect(within(outline).getByRole('button', { name: /Menu/ })).toBeInTheDocument()
+    await userEvent.click(within(outline).getByRole('button', { name: 'Hide Featured products' }))
+    expect(within(outline).getByRole('button', { name: 'Show Featured products' })).toBeInTheDocument()
+    expect(within(preview).getByText(/hidden from/)).toBeInTheDocument()
   })
 
   it('discards unpublished changes back to the live storefront', async () => {
     renderEditor()
+    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
     await userEvent.type(await screen.findByRole('textbox', { name: 'Tagline' }), 'Draft idea')
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(calls).toContain('POST /api/stores/s1/storefront/discard'))
