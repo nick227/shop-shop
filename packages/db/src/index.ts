@@ -20,7 +20,7 @@ export * from './services/index.js'
 export { BaseCrudController } from './controllers/base.controller.js'
 
 // Re-export adapters (selective to avoid GeocodingConfig/Result duplicates)
-export { verifyWebhookSignature, getStripe } from './adapters/payments.adapter.js'
+export { verifyWebhookSignature, getStripe, isStripeKeyConfigured, setStripeClientForTesting, createRefund } from './adapters/payments.adapter.js'
 export { getStorageAdapter } from './adapters/storage.adapter.js'
 export type { UploadFile } from './adapters/storage.adapter.js'
 

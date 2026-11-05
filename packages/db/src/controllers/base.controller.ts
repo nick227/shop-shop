@@ -20,6 +20,16 @@ export interface AuthenticatedRequest extends FastifyRequest {
   }
 }
 
+const MAX_PAGE_SIZE = 100
+
+/** A positive whole number from a query value, the fallback when absent, capped at `max`; null when invalid. */
+export function pageParam(value: unknown, fallback: number, max: number): number | null {
+  if (value === undefined || value === null || value === '') return fallback
+  const n = typeof value === 'number' ? value : /^\d+$/.test(String(value).trim()) ? Number(String(value).trim()) : Number.NaN
+  if (!Number.isInteger(n) || n < 1) return null
+  return Math.min(n, max)
+}
+
 export class BaseCrudController {
   protected service: BaseCrudService
   
@@ -160,8 +170,12 @@ export class BaseCrudController {
       const querySchema = this.resource.schemas.query
       const query = querySchema ? querySchema.parse(req.query) : req.query as Record<string, unknown>
       
-      const page = (query.page as number) || 1
-      const limit = (query.limit as number) || 20
+      // Query strings arrive as text; a bad page or limit is the caller's mistake, not a server error.
+      const page = pageParam(query.page, 1, Number.MAX_SAFE_INTEGER)
+      const limit = pageParam(query.limit, 20, MAX_PAGE_SIZE)
+      if (page === null || limit === null) {
+        return reply.code(400).send({ error: 'page and limit must be whole numbers of at least 1' })
+      }
       
       // Extract filters from query
       const originalFilters = (query.filters as Record<string, unknown>) || {}

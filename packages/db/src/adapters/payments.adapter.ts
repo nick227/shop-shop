@@ -8,20 +8,32 @@ import { Decimal } from 'decimal.js'
 
 let stripeInstance: Stripe | null = null
 
+/** A real secret or restricted key, not empty and not a `your_…` placeholder. */
+export const isStripeKeyConfigured = (key: string | undefined = process.env.STRIPE_SECRET_KEY): boolean =>
+  /^(sk|rk)_(test|live)_[A-Za-z0-9]+$/.test(key ?? '')
+
+/** Tests substitute a recording client; pass null to go back to the real one. */
+export const setStripeClientForTesting = (client: unknown) => {
+  stripeInstance = client as Stripe | null
+}
+
 /** The platform's Stripe client (also used for Stripe Tax calculations). */
 export const getStripe = (): Stripe => {
   if (!stripeInstance) {
     const apiKey = process.env.STRIPE_SECRET_KEY
-    if (!apiKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is required')
+    if (!isStripeKeyConfigured(apiKey)) {
+      throw new Error('STRIPE_SECRET_KEY is not configured (expected sk_test_… or sk_live_…)')
     }
-    stripeInstance = new Stripe(apiKey, {
+    stripeInstance = new Stripe(apiKey as string, {
       apiVersion: '2024-11-20.acacia' as any, // Type mismatch with Stripe SDK version
       typescript: true,
     })
   }
   return stripeInstance
 }
+
+/** Dollars to whole cents, never a fractional cent. */
+const toCents = (amount: Decimal): number => amount.times(100).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toNumber()
 
 // ========================================
 // Types
@@ -89,7 +101,7 @@ export const createPaymentIntent = async (
   const stripe = getStripe()
   
   // Convert Decimal to cents (integer)
-  const amountInCents = params.amount.times(100).toNumber()
+  const amountInCents = toCents(params.amount)
   
   const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
     amount: amountInCents,
@@ -121,7 +133,7 @@ export const createPaymentIntent = async (
       destination: params.connectedAccountId,
     }
     if (params.applicationFeeAmount && params.applicationFeeAmount.gt(0)) {
-      paymentIntentParams.application_fee_amount = params.applicationFeeAmount.times(100).toNumber()
+      paymentIntentParams.application_fee_amount = toCents(params.applicationFeeAmount)
     }
   }
 
@@ -135,6 +147,23 @@ export const createPaymentIntent = async (
     status: paymentIntent.status,
     amount: paymentIntent.amount,
   }
+}
+
+/** Confirms an existing PaymentIntent with a (possibly new) payment method — a retry after a decline. */
+export const confirmPaymentIntent = async (
+  paymentIntentId: string,
+  paymentMethodId: string
+): Promise<CreatePaymentIntentResult> => {
+  const stripe = getStripe()
+  const intent = await stripe.paymentIntents.confirm(paymentIntentId, { payment_method: paymentMethodId })
+  return { paymentIntentId: intent.id, clientSecret: intent.client_secret!, status: intent.status, amount: intent.amount }
+}
+
+/** A shopper-facing card problem (declined, expired, wrong CVC) and the PaymentIntent it left behind. */
+export const cardFailure = (error: unknown): { message: string; paymentIntentId: string | null } | null => {
+  const e = error as { type?: string; message?: string; raw?: { payment_intent?: { id?: string } }; payment_intent?: { id?: string } }
+  if (e?.type !== 'StripeCardError') return null
+  return { message: e.message ?? 'Your card was declined.', paymentIntentId: e.payment_intent?.id ?? e.raw?.payment_intent?.id ?? null }
 }
 
 export const retrievePaymentIntent = async (
@@ -155,19 +184,32 @@ export const cancelPaymentIntent = async (
 // Refund Operations
 // ========================================
 
+/**
+ * Refunds a payment. For a Connect destination charge the vendor's transfer is reversed with it, so the
+ * platform is not left paying the shopper back alone; a full refund also returns the platform's fee.
+ */
 export const createRefund = async (
   paymentIntentId: string,
   amount?: Decimal,
   idempotencyKey?: string
 ): Promise<Stripe.Refund> => {
   const stripe = getStripe()
-  
+
   const refundParams: Stripe.RefundCreateParams = {
     payment_intent: paymentIntentId,
   }
 
   if (amount) {
-    refundParams.amount = amount.times(100).toNumber()
+    refundParams.amount = toCents(amount)
+  }
+
+  if (paymentIntentId.startsWith('pi_')) {
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    if (intent.transfer_data?.destination) {
+      refundParams.reverse_transfer = true
+      const full = refundParams.amount === undefined || refundParams.amount >= intent.amount
+      if (full && intent.application_fee_amount) refundParams.refund_application_fee = true
+    }
   }
 
   return stripe.refunds.create(refundParams, idempotencyKey ? { idempotencyKey } : undefined)
@@ -213,7 +255,7 @@ export const createTransfer = async (
 ): Promise<CreateTransferResult> => {
   const stripe = getStripe()
   
-  const amountInCents = params.amount.times(100).toNumber()
+  const amountInCents = toCents(params.amount)
   
   const transfer = await stripe.transfers.create({
     amount: amountInCents,

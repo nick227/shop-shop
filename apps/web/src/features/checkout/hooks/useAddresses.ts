@@ -16,7 +16,6 @@ export function useAddresses(enabled: boolean) {
   return useQuery({
     queryKey: KEY,
     queryFn: async (): Promise<SavedAddress[]> => {
-      // No `limit`: the list endpoint passes it to the database as a string and fails.
       const response = await authGet('/api/addresses')
       if (!response.ok) throw new Error('Your addresses could not be loaded')
       const body = (await response.json()) as { data?: SavedAddress[] }

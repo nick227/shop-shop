@@ -152,6 +152,27 @@ describe('Address Routes E2E', () => {
     })
   })
 
+  describe('GET /addresses pagination', () => {
+    it('accepts page and limit from the query string', async () => {
+      for (let i = 0; i < 3; i += 1) await createTestAddress(user.id)
+      const response = await app.inject({ method: 'GET', url: '/addresses?limit=2&page=2', headers: authHeaders(user.token) })
+      expect(response.statusCode).toBe(200)
+      const body = response.json() as { data: unknown[]; page: number; limit: number }
+      expect(body).toMatchObject({ page: 2, limit: 2 })
+      expect(body.data).toHaveLength(1)
+    })
+
+    it('caps a large limit and refuses nonsense with 400, never 500', async () => {
+      const capped = await app.inject({ method: 'GET', url: '/addresses?limit=5000', headers: authHeaders(user.token) })
+      expect(capped.statusCode).toBe(200)
+      expect(capped.json().limit).toBe(100)
+      for (const bad of ['limit=abc', 'limit=0', 'limit=-3', 'page=1.5']) {
+        const response = await app.inject({ method: 'GET', url: `/addresses?${bad}`, headers: authHeaders(user.token) })
+        expect(response.statusCode, bad).toBe(400)
+      }
+    })
+  })
+
   describe('GET /addresses/:id', () => {
     it('should get address by id', async () => {
       const addr = await createTestAddress(user.id)

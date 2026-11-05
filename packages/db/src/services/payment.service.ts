@@ -4,6 +4,8 @@ import { Decimal } from 'decimal.js'
 import {
   createPaymentIntent as stripeCreatePaymentIntent,
   retrievePaymentIntent as stripeRetrievePaymentIntent,
+  confirmPaymentIntent as stripeConfirmPaymentIntent,
+  cardFailure,
   createConnectAccount as stripeCreateConnectAccount,
   createAccountLink as stripeCreateAccountLink,
   retrieveAccount as stripeRetrieveAccount,
@@ -147,24 +149,23 @@ export const processOrderPayment = async (
     throw new Error('STORE_CARD_PAYMENTS_UNAVAILABLE')
   }
 
-  // Idempotency: return existing PaymentIntent if one was already created
+  // One PaymentIntent per order. A retry (double tap, a declined card, an abandoned 3-D Secure check)
+  // confirms that same intent with the card the shopper chose now, so the order is never charged twice.
   if (order.stripePaymentIntentId) {
     const existing = await stripeRetrievePaymentIntent(order.stripePaymentIntentId)
+    const samePm = (typeof existing.payment_method === 'string' ? existing.payment_method : existing.payment_method?.id) === pm
+    const retryable = ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existing.status)
+    if (existing.status !== 'canceled' && !(retryable && !(existing.status === 'requires_action' && samePm))) {
+      console.log(JSON.stringify({ event: 'payment.intent.reused', orderId: order.id, paymentIntentId: existing.id, status: existing.status, timestamp: new Date().toISOString() }))
+      return { paymentIntentId: existing.id, clientSecret: existing.client_secret!, amount: existing.amount, status: existing.status }
+    }
     if (existing.status !== 'canceled') {
-      console.log(
-        JSON.stringify({
-          event: 'payment.intent.reused',
-          orderId: order.id,
-          paymentIntentId: existing.id,
-          status: existing.status,
-          timestamp: new Date().toISOString(),
-        }),
-      )
-      return {
-        paymentIntentId: existing.id,
-        clientSecret: existing.client_secret!,
-        amount: existing.amount,
-        status: existing.status,
+      try {
+        return await stripeConfirmPaymentIntent(existing.id, pm)
+      } catch (error) {
+        const card = cardFailure(error)
+        if (card) throw new Error(`CARD_DECLINED:${card.message}`)
+        throw error
       }
     }
     // Existing PI was canceled — fall through to create a fresh one
@@ -177,19 +178,22 @@ export const processOrderPayment = async (
     paymentMethodId: pm,
     connectedAccountId: order.store.stripeAccountId!,
     applicationFeeAmount: platformApplicationFee(order),
-    idempotencyKey: `paymentintent-order-${order.id}`,
+    idempotencyKey: `paymentintent-order-${order.id}-${pm}`,
   }
 
-  const result = await stripeCreatePaymentIntent(params)
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      stripePaymentIntentId: result.paymentIntentId,
-    },
-  })
-
-  return result
+  try {
+    const result = await stripeCreatePaymentIntent(params)
+    await prisma.order.update({ where: { id: order.id }, data: { stripePaymentIntentId: result.paymentIntentId } })
+    return result
+  } catch (error) {
+    const card = cardFailure(error)
+    if (!card) throw error
+    // Keep the declined intent so the retry confirms it instead of opening another.
+    if (card.paymentIntentId) {
+      await prisma.order.update({ where: { id: order.id }, data: { stripePaymentIntentId: card.paymentIntentId } })
+    }
+    throw new Error(`CARD_DECLINED:${card.message}`)
+  }
 }
 
 // ========================================

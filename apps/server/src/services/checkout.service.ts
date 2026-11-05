@@ -2,6 +2,7 @@ import {
   Decimal,
   prisma,
   processOrderPayment,
+  isStripeKeyConfigured,
   publishOrderCreated,
   getAffiliateByReferralCode,
   assertStoreAcceptsOrders,
@@ -457,6 +458,21 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         referralCodeApplied: false,
       }
     }
+    // A card order still awaiting payment (declined card, abandoned 3-D Secure): pay that same order.
+    if (resolvePaymentRail(input) !== 'COD') {
+      const payment = await chargeOrder(cart.order.id, checkoutUserId, input.paymentMethod.token)
+      return {
+        order: {
+          id: cart.order.id,
+          status: cart.order.status,
+          total: Number(cart.order.total),
+          createdAt: cart.order.createdAt.toISOString(),
+        },
+        paymentId: payment.paymentIntentId,
+        payment: { status: payment.status, clientSecret: payment.clientSecret },
+        referralCodeApplied: false,
+      }
+    }
     throw new AppError(409, 'Order already created for this session')
   }
   if (!cart.expiresAt || new Date() > cart.expiresAt) throw new AppError(410, 'Checkout session has expired')
@@ -493,6 +509,9 @@ export async function completeCheckout(userId: string | undefined, input: Comple
     }
   } else if (input.paymentMethod.token === 'cod_test' || input.paymentMethod.token.startsWith('cod_')) {
     throw new AppError(400, 'Invalid Stripe payment method')
+  } else if (!isStripeKeyConfigured()) {
+    // Refuse before an order exists, rather than leave one waiting on a payment that can't happen.
+    throw new AppError(503, 'Card payments aren’t available right now. Please try again later.')
   }
 
   const orderStatusInitial = rail === 'COD' ? 'PLACED' : 'PENDING_PAYMENT'
@@ -640,31 +659,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   }
 
   // Phase 2 — Stripe (card): PI created/confirmed here; PAID + vendor notify via webhook (durable).
-  let paymentResult
-  try {
-    paymentResult = await processOrderPayment({
-      orderId: order.id,
-      userId: checkoutUserId,
-      paymentMethodId: input.paymentMethod.token,
-    })
-  } catch (paymentError) {
-    const err = paymentError instanceof Error ? paymentError : new Error(String(paymentError))
-    console.error({ orderId: order.id, err: { message: err.message, name: err.name } }, 'payment failed')
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: 'UNPAID' },
-    }).catch(() => {})
-    if (err.message === 'STORE_CARD_PAYMENTS_UNAVAILABLE') {
-      throw new AppError(
-        402,
-        'This store cannot accept card payments yet. Complete Stripe Connect onboarding or choose another payment option.',
-      )
-    }
-    if (err.message === 'INVALID_STRIPE_PAYMENT_METHOD') {
-      throw new AppError(400, 'A valid Stripe card payment is required')
-    }
-    throw err
-  }
+  const paymentResult = await chargeOrder(order.id, checkoutUserId, input.paymentMethod.token)
 
   return {
     order: {
@@ -674,7 +669,26 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       createdAt: order.createdAt.toISOString(),
     },
     paymentId: paymentResult.paymentIntentId,
+    // `requires_action` means the bank wants 3-D Secure; the browser finishes it with the client secret.
+    payment: { status: paymentResult.status, clientSecret: paymentResult.clientSecret },
     referralCodeApplied: attributionApplied,
+  }
+}
+
+/** Charges a card order, turning payment problems into answers the shopper can act on. */
+async function chargeOrder(orderId: string, userId: string, paymentMethodId: string) {
+  try {
+    return await processOrderPayment({ orderId, userId, paymentMethodId })
+  } catch (paymentError) {
+    const err = paymentError instanceof Error ? paymentError : new Error(String(paymentError))
+    console.error({ orderId, err: { message: err.message, name: err.name } }, 'payment failed')
+    if (err.message.startsWith('CARD_DECLINED:')) throw new AppError(402, err.message.slice('CARD_DECLINED:'.length))
+    if (err.message === 'STORE_CARD_PAYMENTS_UNAVAILABLE') {
+      throw new AppError(402, 'This store cannot accept card payments yet. Complete Stripe Connect onboarding or choose another payment option.')
+    }
+    if (err.message === 'INVALID_STRIPE_PAYMENT_METHOD') throw new AppError(400, 'A valid Stripe card payment is required')
+    if (err.message === 'Order already paid') throw new AppError(409, 'This order is already paid')
+    throw new AppError(502, 'We couldn’t reach the payment processor. Your card was not charged; please try again.')
   }
 }
 
