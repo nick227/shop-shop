@@ -15,26 +15,29 @@ import {
 import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
 import { VendorErrors } from './vendor/vendorHelpers.js'
+import { validateZonePolygon } from '../commerce/deliveryZones.js'
+import { deliveryEligibility, resolveDestination } from '../commerce/fulfillment.js'
 
 const GeoJSONPolygonSchema = z.object({
   type: z.literal('Polygon'),
   coordinates: z.array(z.array(z.array(z.number()))),
 })
 
+// A fee of 0 is free delivery; a minimum of null clears it.
 const CreateDeliveryZoneSchema = z.object({
   storeId: z.string().uuid(),
-  name: z.string().min(1),
+  name: z.string().trim().min(1, 'Name the zone').max(60),
   polygonJson: z.unknown(),
-  baseFee: z.number().positive(),
-  minOrder: z.number().positive().optional(),
+  baseFee: z.number().min(0).max(100),
+  minOrder: z.number().min(0).max(1000).nullable().optional(),
   priority: z.number().int().optional(),
 })
 
 const UpdateDeliveryZoneSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().trim().min(1, 'Name the zone').max(60).optional(),
   polygonJson: z.unknown().optional(),
-  baseFee: z.number().positive().optional(),
-  minOrder: z.number().positive().optional(),
+  baseFee: z.number().min(0).max(100).optional(),
+  minOrder: z.number().min(0).max(1000).nullable().optional(),
   isActive: z.boolean().optional(),
   priority: z.number().int().optional(),
 })
@@ -62,6 +65,8 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   }, async (req, reply) => {
     try {
       const input = CreateDeliveryZoneSchema.parse(req.body)
+      const shape = validateZonePolygon(input.polygonJson)
+      if ('error' in shape) return reply.code(400).send({ error: shape.error })
 
       const store = await prisma.store.findUnique({ where: { id: input.storeId }, select: { id: true } })
       if (!store) return reply.code(404).send({ error: 'Store not found' })
@@ -72,9 +77,9 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
       const zone = await createDeliveryZone({
         storeId: input.storeId,
         name: input.name,
-        polygonJson: input.polygonJson,
+        polygonJson: shape.polygon,
         baseFee: input.baseFee,
-        minOrder: input.minOrder,
+        minOrder: input.minOrder ?? undefined,
         priority: input.priority,
       })
       return reply.code(201).send({ zone })
@@ -117,6 +122,11 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
     try {
       const params = req.params as { id: string }
       const input = UpdateDeliveryZoneSchema.parse(req.body)
+      if (input.polygonJson !== undefined) {
+        const shape = validateZonePolygon(input.polygonJson)
+        if ('error' in shape) return reply.code(400).send({ error: shape.error })
+        input.polygonJson = shape.polygon
+      }
 
       const existingZone = await getDeliveryZone(params.id)
       if (!existingZone) return reply.code(404).send({ error: 'Delivery zone not found' })
@@ -179,6 +189,31 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       throw error
     }
+  })
+
+  /**
+   * Vendor preview: would this address get delivery, and for how much? Uses the shopper's eligibility
+   * rules on the saved settings, so what the vendor sees is what shoppers get.
+   */
+  app.post('/stores/:storeId/delivery-preview', { preHandler: [requireVendorWorkspace] }, async (req, reply) => {
+    const { storeId } = req.params as { storeId: string }
+    if (!(await userHasStoreAccess(req.user!.id, req.user!.role, storeId, 'settings'))) {
+      return VendorErrors.forbidden(reply, 'You cannot access settings for this store')
+    }
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
+      select: { id: true, deliveryEnabled: true, pickupEnabled: true, deliveryCharge: true, deliveryDistance: true, deliveryMinimum: true, latitude: true, longitude: true },
+    })
+    if (!store) return reply.code(404).send({ error: 'Store not found' })
+    const body = (req.body ?? {}) as { address?: unknown; subtotal?: number }
+    const destination = await resolveDestination({ deliveryAddress: body.address }, req.user!.id)
+    // Without a subtotal, judge the area as if the order meets the minimum.
+    const subtotal = typeof body.subtotal === 'number' ? body.subtotal : Number(store.deliveryMinimum ?? 0) + 1000
+    const eligibility = await deliveryEligibility(store, destination, subtotal)
+    return reply.send({
+      destination: destination && destination !== 'NOT_FOUND' ? { lat: destination.lat, lng: destination.lng, approximate: destination.approximate } : null,
+      eligibility,
+    })
   })
 
   // POST /delivery-zones/calculate-fee - Calculate delivery fee

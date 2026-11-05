@@ -14,7 +14,7 @@ export interface UpdateDeliveryZoneInput {
   name?: string
   polygonJson?: unknown
   baseFee?: number
-  minOrder?: number
+  minOrder?: number | null
   isActive?: boolean
   priority?: number
 }
