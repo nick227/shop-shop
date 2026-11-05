@@ -35,19 +35,22 @@ export function AboutSection({ store, hours, showMap }: {
 }) {
   const address = storeAddress(store)
   const social = socialEntries(store.socialLinksJson)
-  if (!store.description && !address && !hours?.week && !store.phone && !store.email && social.length === 0) return null
+  const story = Boolean(store.description || store.phone || store.email || social.length > 0)
+  if (!story && !address && !hours?.week) return null
 
   return (
     <section aria-labelledby="sf-about" className="space-y-4">
-      <Heading id="sf-about">About {store.name}</Heading>
-      <div className="sf-about">
-        <div className="space-y-4">
-          {store.description ? (
-            <p className="whitespace-pre-line text-base leading-relaxed text-muted-foreground">{store.description}</p>
-          ) : null}
-          <ContactList phone={store.phone} email={store.email} />
-          {social.length > 0 ? <StoreHeaderSocialRow entries={social} /> : null}
-        </div>
+      <Heading id="sf-about">{story ? `About ${store.name}` : 'Location'}</Heading>
+      <div className={story ? 'sf-about' : 'sf-about is-location'}>
+        {story ? (
+          <div className="space-y-4">
+            {store.description ? (
+              <p className="whitespace-pre-line text-base leading-relaxed text-muted-foreground">{store.description}</p>
+            ) : null}
+            <ContactList phone={store.phone} email={store.email} />
+            {social.length > 0 ? <StoreHeaderSocialRow entries={social} /> : null}
+          </div>
+        ) : null}
         <div className="space-y-4">
           {hours?.week ? (
             <div>
@@ -55,7 +58,7 @@ export function AboutSection({ store, hours, showMap }: {
               <WeeklyHours week={hours.week} className="mt-2" />
             </div>
           ) : null}
-          <LocationBlock store={store} showMap={showMap} />
+          <LocationBlock store={store} showMap={showMap} titled={story} />
         </div>
       </div>
     </section>
@@ -117,14 +120,18 @@ function ContactList({ phone, email }: { readonly phone?: string | null; readonl
   )
 }
 
-function LocationBlock({ store, showMap }: { readonly store: StoreHeaderStore; readonly showMap: boolean }) {
+function LocationBlock({ store, showMap, titled }: {
+  readonly store: StoreHeaderStore
+  readonly showMap: boolean
+  readonly titled: boolean
+}) {
   const address = storeAddress(store)
   if (!address) return null
   const directions = directionsUrl(store)
   const hasCoords = Boolean(store.latitude && store.longitude)
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold">Location</h3>
+      {titled ? <h3 className="text-sm font-semibold">Location</h3> : null}
       <p className="text-sm text-muted-foreground">{address}</p>
       {directions ? (
         <a href={directions} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">

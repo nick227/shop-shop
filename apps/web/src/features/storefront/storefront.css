@@ -9,6 +9,10 @@
   color: hsl(var(--foreground));
 }
 
+.shop-shell .sf-root {
+  background: transparent;
+}
+
 /* A storefront set to light stays light inside a dark app. */
 .sf-light {
   --background: 0 0% 100%;
@@ -204,6 +208,10 @@
 @container storefront (min-width: 48rem) {
   .sf-about {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  .sf-about.is-location {
+    grid-template-columns: minmax(0, 22rem);
   }
 }
 

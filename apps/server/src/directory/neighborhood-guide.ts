@@ -8,6 +8,9 @@ type GuideListing = {
   readonly categoryLabel: string
   readonly addressStreet: string | null
   readonly website: string | null
+  readonly phone: string | null
+  readonly latitude: number | null
+  readonly longitude: number | null
   readonly featured: boolean
   readonly distance: number | null
   readonly orderable: false
@@ -60,6 +63,7 @@ export async function neighborhoodGuide(slug: string) {
       categoryLabel: true,
       addressStreet: true,
       website: true,
+      phone: true,
       featured: true,
       latitude: true,
       longitude: true,
@@ -80,6 +84,9 @@ export async function neighborhoodGuide(slug: string) {
       categoryLabel: row.categoryLabel,
       addressStreet: row.addressStreet,
       website: row.website,
+      phone: row.phone,
+      latitude: row.latitude == null ? null : Number(row.latitude),
+      longitude: row.longitude == null ? null : Number(row.longitude),
       featured,
       distance: point,
       orderable: false,
@@ -89,6 +96,7 @@ export async function neighborhoodGuide(slug: string) {
       const featuredRows = buckets.get('featured') ?? []
       featuredRows.push(listing)
       buckets.set('featured', featuredRows)
+      continue
     }
     const group = guideGroup(row.category, row.categoryLabel)
     if (!group) continue

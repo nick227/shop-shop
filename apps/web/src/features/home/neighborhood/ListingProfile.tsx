@@ -5,8 +5,7 @@ import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/s
 import { Storefront } from '@features/storefront/Storefront'
 import type { StorefrontData } from '@features/storefront/api'
 import { apiOrigin } from './loadDiscovery'
-import { placeCardFromListing } from './PlaceCard'
-import { PlaceGrid, PlaceSkeleton } from './PlaceGrid'
+import { PlaceSkeleton } from './PlaceGrid'
 import { placeTone, type PlaceTone } from './placeTone'
 import '../discovery/discovery.css'
 
@@ -129,7 +128,23 @@ export function ListingProfile() {
             {listing.city ? <> · <Link to="/neighborhoods">{listing.city.name}</Link></> : null}
           </p>
         ) : null}
-        <PlaceGrid label="Nearby" places={(listing.nearby ?? []).map((place) => placeCardFromListing(place))} />
+        {(listing.nearby ?? []).length > 0 ? (
+          <section className="surface-band" aria-label="Nearby">
+            <div className="surface-head">
+              <h2 className="surface-title">Nearby</h2>
+            </div>
+            <div className="feed-row-directory">
+              {(listing.nearby ?? []).map((place) => (
+                <article key={place.id} className="directory-row">
+                  <Link className="directory-row-name" to={`/directory/${place.slug}`}>
+                    <strong>{place.name}</strong>
+                    <span>{[place.categoryLabel, `${place.distance.toFixed(1)} mi`].filter(Boolean).join(' · ')}</span>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {listing.attribution ? <p className="discover-lede">{listing.attribution}</p> : null}
       </div>
     </>

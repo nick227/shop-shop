@@ -225,17 +225,27 @@ export function Storefront({
       const item = itemsById.get(tile.itemId)
       return item && itemImage(item) ? [{ type: 'item', item }] : []
     })
-    if (config.mosaic.tiles.length > 0) return chosen
+    const shown = new Set(carousel.flatMap((item) => {
+      const image = itemImage(item)
+      return image ? [image] : []
+    }))
+    const unseen = (list: readonly ResolvedMosaicTile[]) => list.filter((tile) => {
+      const url = tile.type === 'media' ? tile.media.url : itemImage(tile.item)
+      if (!url || shown.has(url)) return false
+      shown.add(url)
+      return true
+    })
+    if (config.mosaic.tiles.length > 0) return unseen(chosen)
     // Nothing arranged yet: the store's own photos and videos first, then pictured products not
     // already in the carousel. Only real media; never a placeholder.
     const inCarousel = new Set(carousel.map((item) => item.id))
     const products = groups
       .flatMap((group) => group.items)
       .filter((item) => !inCarousel.has(item.id) && canOrderItem(item) && itemImage(item))
-    return [
+    return unseen([
       ...data.media.map((media): ResolvedMosaicTile => ({ type: 'media', media })),
       ...products.map((item): ResolvedMosaicTile => ({ type: 'item', item })),
-    ].slice(0, AUTO_TILES)
+    ]).slice(0, AUTO_TILES)
   }, [config.mosaic.tiles, data.media, itemsById, carousel, groups])
 
   // Products already in the carousel aren't repeated in the Featured row.
@@ -288,7 +298,7 @@ export function Storefront({
   return (
     <StorefrontProvider value={actions}>
       <div className={cn('sf-root', theme.className, className)} style={theme.style}>
-        <div className="mx-auto max-w-6xl space-y-8 px-4 pb-10 pt-6">
+        <div className="mx-auto w-full max-w-[92rem] space-y-8 px-[clamp(1rem,2.4vw,2.5rem)] pb-16 pt-6">
           {part('header', <BusinessHeader store={store} tagline={config.brand.tagline} logoUrl={store.imageUrl ?? null} />)}
           {commerce ? part('ordering', <OrderingStrip ordering={data.ordering} hours={data.hours} />) : null}
 
