@@ -104,13 +104,6 @@ export function NeighborhoodProfile() {
           {profile.postalCodes.length > 0 ? (
             <p className="discover-lede">Associated ZIP codes: {profile.postalCodes.join(', ')}. A ZIP can cover more than one neighborhood, so these codes are not a boundary.</p>
           ) : null}
-          {profile.nearby.length > 0 ? (
-            <div className="place-row">
-              {profile.nearby.map((area) => (
-                <PlaceCard key={area.id} place={placeCardFromNeighborhood(area)} />
-              ))}
-            </div>
-          ) : null}
         </div>
         <div className="hero-map">
           <NeighborhoodMap points={points} userLat={profile.latitude ?? undefined} userLng={profile.longitude ?? undefined} onSelect={(id) => {
@@ -119,6 +112,13 @@ export function NeighborhoodProfile() {
           }} />
         </div>
       </section>
+      {profile.nearby.length > 0 ? (
+        <div className="place-row">
+          {profile.nearby.map((area) => (
+            <PlaceCard key={area.id} place={placeCardFromNeighborhood(area)} />
+          ))}
+        </div>
+      ) : null}
       <NeighborhoodGuide slug={profile.slug} />
       {location ? (
         <MarketFeed tiles={composed.tiles} nearest={composed.nearest} onOpen={open} />

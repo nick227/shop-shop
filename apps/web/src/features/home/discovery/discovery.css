@@ -1688,6 +1688,11 @@ div.hero-story {
   .business-mosaic {
     grid-template-columns: 1.4fr 1fr;
   }
+
+  .discover-hero > .hero-map {
+    align-self: start;
+    height: 22rem;
+  }
 }
 
 @media (min-width: 980px) {
@@ -1706,6 +1711,20 @@ div.hero-story {
 
   .discover-hero .hero-map {
     grid-column: span 3;
+  }
+
+  .discover-hero > .hero-copy {
+    grid-column: 1 / -1;
+  }
+
+  .discover-hero:has(> .hero-map) > .hero-copy {
+    grid-column: span 7;
+  }
+
+  .discover-hero > .hero-map {
+    grid-column: span 5;
+    align-self: start;
+    height: min(32rem, 70vh);
   }
 
   .neighborhood-showcase-row {
