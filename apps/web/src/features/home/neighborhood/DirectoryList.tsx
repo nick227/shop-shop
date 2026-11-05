@@ -24,7 +24,7 @@ export function DirectoryList({ listings, loading = false }: { readonly listings
   const credit = listings.find((listing) => listing.attribution)?.attribution
   return (
     <>
-      <PlaceGrid places={listings.map(placeCardFromListing)} label="Nearby" featureFirst />
+      <PlaceGrid places={listings.map(placeCardFromListing)} label="Directory" featureFirst />
       {credit ? <p className="discover-lede">{credit}</p> : null}
     </>
   )

@@ -62,6 +62,8 @@ export interface StorefrontProps {
   readonly highlight?: StorefrontPartKey | null
   /** Editor only: show or hide an optional section from the preview itself. */
   readonly onToggleSection?: (key: BeforeMenuSection | AfterMenuSection, visible: boolean) => void
+  /** False for a directory profile: same page, without ordering, an empty menu, or a cart. */
+  readonly commerce?: boolean
   readonly className?: string
 }
 
@@ -97,6 +99,7 @@ export function Storefront({
   highlight = null,
   onToggleSection,
   className,
+  commerce = true,
 }: StorefrontProps) {
   const part = (key: StorefrontPartKey, children: ReactNode, onHide?: () => void) => (
     <Part key={key} partKey={key} onEdit={onEditSection} onHide={onHide} highlighted={highlight === key}>
@@ -287,11 +290,11 @@ export function Storefront({
       <div className={cn('sf-root', theme.className, className)} style={theme.style}>
         <div className="mx-auto max-w-6xl space-y-8 px-4 pb-10 pt-6">
           {part('header', <BusinessHeader store={store} tagline={config.brand.tagline} logoUrl={store.imageUrl ?? null} />)}
-          {part('ordering', <OrderingStrip ordering={data.ordering} hours={data.hours} />)}
+          {commerce ? part('ordering', <OrderingStrip ordering={data.ordering} hours={data.hours} />) : null}
 
           {/* The menu bar sits high so every section is a tap away, and sticks for the rest of the page. */}
           <div className="space-y-8">
-            {groups.length > 1 || totalItems > 6 ? (
+            {commerce && (groups.length > 1 || totalItems > 6) ? (
               <MenuBar
                 groups={shownGroups}
                 query={query}
@@ -312,7 +315,7 @@ export function Storefront({
               config.sections.beforeMenu.map((section) => optional(section, beforeMenu[section.key]))
             )}
 
-            {part(
+            {commerce ? part(
               'menu',
               groups.length > 0 ? (
                 <MenuSections
@@ -326,14 +329,14 @@ export function Storefront({
                   Nothing on the menu right now. Check back soon.
                 </p>
               ),
-            )}
+            ) : null}
 
             {searching
               ? null
               : config.sections.afterMenu.map((section) => optional(section, afterMenu[section.key]))}
           </div>
 
-          {mode === 'live' ? <CartBar storeId={store.id} /> : null}
+          {commerce && mode === 'live' ? <CartBar storeId={store.id} /> : null}
         </div>
         <ItemSheet item={openItemData} onClose={closeItem} />
       </div>

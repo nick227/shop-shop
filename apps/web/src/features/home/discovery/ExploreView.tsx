@@ -5,9 +5,11 @@ import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
 import { itemImage } from '@features/storefront/components/ProductTile'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 import { HOME_RADIUS_MILES, rememberedPlace } from '../shell/placeMemory'
+import { realPhoto } from './photo'
 import { NeighborhoodMap } from './NeighborhoodMap'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
 import { useDirectory } from '../neighborhood/useDirectory'
+import { MemberShops } from '../neighborhood/MemberShops'
 import { PlaceCard, placeCardFromListing } from '../neighborhood/PlaceCard'
 import { PlaceGrid, PlaceSkeleton } from '../neighborhood/PlaceGrid'
 import { neighborhoodPath } from '../neighborhood/neighborhoodHero'
@@ -76,8 +78,18 @@ export function ExploreView() {
               <p className="discover-lede">A ZIP can include more than one neighborhood. <Link to="/neighborhoods">Browse the city</Link></p>
             </section>
           ) : null}
-          {directory.isLoading ? <PlaceSkeleton /> : <PlaceGrid places={listings.map(placeCardFromListing)} label={q ? `Places matching “${q}”` : 'Places'} featureFirst />}
-          {!directory.isLoading && listings.length === 0 ? <p className="discover-lede">No published places match.</p> : null}
+          <MemberShops stores={data.stores.slice(0, 8).map((store) => {
+            const photo = store as typeof store & { imageUrl?: string | null; mediaAssets?: readonly { url?: string | null }[]; distance?: number }
+            return {
+              id: store.id,
+              name: store.name,
+              typeLabel: 'Shop',
+              distance: photo.distance,
+              image: realPhoto(photo.mediaAssets?.find((asset) => asset.url)?.url) ?? realPhoto(photo.imageUrl),
+            }
+          })} />
+          {directory.isLoading ? <PlaceSkeleton /> : <PlaceGrid places={listings.map(placeCardFromListing)} label={q ? `Directory matching “${q}”` : 'Directory'} featureFirst />}
+          {!directory.isLoading && listings.length === 0 ? <p className="discover-lede">Directory listings show up here after an admin publishes them.</p> : null}
           {products.length > 0 ? (
             <section className="place-band" aria-label="Products">
               <p className="tile-kicker">From shops</p>

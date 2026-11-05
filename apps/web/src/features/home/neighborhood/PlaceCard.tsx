@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { realPhoto } from '../discovery/photo'
 import { placeTone } from './placeTone'
 
 export type PlaceCardData = {
@@ -35,17 +36,18 @@ export function placeCardFromListing(listing: {
     category: listing.category,
     categoryLabel: listing.categoryLabel,
     meta: bits.join(' · ') || null,
-    imageUrl: listing.coverUrl ?? null,
+    imageUrl: realPhoto(listing.coverUrl) ?? null,
   }
 }
 
 export function PlaceCard({ place, feature = false }: { readonly place: PlaceCardData; readonly feature?: boolean }) {
   const [failed, setFailed] = useState(false)
-  const photo = Boolean(place.imageUrl) && !failed
+  const photoUrl = realPhoto(place.imageUrl)
+  const photo = Boolean(photoUrl) && !failed
   const tone = placeTone(place.category, place.categoryLabel)
   return (
     <Link to={place.href} className={`place-card tone-${tone}${feature ? ' is-feature' : ''}${photo ? '' : ' is-mark'}`}>
-      {photo ? <img src={place.imageUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+      {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
       <span className="place-card-copy">
         <strong>{place.name}</strong>
         <span>{[place.categoryLabel, place.meta].filter(Boolean).join(' · ')}</span>

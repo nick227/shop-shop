@@ -13,6 +13,7 @@ import { LocationHero } from './Opening'
 import { RecentFeed } from './RecentFeed'
 import { DirectoryList } from '../neighborhood/DirectoryList'
 import { DirectorySections } from '../neighborhood/DirectorySections'
+import { MemberShops } from '../neighborhood/MemberShops'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
@@ -103,8 +104,14 @@ export function DiscoveryPage() {
         onSelectStore={openStore}
         neighborhoods={data.neighborhoods}
       />
-      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading && Boolean(data.location)} />
-      <DirectorySections listings={(directory.data ?? []).slice(8)} />
+      <MemberShops stores={composed.nearest} />
+      {data.location ? (
+        <MarketFeed
+          tiles={marketTiles}
+          nearest={composed.nearest}
+          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
+        />
+      ) : null}
       <RecentFeed
         orders={account.orders}
         savedItems={account.favorites.items}
@@ -114,14 +121,8 @@ export function DiscoveryPage() {
         tiles={composed.tiles}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
-
-      {data.location ? (
-        <MarketFeed
-          tiles={marketTiles}
-          nearest={composed.nearest}
-          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-        />
-      ) : null}
+      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading && Boolean(data.location)} />
+      <DirectorySections listings={(directory.data ?? []).slice(8)} />
 
       {selected ? (
         <DetailPanel

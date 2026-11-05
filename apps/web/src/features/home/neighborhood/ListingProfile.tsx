@@ -1,11 +1,14 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import '../discovery/discovery.css'
+import { defaultStorefrontConfig, STOREFRONT_PALETTES, type StorefrontConfig } from '@packages/shared/storefront'
+import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
+import { Storefront } from '@features/storefront/Storefront'
+import type { StorefrontData } from '@features/storefront/api'
 import { apiOrigin } from './loadDiscovery'
-import { directionsUrl } from './directoryLinks'
 import { placeCardFromListing } from './PlaceCard'
 import { PlaceGrid, PlaceSkeleton } from './PlaceGrid'
-import { placeTone } from './placeTone'
+import { placeTone, type PlaceTone } from './placeTone'
+import '../discovery/discovery.css'
 
 type Nearby = {
   readonly id: string
@@ -16,10 +19,10 @@ type Nearby = {
 }
 
 type Listing = {
+  readonly id?: string
   readonly name: string
-  readonly slug?: string
-  readonly category?: string
   readonly categoryLabel: string
+  readonly category?: string
   readonly phone: string | null
   readonly website: string | null
   readonly description: string | null
@@ -39,6 +42,44 @@ type Listing = {
   readonly nearby?: readonly Nearby[]
 }
 
+const PALETTE: Record<PlaceTone, string> = {
+  food: 'tomato',
+  drink: 'espresso',
+  shop: 'market',
+  arts: 'harbor',
+  outdoors: 'market',
+  place: 'market',
+}
+
+function directoryConfig(listing: Listing, images: readonly string[]): StorefrontConfig {
+  const base = defaultStorefrontConfig()
+  const palette = STOREFRONT_PALETTES.find((item) => item.id === PALETTE[placeTone(listing.category, listing.categoryLabel)]) ?? STOREFRONT_PALETTES[0]
+  return {
+    ...base,
+    brand: { ...base.brand, tagline: listing.categoryLabel, paletteId: palette.id, primary: palette.primary, accent: palette.accent },
+    mosaic: { featuredItemId: null, tiles: images.map((_, index) => ({ type: 'media' as const, mediaId: `photo-${index}` })) },
+    sections: {
+      beforeMenu: base.sections.beforeMenu.map((section) => ({ ...section, visible: section.key === 'mosaic' && images.length > 0 })),
+      afterMenu: base.sections.afterMenu.map((section) => ({ ...section, visible: section.key === 'about' || (section.key === 'gallery' && images.length > 0) })),
+    },
+  }
+}
+
+function directoryData(listing: Listing, images: readonly string[], videos: readonly string[]): StorefrontData {
+  return {
+    config: directoryConfig(listing, images),
+    view: 'published',
+    ordering: { acceptingOrders: false, message: null, pickupEnabled: false, deliveryEnabled: false, prepTimeMin: 0, deliveryCharge: null, deliveryDistanceMiles: null },
+    hours: null,
+    popularItemIds: [],
+    media: [
+      ...images.map((url, index) => ({ id: `photo-${index}`, url, kind: 'IMAGE', altText: null })),
+      ...videos.map((url, index) => ({ id: `video-${index}`, url, kind: 'VIDEO', altText: null })),
+    ],
+    bundles: [],
+  }
+}
+
 export function ListingProfile() {
   const { slug } = useParams()
   const query = useQuery({
@@ -56,47 +97,41 @@ export function ListingProfile() {
   if (!query.data) return <p className="discover discover-lede">This place is not in the directory.</p>
   const listing = query.data
   if (listing.store) return <Navigate to={`/kitchen/${listing.store.slug}`} replace />
-  const address = [listing.addressStreet, listing.addressCity, listing.addressState, listing.addressZip].filter(Boolean).join(', ')
-  const directions = listing.latitude != null && listing.longitude != null ? directionsUrl(listing.latitude, listing.longitude) : null
   const images = listing.images ?? []
+  const data = directoryData(listing, images, listing.videos ?? [])
+  const store = {
+    id: listing.id ?? slug ?? listing.name,
+    name: listing.name,
+    phone: listing.phone,
+    website: listing.website,
+    description: listing.description,
+    addressStreet: listing.addressStreet,
+    addressCity: listing.addressCity,
+    addressState: listing.addressState,
+    addressZip: listing.addressZip,
+    latitude: listing.latitude,
+    longitude: listing.longitude,
+    imageUrl: images[0] ?? null,
+  } as unknown as StoreHeaderStore
   const areas = [
     ...(listing.neighborhood ? [listing.neighborhood] : []),
     ...(listing.neighborhoods ?? []).filter((area) => area.slug !== listing.neighborhood?.slug),
   ]
-  const initials = listing.name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('')
   return (
-    <div className="discover business-page">
-      <header className="business-head">
-        <span className={`place-mark tone-${placeTone(listing.category, listing.categoryLabel)}`} aria-hidden><strong>{initials}</strong></span>
-        <div>
-          <p className="tile-kicker">{listing.categoryLabel}</p>
-          <h1 className="business-name">{listing.name}</h1>
-          {address ? <p className="discover-where">{address}</p> : null}
-        </div>
-        <div className="business-actions">
-          {listing.phone ? <a href={`tel:${listing.phone}`}>Call</a> : null}
-          {listing.website ? <a href={listing.website} target="_blank" rel="noreferrer">Website</a> : null}
-          {directions ? <a href={directions} target="_blank" rel="noreferrer">Directions</a> : null}
-          {listing.city ? <Link to="/neighborhoods">{listing.city.name}</Link> : null}
-        </div>
-      </header>
-      {images.length > 0 ? (
-        <div className="business-mosaic">{images.map((url) => <img key={url} src={url} alt="" />)}</div>
-      ) : null}
-      {(listing.videos ?? []).map((url) => <video key={url} className="business-video" src={url} controls playsInline />)}
-      {listing.description ? <p className="discover-lede">{listing.description}</p> : null}
-      {areas.length > 0 ? (
-        <p className="discover-lede">
-          {areas.map((area, index) => (
-            <span key={area.slug}>{index > 0 ? ' · ' : null}<Link to={`/neighborhoods/${area.slug}`}>{area.name}</Link></span>
-          ))}
-        </p>
-      ) : null}
-      <PlaceGrid
-        label="Nearby"
-        places={(listing.nearby ?? []).map((place) => placeCardFromListing(place))}
-      />
-      {listing.attribution ? <p className="discover-lede">{listing.attribution}</p> : null}
-    </div>
+    <>
+      <Storefront store={store} data={data} config={data.config} items={[]} sections={[]} bundles={[]} mode="live" stickyTop={60} commerce={false} />
+      <div className="discover">
+        {areas.length > 0 ? (
+          <p className="discover-lede">
+            {areas.map((area, index) => (
+              <span key={area.slug}>{index > 0 ? ' · ' : null}<Link to={`/neighborhoods/${area.slug}`}>{area.name}</Link></span>
+            ))}
+            {listing.city ? <> · <Link to="/neighborhoods">{listing.city.name}</Link></> : null}
+          </p>
+        ) : null}
+        <PlaceGrid label="Nearby" places={(listing.nearby ?? []).map((place) => placeCardFromListing(place))} />
+        {listing.attribution ? <p className="discover-lede">{listing.attribution}</p> : null}
+      </div>
+    </>
   )
 }

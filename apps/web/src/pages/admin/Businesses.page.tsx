@@ -33,9 +33,9 @@ export default function AdminBusinessesPage() {
   const [category, setCategory] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [source, setSource] = useState('')
-  const [published, setPublished] = useState('')
-  const [sort, setSort] = useState('name')
-  const [filters, setFilters] = useState({ q: '', zip: '', city: '', category: '', neighborhood: '', source: '', published: '', sort: 'name' })
+  const [published, setPublished] = useState('false')
+  const [sort, setSort] = useState('imported')
+  const [filters, setFilters] = useState({ q: '', zip: '', city: '', category: '', neighborhood: '', source: '', published: 'false', sort: 'imported' })
   const [picked, setPicked] = useState<string[]>([])
   const [error, setError] = useState<string | undefined>()
 
@@ -72,6 +72,7 @@ export default function AdminBusinessesPage() {
         <h1 className="text-xl font-semibold">Directory</h1>
         <Link className="text-sm underline" to="/admin/businesses/import">Import</Link>
       </div>
+      <p className="text-sm text-muted-foreground">Imported listings stay unpublished until you publish them. Nothing goes on the public site without that step.</p>
       <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); setFilters({ q, zip, city, category, neighborhood, source, published, sort }) }}>
         <input className="rounded-md border border-border px-3 py-2 text-sm" placeholder="Business name" value={q} onChange={(event) => setQ(event.target.value)} />
         <input className="w-28 rounded-md border border-border px-3 py-2 text-sm" placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} />

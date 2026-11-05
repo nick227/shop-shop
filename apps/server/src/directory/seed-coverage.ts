@@ -73,7 +73,7 @@ async function writeListings(candidates: readonly ListingCandidate[], areas: rea
       placeId: placeForZip(zip, links, cityId),
       source: candidate.source,
       sourceId: candidate.sourceId,
-      published: true,
+      published: false,
     }]
   })
   for (let index = 0; index < rows.length; index += 200) {
