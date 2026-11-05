@@ -1,12 +1,13 @@
 .discover {
-  width: min(100%, 90rem);
-  margin: 0 auto;
-  padding: 0.5rem 1.25rem 5rem;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem clamp(1.25rem, 2vw, 2.75rem) 5rem;
   color: var(--ink);
 }
 
 .tile-kicker {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.3rem;
   font-family: "DM Mono", ui-monospace, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -23,12 +24,11 @@
   margin: 0;
   max-width: 100%;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  font-size: clamp(2.75rem, 13cqi, 7.4rem);
+  font-size: clamp(2.15rem, 4.2vw, 3.6rem);
   font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 0.86;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
   overflow-wrap: break-word;
-  text-transform: uppercase;
 }
 
 .discover-lede,
@@ -38,8 +38,1202 @@
   color: var(--quiet);
 }
 
-.discover-lede { max-width: 28rem; margin: 0.8rem 0 0; font-size: 1.05rem; }
-.discover-where { margin: 0.8rem 0 0; font-size: 0.9rem; }
+.discover-lede {
+  max-width: 38rem;
+  margin: 0.65rem 0 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.discover-where {
+  margin: 0.55rem 0 0;
+  max-width: 42rem;
+  color: #3c463e;
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   Surface 1: Living Location Header
+   ========================================================================== */
+
+.discover-hero {
+  display: grid;
+  gap: 1.5rem 2.5rem;
+  align-items: start;
+  margin-bottom: 2.5rem;
+}
+
+.hero-story {
+  display: block;
+  width: min(100%, 36rem);
+  margin-top: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hero-story strong {
+  display: block;
+  margin-top: 0.65rem;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.living-header-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.living-location-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.location-identity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.15rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--air);
+  font-size: 0.82rem;
+}
+
+.location-identity-pill strong {
+  font-weight: 700;
+}
+
+.location-change-btn,
+.location-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.15rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.location-change-btn:hover,
+.location-map-link:hover {
+  border-color: var(--leaf);
+  background: #f0f6f2;
+}
+
+.living-zip-drawer {
+  max-width: 24rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--paper);
+}
+
+.living-zip-switcher,
+.living-neighborhood-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.switcher-label {
+  margin-right: 0.2rem;
+  color: var(--quiet);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.living-zip-switcher .explore-filters {
+  margin-top: 0;
+  gap: 0.35rem;
+}
+
+.living-zip-switcher .explore-filters button {
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  background: var(--paper);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.living-zip-switcher .explore-filters button.is-on {
+  border-color: var(--leaf);
+  background: var(--leaf);
+  color: #ffffff;
+}
+
+.neighborhood-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.68rem;
+  border: 1px solid rgba(20, 92, 56, 0.22);
+  border-radius: 999px;
+  background: #edf4ef;
+  color: var(--leaf);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.neighborhood-tag-pill:hover {
+  background: var(--leaf);
+  color: #ffffff;
+}
+
+.neighborhood-tag-more {
+  margin-left: 0.25rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.16rem;
+}
+
+.living-header-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.living-spotlight-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 11.5rem;
+  padding: 1rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1rem;
+  background: #1c3124;
+  color: #f9f6f0;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.living-spotlight-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms ease;
+}
+
+.living-spotlight-card:hover .living-spotlight-img {
+  transform: scale(1.03);
+}
+
+.living-spotlight-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 25, 19, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.spotlight-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #a7e3be;
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.living-spotlight-copy strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.living-spotlight-copy span:last-child {
+  color: rgba(249, 246, 240, 0.84);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.living-map-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+}
+
+.living-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--quiet);
+}
+
+.living-map-head a {
+  color: var(--leaf);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.living-map-panel .hero-map {
+  min-height: 10.5rem;
+  height: 10.5rem;
+  border-radius: 0;
+}
+
+.living-map-panel .hero-map .discover-map {
+  min-height: 10.5rem;
+  height: 10.5rem;
+}
+
+/* Platform Gateway (No-ZIP feature bar) */
+
+.platform-gateway {
+  margin: 0 0 1.5rem;
+}
+
+.gateway-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.gateway-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding: 0.95rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.gateway-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--leaf);
+  box-shadow: 0 8px 20px rgba(20, 32, 24, 0.06);
+}
+
+.gateway-badge {
+  align-self: flex-start;
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  background: #edf4ef;
+  color: var(--leaf);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gateway-card strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.gateway-card span:last-child {
+  color: var(--quiet);
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   Surface 4 (Visual Anchor): Explore Neighborhoods
+   ========================================================================== */
+
+.neighborhoods-anchor {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.browse-all-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink) !important;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+.browse-all-link:hover {
+  border-color: var(--leaf);
+  color: var(--leaf) !important;
+}
+
+.neighborhood-showcase-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15.5rem, 76vw);
+  gap: 0.9rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.25rem;
+}
+
+.place-card.is-neighborhood {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 16 / 10;
+  min-height: 11.5rem;
+  overflow: hidden;
+  border-radius: 1.05rem;
+  color: #f9f6f0;
+  text-decoration: none;
+  scroll-snap-align: start;
+  box-shadow: 0 8px 22px rgba(20, 32, 24, 0.1);
+}
+
+.place-card.is-neighborhood img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms ease;
+}
+
+.place-card.is-neighborhood:hover img {
+  transform: scale(1.04);
+}
+
+.neighborhood-card-badge {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin: 0.75rem 0.85rem 0;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(15, 25, 19, 0.68);
+  backdrop-filter: blur(6px);
+  color: #f4e8c1;
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.place-card.is-neighborhood.is-quiet {
+  aspect-ratio: auto;
+  min-height: 8.5rem;
+  justify-content: flex-end;
+  padding: 1.15rem 1.15rem 1rem;
+  background: var(--ink);
+  box-shadow: none;
+}
+
+.place-card.is-neighborhood.is-quiet .place-card-copy {
+  padding: 0;
+  background: none;
+}
+
+.place-card.is-neighborhood.is-quiet .place-card-copy strong {
+  font-size: clamp(1.7rem, 2.2vw, 2.35rem);
+}
+
+.place-card.is-neighborhood .place-card-copy {
+  position: relative;
+  z-index: 1;
+  padding: 1.8rem 0.95rem 0.9rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(12, 22, 16, 0.88) 72%);
+}
+
+.place-card.is-neighborhood .place-card-copy strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.42rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.place-card.is-neighborhood .place-card-copy span {
+  margin-top: 0.22rem;
+  color: rgba(249, 246, 240, 0.9);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.place-card.is-neighborhood.is-quiet .place-card-copy {
+  padding: 0;
+  background: none;
+}
+
+.place-card.is-neighborhood.is-quiet .place-card-copy strong {
+  font-size: clamp(1.7rem, 2.2vw, 2.35rem);
+}
+
+/* ==========================================================================
+   Surfaces 2 & 3 Combined: Personal Area (For You + Your Collection)
+   ========================================================================== */
+
+.personal-hub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.personal-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.shelf-head .surface-note {
+  flex: 1 1 16rem;
+  max-width: 36rem;
+  text-align: right;
+}
+
+.shelf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.shelf-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+.shelf-card-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.shelf-card {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 2.6rem 0.55rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: #faf7f0;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.shelf-card:hover {
+  border-color: var(--leaf);
+  background: #f2f7f3;
+}
+
+.shelf-card.is-quiet {
+  grid-template-columns: minmax(0, 1fr);
+  background: transparent;
+}
+
+.shelf-thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.6rem;
+  object-fit: cover;
+}
+
+.shelf-monogram {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #ede7d9;
+  color: var(--ink);
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.shelf-monogram.is-store {
+  background: #e4efe8;
+  color: var(--leaf);
+}
+
+.shelf-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shelf-copy .reason-pill {
+  margin: 0 0 0.1rem;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  letter-spacing: 0.04em;
+}
+
+.reason-pill.is-saved-pill {
+  background: #dceee3;
+  color: var(--leaf);
+}
+
+.shelf-copy strong {
+  font-size: 0.94rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shelf-copy span:last-child {
+  color: var(--quiet);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shelf-card-wrap .card-save {
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+}
+
+.shelf-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 0.9rem;
+  background: #faf7f0;
+  color: var(--quiet);
+}
+
+.shelf-empty strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.shelf-empty .discover-lede {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   Surface 5: Featured Local Businesses (Mixed Editorial Layout)
+   ========================================================================== */
+
+.featured-businesses-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.featured-lead-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.2rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.featured-lead-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--leaf);
+  box-shadow: 0 12px 28px rgba(20, 32, 24, 0.08);
+}
+
+.featured-lead-media {
+  position: relative;
+  min-height: 14rem;
+  background: #e9e2d4;
+}
+
+.featured-lead-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-lead-typo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(135deg, #f3ede0 0%, #e5efe8 100%);
+}
+
+.featured-lead-badge {
+  display: inline-flex;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: var(--leaf);
+  color: #ffffff;
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.featured-lead-media .featured-lead-badge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+}
+
+.featured-lead-monogram {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 0.85rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--leaf);
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.featured-lead-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.45rem;
+  padding: 1.25rem 1.4rem;
+}
+
+.featured-lead-title {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+.featured-lead-summary {
+  margin: 0;
+  color: var(--quiet);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.featured-lead-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  color: var(--leaf);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.featured-supporting-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+/* ==========================================================================
+   Distinct PlaceCard Variants (Business vs Attraction vs Neighborhood)
+   ========================================================================== */
+
+.place-card.is-business.is-quiet {
+  display: block;
+  min-height: 0;
+  padding: 0.75rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.place-card.is-business.is-quiet:hover {
+  border-color: var(--leaf);
+  transform: translateY(-1px);
+}
+
+.business-monogram {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #f5f0e5;
+  color: var(--leaf);
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.place-card.is-business.is-quiet .place-card-copy {
+  padding: 0;
+  margin: 0;
+  background: none;
+  color: var(--ink);
+}
+
+.place-card-kicker {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--leaf);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.place-card.is-business.is-quiet .place-card-copy strong {
+  color: var(--ink);
+  font-size: 1.12rem;
+  line-height: 1.15;
+}
+
+.place-card.is-business.is-quiet .place-card-copy span:last-child {
+  color: var(--quiet);
+  font-size: 0.8rem;
+}
+
+.place-card.is-business.has-photo {
+  min-height: 11rem;
+  border: 1px solid var(--line);
+}
+
+.place-card.is-business.has-photo .place-card-kicker {
+  color: #b7ebca;
+}
+
+/* Attraction Card Variant */
+
+.place-card.is-attraction.is-guide {
+  display: block;
+  min-height: 0;
+  padding: 0.75rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.attraction-crest {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: #e1ead6;
+  color: #3f6212;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-weight: 800;
+}
+
+.place-card.is-attraction.is-guide .place-card-copy {
+  padding: 0;
+  background: none;
+  color: var(--ink);
+}
+
+.place-card.is-attraction.is-guide .place-card-kicker {
+  color: #3f6212;
+}
+
+/* ==========================================================================
+   Surface 6: Browse by Category
+   ========================================================================== */
+
+.circle-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.8rem, 1fr));
+  gap: 0.65rem;
+}
+
+.circle-cat {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.circle-cat:hover {
+  border-color: var(--leaf);
+  transform: translateY(-1px);
+}
+
+.circle-mark {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  border-radius: 0.65rem;
+  background: var(--field);
+  color: var(--leaf);
+}
+
+.circle-cat.is-on {
+  border-color: var(--leaf);
+  background: var(--leaf);
+  color: #ffffff;
+}
+
+.circle-cat.is-on .circle-mark {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Surface 7: Infinite Discovery Feed (Mixed Content & Sizes)
+   ========================================================================== */
+
+.market-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.discovery-mixed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  align-items: start;
+  gap: 0.9rem 1rem;
+}
+
+.feed-card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 1. Product Tile Treatment (Compact 1:1 square frame on crisp paper) */
+
+.feed-product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.feed-product-card:hover {
+  border-color: var(--leaf);
+  box-shadow: 0 8px 20px rgba(20, 32, 24, 0.06);
+}
+
+.product-media-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  background: #f5f1e8;
+}
+
+.product-square-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem;
+  background: radial-gradient(circle at 50% 35%, #fdfbf6 0%, #efe8d8 100%);
+  color: var(--ink);
+  text-align: center;
+}
+
+.product-fallback-initial {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--leaf);
+}
+
+.product-fallback-store {
+  color: var(--quiet);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.product-price-tag {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 0.45rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(20, 32, 24, 0.86);
+  color: #ffffff;
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0.55rem;
+}
+
+.product-card-body .is-product-pill {
+  margin-top: 0;
+  margin-bottom: 0.2rem;
+}
+
+.product-card-body strong {
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.product-card-body p {
+  margin: 0.18rem 0 0;
+  color: var(--quiet);
+  font-size: 0.8rem;
+}
+
+/* 2. Business Feed Card Treatment */
+
+.product-price-tag.is-inline {
+  position: static;
+  display: inline-block;
+  margin-bottom: 0.35rem;
+}
+
+.feed-place-cell .place-card.is-quiet,
+.feed-place-cell .place-card.is-guide {
+  height: auto;
+}
+
+.feed-business-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: #faf6ed;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease;
+}
+
+.feed-business-card:hover {
+  border-color: var(--leaf);
+}
+
+.feed-business-card.is-quiet {
+  flex-direction: row;
+  align-items: center;
+  height: auto;
+  min-height: 0;
+  padding: 0.7rem 2.6rem 0.7rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.feed-business-img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 0.65rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+}
+
+.feed-business-crest {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  padding: 0.4rem 0.65rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--paper);
+  color: var(--leaf);
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-weight: 800;
+}
+
+.feed-business-body strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.feed-business-body p {
+  margin: 0.2rem 0 0;
+  color: var(--quiet);
+  font-size: 0.82rem;
+}
+
+/* 3. Story / Activity Card Treatment (Spans 2 columns) */
+
+.feed-story-card:has(img) {
+  grid-column: span 2;
+}
+
+.feed-story-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 1.2rem;
+  border: 1px solid #d8ceb8;
+  border-radius: 1.1rem;
+  background: linear-gradient(135deg, #f5efe0 0%, #ede3cc 100%);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.feed-story-img {
+  width: 100%;
+  max-height: 12rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
+.story-kicker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--air);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.feed-story-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.feed-story-body strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  line-height: 1.08;
+}
+
+.feed-story-body p {
+  margin: 0;
+  color: #46433a;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.story-attribution {
+  color: var(--leaf);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Shared / Legacy Discovery Rules (Preserved for DetailPanel, Explore, Profiles)
+   ========================================================================== */
 
 .hero-cover {
   display: block;
@@ -84,15 +1278,6 @@
   margin-top: 0.15rem;
 }
 
-.hero-areas .directory-actions a,
-.discover-hero .directory-actions a {
-  display: inline;
-  color: var(--quiet);
-  font-size: 0.9rem;
-  text-decoration: underline;
-  text-underline-offset: 0.15rem;
-}
-
 .place-gallery {
   display: flex;
   gap: 0.5rem;
@@ -107,53 +1292,56 @@
   border-radius: 0.75rem;
 }
 
-.discover-hero {
-  display: grid;
-  gap: 1.25rem;
-  align-items: stretch;
-  margin-bottom: 2.2rem;
-}
-
-.hero-story strong,
-.detail-copy h2 {
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  letter-spacing: -0.04em;
-}
-
-.hero-story {
-  display: block;
-  width: 100%;
-  margin-top: 1.2rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.hero-story strong { display: block; margin: 0.15rem 0; font-size: 1.7rem; line-height: 0.95; }
-.hero-story span:last-child { display: block; font-size: 0.95rem; }
-
-.hero-near { margin: 1rem 0 0; padding: 0; list-style: none; }
-.hero-near button {
+.hero-near {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  width: 100%;
-  padding: 0.55rem 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.hero-near li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.hero-near button {
   border: 0;
-  border-top: 1px solid var(--line);
   background: transparent;
   color: inherit;
-  text-align: left;
+  font-size: 0.8rem;
   cursor: pointer;
 }
-.hero-near strong { font-size: 0.95rem; }
-.hero-near span { font-size: 0.82rem; white-space: nowrap; }
-ul.hero-near li { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: nowrap; justify-content: space-between; align-items: center; }
 
-.hero-map { position: relative; z-index: 0; min-height: 22rem; border-radius: 0.85rem; overflow: hidden; isolation: isolate; }
-.hero-map .discover-map { height: 100%; min-height: 22rem; border-radius: 0; }
+.hero-near strong {
+  font-size: 0.82rem;
+}
+
+.hero-near span {
+  font-size: 0.75rem;
+  color: var(--quiet);
+}
+
+.hero-map {
+  position: relative;
+  z-index: 0;
+  min-height: 11rem;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-map .discover-map {
+  height: 100%;
+  min-height: 11rem;
+  border-radius: 0;
+}
 
 .detail-photo img,
 .detail-photo .brand-fall {
@@ -164,153 +1352,111 @@ ul.hero-near li { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: no
   background: var(--leaf);
 }
 
-.tile-photo, .tile-tall, .brand-fall {
+.tile-photo,
+.tile-tall,
+.brand-fall {
   width: 100%;
   object-fit: cover;
   border-radius: 0.65rem;
-  background: var(--leaf);
+  background: #ede6d6;
 }
+
 .tile-photo { aspect-ratio: 4 / 3; }
-.tile-tall { aspect-ratio: 3 / 4; }
+.tile-tall { aspect-ratio: 1 / 1; }
+
 .brand-fall {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f6f3ec;
+  color: var(--leaf);
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  font-size: 2.4rem;
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: -0.04em;
 }
-
-.recent-feed { margin-bottom: 2.4rem; }
-.recent-feed h2 {
-  margin: 0;
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.92;
-  font-size: clamp(2rem, 4vw, 3rem);
-}
-.recent-row {
-  display: grid;
-  grid-auto-columns: 10.5rem;
-  grid-auto-flow: column;
-  align-items: start;
-  gap: 0.85rem;
-  margin-top: 0.8rem;
-  overflow-x: auto;
-}
-.portrait-card {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.recent-row .portrait-card .tile-tall,
-.recent-row .portrait-card .brand-fall { flex: none; }
-.portrait-card strong, .portrait-card p { display: block; }
-.portrait-card strong { margin-top: 0.45rem; font-size: 0.95rem; }
-.portrait-card p { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--quiet); }
 
 .feed-band {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  min-height: 22rem;
+  min-height: 9rem;
+  padding: 1.25rem 1.5rem;
   overflow: hidden;
-  border: 0;
-  border-radius: 0.65rem;
-  background: var(--leaf);
-  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: linear-gradient(135deg, #1b3b29 0%, #2c5e43 100%);
+  color: #f9f6f0;
   text-align: left;
   cursor: pointer;
 }
+
 section.feed-band { cursor: default; }
-.feed-band > img,
-.feed-band > .brand-fall {
+
+.feed-band > img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 0;
   object-fit: cover;
+  opacity: 0.35;
 }
-.feed-band > .brand-fall { justify-content: flex-end; padding-right: 6%; font-size: 8rem; }
+
+.feed-band-monogram {
+  position: absolute;
+  right: 1.5rem;
+  bottom: -0.5rem;
+  color: rgba(255, 255, 255, 0.1);
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 5.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .feed-band-copy {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: flex-end;
-  gap: 0.7rem;
-  min-height: 22rem;
-  padding: 1.4rem;
+  gap: 0.35rem;
 }
+
 .feed-band-copy .tile-kicker {
   margin: 0;
-  background: var(--ink);
-  color: var(--air);
-  padding: 0.28rem 0.45rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f4e8c1;
 }
+
 .feed-band-copy strong {
-  max-width: 14ch;
-  background: var(--paper);
-  color: var(--ink);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  padding: 0.04em 0.14em;
+  max-width: 26ch;
+  color: #ffffff;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  font-size: clamp(2.4rem, 5.5vw, 4.6rem);
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
   font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
 }
+
 .feed-detail {
   margin: 0;
-  background: var(--ink);
-  color: var(--air);
-  padding: 0.25rem 0.5rem;
-  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.88rem;
 }
 
-.market-feed { display: flex; flex-direction: column; gap: 2.4rem; }
-.circle-row { display: flex; gap: 1.1rem; overflow-x: auto; }
-.circle-cat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.circle-mark {
-  display: grid;
-  place-items: center;
-  width: 4.4rem;
-  height: 4.4rem;
-  border-radius: 50%;
-  background: var(--field);
-}
-.circle-cat.is-on .circle-mark { background: var(--leaf); color: white; }
-.portrait-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 0.85rem;
+.discover-map {
+  position: relative;
+  z-index: 0;
+  height: 100%;
+  min-height: 11rem;
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.discover-map { position: relative; z-index: 0; height: 100%; min-height: 22rem; overflow: hidden; isolation: isolate; }
-.map-pin, .map-you {
+.map-pin,
+.map-you {
   display: block;
   width: 14px;
   height: 14px;
@@ -318,6 +1464,7 @@ section.feed-band { cursor: default; }
   border-radius: 50%;
   box-shadow: 0 1px 4px rgba(20, 32, 24, 0.35);
 }
+
 .map-pin { background: var(--leaf, #145c38); }
 .map-you { background: var(--citrus, #e36a2c); }
 
@@ -329,6 +1476,7 @@ section.feed-band { cursor: default; }
   background: rgba(20, 32, 24, 0.38);
   cursor: pointer;
 }
+
 .detail-panel {
   position: fixed;
   top: 0;
@@ -342,11 +1490,13 @@ section.feed-band { cursor: default; }
   transform: translateX(16px);
   opacity: 0;
 }
+
 .detail-panel.is-open {
   transform: none;
   opacity: 1;
   transition: transform 280ms cubic-bezier(.2, .8, .2, 1), opacity 180ms ease;
 }
+
 .detail-close {
   position: absolute;
   top: 0.7rem;
@@ -360,6 +1510,7 @@ section.feed-band { cursor: default; }
   border-radius: 50%;
   background: var(--paper);
 }
+
 .detail-photo { height: 16rem; background: var(--leaf); }
 .detail-photo img, .detail-photo .brand-fall { border-radius: 0; }
 .detail-copy { padding: 1.1rem 1.2rem 2rem; }
@@ -399,16 +1550,6 @@ section.feed-band { cursor: default; }
 }
 .discover-empty { color: var(--quiet); }
 
-@media (min-width: 900px) {
-  .discover-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); min-height: 28rem; }
-  .hero-map, .hero-map .discover-map { height: 100%; min-height: 28rem; }
-  .portrait-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .detail-panel, .detail-flyer { transition: none; }
-}
-
 .place-band { margin: 1.25rem 0 0; }
 .place-stack { display: flex; flex-direction: column; gap: 0.25rem; }
 .place-mosaic, .place-row {
@@ -425,15 +1566,17 @@ section.feed-band { cursor: default; }
 }
 .place-row > * { flex: 0 0 16rem; scroll-snap-align: start; min-width: 0; }
 .explore-layout > * { min-width: 0; }
+
 .place-card {
   position: relative;
   display: flex;
-  min-height: 12rem;
+  min-height: 11rem;
   overflow: hidden;
   border-radius: 1rem;
   color: #f7f4ee;
   text-decoration: none;
 }
+
 .place-card:focus-visible { outline: 2px solid var(--leaf); outline-offset: 3px; }
 .place-card img {
   position: absolute;
@@ -453,16 +1596,14 @@ section.feed-band { cursor: default; }
   padding: 0.85rem;
   background: linear-gradient(transparent, rgba(12, 20, 16, 0.78));
 }
-.place-card.is-mark .place-card-copy { background: none; }
-.place-card.is-mark .place-card-copy strong { font-size: clamp(1.45rem, 2vw, 2rem); }
 .place-card-copy strong {
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: 1.05;
 }
 .place-card-copy span { font-size: 0.82rem; opacity: 0.9; }
-.place-card.is-feature.is-mark .place-card-copy strong { font-size: clamp(2rem, 3vw, 3.1rem); }
+
 .place-mark {
   display: flex;
   flex-direction: column;
@@ -490,6 +1631,7 @@ section.feed-band { cursor: default; }
 .tone-outdoors { background: #3f6212; }
 .tone-place { background: #142018; }
 .place-skeleton { background: var(--field, #e7efe9); min-height: 12rem; }
+
 .business-name {
   margin: 0;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
@@ -514,12 +1656,11 @@ section.feed-band { cursor: default; }
   font-size: 0.9rem;
   text-decoration: none;
 }
-.business-actions a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
 .business-mosaic { display: grid; gap: 0.5rem; margin-top: 1rem; }
 .business-mosaic img, .business-video { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 22rem; }
 .explore-search, .explore-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
 .explore-search input, .explore-filters button, .explore-search button {
-  min-height: 2.6rem;
+  min-height: 2.4rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
@@ -531,22 +1672,273 @@ section.feed-band { cursor: default; }
   padding: 0 0.9rem;
   background: white;
 }
-.explore-search button, .explore-filters button { padding: 0 0.9rem; }
+.explore-search button, .explore-filters button { padding: 0 0.9rem; cursor: pointer; }
 .explore-filters button.is-on { background: var(--ink); color: var(--air, white); }
 .explore-layout { display: grid; gap: 1rem; margin-top: 1rem; }
 .explore-map { min-height: 16rem; overflow: hidden; border-radius: 1rem; }
 .explore-map .discover-map { min-height: 16rem; }
 
-@media (min-width: 720px) {
-  .place-mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .business-head { grid-template-columns: auto minmax(0, 1fr); }
-  .business-actions { grid-column: 1 / -1; }
-  .business-mosaic { grid-template-columns: 1.4fr 1fr; }
+.surface-band {
+  margin-top: 1.75rem;
 }
-@media (min-width: 1100px) {
-  .place-mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .place-card.is-feature { grid-column: span 2; grid-row: span 2; min-height: 24rem; }
-  .explore-layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; }
-  .explore-map { position: sticky; top: 1rem; min-height: 32rem; }
-  .explore-map .discover-map { min-height: 32rem; }
+
+.surface-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+  margin-bottom: 0.85rem;
+}
+
+.surface-title {
+  margin: 0;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(1.45rem, 2.3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.surface-note {
+  margin: 0;
+  color: var(--quiet);
+  font-size: 0.88rem;
+}
+
+.surface-note a {
+  color: var(--leaf);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.surface-pill {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.48rem;
+  border-radius: 999px;
+  background: var(--field, #e7efe9);
+  color: var(--leaf, #145c38);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.card-save {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgba(20, 32, 24, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(20, 32, 24, 0.1);
+}
+
+.card-save.is-saved {
+  border-color: var(--leaf, #145c38);
+  background: var(--leaf, #145c38);
+  color: white;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.detail-actions .detail-store {
+  margin-top: 0;
+}
+
+.detail-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.detail-save.is-saved {
+  border-color: var(--leaf, #145c38);
+  background: var(--leaf, #145c38);
+  color: white;
+}
+
+.feed-place-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-place-cell .place-card {
+  height: 100%;
+}
+
+.feed-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.feed-more-btn {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper, white);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Responsive Compositions (Tablet >= 720px & Desktop >= 980px)
+   ========================================================================== */
+
+@media (min-width: 720px) {
+  .gateway-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .neighborhood-showcase-row {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
+  .shelf-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .featured-lead-card.has-photo {
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  .discovery-mixed-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .place-mosaic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .business-actions {
+    grid-column: 1 / -1;
+  }
+
+  .business-mosaic {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+@media (min-width: 980px) {
+  .featured-businesses-band > .featured-supporting-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 2.5rem;
+  }
+
+  .discover-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+    align-items: start;
+  }
+
+  .living-header-aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .living-spotlight-card,
+  .living-map-panel {
+    height: 100%;
+  }
+
+  .living-map-panel .hero-map,
+  .living-map-panel .hero-map .discover-map {
+    flex: 1;
+    height: 100%;
+    min-height: 12.5rem;
+  }
+
+  .neighborhood-showcase-row {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 22rem));
+  }
+
+  .personal-hub {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .featured-businesses-layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .discovery-mixed-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.1rem;
+  }
+
+  .feed-card-wrap.is-business-cell.has-photo {
+    grid-column: span 2;
+  }
+
+  .feed-story-card {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+  }
+
+  .place-mosaic {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .place-card.is-feature {
+    grid-column: span 2;
+    grid-row: span 2;
+    min-height: 22rem;
+  }
+
+  .explore-layout {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    align-items: start;
+  }
+
+  .explore-map {
+    position: sticky;
+    top: 1rem;
+    min-height: 32rem;
+  }
+
+  .explore-map .discover-map {
+    min-height: 32rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-panel,
+  .detail-flyer,
+  .living-spotlight-img,
+  .place-card.is-neighborhood img {
+    transition: none;
+  }
 }

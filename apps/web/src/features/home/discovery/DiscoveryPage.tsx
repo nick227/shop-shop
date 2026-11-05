@@ -3,20 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
-import { recordRecent } from '../neighborhood/recentViews'
+import { recordRecent, useRecentViews } from '../neighborhood/recentViews'
 import { useSignedInHome } from '../neighborhood/useSignedInHome'
 import { defaultAddressZip } from '../neighborhood/signedInSelect'
+import { verticalSlugForStore } from '../neighborhood/selectHome'
+import { recordVertical } from '../neighborhood/taste'
 import { HOME_RADIUS_MILES, placeZip, rememberedPlace, rememberZip } from '../shell/placeMemory'
 import { CategorySection } from './CategoryCircles'
 import { DetailPanel } from './DetailPanel'
+import { ForYouSurface } from './ForYouSurface'
 import { MarketFeed } from './MarketFeed'
-import { LocationHero, PlatformFeatures } from './Opening'
-import { RecentFeed } from './RecentFeed'
-import { DirectoryList } from '../neighborhood/DirectoryList'
-import { DirectorySections } from '../neighborhood/DirectorySections'
+import { LocationHero } from './Opening'
 import { MemberShops } from '../neighborhood/MemberShops'
-import { placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
-import { PlaceGrid } from '../neighborhood/PlaceGrid'
+import { PlaceCard, placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
@@ -47,7 +46,7 @@ export function DiscoveryPage() {
     stores: data.stores,
     products: data.products as DiscoveryItem[],
     stories: data.stories,
-    browse,
+    browse: browse === 'arts' || browse === 'outdoors' ? '' : browse,
     query,
   }), [browse, data.products, data.stores, data.stories, query])
   const points = useMemo(() => mapPoints(composed.places), [composed.places])
@@ -66,6 +65,9 @@ export function DiscoveryPage() {
     const tile = selected?.tile
     if (!tile || tile.kind === 'story') return
     if (tile.kind === 'product') {
+      const store = data.stores.find((entry) => entry.id === tile.storeId)
+      const slug = store ? verticalSlugForStore(store) : undefined
+      if (slug) recordVertical(slug)
       recordRecent({
         id: tile.id,
         kind: 'item',
@@ -76,6 +78,8 @@ export function DiscoveryPage() {
       })
       return
     }
+    const slug = verticalSlugForStore(tile.store as never)
+    if (slug) recordVertical(slug)
     recordRecent({
       id: tile.id,
       kind: 'store',
@@ -84,16 +88,30 @@ export function DiscoveryPage() {
       subtitle: tile.typeLabel,
       path: getStoreRoute({ id: tile.id, name: tile.name }),
     })
-  }, [selected])
+  }, [data.stores, selected])
 
   const marketTiles = composed.stories[0]
     ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
     : composed.tiles
+  const listings = directory.data ?? []
   const hasLocation = Boolean(data.location)
+  const views = useRecentViews()
+  const personalStoreIds = new Set([
+    ...account.orders.map((order) => order.storeId),
+    ...account.favorites.stores.map((store) => store.id),
+    ...views.filter((view) => view.kind === 'store').map((view) => view.id),
+  ])
+  const heroStoreId = composed.nearest.find((store) => store.image)?.id
+  const memberStores = composed.storeTiles.filter((store) => store.id !== heroStoreId && !personalStoreIds.has(store.id))
+  const featuredStoreIds = new Set(memberStores.slice(0, 4).map((store) => `store:${store.id}`))
+  for (const id of personalStoreIds) featuredStoreIds.add(`store:${id}`)
+  if (heroStoreId) featuredStoreIds.add(`store:${heroStoreId}`)
 
   return (
     <div className="discover">
       <PublicMaintenanceBanner />
+
+      {/* Surface 1: A Living Location Header */}
       <LocationHero
         city={data.location?.city}
         state={data.location?.state}
@@ -109,38 +127,62 @@ export function DiscoveryPage() {
         onSelectStore={openStore}
         neighborhoods={data.neighborhoods}
       />
-      {!hasLocation ? (
-        <>
-          <PlatformFeatures />
-          <CategorySection />
-          {data.neighborhoods.length > 0 ? (
-            <PlaceGrid
-              label="Austin neighborhoods"
-              featureFirst
-              places={data.neighborhoods.slice(0, 8).map(placeCardFromNeighborhood)}
-              footer={<p className="discover-lede"><Link to="/neighborhoods">Browse all Austin neighborhoods</Link></p>}
-            />
-          ) : null}
-        </>
+
+      {data.neighborhoods.length > 0 ? (
+        <section
+          className="surface-band neighborhoods-anchor"
+          aria-label={hasLocation ? 'Nearby Neighborhoods' : 'Austin neighborhoods'}
+        >
+          <div className="surface-head">
+            <h2 className="surface-title">
+              {hasLocation ? 'Neighborhoods around this area' : 'Austin neighborhoods'}
+            </h2>
+            <Link to="/neighborhoods" className="browse-all-link">
+              Browse all neighborhoods
+            </Link>
+          </div>
+          <div className="neighborhood-showcase-row">
+            {data.neighborhoods.slice(0, 4).map((area) => (
+              <PlaceCard
+                key={area.id}
+                place={placeCardFromNeighborhood(area)}
+                variant="neighborhood"
+              />
+            ))}
+          </div>
+        </section>
       ) : null}
-      <MemberShops stores={composed.storeTiles} />
-      {hasLocation || marketTiles.length > 0 ? (
-        <MarketFeed
-          tiles={marketTiles}
-          nearest={composed.nearest}
-          showCategories={hasLocation}
-          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-        />
-      ) : null}
-      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading} />
-      <DirectorySections listings={(directory.data ?? []).slice(8)} />
-      <RecentFeed
-        orders={account.orders}
-        savedItems={account.favorites.items}
-        savedStores={account.favorites.stores}
+
+      <ForYouSurface
+        tiles={composed.tiles}
+        storeTiles={composed.storeTiles}
         stores={data.stores}
         products={data.products}
-        tiles={composed.tiles}
+        orders={account.orders}
+        addresses={account.addresses}
+        savedItems={account.favorites.items}
+        savedStores={account.favorites.stores}
+        usual={account.usual}
+        hasLocation={hasLocation}
+        onOpen={(tile, anchor) => setSelected({ tile, anchor })}
+      />
+
+      <MemberShops stores={memberStores} curatedListings={listings} />
+
+      {/* Surface 6: Browse by Category */}
+      <CategorySection />
+
+      {/* Surface 7: Infinite Discovery Feed */}
+      <MarketFeed
+        tiles={marketTiles}
+        nearest={composed.nearest}
+        storeTiles={composed.storeTiles}
+        stories={composed.stories}
+        listings={listings}
+        browse={browse}
+        query={query}
+        excludeIds={featuredStoreIds}
+        showCategories={false}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
 

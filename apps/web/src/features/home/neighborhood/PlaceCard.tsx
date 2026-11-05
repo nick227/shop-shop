@@ -15,6 +15,8 @@ export type PlaceCardData = {
   readonly imageUrl?: string | null
 }
 
+export type PlaceCardVariant = 'auto' | 'neighborhood' | 'business' | 'attraction' | 'feature'
+
 export function placeCardFromNeighborhood(area: NeighborhoodCard & {
   readonly city?: { readonly name: string; readonly state?: string | null } | null
   readonly postalCodes?: readonly string[]
@@ -75,17 +77,70 @@ export function placeCardFromListing(listing: {
   }
 }
 
-export function PlaceCard({ place, feature = false }: { readonly place: PlaceCardData; readonly feature?: boolean }) {
+export function PlaceCard({
+  place,
+  feature = false,
+  variant = 'auto',
+}: {
+  readonly place: PlaceCardData
+  readonly feature?: boolean
+  readonly variant?: PlaceCardVariant
+}) {
   const [failed, setFailed] = useState(false)
   const photoUrl = realPhoto(place.imageUrl)
   const photo = Boolean(photoUrl) && !failed
   const tone = placeTone(place.category, place.categoryLabel)
+
+  const resolvedVariant: Exclude<PlaceCardVariant, 'auto'> =
+    variant !== 'auto'
+      ? variant
+      : place.categoryLabel === 'Neighborhood'
+        ? 'neighborhood'
+        : tone === 'outdoors' || tone === 'arts'
+          ? 'attraction'
+          : 'business'
+
+  if (resolvedVariant === 'neighborhood') {
+    return (
+      <Link
+        to={place.href}
+        className={`place-card is-neighborhood tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-quiet'}`}
+      >
+        {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+        <span className="place-card-copy">
+          <strong>{place.name}</strong>
+          {place.meta ? <span>{place.meta}</span> : null}
+        </span>
+      </Link>
+    )
+  }
+
+  if (resolvedVariant === 'attraction') {
+    return (
+      <Link
+        to={place.href}
+        className={`place-card is-attraction tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-guide'}`}
+      >
+        {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+        <span className="place-card-copy">
+          <span className="place-card-kicker">{place.categoryLabel}</span>
+          <strong>{place.name}</strong>
+          {place.meta ? <span>{place.meta}</span> : null}
+        </span>
+      </Link>
+    )
+  }
+
   return (
-    <Link to={place.href} className={`place-card tone-${tone}${feature ? ' is-feature' : ''}${photo ? '' : ' is-mark'}`}>
+    <Link
+      to={place.href}
+      className={`place-card is-business tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-quiet'}`}
+    >
       {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
       <span className="place-card-copy">
+        <span className="place-card-kicker">{place.categoryLabel}</span>
         <strong>{place.name}</strong>
-        <span>{[place.categoryLabel, place.meta].filter(Boolean).join(' · ')}</span>
+        {place.meta ? <span>{place.meta}</span> : null}
       </span>
     </Link>
   )

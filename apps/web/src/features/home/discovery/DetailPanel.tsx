@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { Heart, X } from 'lucide-react'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
-import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { formatDistance } from '@shared/lib/utils/format'
+import {
+  isInCollection,
+  toggleSavedCollection,
+  useSavedCollection,
+} from '../neighborhood/savedCollection'
 import type { DiscoveryTile, ProductTile } from './tiles'
 import { playPop } from './sfx'
 
@@ -57,6 +62,9 @@ export function DetailPanel({
   const title = tile.kind === 'product' ? tile.title : tile.kind === 'store' ? tile.name : tile.title
   const storeName = tile.kind === 'product' ? tile.storeName : tile.kind === 'store' ? tile.name : tile.storeName
   const storeId = tile.kind === 'product' ? tile.storeId : tile.kind === 'store' ? tile.id : tile.storeId
+  useSavedCollection()
+  const collectionKind = tile.kind === 'product' ? 'item' : 'store'
+  const saved = tile.kind === 'story' ? false : isInCollection(collectionKind, tile.id)
 
   return (
     <>
@@ -107,9 +115,33 @@ export function DetailPanel({
               ))}
             </ul>
           ) : null}
-          {storeId && storeName ? (
-            <Link to={storeHref(storeId, storeName)} className="detail-store">View store</Link>
-          ) : null}
+          <div className="detail-actions">
+            {storeId && storeName ? (
+              <Link to={storeHref(storeId, storeName)} className="detail-store">View store</Link>
+            ) : null}
+            {tile.kind !== 'story' ? (
+              <button
+                type="button"
+                className={saved ? 'detail-save is-saved' : 'detail-save'}
+                aria-pressed={saved}
+                onClick={() =>
+                  toggleSavedCollection({
+                    id: tile.id,
+                    kind: collectionKind,
+                    title,
+                    subtitle: tile.kind === 'product' ? `${tile.price} · ${tile.storeName}` : tile.typeLabel,
+                    imageUrl: tile.image,
+                    path: tile.kind === 'product'
+                      ? getItemRouteSimple({ id: tile.id, title: tile.title })
+                      : storeHref(tile.id, tile.name),
+                  })
+                }
+              >
+                <Heart className="h-4 w-4" fill={saved ? 'currentColor' : 'none'} />
+                <span>{saved ? 'Saved' : 'Save'}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
       </aside>
       {showFly && image && fly ? (
