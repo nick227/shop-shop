@@ -92,7 +92,7 @@ export default async function checkoutRoutes(fastify: FastifyInstance) {
   // POST /api/v1/checkout/quote — the totals checkout would charge, from the same pricing code.
   // Public: prices are public, and nothing is stored.
   f.post('/quote', async (request, reply) => {
-    const result = await quoteCheckout(request.body as CheckoutQuoteInput)
+    const result = await quoteCheckout(request.body as CheckoutQuoteInput, request.user?.id ?? null)
     return reply.status(200).send(result)
   })
 

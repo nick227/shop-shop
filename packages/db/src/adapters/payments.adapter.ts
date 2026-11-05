@@ -8,7 +8,8 @@ import { Decimal } from 'decimal.js'
 
 let stripeInstance: Stripe | null = null
 
-const getStripe = (): Stripe => {
+/** The platform's Stripe client (also used for Stripe Tax calculations). */
+export const getStripe = (): Stripe => {
   if (!stripeInstance) {
     const apiKey = process.env.STRIPE_SECRET_KEY
     if (!apiKey) {

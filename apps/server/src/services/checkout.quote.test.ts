@@ -27,7 +27,19 @@ describe('checkout quote', () => {
   beforeEach(async () => {
     userId = (await createAuthenticatedUser('USER')).id
     storeId = (await createTestStore(userId, { isPublished: true })).id
-    await prisma.store.update({ where: { id: storeId }, data: { deliveryCharge: 2.5, commissionRate: null } })
+    await prisma.store.update({
+      where: { id: storeId },
+      data: {
+        deliveryCharge: 2.5,
+        commissionRate: null,
+        deliveryEnabled: true,
+        deliveryDistance: 5,
+        latitude: 30.3107,
+        longitude: -97.724,
+        addressState: 'TX',
+        addressZip: '78751',
+      },
+    })
     taco = (await createTestItem(storeId, { title: 'Taco', price: '4.00' })).id
     soda = (await createTestItem(storeId, { title: 'Soda', price: '2.00' })).id
     bundleId = (
@@ -47,20 +59,24 @@ describe('checkout quote', () => {
     await prisma.user.deleteMany({ where: { id: userId } })
   })
 
-  it('prices lines from the database and adds the store’s own delivery fee, tax and service fee', async () => {
+  it('prices lines from the database and adds the store’s own delivery fee and tax', async () => {
     const quote = await quoteCheckout({
       items: [{ itemId: taco, quantity: 2 }, { bundleId, quantity: 1 }],
       deliveryType: 'DELIVERY',
       tipAmount: 3,
+      deliveryAddress: { line1: '4500 Duval St', city: 'Austin', state: 'TX', postalCode: '78751' },
     })
     // 2 × 4.00 + 8.00 bundle
     expect(quote.subtotal).toBe(16)
     expect(quote.deliveryFee).toBe(2.5)
-    expect(quote.tax).toBe(1.32)
+    // Development estimate (Texas 8.25%) on the food and the delivery charge, labeled as an estimate.
+    expect(quote.tax).toBe(1.53)
+    expect(quote.taxEstimated).toBe(true)
     expect(quote.tip).toBe(3)
     // No shopper service fee at launch; the vendor's commission never reaches the shopper's total.
     expect(quote.serviceFee).toBe(0)
-    expect(quote.total).toBe(22.82)
+    expect(quote.total).toBe(23.03)
+    expect(quote.blocked).toBeNull()
     expect(quote.lines).toEqual([
       { itemId: taco, bundleId: null, title: 'Taco', quantity: 2, unitPrice: 4 },
       { itemId: null, bundleId, title: 'Taco combo', quantity: 1, unitPrice: 8 },

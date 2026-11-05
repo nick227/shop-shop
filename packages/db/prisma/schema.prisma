@@ -684,7 +684,8 @@ model Cart {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
   status    CartStatus @default(ACTIVE)
-  note      String?
+  /// Checkout session details (fulfillment, resolved delivery address, quoted total) as JSON.
+  note      String?  @db.Text
   expiresAt DateTime?
   items     CartItem[]
   order     Order?

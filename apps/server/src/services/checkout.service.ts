@@ -11,6 +11,15 @@ import {
 import { OrderDomain, computeCheckoutTotals } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
 import { CHECKOUT_TOTALS_CONFIG } from '../commerce/pricingPolicy.js'
+import { calculateTax, resolveTaxCategory, type TaxResult } from '../commerce/tax.js'
+import {
+  deliveryEligibility,
+  resolveDestination,
+  type DeliveryAddressInput,
+  type DeliveryEligibility,
+  type ResolvedDestination,
+} from '../commerce/fulfillment.js'
+import type { TaxCategory } from '@packages/db/generated/client'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
 
 const SESSION_TTL_MS = 60 * 60 * 1000
@@ -21,7 +30,8 @@ function decimalToPrisma(d: InstanceType<typeof Decimal>) {
   return new Decimal(d.toFixed(2))
 }
 
-type DeliveryAddress = {
+/** The older address shape some clients still send. */
+type LegacyDeliveryAddress = {
   street: string
   city: string
   state: string
@@ -32,7 +42,11 @@ type DeliveryAddress = {
 type SessionMeta = {
   deliveryType: 'DELIVERY' | 'PICKUP'
   deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
-  deliveryAddress?: DeliveryAddress | null
+  /** Where it's going, as resolved when the session started (no re-geocoding at completion). */
+  destination?: ResolvedDestination | null
+  /** The total the shopper agreed to; completion refuses a different one. */
+  quotedTotal?: number
+  tipAmount?: number
 }
 
 /** Store availability as a 409 the checkout client can show. */
@@ -65,6 +79,15 @@ type ResolvedLine = {
   unitPrice: InstanceType<typeof Decimal>
   titleSnapshot: string
   notes?: string
+  /** Set from the item (or a bundle's items); null means "use the store's default". */
+  taxCategory: TaxCategory | null
+}
+
+/** A bundle's category: the one most of its items share. */
+function bundleTaxCategory(categories: readonly (TaxCategory | null)[]): TaxCategory | null {
+  const counts = new Map<TaxCategory | null, number>()
+  for (const category of categories) counts.set(category, (counts.get(category) ?? 0) + 1)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 }
 
 /**
@@ -80,7 +103,7 @@ export async function resolveCheckoutLines(lines: CheckoutLineInput[]): Promise<
       if (line.bundleId) {
         const bundle = await prisma.bundle.findUnique({
           where: { id: line.bundleId },
-          include: { items: { include: { item: { select: { isActive: true, isSoldOut: true, storeId: true } } } } },
+          include: { items: { include: { item: { select: { isActive: true, isSoldOut: true, storeId: true, taxCategory: true } } } } },
         })
         if (!bundle || !bundle.isActive) throw new AppError(400, 'A bundle in your cart is no longer available')
         if (bundle.items.length === 0 || bundle.items.some((bi) => !bi.item.isActive || bi.item.isSoldOut || bi.item.storeId !== bundle.storeId)) {
@@ -95,6 +118,7 @@ export async function resolveCheckoutLines(lines: CheckoutLineInput[]): Promise<
           unitPrice: new Decimal(price.resolvedPrice.toFixed(2)),
           titleSnapshot: bundle.name,
           notes: line.specialInstructions,
+          taxCategory: bundleTaxCategory(bundle.items.map((bi) => bi.item.taxCategory)),
         }
       }
       if (!line.itemId) throw new AppError(400, 'Each cart line needs an item or a bundle')
@@ -109,6 +133,7 @@ export async function resolveCheckoutLines(lines: CheckoutLineInput[]): Promise<
         unitPrice: item.price,
         titleSnapshot: item.title,
         notes: line.specialInstructions,
+        taxCategory: item.taxCategory,
       }
     }),
   )
@@ -123,29 +148,118 @@ export type CheckoutQuoteInput = {
   items: CheckoutLineInput[]
   deliveryType: 'PICKUP' | 'DELIVERY'
   tipAmount?: number
+  /** A saved address of the signed-in shopper. */
+  deliveryAddressId?: string | null
+  /** Or a typed one. */
+  deliveryAddress?: DeliveryAddressInput | LegacyDeliveryAddress | null
+}
+
+const PRICING_STORE_SELECT = {
+  id: true,
+  storeType: true,
+  defaultTaxCategory: true,
+  commissionRate: true,
+  deliveryCharge: true,
+  deliveryDistance: true,
+  deliveryMinimum: true,
+  deliveryEnabled: true,
+  pickupEnabled: true,
+  latitude: true,
+  longitude: true,
+  addressStreet: true,
+  addressCity: true,
+  addressState: true,
+  addressZip: true,
+  addressCountry: true,
+} as const
+
+/** Accepts the older `{ street, zipCode }` shape too. */
+function addressInput(raw: CheckoutQuoteInput['deliveryAddress']): unknown {
+  if (!raw) return null
+  const legacy = raw as Partial<LegacyDeliveryAddress>
+  return 'street' in raw ? { line1: legacy.street, city: legacy.city, state: legacy.state, postalCode: legacy.zipCode, instructions: legacy.instructions } : raw
+}
+
+interface PricedCheckout {
+  readonly totals: ReturnType<typeof computeCheckoutTotals>
+  readonly tax: TaxResult
+  readonly delivery: DeliveryEligibility
+  readonly pickupAvailable: boolean
+  /** Why the requested fulfillment can't happen; the totals are then not payable. */
+  readonly blocked: { code: string; message: string } | null
 }
 
 /**
- * The exact totals checkout would charge for these lines right now, from the same pricing code that
- * creates the order. Shoppers see these numbers; nothing is stored.
+ * The one pricing path: delivery from the service area, tax from the tax provider, fees from the
+ * platform policy. Quotes, sessions and order completion all go through here.
  */
-export async function quoteCheckout(input: CheckoutQuoteInput) {
+async function priceCheckout(args: {
+  storeId: string
+  lines: readonly ResolvedLine[]
+  deliveryType: 'PICKUP' | 'DELIVERY'
+  tip: number
+  destination: ResolvedDestination | 'NOT_FOUND' | null
+}): Promise<PricedCheckout> {
+  const store = await prisma.store.findUnique({ where: { id: args.storeId }, select: PRICING_STORE_SELECT })
+  if (!store) throw new AppError(404, 'Store not found')
+  const subtotal = args.lines.reduce((sum, line) => sum + Number(line.unitPrice) * line.quantity, 0)
+  const delivery = await deliveryEligibility(store, args.destination, Math.round(subtotal * 100) / 100)
+
+  let blocked: PricedCheckout['blocked'] = null
+  if (args.deliveryType === 'DELIVERY' && !delivery.available) blocked = { code: delivery.code, message: delivery.message }
+  if (args.deliveryType === 'PICKUP' && !store.pickupEnabled) blocked = { code: 'STORE_DOES_NOT_OFFER_PICKUP', message: 'This store offers delivery only.' }
+
+  const delivering = args.deliveryType === 'DELIVERY' && delivery.available
+  const deliveryFee = delivering ? delivery.fee : 0
+  const storeAddress = {
+    line1: store.addressStreet,
+    city: store.addressCity,
+    state: store.addressState,
+    postalCode: store.addressZip,
+    country: store.addressCountry ?? 'US',
+  }
+  const destination = delivering && args.destination && args.destination !== 'NOT_FOUND' ? args.destination.address : storeAddress
+  const tax = await calculateTax({
+    lines: args.lines.map((line, index) => ({
+      reference: line.itemId ?? line.bundleId ?? `line-${index}`,
+      amountCents: Math.round(Number(line.unitPrice) * line.quantity * 100),
+      quantity: line.quantity,
+      category: resolveTaxCategory(line.taxCategory, store.defaultTaxCategory, store.storeType),
+    })),
+    deliveryFeeCents: Math.round(deliveryFee * 100),
+    destination,
+    origin: storeAddress,
+  })
+
+  const totals = computeCheckoutTotals(
+    { items: args.lines, store } as unknown as Parameters<typeof computeCheckoutTotals>[0],
+    delivering ? 'DELIVERY' : 'PICKUP',
+    args.tip,
+    CHECKOUT_TOTALS_CONFIG,
+    { deliveryFee, tax: tax.taxCents / 100 },
+  )
+  return { totals, tax, delivery, pickupAvailable: store.pickupEnabled, blocked }
+}
+
+const deliveryAvailability = (delivery: DeliveryEligibility) =>
+  delivery.available
+    ? { available: true, fee: delivery.fee, minimum: delivery.minimum, distanceMiles: delivery.distanceMiles }
+    : { available: false, code: delivery.code, message: delivery.message, minimum: delivery.minimum, shortBy: delivery.shortBy }
+
+/**
+ * The exact totals checkout would charge for these lines right now, from the same pricing code that
+ * creates the order, and whether pickup and delivery are possible. Nothing is stored.
+ */
+export async function quoteCheckout(input: CheckoutQuoteInput, userId: string | null = null) {
   const deliveryType = input.deliveryType === 'DELIVERY' ? 'DELIVERY' : 'PICKUP'
   const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
   const { storeId, lines } = await resolveCheckoutLines(input.items)
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: { id: true, deliveryCharge: true, commissionRate: true, latitude: true, longitude: true, deliveryEnabled: true, pickupEnabled: true },
-  })
-  if (!store) throw new AppError(404, 'Store not found')
-  // The totals only read line prices and the store's fee settings.
-  const totals = computeCheckoutTotals(
-    { items: lines, store } as unknown as Parameters<typeof computeCheckoutTotals>[0],
-    deliveryType,
-    tip,
-    CHECKOUT_TOTALS_CONFIG,
+  const destination = await resolveDestination(
+    { deliveryAddressId: input.deliveryAddressId, deliveryAddress: addressInput(input.deliveryAddress) },
+    userId,
   )
-  const subtotal = totals.subtotal.toNumber()
+  const priced = await priceCheckout({ storeId, lines, deliveryType, tip, destination })
+  const { totals } = priced
   return {
     storeId,
     deliveryType,
@@ -156,13 +270,24 @@ export async function quoteCheckout(input: CheckoutQuoteInput) {
       quantity: line.quantity,
       unitPrice: Number(line.unitPrice),
     })),
-    subtotal,
+    subtotal: totals.subtotal.toNumber(),
     deliveryFee: totals.fees.toNumber(),
     tax: totals.tax.toNumber(),
+    /** True when tax is a development estimate; the shopper must see it labeled so. */
+    taxEstimated: priced.tax.estimated,
     serviceFee: totals.serviceFeeAmount.toNumber(),
     tip: totals.tip.toNumber(),
     total: totals.total.toNumber(),
-    fulfillment: { pickup: store.pickupEnabled, delivery: store.deliveryEnabled },
+    /** Set when the requested fulfillment isn't possible; the totals can't be paid as quoted. */
+    blocked: priced.blocked,
+    fulfillment: {
+      pickup: { available: priced.pickupAvailable },
+      delivery: deliveryAvailability(priced.delivery),
+    },
+    destination:
+      destination && destination !== 'NOT_FOUND'
+        ? { addressId: destination.addressId, address: destination.address, approximate: destination.approximate }
+        : null,
   }
 }
 
@@ -170,7 +295,8 @@ export type CreateSessionInput = {
   items: CheckoutLineInput[]
   deliveryType: 'PICKUP' | 'DELIVERY'
   deliveryMode: 'PICKUP' | 'STORE_MANAGED_DELIVERY' | 'PLATFORM_DRIVER' | 'THIRD_PARTY_PROVIDER'
-  deliveryAddress?: DeliveryAddress
+  deliveryAddressId?: string | null
+  deliveryAddress?: DeliveryAddressInput | LegacyDeliveryAddress | null
   paymentMethod: { type: string; token: string }
   tipAmount?: number
   promoCode?: string
@@ -201,17 +327,24 @@ function resolvePaymentRail(input: CompleteCheckoutInput): 'CARD' | 'COD' {
 }
 
 export async function createCheckoutSession(userId: string, input: CreateSessionInput) {
-  if (input.deliveryType === 'DELIVERY' && !input.deliveryAddress) {
-    throw new AppError(400, 'Delivery address is required for delivery orders')
-  }
-
+  const deliveryType = input.deliveryType === 'DELIVERY' ? 'DELIVERY' : 'PICKUP'
   const { lines, storeId } = await resolveCheckoutLines(input.items)
   await ensureStoreAcceptsOrders(prisma, storeId)
 
+  const destination =
+    deliveryType === 'DELIVERY'
+      ? await resolveDestination({ deliveryAddressId: input.deliveryAddressId, deliveryAddress: addressInput(input.deliveryAddress) }, userId)
+      : null
+  const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
+  const priced = await priceCheckout({ storeId, lines, deliveryType, tip, destination })
+  if (priced.blocked) throw new AppError(422, priced.blocked.message)
+
   const meta: SessionMeta = {
-    deliveryType: input.deliveryType,
-    deliveryMode: input.deliveryMode,
-    deliveryAddress: input.deliveryAddress ?? null,
+    deliveryType,
+    deliveryMode: deliveryType === 'PICKUP' ? 'PICKUP' : input.deliveryMode,
+    destination: destination && destination !== 'NOT_FOUND' ? destination : null,
+    quotedTotal: priced.totals.total.toNumber(),
+    tipAmount: tip,
   }
 
   const cart = await prisma.cart.create({
@@ -235,17 +368,11 @@ export async function createCheckoutSession(userId: string, input: CreateSession
     select: { id: true },
   })
 
-  const totals = await orderDomain.calculateOrderTotals(
-    cart.id,
-    userId,
-    input.deliveryType,
-    input.tipAmount ?? 0,
-  )
-
   return {
     sessionId: cart.id,
-    total: totals.total.toNumber(),
-    estimatedDelivery: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+    total: priced.totals.total.toNumber(),
+    // Kept for older clients; real timing comes from the store once it accepts the order.
+    estimatedDelivery: null,
   }
 }
 
@@ -285,12 +412,26 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   const meta = JSON.parse(cart.note ?? '{}') as SessionMeta
   const deliveryType = meta.deliveryType ?? 'PICKUP'
   const deliveryMode = meta.deliveryMode ?? 'PICKUP'
-  const totals = await orderDomain.calculateOrderTotals(
-    input.sessionId,
-    checkoutUserId,
-    deliveryType,
-    input.tipAmount,
+  const placement = await orderDomain.validateOrderPlacement(input.sessionId, checkoutUserId)
+  if (!placement.valid) throw new AppError(409, placement.reason ?? 'This order can’t be placed')
+
+  // Re-price from the database: what's charged is what the pricing code says now, not what was stored.
+  const { lines } = await resolveCheckoutLines(
+    cart.items.map((ci) => ({ itemId: ci.itemId, bundleId: ci.bundleId, quantity: ci.quantity, specialInstructions: ci.notes ?? undefined })),
   )
+  const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
+  const priced = await priceCheckout({ storeId: cart.storeId, lines, deliveryType, tip, destination: meta.destination ?? null })
+  if (priced.blocked) throw new AppError(422, priced.blocked.message)
+  const totals = priced.totals
+  if (meta.quotedTotal !== undefined) {
+    const before = meta.quotedTotal - (meta.tipAmount ?? 0)
+    const now = totals.total.toNumber() - totals.tip.toNumber()
+    if (Math.abs(before - now) > 0.005) {
+      throw new AppError(409, 'Prices changed since you started checkout. Review your order and try again.')
+    }
+  }
+  const destination = meta.destination ?? null
+  const delivery = priced.delivery
 
   const rail = resolvePaymentRail(input)
 
@@ -391,10 +532,20 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         vendorCommissionPercent: decimalToPrisma(totals.vendorCommissionPercent),
         vendorCommissionAmount: decimalToPrisma(totals.vendorCommissionAmount),
         netToVendor: decimalToPrisma(totals.netToVendor),
+        taxProvider: priced.tax.provider,
+        taxCalculationId: priced.tax.calculationId,
+        ...(deliveryType === 'DELIVERY' && destination
+          ? {
+              addressId: destination.addressId,
+              deliveryLatitude: new Decimal(destination.lat.toFixed(8)),
+              deliveryLongitude: new Decimal(destination.lng.toFixed(8)),
+              deliveryDistanceMiles: delivery.available && delivery.distanceMiles !== null ? new Decimal(delivery.distanceMiles.toFixed(2)) : null,
+            }
+          : {}),
         paymentStatus: 'UNPAID',
         addressSnapshot:
-          deliveryType === 'DELIVERY' && meta.deliveryAddress
-            ? (meta.deliveryAddress as object)
+          deliveryType === 'DELIVERY' && destination
+            ? ({ ...destination.address, latitude: destination.lat, longitude: destination.lng, approximate: destination.approximate } as object)
             : undefined,
         items: {
           create: cart.items.map((ci) => ({
