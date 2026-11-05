@@ -34,6 +34,7 @@ const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 const RiverPage = lazy(() => import('./pages/public/River.page'))
+const ExplorePage = lazy(() => import('./pages/public/Explore.page'))
 const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
 const NeighborhoodsIndexPage = lazy(() => import('./pages/public/Neighborhoods.page'))
 const DirectoryListingPage = lazy(() => import('./pages/public/DirectoryListing.page'))
@@ -229,6 +230,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           path: '/river',
           element: lazyRoute(RiverPage),
           handle: { title: 'Home' },
+        },
+        {
+          path: '/explore',
+          element: lazyRoute(ExplorePage),
+          handle: { title: 'Explore' },
         },
         {
           path: '/neighborhoods',

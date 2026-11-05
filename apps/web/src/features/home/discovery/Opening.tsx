@@ -5,6 +5,7 @@ import { radiusLabel } from '../neighborhood/discoveryLocated'
 import { homepageTitle, neighborhoodPath, type NeighborhoodCard } from '../neighborhood/neighborhoodHero'
 import { formatDistance } from '@shared/lib/utils/format'
 import { NeighborhoodMap, type MapPoint } from './NeighborhoodMap'
+import { PlaceCard } from '../neighborhood/PlaceCard'
 import type { StoreTile, StoryTile } from './tiles'
 
 export function LocationHero({
@@ -45,22 +46,13 @@ export function LocationHero({
             <h1 className="discover-display">{homepageTitle(city, state, neighborhoods)}</h1>
             <p className="discover-where">{radiusLabel(HOME_RADIUS_MILES, zip)}</p>
             {neighborhoods.length > 0 ? (
-              <>
-                <p className="tile-kicker">Neighborhoods in this area</p>
-                <ul className="hero-areas">
-                  {neighborhoods.map((area) => (
-                    <li key={area.id}>
-                      <Link to={neighborhoodPath(area.slug)}>
-                        {area.coverUrl ? <img src={area.coverUrl} alt="" className="mb-2 h-16 w-full rounded-md object-cover" /> : null}
-                        <strong>{area.name}</strong>
-                        {area.headline ? <span>{area.headline}</span> : null}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
+              <div className="place-row">
+                {neighborhoods.map((area) => (
+                  <PlaceCard key={area.id} place={{ id: area.id, href: neighborhoodPath(area.slug), name: area.name, categoryLabel: 'Neighborhood', meta: area.headline, imageUrl: area.coverUrl }} />
+                ))}
+              </div>
             ) : null}
-            <p className="discover-lede"><Link to="/neighborhoods">Browse Austin neighborhoods</Link></p>
+            <p className="discover-lede"><Link to={`/explore?zip=${zip}`}>Explore nearby</Link> · <Link to="/neighborhoods">Browse Austin neighborhoods</Link></p>
             {shopCount === 0 ? <p className="discover-lede">No shops in this radius yet.</p> : null}
           </>
         ) : (

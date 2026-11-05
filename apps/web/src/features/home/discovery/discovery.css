@@ -408,3 +408,145 @@ section.feed-band { cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   .detail-panel, .detail-flyer { transition: none; }
 }
+
+.place-band { margin: 1.25rem 0 0; }
+.place-stack { display: flex; flex-direction: column; gap: 0.25rem; }
+.place-mosaic, .place-row {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.place-mosaic { grid-template-columns: minmax(0, 1fr); }
+.place-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.place-row > * { flex: 0 0 16rem; scroll-snap-align: start; min-width: 0; }
+.explore-layout > * { min-width: 0; }
+.place-card {
+  position: relative;
+  display: flex;
+  min-height: 12rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  color: #f7f4ee;
+  text-decoration: none;
+}
+.place-card:focus-visible { outline: 2px solid var(--leaf); outline-offset: 3px; }
+.place-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.place-card-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: auto;
+  padding: 0.85rem;
+  background: linear-gradient(transparent, rgba(12, 20, 16, 0.78));
+}
+.place-card.is-mark .place-card-copy { background: none; }
+.place-card.is-mark .place-card-copy strong { font-size: clamp(1.45rem, 2vw, 2rem); }
+.place-card-copy strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.place-card-copy span { font-size: 0.82rem; opacity: 0.9; }
+.place-card.is-feature.is-mark .place-card-copy strong { font-size: clamp(2rem, 3vw, 3.1rem); }
+.place-mark {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 12rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+}
+.place-mark .tile-kicker { color: inherit; opacity: 0.72; }
+.place-mark strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+}
+.place-mark.is-large { min-height: 16rem; margin-top: 1rem; }
+.place-mark.is-large strong { font-size: clamp(2.4rem, 6vw, 4.5rem); }
+.place-card .place-mark { position: absolute; inset: 0; border-radius: 0; }
+.tone-food { background: #7c2d12; }
+.tone-drink { background: #292524; }
+.tone-shop { background: #145c38; }
+.tone-arts { background: #1e3a5f; }
+.tone-outdoors { background: #3f6212; }
+.tone-place { background: #142018; }
+.place-skeleton { background: var(--field, #e7efe9); min-height: 12rem; }
+.business-name {
+  margin: 0;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+.business-head { display: grid; gap: 1rem; align-items: end; }
+.business-head .place-mark { width: 5.5rem; min-height: 5.5rem; padding: 0.55rem; }
+.business-head .place-mark strong { font-size: 1rem; }
+.business-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.discover .business-actions a {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper, white);
+  color: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.business-actions a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+.business-mosaic { display: grid; gap: 0.5rem; margin-top: 1rem; }
+.business-mosaic img, .business-video { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 22rem; }
+.explore-search, .explore-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.explore-search input, .explore-filters button, .explore-search button {
+  min-height: 2.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+}
+.explore-search input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0 0.9rem;
+  background: white;
+}
+.explore-search button, .explore-filters button { padding: 0 0.9rem; }
+.explore-filters button.is-on { background: var(--ink); color: var(--air, white); }
+.explore-layout { display: grid; gap: 1rem; margin-top: 1rem; }
+.explore-map { min-height: 16rem; overflow: hidden; border-radius: 1rem; }
+.explore-map .discover-map { min-height: 16rem; }
+
+@media (min-width: 720px) {
+  .place-mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .business-head { grid-template-columns: auto minmax(0, 1fr); }
+  .business-actions { grid-column: 1 / -1; }
+  .business-mosaic { grid-template-columns: 1.4fr 1fr; }
+}
+@media (min-width: 1100px) {
+  .place-mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .place-card.is-feature { grid-column: span 2; grid-row: span 2; min-height: 24rem; }
+  .explore-layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; }
+  .explore-map { position: sticky; top: 1rem; min-height: 32rem; }
+  .explore-map .discover-map { min-height: 32rem; }
+}

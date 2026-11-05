@@ -103,8 +103,8 @@ export function DiscoveryPage() {
         onSelectStore={openStore}
         neighborhoods={data.neighborhoods}
       />
-      <DirectoryList listings={directory.data ?? []} />
-      <DirectorySections listings={directory.data ?? []} />
+      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading && Boolean(data.location)} />
+      <DirectorySections listings={(directory.data ?? []).slice(8)} />
       <RecentFeed
         orders={account.orders}
         savedItems={account.favorites.items}

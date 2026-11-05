@@ -17,6 +17,7 @@ type ListingRow = {
   longitude: { toString(): string } | null
   storeId: string | null
   source: string
+  featured?: boolean
   id: string
 }
 
@@ -51,6 +52,7 @@ function publicListing(row: ListingRow) {
     latitude: row.latitude == null ? null : Number(row.latitude),
     longitude: row.longitude == null ? null : Number(row.longitude),
     orderable: false,
+    featured: Boolean(row.featured),
     merchant: Boolean(row.storeId),
     attribution: row.source === 'osm' ? '© OpenStreetMap contributors' : null,
   }
@@ -73,7 +75,31 @@ const listingSelect = {
   longitude: true,
   storeId: true,
   source: true,
+  featured: true,
 } as const
+
+function groupWhere(group: string | undefined) {
+  if (group === 'food') return { OR: [{ category: { in: ['RESTAURANT', 'COFFEE', 'BAKERY'] } }, { categoryLabel: { in: ['Bar', 'Pub', 'Ice cream'] } }] }
+  if (group === 'grocery') return { category: 'GROCERY' }
+  if (group === 'convenience') return { category: 'CONVENIENCE' }
+  if (group === 'retail') return { category: 'RETAIL' }
+  if (group === 'out') return { OR: [{ category: { in: ['ATTRACTION', 'ENTERTAINMENT'] } }, { categoryLabel: { in: ['Park', 'Library'] } }] }
+  return {}
+}
+
+async function coverUrls(ids: readonly string[]) {
+  if (ids.length === 0) return new Map<string, string>()
+  const media = await prisma.mediaAsset.findMany({
+    where: { listingId: { in: [...ids] }, kind: 'IMAGE' },
+    orderBy: { sortIndex: 'asc' },
+    select: { listingId: true, url: true },
+  })
+  const covers = new Map<string, string>()
+  for (const row of media) {
+    if (row.listingId && !covers.has(row.listingId)) covers.set(row.listingId, row.url)
+  }
+  return covers
+}
 
 async function nearbyListings(latitude: number, longitude: number, exceptId: string) {
   const span = 2 / 69
@@ -105,11 +131,14 @@ export async function directoryRoutes(app: FastifyInstance) {
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return reply.code(400).send({ error: 'Latitude and longitude are required' })
     const span = radiusMiles / 69
     const limit = Math.min(Math.max(Number(query.limit || '12') || 12, 1), 40)
+    const q = query.q?.trim()
     const rows = await prisma.businessListing.findMany({
       where: {
         published: true,
         latitude: { gte: latitude - span, lte: latitude + span },
         longitude: { gte: longitude - span, lte: longitude + span },
+        ...(q ? { name: { contains: q } } : {}),
+        ...groupWhere(query.group),
       },
       select: listingSelect,
     })
@@ -119,8 +148,9 @@ export async function directoryRoutes(app: FastifyInstance) {
       const distance = haversineMiles({ latitude, longitude }, { latitude: listing.latitude, longitude: listing.longitude })
       if (distance > radiusMiles) return []
       return [{ ...listing, distance }]
-    }).sort((left, right) => left.distance - right.distance).slice(0, limit)
-    return { listings }
+    }).sort((left, right) => Number(right.featured) - Number(left.featured) || left.distance - right.distance).slice(0, limit)
+    const covers = await coverUrls(listings.map((listing) => listing.id))
+    return { listings: listings.map((listing) => ({ ...listing, coverUrl: covers.get(listing.id) ?? null })) }
   })
 
   app.get('/directory/listings/:slug', async (req, reply) => {

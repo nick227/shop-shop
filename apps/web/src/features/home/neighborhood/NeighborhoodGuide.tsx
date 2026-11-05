@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiOrigin } from './loadDiscovery'
+import { placeCardFromListing } from './PlaceCard'
+import { PlaceGrid } from './PlaceGrid'
 
 type GuideListing = {
   readonly id: string
@@ -9,6 +11,7 @@ type GuideListing = {
   readonly categoryLabel: string
   readonly addressStreet: string | null
   readonly merchant: boolean
+  readonly distance: number | null
 }
 
 type Guide = {
@@ -30,25 +33,17 @@ export function NeighborhoodGuide({ slug }: { readonly slug: string }) {
   const guide = query.data
   if (!guide) return null
   return (
-    <section className="discover-hero" aria-label="Neighborhood places">
-      <div className="hero-copy">
-        <p className="discover-lede">{guide.note}</p>
-        {guide.sections.map((section) => (
-          <div key={section.id}>
-            <p className="tile-kicker">{section.title}</p>
-            <ul className="hero-areas">
-              {section.listings.map((listing) => (
-                <li key={listing.id}>
-                  <Link to={`/directory/${listing.slug}`}>
-                    <strong>{listing.name}</strong>
-                    <span>{listing.categoryLabel}{listing.addressStreet ? ` · ${listing.addressStreet}` : ''}{listing.merchant ? ' · Shop' : ''}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="place-stack">
+      <p className="discover-lede">{guide.note}</p>
+      {guide.sections.map((section) => (
+        <PlaceGrid
+          key={section.id}
+          label={section.title}
+          featureFirst={section.id === 'featured'}
+          places={section.listings.map((listing) => placeCardFromListing({ ...listing, distance: listing.distance ?? undefined }))}
+        />
+      ))}
+      <p className="discover-lede"><Link to="/explore">Explore more nearby</Link></p>
+    </div>
   )
 }

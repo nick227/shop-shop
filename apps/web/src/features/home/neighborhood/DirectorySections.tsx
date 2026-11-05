@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
 import type { DirectoryListing } from './DirectoryList'
+import { placeCardFromListing } from './PlaceCard'
+import { PlaceGrid } from './PlaceGrid'
 
 type Group = 'food' | 'shopping' | 'arts' | 'parks'
 
@@ -21,28 +22,14 @@ const TITLES: Record<Group, string> = {
 
 export function DirectorySections({ listings }: { readonly listings: readonly DirectoryListing[] }) {
   const groups = (['food', 'shopping', 'arts', 'parks'] as const).flatMap((id) => {
-    const rows = listings.filter((listing) => groupOf(listing) === id).slice(0, 6)
+    const rows = listings.filter((listing) => groupOf(listing) === id).slice(0, 8)
     return rows.length > 0 ? [{ id, title: TITLES[id], rows }] : []
   })
   if (groups.length === 0) return null
   return (
     <>
       {groups.map((group) => (
-        <section key={group.id} className="discover-hero" aria-label={group.title}>
-          <div className="hero-copy">
-            <p className="tile-kicker">{group.title}</p>
-            <ul className="hero-areas">
-              {group.rows.map((listing) => (
-                <li key={listing.id}>
-                  <Link to={`/directory/${listing.slug}`}>
-                    <strong>{listing.name}</strong>
-                    <span>{listing.categoryLabel}{listing.merchant ? ' · Shop' : ''}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <PlaceGrid key={group.id} label={group.title} places={group.rows.map(placeCardFromListing)} />
       ))}
     </>
   )

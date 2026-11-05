@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import '../discovery/discovery.css'
 import { apiOrigin } from './loadDiscovery'
 import { neighborhoodPath } from './neighborhoodHero'
+import { PlaceCard } from './PlaceCard'
 
 type Row = {
   readonly id: string
@@ -30,29 +31,30 @@ export function NeighborhoodIndex() {
   const rows = query.data?.neighborhoods ?? []
   return (
     <div className="discover">
-      <section className="discover-hero" aria-label="Austin neighborhoods">
-        <div className="hero-copy">
-          <p className="tile-kicker">Austin</p>
-          <h1 className="discover-display">Neighborhoods</h1>
-          <p className="discover-lede">Browse published neighborhoods. A ZIP can include more than one, so this list does not decide where you are.</p>
-          <form className="mt-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); setSubmitted(q.trim()) }}>
-            <input className="rounded-md border border-border bg-background px-3 py-2 text-sm" value={q} placeholder="Name, city, or ZIP" onChange={(event) => setQ(event.target.value)} />
-            <button className="rounded-md border border-border px-3 py-2 text-sm" type="submit">Search</button>
-          </form>
-          <ul className="hero-areas">
-            {rows.map((area) => (
-              <li key={area.id}>
-                <Link to={neighborhoodPath(area.slug)}>
-                  <strong>{area.name}</strong>
-                  <span>{[area.headline, area.city?.name, area.postalCodes.join(', ')].filter(Boolean).join(' · ')}</span>
-                </Link>
-                {area.coverUrl ? <img src={area.coverUrl} alt="" /> : null}
-              </li>
-            ))}
-          </ul>
-          {query.isSuccess && rows.length === 0 ? <p className="discover-lede">No published neighborhoods match.</p> : null}
-        </div>
-      </section>
+      <p className="tile-kicker">Austin</p>
+      <h1 className="business-name">Neighborhoods</h1>
+      <p className="discover-lede">Published neighborhoods. A ZIP can include more than one, so this list does not decide where you are.</p>
+      <form className="explore-search" onSubmit={(event) => { event.preventDefault(); setSubmitted(q.trim()) }}>
+        <input value={q} placeholder="Name, city, or ZIP" onChange={(event) => setQ(event.target.value)} />
+        <button type="submit">Search</button>
+      </form>
+      <div className="place-mosaic">
+        {rows.map((area) => (
+          <PlaceCard
+            key={area.id}
+            place={{
+              id: area.id,
+              href: neighborhoodPath(area.slug),
+              name: area.name,
+              categoryLabel: 'Neighborhood',
+              meta: [area.headline, area.city?.name, area.postalCodes.join(', ')].filter(Boolean).join(' · '),
+              imageUrl: area.coverUrl,
+            }}
+          />
+        ))}
+      </div>
+      {query.isSuccess && rows.length === 0 ? <p className="discover-lede">No published neighborhoods match.</p> : null}
+      <p className="discover-lede"><Link to="/explore">Explore businesses</Link></p>
     </div>
   )
 }

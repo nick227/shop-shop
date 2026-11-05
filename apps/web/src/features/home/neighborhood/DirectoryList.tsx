@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { directionsUrl } from './directoryLinks'
+import { placeCardFromListing } from './PlaceCard'
+import { PlaceGrid, PlaceSkeleton } from './PlaceGrid'
 
 export type DirectoryListing = {
   readonly id: string
@@ -8,40 +8,24 @@ export type DirectoryListing = {
   readonly categoryLabel: string
   readonly category?: string
   readonly merchant?: boolean
+  readonly featured?: boolean
   readonly addressStreet: string | null
   readonly distance: number
   readonly website: string | null
   readonly latitude: number | null
   readonly longitude: number | null
   readonly attribution: string | null
+  readonly coverUrl?: string | null
 }
 
-export function DirectoryList({ listings }: { readonly listings: readonly DirectoryListing[] }) {
+export function DirectoryList({ listings, loading = false }: { readonly listings: readonly DirectoryListing[]; readonly loading?: boolean }) {
+  if (loading) return <PlaceSkeleton />
   if (listings.length === 0) return null
   const credit = listings.find((listing) => listing.attribution)?.attribution
   return (
-    <section className="discover-hero" aria-label="Directory">
-      <div className="hero-copy">
-        <p className="tile-kicker">Directory</p>
-        <ul className="hero-areas">
-          {listings.slice(0, 12).map((listing) => (
-            <li key={listing.id}>
-              <span>
-                <strong>{listing.name}</strong>
-                {' · '}{listing.categoryLabel}
-                {listing.addressStreet ? ` · ${listing.addressStreet}` : ''}
-                {` · ${listing.distance.toFixed(1)} mi`}
-              </span>
-              <span className="directory-actions">
-                <Link to={`/directory/${listing.slug}`}>View details</Link>
-                {listing.website ? <a href={listing.website} target="_blank" rel="noreferrer">Website</a> : null}
-                {listing.latitude != null && listing.longitude != null ? <a href={directionsUrl(listing.latitude, listing.longitude)} target="_blank" rel="noreferrer">Directions</a> : null}
-              </span>
-            </li>
-          ))}
-        </ul>
-        {credit ? <p className="discover-lede">{credit}</p> : null}
-      </div>
-    </section>
+    <>
+      <PlaceGrid places={listings.map(placeCardFromListing)} label="Nearby" featureFirst />
+      {credit ? <p className="discover-lede">{credit}</p> : null}
+    </>
   )
 }

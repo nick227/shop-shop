@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import type { LocationData } from '@shared/types'
 import { HOME_RADIUS_MILES } from '../shell/placeMemory'
@@ -9,6 +9,7 @@ import { NeighborhoodMap } from '../discovery/NeighborhoodMap'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from '../discovery/tiles'
 import '../discovery/discovery.css'
 import { NeighborhoodGuide } from './NeighborhoodGuide'
+import { PlaceCard } from './PlaceCard'
 import { neighborhoodPath, type NeighborhoodCard } from './neighborhoodHero'
 import { apiOrigin, loadProducts, loadStores, loadStories } from './loadDiscovery'
 
@@ -104,14 +105,11 @@ export function NeighborhoodProfile() {
             <p className="discover-lede">Associated ZIP codes: {profile.postalCodes.join(', ')}. A ZIP can cover more than one neighborhood, so these codes are not a boundary.</p>
           ) : null}
           {profile.nearby.length > 0 ? (
-            <>
-              <p className="tile-kicker">Nearby neighborhoods</p>
-              <ul className="hero-areas">
-                {profile.nearby.map((area) => (
-                  <li key={area.id}><Link to={neighborhoodPath(area.slug)}>{area.name}</Link></li>
-                ))}
-              </ul>
-            </>
+            <div className="place-row">
+              {profile.nearby.map((area) => (
+                <PlaceCard key={area.id} place={{ id: area.id, href: neighborhoodPath(area.slug), name: area.name, categoryLabel: 'Neighborhood', meta: area.headline, imageUrl: area.coverUrl }} />
+              ))}
+            </div>
           ) : null}
         </div>
         <div className="hero-map">
