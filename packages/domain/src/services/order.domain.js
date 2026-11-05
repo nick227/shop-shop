@@ -9,6 +9,7 @@ export class OrderDomain {
     totalsConfig;
     constructor(config) {
         this.totalsConfig = {
+            ...config,
             taxRate: config?.taxRate ?? 0.1,
             defaultDeliveryFee: config?.defaultDeliveryFee ?? 5.0,
             platformFeePercent: config?.platformFeePercent ??

@@ -168,7 +168,8 @@ export const processOrderPayment = async (
     orderId: order.id,
     paymentMethodId: pm,
     connectedAccountId: order.store.stripeAccountId!,
-    applicationFeeAmount: order.serviceFeeAmount,
+    // What the platform keeps: the shopper service fee plus the vendor's commission.
+    applicationFeeAmount: new Decimal(order.serviceFeeAmount.toString()).plus(order.vendorCommissionAmount.toString()),
     idempotencyKey: `paymentintent-order-${order.id}`,
   }
 

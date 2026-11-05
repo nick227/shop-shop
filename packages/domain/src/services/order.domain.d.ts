@@ -1,5 +1,5 @@
 import { type CheckoutTotalsConfig } from '../order/checkout.js';
-export type { CheckoutCart, CheckoutTotals } from '../order/checkout.js';
+export type { CheckoutCart, CheckoutTotals, CheckoutTotalsConfig, CheckoutTotalsOverrides } from '../order/checkout.js';
 /** The one checkout pricing calculation; quotes and orders both use it. */
 export { computeCheckoutTotals } from '../order/checkout.js';
 export declare class OrderDomain {
@@ -17,6 +17,8 @@ export declare class OrderDomain {
         total: import("decimal.js").Decimal;
         serviceFeePercent: import("decimal.js").Decimal;
         serviceFeeAmount: import("decimal.js").Decimal;
+        vendorCommissionPercent: import("decimal.js").Decimal;
+        vendorCommissionAmount: import("decimal.js").Decimal;
         netToVendor: import("decimal.js").Decimal;
         storeId: string;
         storeLatitude: number | null;

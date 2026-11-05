@@ -27,6 +27,7 @@ export const CHECKOUT_CART_INCLUDE = {
         },
     },
 };
+const cents = (value) => Math.round(value * 100) / 100;
 export function placementFailureReason(cart, userId) {
     if (!cart) {
         return 'Cart not found';
@@ -68,35 +69,47 @@ export function placementFailureReason(cart, userId) {
     return null;
 }
 /** Pure: money lines from an already-validated cart row. */
-export function computeCheckoutTotals(cart, deliveryType, tipAmount, config) {
+export function computeCheckoutTotals(cart, deliveryType, tipAmount, config, overrides = {}) {
     let subtotalNum = 0;
     for (const cartItem of cart.items) {
         const itemPrice = Number.parseFloat(cartItem.unitPrice.toString());
         subtotalNum += itemPrice * cartItem.quantity;
     }
+    subtotalNum = cents(subtotalNum);
     let feesNum = 0;
     if (deliveryType === 'DELIVERY') {
-        feesNum = cart.store.deliveryCharge
-            ? Number.parseFloat(cart.store.deliveryCharge.toString())
-            : config.defaultDeliveryFee;
+        feesNum =
+            overrides.deliveryFee ??
+                (cart.store.deliveryCharge ? Number.parseFloat(cart.store.deliveryCharge.toString()) : config.defaultDeliveryFee);
     }
-    const taxNum = subtotalNum * config.taxRate;
-    const tipNum = tipAmount;
-    const totalBeforeFee = subtotalNum + feesNum + taxNum + tipNum;
-    const serviceFeePercent = cart.store.commissionRate
+    feesNum = cents(feesNum);
+    const taxNum = cents(overrides.tax ?? subtotalNum * config.taxRate);
+    const tipNum = cents(Math.max(0, tipAmount));
+    // Shopper service fee: an explicit platform policy on the subtotal (not on tax or tip).
+    const servicePercent = config.shopperServiceFeePercent ?? 0;
+    let serviceFeeNum = subtotalNum * (servicePercent / 100);
+    if (subtotalNum > 0 && config.shopperServiceFeeMinimum !== undefined)
+        serviceFeeNum = Math.max(serviceFeeNum, config.shopperServiceFeeMinimum);
+    if (config.shopperServiceFeeMaximum !== undefined)
+        serviceFeeNum = Math.min(serviceFeeNum, config.shopperServiceFeeMaximum);
+    serviceFeeNum = cents(serviceFeeNum);
+    const totalNum = cents(subtotalNum + feesNum + taxNum + tipNum + serviceFeeNum);
+    // Vendor commission: the store's rate (or the platform default) on the subtotal, paid by the vendor.
+    const commissionPercent = cart.store.commissionRate
         ? Number.parseFloat(cart.store.commissionRate.toString())
         : config.platformFeePercent;
-    const serviceFeeAmountNum = totalBeforeFee * (serviceFeePercent / 100);
-    const totalNum = totalBeforeFee + serviceFeeAmountNum;
-    const netToVendorNum = totalNum - serviceFeeAmountNum;
+    const commissionNum = cents(subtotalNum * (commissionPercent / 100));
+    const netToVendorNum = cents(totalNum - serviceFeeNum - commissionNum);
     return {
         subtotal: new Decimal(subtotalNum.toFixed(2)),
         fees: new Decimal(feesNum.toFixed(2)),
         tax: new Decimal(taxNum.toFixed(2)),
         tip: new Decimal(tipNum.toFixed(2)),
         total: new Decimal(totalNum.toFixed(2)),
-        serviceFeePercent: new Decimal(serviceFeePercent.toFixed(2)),
-        serviceFeeAmount: new Decimal(serviceFeeAmountNum.toFixed(2)),
+        serviceFeePercent: new Decimal(servicePercent.toFixed(2)),
+        serviceFeeAmount: new Decimal(serviceFeeNum.toFixed(2)),
+        vendorCommissionPercent: new Decimal(commissionPercent.toFixed(2)),
+        vendorCommissionAmount: new Decimal(commissionNum.toFixed(2)),
         netToVendor: new Decimal(netToVendorNum.toFixed(2)),
         storeId: cart.store.id,
         storeLatitude: cart.store.latitude != null ? Number(cart.store.latitude) : null,

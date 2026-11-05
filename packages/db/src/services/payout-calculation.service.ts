@@ -27,6 +27,8 @@ export type OrderSnapshotForPayout = {
   readonly paymentStatus: string
   readonly subtotal: unknown
   readonly serviceFeeAmount: unknown
+  /** Absent on rows read before commissions were recorded separately. */
+  readonly vendorCommissionAmount?: unknown
   readonly tip: unknown
   readonly netToVendor: unknown
 }
@@ -47,7 +49,8 @@ export type PayoutOrderSnapshotCents = {
 
 export function snapshotOrderForPayout(order: OrderSnapshotForPayout): PayoutOrderSnapshotCents {
   const grossSalesCents = decimalToCents(order.subtotal)
-  const platformFeesCents = decimalToCents(order.serviceFeeAmount)
+  // Platform fees: the shopper service fee plus the vendor commission.
+  const platformFeesCents = decimalToCents(order.serviceFeeAmount) + decimalToCents(order.vendorCommissionAmount ?? 0)
   const tipsCents = decimalToCents(order.tip)
   const processorFeesCents = 0
   const discountsCents = 0

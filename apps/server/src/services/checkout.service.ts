@@ -10,18 +10,12 @@ import {
 } from '@packages/db'
 import { OrderDomain, computeCheckoutTotals } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
+import { CHECKOUT_TOTALS_CONFIG } from '../commerce/pricingPolicy.js'
 import { isCodPaymentsEnabled } from '../config/stripeConnectUrls.js'
 
-const TAX_RATE = 0.0825
-const DEFAULT_DELIVERY_FEE = 3.99
-const PLATFORM_FEE_PERCENT = 3
 const SESSION_TTL_MS = 60 * 60 * 1000
 
-const orderDomain = new OrderDomain({
-  taxRate: TAX_RATE,
-  defaultDeliveryFee: DEFAULT_DELIVERY_FEE,
-  platformFeePercent: PLATFORM_FEE_PERCENT,
-})
+const orderDomain = new OrderDomain(CHECKOUT_TOTALS_CONFIG)
 
 function decimalToPrisma(d: InstanceType<typeof Decimal>) {
   return new Decimal(d.toFixed(2))
@@ -149,7 +143,7 @@ export async function quoteCheckout(input: CheckoutQuoteInput) {
     { items: lines, store } as unknown as Parameters<typeof computeCheckoutTotals>[0],
     deliveryType,
     tip,
-    { taxRate: TAX_RATE, defaultDeliveryFee: DEFAULT_DELIVERY_FEE, platformFeePercent: PLATFORM_FEE_PERCENT },
+    CHECKOUT_TOTALS_CONFIG,
   )
   const subtotal = totals.subtotal.toNumber()
   return {
@@ -394,6 +388,8 @@ export async function completeCheckout(userId: string | undefined, input: Comple
         total: decimalToPrisma(totals.total),
         serviceFeePercent: decimalToPrisma(totals.serviceFeePercent),
         serviceFeeAmount: decimalToPrisma(totals.serviceFeeAmount),
+        vendorCommissionPercent: decimalToPrisma(totals.vendorCommissionPercent),
+        vendorCommissionAmount: decimalToPrisma(totals.vendorCommissionAmount),
         netToVendor: decimalToPrisma(totals.netToVendor),
         paymentStatus: 'UNPAID',
         addressSnapshot:

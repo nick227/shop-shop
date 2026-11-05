@@ -58,13 +58,31 @@ describe('checkout quote', () => {
     expect(quote.deliveryFee).toBe(2.5)
     expect(quote.tax).toBe(1.32)
     expect(quote.tip).toBe(3)
-    // 3% service fee on 16 + 2.50 + 1.32 + 3 = 22.82
-    expect(quote.serviceFee).toBe(0.68)
-    expect(quote.total).toBe(23.5)
+    // No shopper service fee at launch; the vendor's commission never reaches the shopper's total.
+    expect(quote.serviceFee).toBe(0)
+    expect(quote.total).toBe(22.82)
     expect(quote.lines).toEqual([
       { itemId: taco, bundleId: null, title: 'Taco', quantity: 2, unitPrice: 4 },
       { itemId: null, bundleId, title: 'Taco combo', quantity: 1, unitPrice: 8 },
     ])
+  })
+
+  it('uses the store’s own commission rate, still without charging the shopper for it', async () => {
+    await prisma.store.update({ where: { id: storeId }, data: { commissionRate: 12.5 } })
+    const lines = [{ itemId: taco, quantity: 2 }]
+    const quote = await quoteCheckout({ items: lines, deliveryType: 'PICKUP' })
+    const session = await createCheckoutSession(userId, {
+      items: lines,
+      deliveryType: 'PICKUP',
+      deliveryMode: 'PICKUP',
+      paymentMethod: { type: 'CASH', token: 'cod_test' },
+    })
+    const done = await completeCheckout(userId, { sessionId: session.sessionId, paymentMethod: { type: 'CASH', token: 'cod_test' }, tipAmount: 0, paymentRail: 'COD' })
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: (done as { order: { id: string } }).order.id } })
+    expect(quote.total).toBe(8.66) // 8.00 + 0.66 tax; no commission in it
+    expect(Number(order.vendorCommissionPercent)).toBe(12.5)
+    expect(Number(order.vendorCommissionAmount)).toBe(1)
+    expect(Number(order.netToVendor)).toBe(7.66)
   })
 
   it('charges no delivery fee for pickup', async () => {
@@ -91,6 +109,11 @@ describe('checkout quote', () => {
     const orderId = (done as { order: { id: string } }).order.id
     const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } })
     expect(Number(order.total)).toBe(quote.total)
+    // Subtotal 2 + 8 = 10; the platform default commission (3%) comes out of the vendor's share.
+    expect(Number(order.serviceFeeAmount)).toBe(0)
+    expect(Number(order.vendorCommissionPercent)).toBe(3)
+    expect(Number(order.vendorCommissionAmount)).toBe(0.3)
+    expect(Number(order.netToVendor)).toBe(Number((quote.total - 0.3).toFixed(2)))
     expect(order.items.map((line) => ({ bundleId: line.bundleId, unitPrice: Number(line.unitPrice) }))).toEqual(
       expect.arrayContaining([
         { bundleId, unitPrice: 8 },

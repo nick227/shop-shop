@@ -10,6 +10,7 @@ import {
   OrderQuerySchema,
 } from '@packages/schemas/dtos'
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
+import { CHECKOUT_TOTALS_CONFIG } from '../commerce/pricingPolicy.js'
 import {
   prisma,
   publishOrderStatusChanged,
@@ -26,7 +27,7 @@ import {
   resolveOrderDeliveryCoords,
 } from './order-create.helpers.js'
 
-const orderDomain = new OrderDomain()
+const orderDomain = new OrderDomain(CHECKOUT_TOTALS_CONFIG)
 
 function parsePermissions(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((p): p is string => typeof p === 'string') : []
@@ -234,6 +235,8 @@ export const orderResource = defineResource({
         total: totals.total,
         serviceFeePercent: totals.serviceFeePercent,
         serviceFeeAmount: totals.serviceFeeAmount,
+        vendorCommissionPercent: totals.vendorCommissionPercent,
+        vendorCommissionAmount: totals.vendorCommissionAmount,
         netToVendor: totals.netToVendor,
         addressId: input.addressId,
         addressSnapshot,

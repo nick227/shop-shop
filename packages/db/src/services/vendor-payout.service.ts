@@ -71,6 +71,7 @@ export async function getVendorPayoutSummary(
       paymentStatus: true,
       subtotal: true,
       serviceFeeAmount: true,
+      vendorCommissionAmount: true,
       tip: true,
       netToVendor: true,
     },
@@ -124,6 +125,7 @@ export async function processVendorPayout(
       paymentStatus: true,
       subtotal: true,
       serviceFeeAmount: true,
+      vendorCommissionAmount: true,
       tip: true,
       netToVendor: true,
     },
@@ -246,6 +248,7 @@ export async function getStoresReadyForPayout(
       _sum: {
         subtotal: true,
         serviceFeeAmount: true,
+      vendorCommissionAmount: true,
         netToVendor: true,
         tip: true,
       },
