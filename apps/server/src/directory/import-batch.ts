@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto'
 import { prisma } from '@packages/db'
 import { classifyName } from './classify.js'
-import { austinNeighborhoods } from './osm-source.js'
 import type { ListingCandidate, ListingSource } from './types.js'
 
 function slugFor(name: string, sourceId: string): string {
@@ -148,43 +147,4 @@ export async function manualImportEntry(entryId: string, input: { street: string
   }, null)
   await prisma.businessImportEntry.update({ where: { id: entry.id }, data: { status: 'IMPORTED', listingId: listing.id } })
   return listing
-}
-
-export async function seedAustinNeighborhoods() {
-  const austin = await prisma.place.findUnique({ where: { slug: 'austin-tx' } })
-  if (!austin) throw new Error('Austin is not in the place directory')
-  const areas = await austinNeighborhoods()
-  let created = 0
-  for (const area of areas) {
-    const slug = `austin-tx-${area.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`.slice(0, 120)
-    const place = await prisma.place.upsert({
-      where: { slug },
-      create: {
-        id: randomUUID(),
-        kind: 'NEIGHBORHOOD',
-        name: area.name,
-        slug,
-        parentId: austin.id,
-        state: 'TX',
-        country: 'US',
-        latitude: area.latitude.toFixed(8),
-        longitude: area.longitude.toFixed(8),
-        published: false,
-      },
-      update: { latitude: area.latitude.toFixed(8), longitude: area.longitude.toFixed(8) },
-    })
-    created += 1
-    if (!area.zip) continue
-    await prisma.postalCode.upsert({
-      where: { code: area.zip },
-      create: { code: area.zip, cityPlaceId: austin.id, latitude: area.latitude.toFixed(8), longitude: area.longitude.toFixed(8) },
-      update: {},
-    })
-    await prisma.placePostalCode.upsert({
-      where: { placeId_postalCode: { placeId: place.id, postalCode: area.zip } },
-      create: { placeId: place.id, postalCode: area.zip },
-      update: {},
-    })
-  }
-  return { neighborhoods: created }
 }

@@ -51,6 +51,8 @@ export default defineConfig(({ mode }) => {
         target: apiTarget,
         changeOrigin: true,
         secure: false,
+        timeout: 600_000,
+        proxyTimeout: 600_000,
       },
       // Search routes - forward unchanged
       '/api/search': {

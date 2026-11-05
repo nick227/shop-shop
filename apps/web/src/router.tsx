@@ -35,6 +35,7 @@ const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 const RiverPage = lazy(() => import('./pages/public/River.page'))
 const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
+const DirectoryListingPage = lazy(() => import('./pages/public/DirectoryListing.page'))
 
 // Affiliate pages;
 const BecomeAffiliatePage = lazy(() => import('./pages/public/BecomeAffiliate.page'))
@@ -229,6 +230,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           path: '/neighborhoods/:slug',
           element: lazyRoute(NeighborhoodPage),
           handle: { title: 'Neighborhood' },
+        },
+        {
+          path: '/directory/:slug',
+          element: lazyRoute(DirectoryListingPage),
+          handle: { title: 'Directory' },
         },
         // Become an affiliate (public, no auth required — form handles login check);
         {

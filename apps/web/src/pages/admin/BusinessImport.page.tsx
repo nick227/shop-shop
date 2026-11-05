@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@stores/authStore'
 import { Button } from '@shared/ui/primitives'
+import { CoverageReportView, type CoverageReport } from './CoverageReport'
 import { ManualListingForm } from './ManualListingForm'
 
 type Candidate = {
@@ -38,7 +39,7 @@ export default function AdminBusinessImportPage() {
   const [batch, setBatch] = useState<Batch | null>(null)
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
-  const [note, setNote] = useState<string | undefined>()
+  const [report, setReport] = useState<CoverageReport | null>(null)
 
   const load = async (path: string, init?: RequestInit) => {
     const response = await fetch(`${apiBase()}${path}`, { ...init, headers })
@@ -94,14 +95,13 @@ export default function AdminBusinessImportPage() {
     }
   }
 
-  const refreshGeography = async () => {
+  const seedCoverage = async () => {
     setBusy(true)
     setError(undefined)
     try {
-      const result = await load('/api/admin/business-imports/geography', { method: 'POST' }) as { neighborhoods: number }
-      setNote(`Saved ${result.neighborhoods} Austin neighborhoods from OpenStreetMap. New profiles stay unpublished.`)
+      setReport(await load('/api/admin/business-imports/coverage', { method: 'POST' }) as CoverageReport)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Geography lookup failed')
+      setError(caught instanceof Error ? caught.message : 'Coverage seed failed')
     } finally {
       setBusy(false)
     }
@@ -112,13 +112,13 @@ export default function AdminBusinessImportPage() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Directory import</h1>
-        <Button size="small" variant="outline" disabled={busy} onClick={refreshGeography}>Update Austin neighborhoods</Button>
+        <Button size="small" variant="outline" disabled={busy} onClick={seedCoverage}>{busy ? 'Working…' : 'Seed Austin coverage'}</Button>
       </div>
-      <p className="text-sm text-muted-foreground">Paste one name or a list. OpenStreetMap fills the address. Listings do not accept orders.</p>
+      <p className="text-sm text-muted-foreground">Paste names for one lookup, or seed Austin ZIP codes, neighborhood drafts, and directory places. Seeded places stay non-orderable. A full seed can take a few minutes.</p>
       <textarea className="min-h-32 w-full rounded-md border border-border bg-background px-3 py-2 text-sm" placeholder={'Franklin Barbecue\nBarton Springs Pool'} value={names} onChange={(event) => setNames(event.target.value)} />
       <Button size="small" disabled={busy || lines(names).length === 0} onClick={search}>{busy ? 'Working…' : 'Find businesses'}</Button>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {note ? <p className="text-sm">{note}</p> : null}
+      {report ? <CoverageReportView report={report} /> : null}
       {batch ? (
         <div className="space-y-4">
           <Button size="small" disabled={busy} onClick={publishReady}>Publish ready matches</Button>

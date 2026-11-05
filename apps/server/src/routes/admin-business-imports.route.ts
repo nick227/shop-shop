@@ -2,8 +2,10 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@packages/db'
 import { requireAdmin } from '../middleware/rbac.js'
-import { chooseImportCandidate, createImportBatch, manualImportEntry, publishImportEntries, seedAustinNeighborhoods } from '../directory/import-batch.js'
-import { osmSource } from '../directory/osm-source.js'
+import { chooseImportCandidate, createImportBatch, manualImportEntry, publishImportEntries } from '../directory/import-batch.js'
+import { austinNeighborhoods, osmSource } from '../directory/osm-source.js'
+import { seedAustinCoverage } from '../directory/seed-coverage.js'
+import { seedAustinNeighborhoods } from '../directory/seed-neighborhoods.js'
 import type { ListingSource } from '../directory/types.js'
 
 const NamesSchema = z.object({
@@ -72,7 +74,17 @@ export function adminBusinessImportRoutes(source: ListingSource = osmSource) {
 
     app.post('/admin/business-imports/geography', async (_req, reply) => {
       try {
-        return await seedAustinNeighborhoods()
+        const result = await seedAustinNeighborhoods(await austinNeighborhoods())
+        return { neighborhoods: result.created + result.preserved, ...result }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Lookup failed'
+        return reply.code(502).send({ error: message })
+      }
+    })
+
+    app.post('/admin/business-imports/coverage', async (_req, reply) => {
+      try {
+        return await seedAustinCoverage()
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Lookup failed'
         return reply.code(502).send({ error: message })

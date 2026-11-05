@@ -1,11 +1,16 @@
+import { Link } from 'react-router-dom'
+import { directionsUrl } from './directoryLinks'
+
 export type DirectoryListing = {
   readonly id: string
+  readonly slug: string
   readonly name: string
   readonly categoryLabel: string
   readonly addressStreet: string | null
   readonly distance: number
   readonly website: string | null
-  readonly orderable: boolean
+  readonly latitude: number | null
+  readonly longitude: number | null
   readonly attribution: string | null
 }
 
@@ -25,7 +30,11 @@ export function DirectoryList({ listings }: { readonly listings: readonly Direct
                 {listing.addressStreet ? ` · ${listing.addressStreet}` : ''}
                 {` · ${listing.distance.toFixed(1)} mi`}
               </span>
-              <span>Not accepting orders</span>
+              <span className="directory-actions">
+                <Link to={`/directory/${listing.slug}`}>View details</Link>
+                {listing.website ? <a href={listing.website} target="_blank" rel="noreferrer">Website</a> : null}
+                {listing.latitude != null && listing.longitude != null ? <a href={directionsUrl(listing.latitude, listing.longitude)} target="_blank" rel="noreferrer">Directions</a> : null}
+              </span>
             </li>
           ))}
         </ul>
