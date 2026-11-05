@@ -84,7 +84,8 @@ export function DeliveryAddress({ signedIn, saved, selectedId, draft, onSelect, 
   readonly onSave: (draft: DeliveryAddressDraft) => Promise<void>
   readonly saving: boolean
 }) {
-  const [adding, setAdding] = useState(saved.length === 0)
+  // Editing a typed address reopens it, filled in; otherwise saved addresses come first.
+  const [adding, setAdding] = useState(saved.length === 0 || (draft !== null && selectedId === null))
   useEffect(() => {
     if (saved.length === 0) setAdding(true)
   }, [saved.length])

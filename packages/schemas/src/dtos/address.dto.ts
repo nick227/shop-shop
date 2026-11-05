@@ -5,7 +5,8 @@ import { z } from 'zod'
 // ========================================
 
 export const CreateAddressInputSchema = z.object({
-  userId: z.string(),
+  /** Ignored: the server always uses the signed-in user (see address.resource beforeCreate). */
+  userId: z.string().optional(),
   label: z.string().optional(),
   contactName: z.string().optional(),
   phone: z.string().optional(),

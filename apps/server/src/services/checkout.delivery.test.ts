@@ -86,6 +86,9 @@ describe('delivery at checkout', () => {
     await prisma.store.update({ where: { id: storeId }, data: { deliveryDistance: 0 } })
     const result = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddress: HOME })
     expect(result.blocked).toMatchObject({ code: 'NO_DELIVERY_AREA' })
+    // Said before any address, so checkout can offer pickup only.
+    const noAddress = await quote([{ itemId: burger, quantity: 2 }])
+    expect(noAddress.fulfillment.delivery).toMatchObject({ available: false, code: 'NO_DELIVERY_AREA' })
   })
 
   it('explains an address it can’t find', async () => {
@@ -120,6 +123,12 @@ describe('delivery at checkout', () => {
     expect(deliveryOnly.blocked).toMatchObject({ code: 'STORE_DOES_NOT_OFFER_PICKUP' })
   })
 
+  it('says up front when the store isn’t taking orders', async () => {
+    await prisma.store.update({ where: { id: storeId }, data: { acceptingOrders: false, ordersPausedReason: 'Back at 5pm' } })
+    const result = await quoteCheckout({ items: [{ itemId: burger, quantity: 2 }], deliveryType: 'PICKUP' }, userId)
+    expect(result.blocked).toEqual({ code: 'STORE_NOT_TAKING_ORDERS', message: 'Back at 5pm' })
+  })
+
   it('uses a saved address only for its owner', async () => {
     const saved = await prisma.address.create({ data: { userId, ...HOME, country: 'US' } })
     const mine = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddressId: saved.id })
@@ -148,6 +157,20 @@ describe('delivery at checkout', () => {
     expect(order.taxProvider).toBe('estimate')
     expect(order.addressSnapshot).toMatchObject({ line1: '4500 Duval St', line2: 'Apt 2', instructions: 'Ring twice' })
     expect(order.deliveryLatitude).not.toBeNull()
+  })
+
+  it('answers a repeated completion with the order it already placed', async () => {
+    const session = await createCheckoutSession(userId, {
+      items: [{ itemId: burger, quantity: 2 }],
+      deliveryType: 'PICKUP',
+      deliveryMode: 'PICKUP',
+      paymentMethod: COD,
+    })
+    const complete = () => completeCheckout(userId, { sessionId: session.sessionId, paymentMethod: COD, tipAmount: 0, paymentRail: 'COD' })
+    const first = (await complete()) as { order: { id: string } }
+    const again = (await complete()) as { order: { id: string } }
+    expect(again.order.id).toBe(first.order.id)
+    expect(await prisma.order.count({ where: { cartId: session.sessionId } })).toBe(1)
   })
 
   it('refuses to start delivery checkout the store can’t fulfill', async () => {

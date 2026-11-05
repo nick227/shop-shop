@@ -93,6 +93,31 @@ describe('Address Routes E2E', () => {
       expect(body.country).toBe('US')
     })
 
+    it('creates an address for the signed-in user without being told who that is', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/addresses',
+        headers: authHeaders(user.token),
+        payload: { line1: '4500 Duval St', line2: '2B', city: 'Austin', state: 'TX', postalCode: '78751', country: 'US' },
+      })
+      expect(response.statusCode).toBe(201)
+      const body = JSON.parse(response.body)
+      const { prisma } = await import('@packages/db')
+      expect((await prisma.address.findUnique({ where: { id: body.id } }))?.userId).toBe(user.id)
+    })
+
+    it('never creates an address for someone else', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/addresses',
+        headers: authHeaders(user.token),
+        payload: { userId: '00000000-0000-0000-0000-000000000000', line1: '1 Elm St', city: 'Austin', state: 'TX', postalCode: '78751', country: 'US' },
+      })
+      expect(response.statusCode).toBe(201)
+      const { prisma } = await import('@packages/db')
+      expect((await prisma.address.findUnique({ where: { id: JSON.parse(response.body).id } }))?.userId).toBe(user.id)
+    })
+
     it('should require authentication', async () => {
       const response = await app.inject({
         method: 'POST',

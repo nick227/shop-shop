@@ -1,6 +1,7 @@
 import { z } from 'zod';
 export declare const CreateAddressInputSchema: z.ZodObject<{
-    userId: z.ZodString;
+    /** Ignored: the server always uses the signed-in user (see address.resource beforeCreate). */
+    userId: z.ZodOptional<z.ZodString>;
     label: z.ZodOptional<z.ZodString>;
     contactName: z.ZodOptional<z.ZodString>;
     phone: z.ZodOptional<z.ZodString>;
@@ -17,15 +18,15 @@ export declare const CreateAddressInputSchema: z.ZodObject<{
     externalRef: z.ZodOptional<z.ZodString>;
     archivedAt: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    userId: string;
     line1: string;
     city: string;
     state: string;
     postalCode: string;
     country: string;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line2?: string | undefined;
     instructions?: string | undefined;
@@ -34,15 +35,15 @@ export declare const CreateAddressInputSchema: z.ZodObject<{
     externalRef?: string | undefined;
     archivedAt?: string | undefined;
 }, {
-    userId: string;
     line1: string;
     city: string;
     state: string;
     postalCode: string;
     country: string;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line2?: string | undefined;
     instructions?: string | undefined;
@@ -69,10 +70,10 @@ export declare const UpdateAddressInputSchema: z.ZodEffects<z.ZodObject<{
     externalRef: z.ZodOptional<z.ZodString>;
     archivedAt: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    userId?: string | undefined;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line1?: string | undefined;
     line2?: string | undefined;
@@ -86,10 +87,10 @@ export declare const UpdateAddressInputSchema: z.ZodEffects<z.ZodObject<{
     externalRef?: string | undefined;
     archivedAt?: string | undefined;
 }, {
-    userId?: string | undefined;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line1?: string | undefined;
     line2?: string | undefined;
@@ -103,10 +104,10 @@ export declare const UpdateAddressInputSchema: z.ZodEffects<z.ZodObject<{
     externalRef?: string | undefined;
     archivedAt?: string | undefined;
 }>, {
-    userId?: string | undefined;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line1?: string | undefined;
     line2?: string | undefined;
@@ -120,10 +121,10 @@ export declare const UpdateAddressInputSchema: z.ZodEffects<z.ZodObject<{
     externalRef?: string | undefined;
     archivedAt?: string | undefined;
 }, {
-    userId?: string | undefined;
     phone?: string | undefined;
-    isActive?: boolean | undefined;
     label?: string | undefined;
+    isActive?: boolean | undefined;
+    userId?: string | undefined;
     contactName?: string | undefined;
     line1?: string | undefined;
     line2?: string | undefined;
@@ -157,12 +158,12 @@ export declare const AddressResponseSchema: z.ZodObject<{
     orders: z.ZodString;
     archivedAt: z.ZodNullable<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    user: string;
-    userId: string;
     phone: string | null;
+    user: string;
     orders: string;
-    isActive: boolean | null;
     label: string | null;
+    isActive: boolean | null;
+    userId: string;
     contactName: string | null;
     line1: string;
     line2: string | null;
@@ -176,12 +177,12 @@ export declare const AddressResponseSchema: z.ZodObject<{
     externalRef: string | null;
     archivedAt: string | null;
 }, {
-    user: string;
-    userId: string;
     phone: string | null;
+    user: string;
     orders: string;
-    isActive: boolean | null;
     label: string | null;
+    isActive: boolean | null;
+    userId: string;
     contactName: string | null;
     line1: string;
     line2: string | null;
@@ -216,12 +217,12 @@ export declare const AddressListResponseSchema: z.ZodObject<{
         orders: z.ZodString;
         archivedAt: z.ZodNullable<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        user: string;
-        userId: string;
         phone: string | null;
+        user: string;
         orders: string;
-        isActive: boolean | null;
         label: string | null;
+        isActive: boolean | null;
+        userId: string;
         contactName: string | null;
         line1: string;
         line2: string | null;
@@ -235,12 +236,12 @@ export declare const AddressListResponseSchema: z.ZodObject<{
         externalRef: string | null;
         archivedAt: string | null;
     }, {
-        user: string;
-        userId: string;
         phone: string | null;
+        user: string;
         orders: string;
-        isActive: boolean | null;
         label: string | null;
+        isActive: boolean | null;
+        userId: string;
         contactName: string | null;
         line1: string;
         line2: string | null;
@@ -258,14 +259,13 @@ export declare const AddressListResponseSchema: z.ZodObject<{
     page: z.ZodNumber;
     limit: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
-    total: number;
     data: {
-        user: string;
-        userId: string;
         phone: string | null;
+        user: string;
         orders: string;
-        isActive: boolean | null;
         label: string | null;
+        isActive: boolean | null;
+        userId: string;
         contactName: string | null;
         line1: string;
         line2: string | null;
@@ -279,17 +279,17 @@ export declare const AddressListResponseSchema: z.ZodObject<{
         externalRef: string | null;
         archivedAt: string | null;
     }[];
+    total: number;
     page: number;
     limit: number;
 }, {
-    total: number;
     data: {
-        user: string;
-        userId: string;
         phone: string | null;
+        user: string;
         orders: string;
-        isActive: boolean | null;
         label: string | null;
+        isActive: boolean | null;
+        userId: string;
         contactName: string | null;
         line1: string;
         line2: string | null;
@@ -303,6 +303,7 @@ export declare const AddressListResponseSchema: z.ZodObject<{
         externalRef: string | null;
         archivedAt: string | null;
     }[];
+    total: number;
     page: number;
     limit: number;
 }>;

@@ -133,7 +133,7 @@ function FulfillmentStep(props: {
       {deliveryOk?.available ? (
         <p className="text-sm text-muted-foreground">
           Delivery {formatCurrency(deliveryOk.fee)}
-          {deliveryOk.distanceMiles !== null ? ` · ${deliveryOk.distanceMiles} mi away` : ''}
+          {deliveryOk.distanceMiles !== null && !data?.destination?.approximate ? ` · ${deliveryOk.distanceMiles} mi away` : ''}
         </p>
       ) : null}
     </Step>
@@ -199,9 +199,12 @@ function usePlaceOrder({ cart, sessionKey, payable, deliveryType, addressId, dra
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentError, setPaymentError] = useState<string | undefined>()
   const lastPaymentRef = useRef<CheckoutPaymentPayload | null>(null)
+  // One order at a time: a double tap must not start a second session or completion.
+  const inFlight = useRef(false)
 
   const handlePayment = async (payload: CheckoutPaymentPayload) => {
-    if (!cart || !payable) return
+    if (!cart || !payable || inFlight.current) return
+    inFlight.current = true
     setIsSubmitting(true)
     setPaymentError(undefined)
     lastPaymentRef.current = payload
@@ -242,6 +245,7 @@ function usePlaceOrder({ cart, sessionKey, payable, deliveryType, addressId, dra
       }
       setPaymentError(appError.message)
     } finally {
+      inFlight.current = false
       setIsSubmitting(false)
     }
   }
@@ -287,13 +291,12 @@ function checkoutSessionKey(cart: ReturnType<typeof useCart>['cart'], choices: r
   return cart ? `${cart.id}:${JSON.stringify([checkoutLines(cart), ...choices])}` : ''
 }
 
-function PaymentStep({ quote, hint, onPay, onRetry, onBackToCart, isSubmitting, paymentError }: {
+function PaymentStep({ quote, hint, onPay, onRetry, isSubmitting, paymentError }: {
   /** Set only when the order can be paid as quoted. */
   readonly quote: CheckoutQuote | undefined
   readonly hint: string
   readonly onPay: (payload: CheckoutPaymentPayload) => void
   readonly onRetry: () => void
-  readonly onBackToCart: () => void
   readonly isSubmitting: boolean
   readonly paymentError: string | undefined
 }) {
@@ -319,7 +322,6 @@ function PaymentStep({ quote, hint, onPay, onRetry, onBackToCart, isSubmitting, 
       tax={quote.tax}
       tip={quote.tip}
       onPaymentReady={onPay}
-      onBackToCart={onBackToCart}
       onRetryPayment={onRetry}
       isProcessing={isSubmitting}
       paymentError={paymentError}
@@ -372,7 +374,8 @@ export default function CheckoutPage() {
   const hasAddress = Boolean(addressId || draft)
   const chosen = data?.destination?.address ?? savedAddresses.find((a) => a.id === addressId) ?? draft
   const showPicker = delivering && (editingAddress || !hasAddress)
-  const payable = Boolean(data && !data.blocked && !quote.isFetching && !quote.error)
+  // Payable only once the choices are settled: no address mid-edit, no stale or blocked quote.
+  const payable = Boolean(data && !data.blocked && !quote.isFetching && !quote.error && !showPicker)
 
   const storeName = store?.name ?? 'the store'
   const storePath = store ? getStoreRoute({ id: store.id, name: store.name }) : null
@@ -488,10 +491,9 @@ export default function CheckoutPage() {
           <Step title="Payment">
             <PaymentStep
               quote={payable ? data : undefined}
-              hint={paymentHint({ fetching: quote.isFetching, needsAddress: delivering && !hasAddress, blocked: Boolean(data?.blocked) })}
+              hint={paymentHint({ fetching: quote.isFetching, needsAddress: showPicker, blocked: Boolean(data?.blocked) })}
               onPay={(payload) => void handlePayment(payload)}
               onRetry={retryPayment}
-              onBackToCart={() => navigate('/cart')}
               isSubmitting={isSubmitting}
               paymentError={paymentError}
             />

@@ -174,15 +174,23 @@ export async function deliveryEligibility(
     ({ available: false, code, message, minimum, shortBy }) as const
 
   if (!store.deliveryEnabled) return unavailable('STORE_DOES_NOT_DELIVER', 'This store offers pickup only.')
+  // Store-level reasons first, so a store that can't deliver anywhere never asks for an address.
+  const zones = await prisma.deliveryZone.count({ where: { storeId: store.id, isActive: true } })
+  const radius = num(store.deliveryDistance)
+  if (zones === 0 && (radius === null || radius <= 0)) {
+    return unavailable('NO_DELIVERY_AREA', 'This store hasn’t set its delivery area yet. Pickup is available.')
+  }
+  const storeLat = num(store.latitude)
+  const storeLng = num(store.longitude)
+  if (zones === 0 && (storeLat === null || storeLng === null)) {
+    return unavailable('STORE_LOCATION_MISSING', 'This store hasn’t set its location for delivery yet.')
+  }
   if (destination === null) return unavailable('ADDRESS_REQUIRED', 'Add a delivery address to see if this store delivers to you.')
   if (destination === 'NOT_FOUND') return unavailable('ADDRESS_NOT_FOUND', 'We couldn’t find that address. Check the street and ZIP code.')
 
-  const storeLat = num(store.latitude)
-  const storeLng = num(store.longitude)
   const distanceMiles =
     storeLat !== null && storeLng !== null ? Math.round(haversineMiles({ latitude: storeLat, longitude: storeLng }, { latitude: destination.lat, longitude: destination.lng }) * 10) / 10 : null
 
-  const zones = await prisma.deliveryZone.count({ where: { storeId: store.id, isActive: true } })
   let fee: number
   let minimum = storeMinimum
   let zoneName: string | null = null
@@ -193,12 +201,8 @@ export async function deliveryEligibility(
     minimum = num(zone.minOrder) ?? storeMinimum
     zoneName = zone.name
   } else {
-    // Without zones, a store delivers within its radius. No radius means no delivery area yet,
-    // never "anywhere".
-    const radius = num(store.deliveryDistance)
-    if (radius === null || radius <= 0) return unavailable('NO_DELIVERY_AREA', 'This store hasn’t set its delivery area yet. Pickup is available.')
-    if (distanceMiles === null) return unavailable('STORE_LOCATION_MISSING', 'This store hasn’t set its location for delivery yet.')
-    if (distanceMiles > radius) {
+    // Without zones, a store delivers within its radius (checked above to exist, never "anywhere").
+    if (radius !== null && distanceMiles !== null && distanceMiles > radius) {
       return unavailable('OUTSIDE_DELIVERY_AREA', `This address is ${distanceMiles} miles away; the store delivers within ${radius} miles.`)
     }
     fee = num(store.deliveryCharge) ?? DEFAULT_DELIVERY_FEE

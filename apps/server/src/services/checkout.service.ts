@@ -7,6 +7,8 @@ import {
   assertStoreAcceptsOrders,
   StoreUnavailableError,
   computeBundlePrice,
+  storeOrderingBlock,
+  STORE_ORDERING_MESSAGES,
 } from '@packages/db'
 import { OrderDomain, computeCheckoutTotals } from '@packages/domain'
 import { AppError } from '../middleware/errors.js'
@@ -171,6 +173,10 @@ const PRICING_STORE_SELECT = {
   addressState: true,
   addressZip: true,
   addressCountry: true,
+  status: true,
+  isPublished: true,
+  acceptingOrders: true,
+  ordersPausedReason: true,
 } as const
 
 /** Accepts the older `{ street, zipCode }` shape too. */
@@ -208,6 +214,12 @@ async function priceCheckout(args: {
   let blocked: PricedCheckout['blocked'] = null
   if (args.deliveryType === 'DELIVERY' && !delivery.available) blocked = { code: delivery.code, message: delivery.message }
   if (args.deliveryType === 'PICKUP' && !store.pickupEnabled) blocked = { code: 'STORE_DOES_NOT_OFFER_PICKUP', message: 'This store offers delivery only.' }
+  // The same check checkout runs when the order is placed, said up front.
+  const ordering = storeOrderingBlock(store)
+  if (ordering) {
+    const message = ordering === 'PAUSED_BY_STORE' && store.ordersPausedReason ? store.ordersPausedReason : STORE_ORDERING_MESSAGES[ordering]
+    blocked = { code: 'STORE_NOT_TAKING_ORDERS', message }
+  }
 
   const delivering = args.deliveryType === 'DELIVERY' && delivery.available
   const deliveryFee = delivering ? delivery.fee : 0
@@ -240,6 +252,10 @@ async function priceCheckout(args: {
   )
   return { totals, tax, delivery, pickupAvailable: store.pickupEnabled, blocked }
 }
+
+/** Store availability keeps checkout's existing 409; other fulfillment problems are 422. */
+const blockedError = (blocked: { code: string; message: string }) =>
+  new AppError(blocked.code === 'STORE_NOT_TAKING_ORDERS' ? 409 : 422, blocked.message)
 
 const deliveryAvailability = (delivery: DeliveryEligibility) =>
   delivery.available
@@ -337,7 +353,7 @@ export async function createCheckoutSession(userId: string, input: CreateSession
       : null
   const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
   const priced = await priceCheckout({ storeId, lines, deliveryType, tip, destination })
-  if (priced.blocked) throw new AppError(422, priced.blocked.message)
+  if (priced.blocked) throw blockedError(priced.blocked)
 
   const meta: SessionMeta = {
     deliveryType,
@@ -385,7 +401,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
       status: true,
       note: true,
       expiresAt: true,
-      order: { select: { id: true, paymentStatus: true } },
+      order: { select: { id: true, paymentStatus: true, status: true, total: true, createdAt: true } },
       items: {
         select: {
           itemId: true,
@@ -404,7 +420,20 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   if (userId && cart.userId !== userId) throw new AppError(403, 'Forbidden')
   const checkoutUserId = userId ?? cart.userId
   if (cart.order) {
-    if (cart.order.paymentStatus === 'PAID') throw new AppError(409, 'This order has already been paid')
+    // A retry (double tap, lost response) of a completed checkout: answer with the order it made.
+    // A card order still awaiting payment is left to the payment flow.
+    if (cart.order.status !== 'PENDING_PAYMENT' || cart.order.paymentStatus === 'PAID') {
+      return {
+        order: {
+          id: cart.order.id,
+          status: cart.order.status,
+          total: Number(cart.order.total),
+          createdAt: cart.order.createdAt.toISOString(),
+        },
+        paymentId: null,
+        referralCodeApplied: false,
+      }
+    }
     throw new AppError(409, 'Order already created for this session')
   }
   if (!cart.expiresAt || new Date() > cart.expiresAt) throw new AppError(410, 'Checkout session has expired')
@@ -421,7 +450,7 @@ export async function completeCheckout(userId: string | undefined, input: Comple
   )
   const tip = Math.max(0, Number(input.tipAmount ?? 0) || 0)
   const priced = await priceCheckout({ storeId: cart.storeId, lines, deliveryType, tip, destination: meta.destination ?? null })
-  if (priced.blocked) throw new AppError(422, priced.blocked.message)
+  if (priced.blocked) throw blockedError(priced.blocked)
   const totals = priced.totals
   if (meta.quotedTotal !== undefined) {
     const before = meta.quotedTotal - (meta.tipAmount ?? 0)

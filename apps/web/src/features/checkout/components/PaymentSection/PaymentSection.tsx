@@ -64,6 +64,11 @@ export function PaymentSection({
     if (!agreedToTerms) {
       return
     }
+    // In checkout the button already reads "Place order · $total"; a second confirmation adds nothing.
+    if (!showBreakdown) {
+      void handleConfirmPayment()
+      return
+    }
     setShowConfirm(true)
   }
 
@@ -91,14 +96,17 @@ export function PaymentSection({
   }
 
   return (
-    <div className="mx-auto mb-10 max-w-7xl space-y-5">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Payment Method</h2>
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="rounded-full border border-border bg-muted/30 px-2 py-1">🔒 Secure Checkout</span>
-          <span className="rounded-full border border-border bg-muted/30 px-2 py-1">🛡️ 256-bit Encryption</span>
+    <div className={showBreakdown ? 'mx-auto mb-10 max-w-7xl space-y-5' : 'space-y-4'}>
+      {/* Inside checkout the page already titles this step and shows the totals. */}
+      {showBreakdown ? (
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Payment Method</h2>
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border bg-muted/30 px-2 py-1">🔒 Secure Checkout</span>
+            <span className="rounded-full border border-border bg-muted/30 px-2 py-1">🛡️ 256-bit Encryption</span>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
         {enableCod ? (
@@ -270,7 +278,7 @@ export function PaymentSection({
             disabled={isProcessing}
             className="flex-1"
           >
-            🔄 Retry Payment
+            Try again
           </Button>
         ) : (
           <Button
@@ -282,12 +290,12 @@ export function PaymentSection({
           >
             {isProcessing ? (
               <>
-                <span className="text-base leading-none">⏳</span> Processing...
+                Placing order…
               </>
             ) : paymentError ? (
-              '🔄 Retry Payment'
+              'Try again'
             ) : (
-              '💳 Pay $' + amount.toFixed(2)
+              'Place order · $' + amount.toFixed(2)
             )}
           </Button>
         )}

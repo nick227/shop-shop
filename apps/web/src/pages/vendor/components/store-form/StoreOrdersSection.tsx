@@ -10,7 +10,7 @@ import { TAX_CATEGORY_OPTIONS } from '@shared/lib/tax/taxCategories'
 
 export function StoreOrdersSection({ formData, onChange }: StoreFieldProps) {
   const radius = Number.parseFloat(formData.deliveryDistance || '0')
-  const missingArea = formData.deliveryEnabled && !(radius > 0)
+  const missingArea = formData.deliveryEnabled && (Number.isNaN(radius) || radius <= 0)
   const neither = !formData.deliveryEnabled && !formData.pickupEnabled
 
   return (
