@@ -9,7 +9,7 @@ import { Button } from '@shared/ui/primitives'
 import { cn } from '@shared/lib/cn'
 import { formatCurrency } from '@shared/lib/utils/format'
 import type { CheckoutQuote, DeliveryAddressDraft, FulfillmentType } from '../hooks/useCheckoutQuote'
-import type { SavedAddress } from '../hooks/useAddresses'
+import { useAddressSuggestions, type SavedAddress } from '../hooks/useAddresses'
 
 export function FulfillmentChoice({ value, onChange, offersPickup, offersDelivery }: {
   readonly value: FulfillmentType
@@ -202,8 +202,13 @@ function AddressForm({ initial, signedIn, saving, onCancel, onUse, onSaveAndUse 
       }}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
-        <label className="sr-only" htmlFor={`${id}-line1`}>Street address</label>
-        <input id={`${id}-line1`} className={field} placeholder="Street address" autoComplete="address-line1" value={form.line1} onChange={set('line1')} aria-invalid={Boolean(error) && !form.line1.trim()} />
+        <StreetInput
+          id={`${id}-line1`}
+          value={form.line1}
+          invalid={Boolean(error) && !form.line1.trim()}
+          onType={(line1) => setForm((current) => ({ ...current, line1 }))}
+          onPick={(picked) => setForm((current) => ({ ...current, ...picked }))}
+        />
         <label className="sr-only" htmlFor={`${id}-line2`}>Apt or unit</label>
         <input id={`${id}-line2`} className={field} placeholder="Apt, unit" autoComplete="address-line2" value={form.line2 ?? ''} onChange={set('line2')} />
       </div>
@@ -247,6 +252,91 @@ function AddressForm({ initial, signedIn, saving, onCancel, onUse, onSaveAndUse 
         ) : null}
       </div>
     </form>
+  )
+}
+
+/**
+ * The street field, suggesting full addresses as the shopper types when an address provider is set up.
+ * Picking one fills street, city, state and ZIP; the unit and instructions stay the shopper's.
+ */
+function StreetInput({ id, value, invalid, onType, onPick }: {
+  readonly id: string
+  readonly value: string
+  readonly invalid: boolean
+  readonly onType: (value: string) => void
+  readonly onPick: (address: Pick<DeliveryAddressDraft, 'line1' | 'city' | 'state' | 'postalCode'>) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+  const { data: suggestions = [] } = useAddressSuggestions(open ? value : '')
+  const listId = `${id}-suggestions`
+  const shown = open && suggestions.length > 0
+  const pick = (index: number) => {
+    const chosen = suggestions[index]
+    if (!chosen) return
+    onPick({ line1: chosen.line1, city: chosen.city, state: chosen.state, postalCode: chosen.postalCode })
+    setOpen(false)
+    setActive(-1)
+  }
+  return (
+    <div className="relative">
+      <label className="sr-only" htmlFor={id}>
+        Street address
+      </label>
+      <input
+        id={id}
+        className={field}
+        placeholder="Street address"
+        autoComplete="address-line1"
+        role="combobox"
+        aria-expanded={shown}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={shown && active >= 0 ? `${listId}-${active}` : undefined}
+        aria-invalid={invalid}
+        value={value}
+        onChange={(e) => {
+          onType(e.target.value)
+          setOpen(true)
+          setActive(-1)
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(e) => {
+          if (!shown) return
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActive((i) => Math.min(suggestions.length - 1, i + 1))
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActive((i) => Math.max(0, i - 1))
+          } else if (e.key === 'Enter' && active >= 0) {
+            e.preventDefault()
+            pick(active)
+          } else if (e.key === 'Escape') {
+            setOpen(false)
+          }
+        }}
+      />
+      {shown ? (
+        <ul id={listId} role="listbox" aria-label="Address suggestions" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+          {suggestions.map((suggestion, index) => (
+            <li
+              key={suggestion.id}
+              id={`${listId}-${index}`}
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                pick(index)
+              }}
+              className={cn('cursor-pointer px-3 py-2 text-sm', index === active ? 'bg-muted' : 'hover:bg-muted')}
+            >
+              {suggestion.label}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   )
 }
 

@@ -1,7 +1,7 @@
 /**
  * PaymentSection — COD / Stripe Payment Element checkout.
  */
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Elements } from '@stripe/react-stripe-js'
 import { toast } from 'sonner'
@@ -59,6 +59,9 @@ export function PaymentSection({
 
   const stripePromise = getStripePromise()
   const amountCents = Math.round(amount * 100)
+  // Stable options: a new object each render makes Stripe re-create the element; a changed amount
+  // is passed through as an update instead.
+  const elementsOptions = useMemo(() => ({ mode: 'payment' as const, amount: Math.max(50, amountCents), currency: 'usd' }), [amountCents])
 
   const handlePay = () => {
     if (!agreedToTerms) {
@@ -180,18 +183,17 @@ export function PaymentSection({
         )}
       </div>
 
-      {paymentMethod === 'stripe' && hasStripeKey && stripePromise && (
-        <Elements
-          stripe={stripePromise}
-          options={{
-            mode: 'payment',
-            amount: amountCents,
-            currency: 'usd',
-          }}
-        >
-          <StripePaymentFields ref={stripeFieldsRef} />
+      {/*
+        Elements stays mounted while this section exists; switching to cash only hides the card field.
+        Unmounting it mid-update is what threw "This Element has already been destroyed".
+      */}
+      {hasStripeKey && stripePromise ? (
+        <Elements stripe={stripePromise} options={elementsOptions}>
+          <div hidden={paymentMethod !== 'stripe'}>
+            <StripePaymentFields ref={stripeFieldsRef} />
+          </div>
         </Elements>
-      )}
+      ) : null}
 
       <label className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
         <input

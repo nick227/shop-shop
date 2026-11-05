@@ -6,13 +6,8 @@
  * and the subtotal meets the zone's or store's delivery minimum. The fee is the zone's, else the store's
  * delivery charge, else the platform default.
  */
-import {
-  createEnhancedGeocodingService,
-  findDeliveryZoneForAddress,
-  haversineMiles,
-  lookupPostalCode,
-  prisma,
-} from '@packages/db'
+import { findDeliveryZoneForAddress, haversineMiles, prisma } from '@packages/db'
+import { addressProvider, approximateDeliveryAllowed, type LocationPrecision } from './addressProvider.js'
 import { AppError } from '../middleware/errors.js'
 import { DEFAULT_DELIVERY_FEE } from './pricingPolicy.js'
 
@@ -32,8 +27,9 @@ export interface ResolvedDestination {
   readonly address: DeliveryAddressInput
   readonly lat: number
   readonly lng: number
-  /** True when only the ZIP code could be placed (no street-level geocoding). */
+  /** True unless the provider placed this exact street address; a ZIP center is never precise. */
   readonly approximate: boolean
+  readonly precision: LocationPrecision
 }
 
 export type DeliveryUnavailableCode =
@@ -44,6 +40,7 @@ export type DeliveryUnavailableCode =
   | 'BELOW_DELIVERY_MINIMUM'
   | 'STORE_LOCATION_MISSING'
   | 'NO_DELIVERY_AREA'
+  | 'ADDRESS_NOT_VERIFIED'
 
 export type DeliveryEligibility =
   | {
@@ -100,25 +97,12 @@ export function normalizeAddressInput(raw: unknown): DeliveryAddressInput {
   return address
 }
 
-let geocoder: ReturnType<typeof createEnhancedGeocodingService> | null | undefined
-function streetGeocoder() {
-  if (geocoder !== undefined) return geocoder
-  const apiKey = process.env.GEOCODING_API_KEY
-  geocoder = apiKey && !apiKey.startsWith('your') ? createEnhancedGeocodingService(prisma, { apiKey, enableCache: true, cacheTTLHours: 24 * 30 }) : null
-  return geocoder
-}
-
-/** A map position for an address: street-level when geocoding is configured, otherwise the ZIP's center. */
-export async function locateAddress(address: DeliveryAddressInput): Promise<{ lat: number; lng: number; approximate: boolean } | null> {
-  const service = streetGeocoder()
-  if (service) {
-    const hit = await service
-      .geocodeAddress(`${address.line1}, ${address.city}, ${address.state} ${address.postalCode}`)
-      .catch(() => null)
-    if (hit) return { lat: hit.latitude, lng: hit.longitude, approximate: false }
-  }
-  const zip = await lookupPostalCode(prisma, address.postalCode.slice(0, 5)).catch(() => null)
-  return zip ? { lat: zip.latitude, lng: zip.longitude, approximate: true } : null
+/** A map position for an address from the configured provider, with how precise it is. */
+export async function locateAddress(
+  address: DeliveryAddressInput,
+): Promise<{ lat: number; lng: number; approximate: boolean; precision: LocationPrecision } | null> {
+  const located = await addressProvider().locate(address)
+  return located ? { lat: located.lat, lng: located.lng, precision: located.precision, approximate: located.precision !== 'address' } : null
 }
 
 const geoOf = (geo: unknown): { lat: number; lng: number } | null => {
@@ -151,9 +135,16 @@ export async function resolveDestination(
       instructions: saved.instructions,
     }
     const stored = geoOf(saved.geo)
-    const located = stored ? { ...stored, approximate: Boolean((saved.geo as { approximate?: boolean } | null)?.approximate) } : await locateAddress(address)
+    const storedPrecision = ((saved.geo as { precision?: LocationPrecision } | null)?.precision ?? 'postal') as LocationPrecision
+    // A saved position is reused only when it was precise; otherwise try the provider again.
+    const located =
+      stored && storedPrecision === 'address'
+        ? { ...stored, precision: storedPrecision, approximate: false }
+        : ((await locateAddress(address)) ?? (stored ? { ...stored, precision: storedPrecision, approximate: true } : null))
     if (!located) return 'NOT_FOUND'
-    if (!stored) await prisma.address.update({ where: { id: saved.id }, data: { geo: located } }).catch(() => undefined)
+    if (!stored || storedPrecision !== located.precision) {
+      await prisma.address.update({ where: { id: saved.id }, data: { geo: { lat: located.lat, lng: located.lng, precision: located.precision } } }).catch(() => undefined)
+    }
     return { addressId: saved.id, address, ...located }
   }
   if (input.deliveryAddress) {
@@ -187,6 +178,10 @@ export async function deliveryEligibility(
   }
   if (destination === null) return unavailable('ADDRESS_REQUIRED', 'Add a delivery address to see if this store delivers to you.')
   if (destination === 'NOT_FOUND') return unavailable('ADDRESS_NOT_FOUND', 'We couldn’t find that address. Check the street and ZIP code.')
+  // Delivery is decided on the exact address. A ZIP center may only stand in where that's allowed.
+  if (destination.approximate && !approximateDeliveryAllowed()) {
+    return unavailable('ADDRESS_NOT_VERIFIED', 'We couldn’t confirm this exact address for delivery. Check the street address, or choose pickup.')
+  }
 
   const distanceMiles =
     storeLat !== null && storeLng !== null ? Math.round(haversineMiles({ latitude: storeLat, longitude: storeLng }, { latitude: destination.lat, longitude: destination.lng }) * 10) / 10 : null

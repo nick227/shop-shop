@@ -1,4 +1,5 @@
 /** The signed-in shopper's saved delivery addresses. */
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authGet, authPost } from '@shared/lib/auth/authFetch'
 import type { DeliveryAddressDraft } from './useCheckoutQuote'
@@ -38,5 +39,33 @@ export function useSaveAddress() {
       return body.data ?? body
     },
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export interface AddressSuggestion {
+  readonly id: string
+  readonly label: string
+  readonly line1: string
+  readonly city: string
+  readonly state: string
+  readonly postalCode: string
+}
+
+/** Addresses matching what's typed, once typing pauses; empty when the server has no provider. */
+export function useAddressSuggestions(query: string) {
+  const [debounced, setDebounced] = useState(query)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(query.trim()), 250)
+    return () => clearTimeout(timer)
+  }, [query])
+  return useQuery({
+    queryKey: ['address-suggestions', debounced],
+    queryFn: async (): Promise<AddressSuggestion[]> => {
+      const response = await authGet(`/api/address-suggestions?q=${encodeURIComponent(debounced)}`)
+      if (!response.ok) return []
+      return ((await response.json()) as { data?: AddressSuggestion[] }).data ?? []
+    },
+    enabled: debounced.length >= 3,
+    staleTime: 60_000,
   })
 }

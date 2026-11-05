@@ -91,6 +91,17 @@ describe('delivery at checkout', () => {
     expect(noAddress.fulfillment.delivery).toMatchObject({ available: false, code: 'NO_DELIVERY_AREA' })
   })
 
+  it('won’t decide delivery from a ZIP center when an exact address is required', async () => {
+    process.env.ALLOW_APPROXIMATE_DELIVERY = 'false'
+    try {
+      const result = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddress: HOME })
+      expect(result.blocked).toMatchObject({ code: 'ADDRESS_NOT_VERIFIED' })
+      expect(result.fulfillment.pickup.available).toBe(true)
+    } finally {
+      delete process.env.ALLOW_APPROXIMATE_DELIVERY
+    }
+  })
+
   it('explains an address it can’t find', async () => {
     const result = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddress: NOWHERE })
     expect(result.blocked).toMatchObject({ code: 'ADDRESS_NOT_FOUND' })

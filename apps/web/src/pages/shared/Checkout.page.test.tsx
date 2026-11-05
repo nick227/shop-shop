@@ -56,10 +56,10 @@ const authPost = vi.fn(async (url: string, body: unknown) => {
   }
   return { ok: true, json: async () => ({ data: { id: 'addr-new', label: null, isDefault: false, ...(body as object) } }) }
 })
-const authGet = vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) }))
+const authGet = vi.fn(async (_url?: string) => ({ ok: true, json: async () => ({ data: [] as unknown[] }) }))
 vi.mock('@shared/lib/auth/authFetch', () => ({
   authPost: (url: string, body: unknown) => authPost(url, body),
-  authGet: () => authGet(),
+  authGet: (url: string) => authGet(url),
 }))
 
 function renderCheckout() {
@@ -129,6 +129,26 @@ describe('CheckoutPage', () => {
     expect(screen.getByLabelText('Street address')).toHaveValue('100 Congress Ave')
     await userEvent.click(screen.getByRole('radio', { name: 'Pickup' }))
     expect(await screen.findByTestId('payment')).toBeInTheDocument()
+  })
+
+  it('suggests full addresses while typing and fills the form from the one picked', async () => {
+    authGet.mockImplementation(async (url?: string) => ({
+      ok: true,
+      json: async () => ({
+        data: String(url).includes('address-suggestions')
+          ? [{ id: 'a1', label: '4500 Duval Street, Austin, Texas 78751', line1: '4500 Duval Street', city: 'Austin', state: 'TX', postalCode: '78751' }]
+          : [],
+      }),
+    }))
+    renderCheckout()
+    await userEvent.click(await screen.findByRole('radio', { name: 'Delivery' }))
+    const form = screen.getByRole('form', { name: 'Delivery address' })
+    await userEvent.type(within(form).getByLabelText('Apt or unit'), '2B')
+    await userEvent.type(within(form).getByRole('combobox', { name: 'Street address' }), '4500 duv')
+    await userEvent.click(await screen.findByRole('option', { name: /4500 Duval Street/ }))
+    expect(within(form).getByLabelText('City')).toHaveValue('Austin')
+    expect(within(form).getByLabelText('ZIP code')).toHaveValue('78751')
+    expect(within(form).getByLabelText('Apt or unit')).toHaveValue('2B')
   })
 
   it('validates the address form without losing what was typed', async () => {

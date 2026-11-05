@@ -47,6 +47,7 @@ import { tagsRoutes } from './routes/tags.route.js'
 import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
 import { menuSectionRoutes } from './routes/menu-sections.route.js'
 import { storefrontRoutes } from './routes/storefront.route.js'
+import { addressSuggestionRoutes } from './routes/address-suggestions.route.js'
 import { adminRoutes } from './routes/admin.route.js'
 import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
 import { adminStoresRoutes } from './routes/admin-stores.route.js'
@@ -237,6 +238,7 @@ await app.register(favoritesRoutes, { prefix: '/api' })
 await app.register(itemAnalyticsRoutes, { prefix: '/api' })
 await app.register(menuSectionRoutes, { prefix: '/api' })
 await app.register(storefrontRoutes, { prefix: '/api' })
+await app.register(addressSuggestionRoutes, { prefix: '/api' })
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })
