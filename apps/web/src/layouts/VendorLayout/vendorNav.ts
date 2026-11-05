@@ -2,7 +2,7 @@
  * Vendor sidebar destinations. Every item is a place inside the active store.
  */
 import type { LucideIcon } from 'lucide-react'
-import { ClipboardList, LayoutDashboard, Link2, Settings, Users, UtensilsCrossed, Waves } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, Link2, Palette, Settings, Users, UtensilsCrossed, Waves } from 'lucide-react'
 import { storeIdFromPath, vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import type { StoreAccess } from './storeAccess'
 
@@ -54,6 +54,13 @@ export const VENDOR_NAV: readonly VendorNavGroup[] = [
       OVERVIEW_ITEM,
       ORDERS_ITEM,
       { label: 'Menu', icon: UtensilsCrossed, to: vendorPaths.menu, match: under('/menu'), requires: 'VIEW_ITEMS' },
+      {
+        label: 'Storefront',
+        icon: Palette,
+        to: vendorPaths.storefront,
+        match: under('/storefront'),
+        requires: 'MANAGE_STORE_SETTINGS',
+      },
     ],
   },
   {

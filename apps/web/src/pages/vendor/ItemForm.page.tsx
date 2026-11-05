@@ -4,7 +4,7 @@
  */
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@api/client'
 import { toast } from 'sonner'
@@ -14,14 +14,16 @@ import type { FormSection } from '@shared/ui/templates/FormPageTemplate'
 import { createItemFormSections } from '@features/auth'
 import { uploadItemPhoto } from '@features/auth/ProductMediaGrid'
 import { usePublicMediaList } from '@shared/hooks/hooks/vendor/usePublicMediaList'
-import { storeItemsQueryKey, useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
-import { canonicalCategory, storeCategories } from './menuCategories'
+import { storeItemsQueryKey } from '@shared/hooks/hooks/vendor/useStoreItems'
+import { useMenuSectionMutations, useMenuSections } from '@shared/hooks/hooks/useMenuSections'
 
 export default function ItemFormPage() {
   const { storeId, itemId } = useParams<{ storeId: string; itemId?: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const isEdit = Boolean(itemId)
+  // "Add item" from a section opens the form with that section chosen.
+  const [searchParams] = useSearchParams()
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
   const pendingPhotosRef = useRef(pendingPhotos)
   pendingPhotosRef.current = pendingPhotos
@@ -31,7 +33,7 @@ export default function ItemFormPage() {
     title: '',
     description: '',
     price: '',
-    category: '',
+    sectionId: searchParams.get('section') ?? '',
     type: '',
     isActive: true,
     isSoldOut: false,
@@ -51,9 +53,9 @@ export default function ItemFormPage() {
     enabled: !!storeId,
   })
 
-  // The store's own categories, suggested on the category field
-  const { data: storeItems = [] } = useStoreItems(storeId)
-  const categories = storeCategories(storeItems)
+  // The store's own menu sections
+  const { data: menuSections = [] } = useMenuSections(storeId, { view: 'team' })
+  const { create: createSection } = useMenuSectionMutations(storeId!)
 
   // Fetch existing item for editing
   const { data: item, isLoading: isLoadingItem } = useQuery({
@@ -77,7 +79,7 @@ export default function ItemFormPage() {
         title: item.title || '',
         description: item.description || '',
         price: item.price?.toString() || '',
-        category: (item.optionsJson as any)?.category || '',
+        sectionId: item.sectionId || '',
         type: (item.optionsJson as any)?.type || '',
         isActive: item.isActive ?? true,
         isSoldOut: item.isSoldOut ?? false,
@@ -104,9 +106,9 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
+          sectionId: data.sectionId || null,
           optionsJson: {
             ...(data.optionsJson || {}),
-            category: canonicalCategory(data.category || '', categories) || undefined,
             type: data.type || undefined,
           },
         },
@@ -126,7 +128,6 @@ export default function ItemFormPage() {
             optionsJson: {
               ...(data.optionsJson || {}),
               imageUrl: cover,
-              category: canonicalCategory(data.category || '', categories) || undefined,
               type: data.type || undefined,
             },
           },
@@ -159,10 +160,10 @@ export default function ItemFormPage() {
           stockQty: data.stockQty ?? undefined,
           sortIndex: data.sortIndex,
           tags: data.tags,
+          sectionId: data.sectionId || null,
           optionsJson: {
             ...(data.optionsJson || {}),
             imageUrl: data.imageUrl || undefined,
-            category: canonicalCategory(data.category || '', categories) || undefined,
             type: data.type || undefined,
           },
         },
@@ -219,7 +220,10 @@ export default function ItemFormPage() {
     {
       storeId: storeId!,
       itemId: itemId,
-      storeCategories: categories.map((c) => c.name),
+      sections: menuSections,
+      sectionId: formData.sectionId,
+      onSectionChange: (sectionId: string) => handleChange('sectionId', sectionId),
+      onCreateSection: async (name: string) => (await createSection.mutateAsync({ name })).id,
       pendingFiles: pendingPhotos,
       onPendingFiles: setPendingPhotos,
     }

@@ -53,7 +53,6 @@ export function MarketFeed({
     return (
       <>
         <CategoryCircles />
-        <p className="discover-empty">Nothing in this corner yet. Try another type, or widen the neighborhood.</p>
       </>
     )
   }

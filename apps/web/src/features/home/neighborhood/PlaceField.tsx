@@ -8,7 +8,7 @@ import { HOME_RADIUS_MILES, placeZip } from '../shell/placeMemory'
 export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { location, urlLocationNotice } = useUrlLocation()
+  const { location } = useUrlLocation()
   const sharedZip = location?.zip || placeZip(params.toString())
   const [zip, setZip] = useState(sharedZip)
   const [error, setError] = useState<string | undefined>()
@@ -74,9 +74,6 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
           </button>
         ) : null}
       </div>
-      {urlLocationNotice && !compact ? (
-        <p className="text-sm" style={{ color: 'var(--citrus)' }}>{urlLocationNotice.message}</p>
-      ) : null}
     </form>
   )
 }

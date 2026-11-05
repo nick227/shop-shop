@@ -4,6 +4,34 @@ import { apiClient } from '@api/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@api/errors'
 import type { CreateItemInput } from '@api/types'
+import { authGet, authPost } from '@shared/lib/auth/authFetch'
+import { normalizeSectionName, type MenuSection } from '@shared/lib/menu/menuSections'
+import { menuSectionsQueryKey } from '@shared/hooks/hooks/useMenuSections'
+
+const sectionKey = (name: string) => normalizeSectionName(name).toLocaleLowerCase()
+
+/**
+ * The section id for every category named in the file, creating the sections the store doesn't have yet,
+ * in the order the file first names them. Names match existing sections ignoring case.
+ */
+async function resolveSections(storeId: string, rows: readonly ParsedCsvRow[]): Promise<Map<string, string>> {
+  const path = `/api/stores/${encodeURIComponent(storeId)}/menu-sections`
+  const response = await authGet(path)
+  if (!response.ok) throw new Error('Could not load your menu sections')
+  const existing = ((await response.json()) as { data?: MenuSection[] }).data ?? []
+  const ids = new Map(existing.map((section) => [sectionKey(section.name), section.id]))
+  for (const row of rows) {
+    const name = normalizeSectionName(row.category ?? '')
+    if (!name || ids.has(sectionKey(name))) continue
+    const created = await authPost(path, { name })
+    if (!created.ok) {
+      const body = (await created.json().catch(() => ({}))) as { error?: string }
+      throw new Error(body.error ?? `Could not add the section “${name}”`)
+    }
+    ids.set(sectionKey(name), ((await created.json()) as { data: MenuSection }).data.id)
+  }
+  return ids
+}
 
 export interface CsvImportProgress {
   current: number
@@ -177,11 +205,10 @@ export function useCsvImport({
     return rows
   }, [])
 
-  const createItem = useCallback(async (itemData: ParsedCsvRow): Promise<CreateItemInput> => {
+  const createItem = useCallback(async (itemData: ParsedCsvRow, sectionIds: Map<string, string>): Promise<CreateItemInput> => {
     // Build optionsJson with additional fields
     const optionsJson: Record<string, any> = {}
     
-    if (itemData.category) optionsJson.category = itemData.category
     if (itemData.type) optionsJson.type = itemData.type
     if (itemData.subtype) optionsJson.subtype = itemData.subtype
     if (itemData.imageUrl) optionsJson.imageUrl = itemData.imageUrl
@@ -196,6 +223,8 @@ export function useCsvImport({
       sortIndex: itemData.sortIndex,
       stockQty: itemData.stockQty || undefined,
       tags: itemData.tags || [],
+      // The file's category column is the item's menu section.
+      sectionId: itemData.category ? sectionIds.get(sectionKey(itemData.category)) ?? null : null,
       optionsJson: Object.keys(optionsJson).length > 0 ? optionsJson : undefined,
       isVegan: itemData.isVegan,
       isVegetarian: itemData.isVegetarian,
@@ -228,6 +257,7 @@ export function useCsvImport({
       const parsedRows = parseCSV(text)
       
       setProgress(prev => ({ ...prev, total: parsedRows.length }))
+      const sectionIds = await resolveSections(storeId, parsedRows)
 
       // Process items in batches
       for (let i = 0; i < parsedRows.length; i += batchSize) {
@@ -247,7 +277,7 @@ export function useCsvImport({
           const globalIndex = i + batchIndex
           
           try {
-            const itemData = await createItem(row)
+            const itemData = await createItem(row, sectionIds)
             await apiClient.items().createItem({
               createItemRequest: itemData as any
             })
@@ -279,6 +309,7 @@ export function useCsvImport({
 
       // Refresh the items list
       await queryClient.invalidateQueries({ queryKey: ['store-items', storeId] })
+      await queryClient.invalidateQueries({ queryKey: menuSectionsQueryKey(storeId) })
 
       setProgress(prev => ({ ...prev, isImporting: false }))
 

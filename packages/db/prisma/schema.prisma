@@ -3,8 +3,6 @@ generator client {
   output   = "../src/generated/client"
 }
 
-
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -344,12 +342,18 @@ model Store {
   tags                 StoreTag[]
   media                MediaAsset[]
   items                Item[]
+  menuSections           MenuSection[]
+  storefront             StorefrontConfig?
   orders               Order[]
   carts                Cart[]
   posts                Post[]
   bundles              Bundle[]        @relation("StoreBundles")
   teamMembers          TeamMember[]
   invitations          Invitation[]
+  /// Canonical city or neighborhood. Address strings and coordinates stay on the store.
+  placeId                String?       @db.Char(36)
+  place                  Place?        @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   Promotion            Promotion[]
@@ -358,6 +362,8 @@ model Store {
   DeliveryJob          DeliveryJob[]
   StoreDeliveryProviderConfigs StoreDeliveryProviderConfig[]
   StoreDeliveryOptions StoreDeliveryOption[]
+  unresolvedPlace              UnresolvedStorePlace?
+  directoryListing             BusinessListing?
 
   @@index([ownerUserId])
   @@index([latitude, longitude]) // For distance queries
@@ -365,6 +371,151 @@ model Store {
   @@index([addressZip]) // For zip code search
   @@index([isPublished, latitude]) // For published + location queries
   @@index([referredByAffiliateId])
+  @@index([placeId])
+}
+
+enum PlaceKind {
+  CITY
+  NEIGHBORHOOD
+}
+
+enum UnresolvedStorePlaceReason {
+  NO_LOCATION
+  UNKNOWN_ZIP
+  UNKNOWN_CITY
+}
+
+/// City or neighborhood. Neighborhoods point at a city. ZIPs point at a city and may also belong to neighborhoods.
+model Place {
+  id           String            @id @db.Char(36)
+  kind         PlaceKind
+  name         String            @db.VarChar(120)
+  slug         String            @unique @db.VarChar(120)
+  parentId     String?           @db.Char(36)
+  parent       Place?            @relation("PlaceHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Place[]           @relation("PlaceHierarchy")
+  state        String?           @db.Char(2)
+  country      String            @default("US") @db.Char(2)
+  latitude     Decimal?          @db.Decimal(10, 8)
+  longitude    Decimal?          @db.Decimal(11, 8)
+  boundaryJson Json?
+  headline     String?           @db.VarChar(160)
+  about        String?           @db.Text
+  published    Boolean           @default(false)
+  postalCodes  PostalCode[]
+  postalLinks  PlacePostalCode[]
+  stores       Store[]
+  media        MediaAsset[]
+  listings     BusinessListing[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([parentId])
+  @@index([kind, state])
+}
+
+/// ZIP-to-city source. Independent of GeocodingCache.
+model PostalCode {
+  code         String            @id @db.Char(5)
+  cityPlaceId  String            @db.Char(36)
+  city         Place             @relation(fields: [cityPlaceId], references: [id], onDelete: Restrict)
+  latitude     Decimal           @db.Decimal(10, 8)
+  longitude    Decimal           @db.Decimal(11, 8)
+  boundaryJson Json?
+  places       PlacePostalCode[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([cityPlaceId])
+}
+
+model PlacePostalCode {
+  placeId    String     @db.Char(36)
+  postalCode String     @db.Char(5)
+  place      Place      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  postal     PostalCode @relation(fields: [postalCode], references: [code], onDelete: Cascade)
+
+  @@id([placeId, postalCode])
+  @@index([postalCode])
+}
+
+/// A store the backfill could not attach to a canonical place.
+model UnresolvedStorePlace {
+  storeId      String                     @id @db.Char(36)
+  store        Store                      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reason       UnresolvedStorePlaceReason
+  addressCity  String?
+  addressState String?                    @db.VarChar(2)
+  addressZip   String?                    @db.VarChar(10)
+  updatedAt    DateTime                   @updatedAt
+}
+
+enum BusinessImportStatus {
+  PENDING
+  SEARCHING
+  MATCHED
+  READY
+  REVIEW
+  EXISTING
+  NOT_FOUND
+  IMPORTED
+}
+
+/// A discoverable place that may not sell on Shop-Shop. Ordering stays on Store.
+model BusinessListing {
+  id            String   @id @default(uuid()) @db.Char(36)
+  name          String   @db.VarChar(160)
+  slug          String   @unique @db.VarChar(160)
+  category      String   @db.VarChar(32)
+  categoryLabel String   @db.VarChar(80)
+  phone         String?  @db.VarChar(40)
+  website       String?  @db.Text
+  description   String?  @db.Text
+  addressStreet String?  @db.VarChar(160)
+  addressCity   String?  @db.VarChar(80)
+  addressState  String?  @db.Char(2)
+  addressZip    String?  @db.Char(5)
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(11, 8)
+  placeId       String?  @db.Char(36)
+  place         Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  storeId       String?  @unique @db.Char(36)
+  store         Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  source        String   @db.VarChar(20)
+  sourceId      String   @unique @db.VarChar(80)
+  sourceFetchedAt DateTime @default(now())
+  published     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  imports       BusinessImportEntry[]
+
+  @@index([published, latitude])
+  @@index([placeId])
+}
+
+model BusinessImportBatch {
+  id        String                @id @default(uuid()) @db.Char(36)
+  adminId   String                @db.Char(36)
+  createdAt DateTime              @default(now())
+  entries   BusinessImportEntry[]
+
+  @@index([adminId])
+}
+
+model BusinessImportEntry {
+  id               String               @id @default(uuid()) @db.Char(36)
+  batchId          String               @db.Char(36)
+  batch            BusinessImportBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  submittedName    String               @db.VarChar(160)
+  status           BusinessImportStatus
+  candidates       Json
+  selectedSourceId String?              @db.VarChar(80)
+  listingId        String?              @db.Char(36)
+  listing          BusinessListing?     @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  updatedAt        DateTime             @updatedAt
+
+  @@index([batchId])
+  @@index([listingId])
 }
 
 model GeocodingCache {
@@ -424,6 +575,10 @@ model Item {
   allergensJson Json? // Array of allergen strings
   spicyLevel    Int? // 0-5 scale
 
+  /// The store's own menu section this item is listed under; null means not yet placed in one.
+  sectionId String?      @db.Char(36)
+  section   MenuSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
   tags         ItemTag[]
   media        MediaAsset[]
   cartItems    CartItem[]
@@ -435,6 +590,27 @@ model Item {
   FavoriteItem FavoriteItem[]
 
   @@index([storeId, sortIndex])
+  @@index([sectionId])
+}
+
+/// A section of one store's menu ("Breakfast", "Drinks"). The vendor names, orders, describes and hides
+/// sections independently of items; the storefront decides how to present them.
+model MenuSection {
+  id          String   @id @default(uuid()) @db.Char(36)
+  storeId     String   @db.Char(36)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Unique per store, compared case-insensitively by the column collation.
+  name        String   @db.VarChar(120)
+  description String?  @db.VarChar(500)
+  sortIndex   Int      @default(0)
+  /// Hidden sections, and their items, are not shown to shoppers.
+  isVisible   Boolean  @default(true)
+  items       Item[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, name])
+  @@index([storeId, sortIndex])
 }
 
 model MediaAsset {
@@ -442,9 +618,11 @@ model MediaAsset {
   storeId   String?   @db.Char(36)
   itemId    String?   @db.Char(36)
   bundleId  String?   @db.Char(36)
+  placeId   String?   @db.Char(36)
   store     Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   item      Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   bundle    Bundle?   @relation("BundleMedia", fields: [bundleId], references: [id], onDelete: Cascade)
+  place     Place?    @relation(fields: [placeId], references: [id], onDelete: Cascade)
   kind      MediaKind
   url       String    @db.Text
   altText   String?
@@ -455,6 +633,7 @@ model MediaAsset {
   @@index([storeId])
   @@index([itemId])
   @@index([bundleId])
+  @@index([placeId])
 }
 
 model Cart {
@@ -1553,4 +1732,19 @@ model VendorEnrollment {
   reviewedAt DateTime?
   reviewedByUserId String?
   updatedAt DateTime @updatedAt
+}
+
+/// How a store's public storefront looks: brand, media mosaic, featured content, optional sections and
+/// announcements. The vendor edits `draftJson`; shoppers see `publishedJson` (platform defaults when null).
+/// Inventory, availability and business details are not here: they are live on Store and Item.
+model StorefrontConfig {
+  storeId        String    @id @db.Char(36)
+  store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  draftJson      Json
+  publishedJson  Json?
+  publishedAt    DateTime?
+  publishedById  String?   @db.Char(36)
+  draftUpdatedAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

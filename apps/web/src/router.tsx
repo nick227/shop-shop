@@ -34,6 +34,7 @@ const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 const RiverPage = lazy(() => import('./pages/public/River.page'))
+const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
 
 // Affiliate pages;
 const BecomeAffiliatePage = lazy(() => import('./pages/public/BecomeAffiliate.page'))
@@ -53,6 +54,8 @@ const AdminVendorsPage = lazy(() => import('./pages/admin/Vendors.page'))
 const AdminVendorApplicationsPage = lazy(() => import('./pages/admin/VendorApplications.page'))
 const AdminVendorDetailPage = lazy(() => import('./pages/admin/VendorDetail.page'))
 const AdminCatalogPage = lazy(() => import('./pages/admin/Catalog.page'))
+const AdminNeighborhoodsPage = lazy(() => import('./pages/admin/Neighborhoods.page'))
+const AdminBusinessImportPage = lazy(() => import('./pages/admin/BusinessImport.page'))
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AuditLog.page'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/Settings.page'))
 const AdminAffiliatesPage = lazy(() => import('./pages/admin/Affiliates.page'))
@@ -71,6 +74,7 @@ const VendorDashboardPage = lazy(() => import('./pages/vendor/Dashboard.page'))
 const VendorOverviewPage = lazy(() => import('./pages/vendor/Overview.page'))
 const StoreFormPage = lazy(() => import('./pages/vendor/StoreForm.page'))
 const StoreItemsPage = lazy(() => import('./pages/vendor/StoreItems.page'))
+const StorefrontEditorPage = lazy(() => import('./pages/vendor/StorefrontEditor.page'))
 const ItemFormPage = lazy(() => import('./pages/vendor/ItemForm.page'))
 const StoreBundlesPage = lazy(() => import('./pages/vendor/StoreBundles.page'))
 const StoreBundleEditorPage = lazy(() => import('./pages/vendor/StoreBundleEditor.page'))
@@ -221,6 +225,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           element: lazyRoute(RiverPage),
           handle: { title: 'Home' },
         },
+        {
+          path: '/neighborhoods/:slug',
+          element: lazyRoute(NeighborhoodPage),
+          handle: { title: 'Neighborhood' },
+        },
         // Become an affiliate (public, no auth required — form handles login check);
         {
           path: '/become-affiliate',
@@ -328,6 +337,16 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               handle: { title: 'Admin - Catalog' },
             },
             {
+              path: 'neighborhoods',
+              element: lazyRoute(AdminNeighborhoodsPage),
+              handle: { title: 'Admin - Neighborhoods' },
+            },
+            {
+              path: 'businesses/import',
+              element: lazyRoute(AdminBusinessImportPage),
+              handle: { title: 'Admin - Directory import' },
+            },
+            {
               path: 'river',
               element: lazyRoute(AdminRiverComposerPage),
               handle: { title: 'Admin - River' },
@@ -433,6 +452,11 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
                   path: 'orders',
                   element: <RequireAccess need="VIEW_ORDERS" label="Orders">{lazyRoute(VendorOrdersPage)}</RequireAccess>,
                   handle: { title: 'Orders' },
+                },
+                {
+                  path: 'storefront',
+                  element: <RequireAccess need="MANAGE_STORE_SETTINGS" label="Storefront">{lazyRoute(StorefrontEditorPage)}</RequireAccess>,
+                  handle: { title: 'Storefront' },
                 },
                 {
                   path: 'menu',

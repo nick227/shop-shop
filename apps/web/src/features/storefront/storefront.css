@@ -1,0 +1,229 @@
+/*
+ * Storefront layout. Sizes respond to the storefront's own width (container queries), not the window,
+ * so the vendor's mobile preview lays out exactly like a phone.
+ */
+
+.sf-root {
+  container: storefront / inline-size;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* A storefront set to light stays light inside a dark app. */
+.sf-light {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 40%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  color-scheme: light;
+}
+
+.sf-dark {
+  color-scheme: dark;
+}
+
+.sf-heading {
+  font-family: var(--sf-heading);
+  letter-spacing: -0.02em;
+}
+
+/* ── Horizontal rows (bundles, featured, carousels) ─────────────────────── */
+
+.sf-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 78%);
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+}
+.sf-row::-webkit-scrollbar {
+  display: none;
+}
+.sf-row > * {
+  scroll-snap-align: start;
+}
+@container storefront (min-width: 40rem) {
+  .sf-row {
+    grid-auto-columns: minmax(15rem, 40%);
+  }
+}
+@container storefront (min-width: 60rem) {
+  .sf-row {
+    grid-auto-columns: minmax(15rem, 28%);
+  }
+}
+
+/* ── Media mosaic ───────────────────────────────────────────────────────── */
+
+.sf-mosaic {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+.sf-mosaic-tiles {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container storefront (min-width: 48rem) {
+  .sf-mosaic {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: stretch;
+  }
+  .sf-mosaic-tiles {
+    grid-auto-rows: 1fr;
+  }
+  .sf-mosaic-tiles[data-count='1'] {
+    grid-template-columns: 1fr;
+  }
+}
+.sf-mosaic-tiles[data-count='1'] > *,
+.sf-mosaic-tiles[data-count='3'] > :first-child {
+  grid-column: 1 / -1;
+}
+
+/* ── Category tiles ─────────────────────────────────────────────────────── */
+
+.sf-category-tiles {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container storefront (min-width: 36rem) {
+  .sf-category-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container storefront (min-width: 56rem) {
+  .sf-category-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── Product grids and lists ────────────────────────────────────────────── */
+
+.sf-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sf-grid[data-size='feature'] {
+  grid-template-columns: 1fr;
+}
+@container storefront (min-width: 40rem) {
+  .sf-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sf-grid[data-size='feature'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container storefront (min-width: 60rem) {
+  .sf-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.sf-list {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+@container storefront (min-width: 44rem) {
+  .sf-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Business content ───────────────────────────────────────────────────── */
+
+.sf-about {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+@container storefront (min-width: 48rem) {
+  .sf-about {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.sf-gallery {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container storefront (min-width: 40rem) {
+  .sf-gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.sf-header {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+.sf-header-actions {
+  grid-column: 1 / -1;
+}
+@container storefront (min-width: 48rem) {
+  .sf-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  /* On phones the contact row scrolls sideways edge to edge; wider, it sits beside the name. */
+  .sf-root .sf-header-actions {
+    grid-column: auto;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-row {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── Editor preview: outline a part and offer its Edit button ───────────── */
+
+.sf-part {
+  outline: 2px solid transparent;
+  outline-offset: 6px;
+  transition: outline-color 200ms ease;
+}
+.sf-part:hover,
+.sf-part:focus-within,
+.sf-part[data-highlighted] {
+  outline-color: hsl(var(--primary) / 0.55);
+}
+.sf-part-edit {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.sf-part:hover > .sf-part-edit,
+.sf-part:focus-within > .sf-part-edit,
+.sf-part[data-highlighted] > .sf-part-edit,
+.sf-part-edit:focus-visible {
+  opacity: 1;
+}

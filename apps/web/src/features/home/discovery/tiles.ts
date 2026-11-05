@@ -31,7 +31,7 @@ export interface DiscoveryItem {
 export interface StoryTile {
   readonly kind: 'story'
   readonly id: string
-  readonly kicker: string
+  readonly kicker?: string
   readonly title: string
   readonly body: string
   readonly image?: string
@@ -105,8 +105,7 @@ function storyFromPost(post: RiverPost): StoryTile | undefined {
   return {
     kind: 'story',
     id: `post-${post.id}`,
-    kicker: 'From your neighbors',
-    title: post.storeName ?? 'A note from the block',
+    title: post.storeName ?? 'Notice',
     body,
     image: realPhoto(media),
     storeId: post.storeId,
@@ -156,9 +155,8 @@ export function composeDiscovery(input: {
     ? {
         kind: 'story',
         id: `opened-${newest.id}`,
-        kicker: 'Just opened',
         title: newest.name,
-        body: newest.description?.trim() || `${typeLabel(newest)} now serving your delivery area.`,
+        body: newest.description?.trim() || `${typeLabel(newest)} now serving`,
         image: storePhoto(newest),
         storeId: newest.id,
         storeName: newest.name,

@@ -13,6 +13,10 @@
     "./pricing": {
       "types": "./dist/pricing.d.ts",
       "import": "./dist/pricing.js"
+    },
+    "./storefront": {
+      "types": "./dist/storefront.d.ts",
+      "import": "./dist/storefront.js"
     }
   },
   "scripts": {

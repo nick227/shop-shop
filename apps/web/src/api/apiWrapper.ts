@@ -388,12 +388,24 @@ export const items = {
   /**
    * List items with pagination envelope.
    */
-  listPage: async (params?: { page?: string; limit?: string; storeId?: string }): Promise<ItemListPageResult> => {
+  listPage: async (params?: {
+    page?: string
+    limit?: string
+    storeId?: string
+    scope?: string
+    latitude?: number
+    longitude?: number
+    radiusMiles?: number
+  }): Promise<ItemListPageResult> => {
     const payload = await handleRequest(async () => {
       const searchParams = new URLSearchParams()
       setQueryParam(searchParams, 'page', params?.page)
       setQueryParam(searchParams, 'limit', params?.limit)
       setQueryParam(searchParams, 'storeId', params?.storeId)
+      setQueryParam(searchParams, 'scope', params?.scope)
+      setQueryParam(searchParams, 'latitude', params?.latitude)
+      setQueryParam(searchParams, 'longitude', params?.longitude)
+      setQueryParam(searchParams, 'radiusMiles', params?.radiusMiles)
 
       const query = searchParams.toString()
       const url = `${getApiBaseUrl()}/api/items${query ? `?${query}` : ''}`

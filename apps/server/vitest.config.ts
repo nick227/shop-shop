@@ -21,6 +21,7 @@ export default defineConfig({
       '@packages/sdk': path.join(repoRoot, 'packages/sdk/src'),
       '@packages/domain': path.join(repoRoot, 'packages/domain/src'),
       '@packages/realtime': path.join(repoRoot, 'packages/realtime/src'),
+      '@packages/shared/storefront': path.join(repoRoot, 'packages/shared/src/storefront.ts'),
     },
   },
   test: {

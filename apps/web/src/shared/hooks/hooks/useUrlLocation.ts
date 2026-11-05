@@ -52,7 +52,7 @@ export function useUrlLocation(): UseUrlLocationResult {
     const zipCheck = locationValidator.validateZipCode(memoizedUrlParams.zip)
     if (!zipCheck.valid) {
       setUrlLocationNotice({
-        message: 'That ZIP doesn’t look valid. Pick a city below or adjust the link.',
+        message: 'Enter a 5-digit ZIP.',
         variant: 'warning',
       })
       setLocation(undefined)
@@ -84,9 +84,8 @@ export function useUrlLocation(): UseUrlLocationResult {
         setUrlLocationNotice(undefined)
       } else {
         setUrlLocationNotice({
-          message:
-            'We couldn’t look up that ZIP. Choose a city below or try another area.',
-          variant: 'warning',
+          message: `We couldn’t find ZIP ${memoizedUrlParams.zip}. Check the code and try again.`,
+          variant: 'error',
         })
         setLocation(undefined)
       }

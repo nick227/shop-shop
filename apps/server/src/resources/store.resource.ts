@@ -8,7 +8,7 @@ import {
   StoreQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
-import { prisma, getAffiliateByReferralCode, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION } from '@packages/db'
+import { prisma, getAffiliateByReferralCode, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION, readGeoScopeInput, storeWhereForScope } from '@packages/db'
 import { checkStoreActivationRequirements } from '@packages/db/services'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
@@ -65,28 +65,6 @@ function addAndFilter(target: Record<string, unknown>, filter: Record<string, un
   target.AND = [...existing, filter]
 }
 
-function dedupeStoresByArea<T extends { addressZip?: unknown; id?: unknown; name?: unknown }>(stores: T[]): T[] {
-  const seen = new Set<string>()
-  const deduped: T[] = []
-  const sortedStores = [...stores].sort((a, b) => {
-    const zipA = typeof a.addressZip === 'string' ? a.addressZip : ''
-    const zipB = typeof b.addressZip === 'string' ? b.addressZip : ''
-    const zipCompare = zipA.localeCompare(zipB)
-    if (zipCompare !== 0) return zipCompare
-    return String(a.name ?? '').localeCompare(String(b.name ?? ''))
-  })
-
-  for (const store of sortedStores) {
-    const zip = typeof store.addressZip === 'string' ? store.addressZip.trim() : ''
-    const key = zip || String(store.id ?? deduped.length)
-    if (seen.has(key)) continue
-    seen.add(key)
-    deduped.push(store)
-  }
-
-  return deduped
-}
-
 export type CoordinateSearchStore = {
   id: string
   latitude?: unknown
@@ -123,9 +101,21 @@ export function filterStoresForCoordinateSearch<T extends CoordinateSearchStore>
     .sort((a, b) => a.distance - b.distance)
 }
 
+async function attachStoreMedia<T extends { id: string }>(stores: T[]) {
+  return Promise.all(stores.map(async (store) => {
+    const mediaAssets = await prisma.mediaAsset.findMany({
+      where: { storeId: store.id, kind: 'IMAGE' },
+      orderBy: { sortIndex: 'asc' },
+    })
+    return { ...store, mediaAssets }
+  }))
+}
+
 async function buildStoreListFilters(filters: Record<string, unknown>): Promise<Record<string, unknown>> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { latitude, longitude, radiusMiles, city, state, zip, q, browse, ...rest } = filters
+  const { latitude, longitude, radiusMiles, city, state, zip, scope, place, q, browse, ...rest } = filters
+  void scope
+  void place
   const prismaFilters: Record<string, unknown> = { ...rest }
 
   if (!prismaFilters.ownerUserId && !prismaFilters.status) {
@@ -395,44 +385,45 @@ export const storeResource = defineResource({
         orderBy?: Record<string, unknown>
       }
       
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude === 0 || longitude === 0) {
+      const page = Math.max(Number(hookContext.page) || 1, 1)
+      const limit = Math.max(Number(hookContext.limit) || 20, 1)
+      const scopeInput = readGeoScopeInput(filters)
+      if (scopeInput) {
+        const scopeWhere = await storeWhereForScope(prisma, scopeInput)
+        if (!scopeWhere) return { data: [], total: 0 }
+        const scopedFilters = await buildStoreListFilters(filters)
+        addAndFilter(scopedFilters, scopeWhere.where)
+        const scopedStores = await prisma.store.findMany({
+          where: scopedFilters,
+          orderBy: hookContext.orderBy || { createdAt: 'desc' },
+        })
+        const located = scopeWhere.kind === 'radius'
+          ? filterStoresForCoordinateSearch(scopedStores, scopeWhere.latitude, scopeWhere.longitude, scopeWhere.radiusMiles)
+          : scopedStores
+        const withMedia = await attachStoreMedia(located)
+        const start = (page - 1) * limit
+        return { data: withMedia.slice(start, start + limit), total: withMedia.length }
+      }
+
+      const radiusRequested = filters.radiusMiles !== undefined && filters.radiusMiles !== ''
+      const coordsReady = Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0
+      if (radiusRequested && !coordsReady) return { data: [], total: 0 }
+
+      if (!coordsReady) {
         if (city && state) {
-          const page = Math.max(Number(hookContext.page) || 1, 1)
-          const limit = Math.max(Number(hookContext.limit) || 20, 1)
           const prismaFilters = await buildStoreListFilters(filters)
           const cityStores = await prisma.store.findMany({
             where: prismaFilters,
             orderBy: hookContext.orderBy || { createdAt: 'desc' },
           })
-          const dedupedStores = dedupeStoresByArea(cityStores)
-          
-          // Add media assets to each store
-          const storesWithMedia = await Promise.all(
-            dedupedStores.map(async (store) => {
-              const mediaAssets = await prisma.mediaAsset.findMany({
-                where: { 
-                  storeId: store.id,
-                  kind: 'IMAGE' 
-                },
-                orderBy: { sortIndex: 'asc' }
-              })
-              return { ...store, mediaAssets }
-            })
-          )
-          
+          const withMedia = await attachStoreMedia(cityStores)
           const start = (page - 1) * limit
-
-          return {
-            data: storesWithMedia.slice(start, start + limit),
-            total: storesWithMedia.length,
-          }
+          return { data: withMedia.slice(start, start + limit), total: withMedia.length }
         }
 
         return listResult
       }
       
-      const page = Math.max(Number(hookContext.page) || 1, 1)
-      const limit = Math.max(Number(hookContext.limit) || 20, 1)
       const prismaFilters = await buildStoreListFilters(filters)
       const candidateStores = await prisma.store.findMany({
         where: prismaFilters,
@@ -444,23 +435,8 @@ export const storeResource = defineResource({
         longitude,
         radiusMiles
       )
-      
-      // Add media assets to each store
-      const storesWithMedia = await Promise.all(
-        storesWithDistance.map(async (store) => {
-          const mediaAssets = await prisma.mediaAsset.findMany({
-            where: { 
-              storeId: store.id,
-              kind: 'IMAGE' 
-            },
-            orderBy: { sortIndex: 'asc' }
-          })
-          return { ...store, mediaAssets }
-        })
-      )
-      
+      const storesWithMedia = await attachStoreMedia(storesWithDistance)
       const start = (page - 1) * limit
-      
       return {
         data: storesWithMedia.slice(start, start + limit),
         total: storesWithMedia.length,

@@ -11,12 +11,15 @@ import { DetailPanel } from './DetailPanel'
 import { MarketFeed } from './MarketFeed'
 import { LocationHero } from './Opening'
 import { RecentFeed } from './RecentFeed'
+import { DirectoryList } from '../neighborhood/DirectoryList'
+import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
 
 export function DiscoveryPage() {
   const [params, setParams] = useSearchParams()
   const data = useNeighborhoodData()
+  const directory = useDirectory(data.location?.latitude, data.location?.longitude)
   const account = useSignedInHome()
   const accountZip = defaultAddressZip(account.addresses)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
@@ -86,7 +89,10 @@ export function DiscoveryPage() {
       <PublicMaintenanceBanner />
       <LocationHero
         city={data.location?.city}
-        zip={shownZip}
+        state={data.location?.state}
+        zip={data.location?.zip || shownZip}
+        error={data.location ? undefined : data.notice?.message}
+        pending={data.waitingForZip}
         shopCount={composed.places.length}
         story={composed.stories[0]}
         nearest={composed.nearest}
@@ -94,7 +100,9 @@ export function DiscoveryPage() {
         userLat={data.location?.latitude}
         userLng={data.location?.longitude}
         onSelectStore={openStore}
+        neighborhoods={data.neighborhoods}
       />
+      <DirectoryList listings={directory.data ?? []} />
       <RecentFeed
         orders={account.orders}
         savedItems={account.favorites.items}
@@ -105,11 +113,13 @@ export function DiscoveryPage() {
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
 
-      <MarketFeed
-        tiles={marketTiles}
-        nearest={composed.nearest}
-        onOpen={(tile, anchor) => setSelected({ tile, anchor })}
-      />
+      {data.location ? (
+        <MarketFeed
+          tiles={marketTiles}
+          nearest={composed.nearest}
+          onOpen={(tile, anchor) => setSelected({ tile, anchor })}
+        />
+      ) : null}
 
       {selected ? (
         <DetailPanel

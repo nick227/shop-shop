@@ -1,61 +1,54 @@
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { apiClient } from '@api/client'
-import { items, stores } from '@api/apiWrapper'
-import type { ItemResponse, RiverPost, StoreWithDistance } from '@api/types'
-import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
+import type { RiverPost } from '@api/types'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
-import type { LocationData } from '@shared/types'
+import { discoveryLocated } from './discoveryLocated'
+import { type NeighborhoodCard } from './neighborhoodHero'
+import { apiOrigin, loadProducts, loadStores, loadStories } from './loadDiscovery'
 
-async function loadStores(location: LocationData | undefined) {
-  const envelope = await stores.listPage({
-    page: '1',
-    limit: '24',
-    isPublished: 'true',
-    latitude: location?.latitude,
-    longitude: location?.longitude,
-    radiusMiles: location?.radiusMiles,
-  })
-  return envelope.data as unknown as StoreWithDistance[]
-}
-
-async function loadProducts() {
-  const fetchLimit = 48
-  const envelope = await items.listPage({ limit: String(fetchLimit), page: '1' })
-  return envelope.data as unknown as ItemResponse[]
-}
-
-async function loadStories(location: LocationData | undefined) {
-  const page = await apiClient.river.getFeed({
-    limit: 8,
-    allowEmptyMedia: false,
-    near: location
-      ? { lat: location.latitude, lng: location.longitude, radiusMiles: location.radiusMiles }
-      : undefined,
-  })
-  return (page.items ?? []).map((row) => mapFeedItemToRiverPost(row as RiverFeedItemWire))
+async function loadNeighborhoods(zip: string): Promise<NeighborhoodCard[]> {
+  const response = await fetch(`${apiOrigin()}/api/places/by-zip/${zip}`)
+  if (!response.ok) return []
+  const body = await response.json() as { neighborhoods?: NeighborhoodCard[] }
+  return body.neighborhoods ?? []
 }
 
 export function useNeighborhoodData() {
   const [params] = useSearchParams()
   const { location, urlLocationNotice } = useUrlLocation()
-  const waitingForZip = Boolean(params.get('zip')) && !location && !urlLocationNotice
+  const zip = params.get('zip')
+  const zipCode = (location?.zip || zip || '').replace(/\D/g, '').slice(0, 5)
+  const located = discoveryLocated(Boolean(location))
+  const waitingForZip = Boolean(zip) && !location && !urlLocationNotice
 
   const storeQuery = useQuery({
     queryKey: ['home-stores', location?.latitude, location?.longitude, location?.radiusMiles],
-    enabled: !waitingForZip,
-    queryFn: () => loadStores(location),
+    enabled: located,
+    queryFn: () => {
+      if (!location) throw new Error('ZIP is not resolved')
+      return loadStores(location)
+    },
   })
 
   const productQuery = useQuery({
-    queryKey: ['home-products'],
-    queryFn: loadProducts,
+    queryKey: ['home-products', location?.latitude, location?.longitude, location?.radiusMiles],
+    queryFn: () => {
+      if (!location) throw new Error('ZIP is not resolved')
+      return loadProducts(location)
+    },
+    enabled: located,
     staleTime: 5 * 60 * 1000,
+  })
+
+  const neighborhoodQuery = useQuery({
+    queryKey: ['home-neighborhood', zipCode],
+    enabled: zipCode.length === 5,
+    queryFn: () => loadNeighborhoods(zipCode),
   })
 
   const storyQuery = useQuery<RiverPost[]>({
     queryKey: ['home-stories', location?.latitude, location?.longitude, location?.radiusMiles],
-    enabled: !waitingForZip,
+    enabled: located,
     queryFn: () => loadStories(location),
   })
 
@@ -66,6 +59,7 @@ export function useNeighborhoodData() {
     stores: storeQuery.data ?? [],
     products: productQuery.data ?? [],
     stories: storyQuery.data ?? [],
+    neighborhoods: neighborhoodQuery.data ?? [],
     storesLoading: storeQuery.isLoading || waitingForZip,
     productsLoading: productQuery.isLoading,
   }

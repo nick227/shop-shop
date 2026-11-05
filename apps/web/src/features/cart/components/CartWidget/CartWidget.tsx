@@ -4,7 +4,7 @@
  * Modern implementation with BottomSheet
  */
 import { useState, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '@shared/hooks/hooks/useCart'
 import { Button } from '@shared/ui/primitives'
 import { BottomSheet } from '@shared/ui/primitives'
@@ -14,8 +14,12 @@ import { CartSummary } from '../CartSummary'
 import { toast } from 'sonner'
 import { cn } from '@shared/lib/cn'
 
+/** Storefronts carry their own cart bar. */
+const STOREFRONT_PATH = /^\/(kitchen|menu)\//
+
 export function CartWidget() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { cart, deleteCart, isDeleting, isLoading } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -52,7 +56,7 @@ export function CartWidget() {
   }, [itemCount])
 
   // Conditional rendering instead of early returns
-  if (isLoading || itemCount === 0) {
+  if (isLoading || itemCount === 0 || STOREFRONT_PATH.test(pathname)) {
     return null
   }
 

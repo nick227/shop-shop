@@ -7,6 +7,7 @@ import { handleApiError } from '@api/errors'
 import { useCartStore } from '@stores/cartStore'
 import { useCartToaster } from '@features/cart/components/CartToaster'
 import type { ItemResponse } from '@api/types'
+import { CartKeptError, confirmCartFor } from '@features/cart/cartSwitch'
 
 export interface AddToCartParams {
   storeId: string;
@@ -25,7 +26,9 @@ export function useAddToCart() {
   
   return useMutation({
     mutationFn: async (params: AddToCartParams) => {
-      return addItem(params)
+      // Another store's cart is only replaced once the shopper says so.
+      const replaceCart = await confirmCartFor(params.storeId)
+      return addItem({ ...params, replaceCart })
     },
     onSuccess: (updatedCart, variables) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
@@ -41,6 +44,7 @@ export function useAddToCart() {
       })
     },
     onError: async (error) => {
+      if (error instanceof CartKeptError) return
       const appError = await handleApiError(error)
       // Could enhance with error-specific toast here
       console.error('Add to cart failed:', appError.message)

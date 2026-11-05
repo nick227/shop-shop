@@ -22,14 +22,14 @@ interface VendorPageProps {
   /** Secondary actions first, then at most one primary. */
   readonly actions?: ReactNode
   readonly tabs?: ReactNode
-  /** Wide for lists and boards, narrow for forms. */
-  readonly width?: 'wide' | 'narrow'
+  /** Wide for lists and boards, narrow for forms, full for editors built around a preview. */
+  readonly width?: 'wide' | 'narrow' | 'full'
   readonly loading?: boolean
   readonly error?: { readonly message: string; readonly onRetry?: () => void }
   readonly children?: ReactNode
 }
 
-const WIDTH = { wide: 'max-w-6xl', narrow: 'max-w-3xl' } as const
+const WIDTH = { wide: 'max-w-6xl', narrow: 'max-w-3xl', full: 'max-w-none' } as const
 
 function PageSkeleton() {
   return (

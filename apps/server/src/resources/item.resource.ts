@@ -8,10 +8,26 @@ import {
   ItemQuerySchema,
 } from '@packages/schemas/dtos'
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
-import { prisma, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION } from '@packages/db'
+import { prisma, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION, itemGeoScope, storeWhereForScope, type Prisma } from '@packages/db'
+import { filterStoresForCoordinateSearch } from './store.resource.js'
 import { checkProductActivationRequirements, checkStoreActivationRequirements } from '@packages/db/services'
 
 import { NIL_UUID, sanitizeItemListWhere } from './item-list.filters.js'
+import { assertSectionInStore } from '../routes/menu-sections.route.js'
+
+async function radiusStoreWhere(scopeWhere: { where: Prisma.StoreWhereInput; latitude: number; longitude: number; radiusMiles: number }) {
+  const candidates = await prisma.store.findMany({
+    where: scopeWhere.where,
+    select: { id: true, latitude: true, longitude: true, deliveryDistance: true },
+  })
+  const ids = filterStoresForCoordinateSearch(
+    candidates,
+    scopeWhere.latitude,
+    scopeWhere.longitude,
+    scopeWhere.radiusMiles,
+  ).map((store) => store.id)
+  return { id: { in: ids.length > 0 ? ids : [NIL_UUID] } }
+}
 
 // ========================================
 // Item Resource Definition
@@ -51,7 +67,8 @@ export const itemResource = defineResource({
       if (!context.userId || !await hasStorePermission(context.userId, data.storeId, 'MANAGE_ITEMS')) {
         throw new Error('Forbidden')
       }
-      
+      await assertSectionInStore(data.sectionId, data.storeId)
+
       return data
     },
     beforeUpdate: async (id: string, data: any, context: any) => {
@@ -70,7 +87,8 @@ export const itemResource = defineResource({
       if (!context.userId || !await hasStorePermission(context.userId, item.storeId, 'MANAGE_ITEMS')) {
         throw new Error('Forbidden')
       }
-      
+      await assertSectionInStore(data.sectionId, item.storeId)
+
       return data
     },
     beforeDelete: async (id: string, context: any) => {
@@ -91,17 +109,38 @@ export const itemResource = defineResource({
       
     },
     beforeList: async (filters, context) => {
-      const nextFilters = sanitizeItemListWhere(filters as Record<string, unknown>)
+      const rawFilters = filters as Record<string, unknown>
+      const scopeInput = itemGeoScope(rawFilters)
+      const nextFilters = sanitizeItemListWhere(rawFilters)
+      if (scopeInput) {
+        const scopeWhere = await storeWhereForScope(prisma, scopeInput)
+        if (!scopeWhere) {
+          nextFilters.id = { in: [NIL_UUID] }
+          return nextFilters
+        }
+        const geographic = scopeWhere.kind === 'radius'
+          ? await radiusStoreWhere(scopeWhere)
+          : scopeWhere.where
+        const existing = nextFilters.store
+        nextFilters.store = existing ? { AND: [existing, geographic] } : geographic
+      }
       // One store's menu: its team sees everything; everyone else sees only what is on sale.
       if (typeof nextFilters.storeId === 'string') {
         const canSeeHidden = !!context?.userId && await hasStorePermission(context.userId, nextFilters.storeId, 'VIEW_ITEMS')
-        if (!canSeeHidden) nextFilters.isActive = true
+        if (!canSeeHidden) {
+          nextFilters.isActive = true
+          // A hidden section hides its items from shoppers too.
+          const and = Array.isArray(nextFilters.AND) ? nextFilters.AND : nextFilters.AND ? [nextFilters.AND] : []
+          nextFilters.AND = [...and, { OR: [{ sectionId: null }, { section: { isVisible: true } }] }]
+        }
         return nextFilters
       }
       // Apply activation requirements for public listings
       if (!nextFilters.storeId) {
-        // Exclude specific stores if needed (e.g. system stores)
-        nextFilters.store = PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION
+        const geographic = nextFilters.store
+        nextFilters.store = geographic
+          ? { AND: [geographic, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION] }
+          : PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION
         
         // Add basic product requirements to the primary filter
         nextFilters.isActive = true

@@ -1,31 +1,34 @@
-import { useMemo, useCallback, useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+/**
+ * StoreDetailPage - a store's public storefront (`/kitchen/:slug`): the vendor's business page and menu.
+ * Presentation comes from the store's published storefront config; the menu, availability and business
+ * details are live.
+ */
+import { useCallback, useEffect, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useStore } from '@shared/hooks/hooks/useStores'
-import { useItems } from '@shared/hooks/generated'
-import { useCart } from '@shared/hooks/hooks/useCart'
 import { isStorePublic } from '@shared/lib/utils/isStorePublic'
 import { parseStoreSlug } from '@shared/lib/utils/slugify'
-import { StoreHeader } from '@features/stores/components/StoreHeader'
 import { StateBlock } from '@shared/ui/primitives/ui/StateBlock/StateBlock'
-import { PageShell } from '@shared/ui/layout/PageShell'
-import { CartBadge } from '@components/CartBadge'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { bundles as bundlesApi } from '@api/apiWrapper'
 import { apiClient } from '@api/client'
-import type { Bundle } from '@api/backend-types'
 import type { MediaItem } from '@api/types'
-import { ItemCard } from '@features/products/components/ItemCard'
-import { groupItemsByMenuType } from '@features/products/utils/groupItemsByMenuType'
 import { StoreFeedSection } from '@/features/river/components/StoreFeedSection/StoreFeedSection'
 import { PostComposer } from '@/features/river/components/PostComposer/PostComposer'
 import { useAuthStore } from '@stores/authStore'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { recordRecent } from '@features/home/neighborhood/recentViews'
 import { useVendorStores } from '@shared/hooks/hooks/vendor'
+import { useMenuSections } from '@shared/hooks/hooks/useMenuSections'
+import { useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
+import { Storefront } from '@features/storefront/Storefront'
+import { useStorefront } from '@features/storefront/api'
 
-function KitchenContainer() {
+/** Height of the shopping chrome above the page; the menu bar sticks just under it. */
+const CHROME_HEIGHT_PX = 60
+
+export default function StoreDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
@@ -33,22 +36,17 @@ function KitchenContainer() {
   const legacyOrSlug = slug ?? storeIdParam ?? id
   const { id: parsedStoreId } = legacyOrSlug ? parseStoreSlug(legacyOrSlug) : { id: undefined }
   const storeId = parsedStoreId ?? legacyOrSlug
-  const { cart } = useCart()
 
   const { data: store, isLoading: isStoreLoading, error: storeError } = useStore(storeId ?? '')
   const storeIsPublic = isStorePublic(store)
-  const { data: items, isLoading: isItemsLoading, error: itemsError } = useItems(
-    storeId ? { storeId } : undefined,
-    { enabled: storeIsPublic },
-  )
+  const enabled = storeIsPublic && !!storeId
 
-  const { data: bundlesData, isLoading: isBundlesLoading } = useQuery({
-    queryKey: ['bundles', storeId, 'public'],
-    queryFn: () => bundlesApi.list({ storeId, isActive: true }),
-    enabled: storeIsPublic,
-  })
-
-  const bundles: Bundle[] = bundlesData ?? []
+  // The whole menu in one request; the server returns only what shoppers may see.
+  const { data: rawItems, isLoading: isItemsLoading, error: itemsError } = useStoreItems(enabled ? storeId : undefined)
+  // A vendor viewing their own store gets every item back; show them what a shopper sees.
+  const items = useMemo(() => (rawItems ?? []).filter((item) => item.isActive !== false), [rawItems])
+  const { data: sections = [] } = useMenuSections(storeId, { view: 'shopper', enabled })
+  const { data: storefront, isLoading: isStorefrontLoading, error: storefrontError } = useStorefront(storeId, { enabled })
 
   usePageTitle(storeIsPublic ? store?.name : undefined, 'ShopShop')
 
@@ -68,152 +66,86 @@ function KitchenContainer() {
     })
   }, [store, storeIsPublic])
 
-  const cartCount = useMemo(() => {
-    if (!cart?.items || !Array.isArray(cart.items)) return 0
-    return cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
-  }, [cart?.items])
-
-  const menuSections = useMemo(
-    () => groupItemsByMenuType(items ?? []),
-    [items],
-  )
-
   const { data: managedStores = [] } = useVendorStores()
-
-  const canComposeRiver = useMemo(
-    () => Boolean(store && user && (managedStores.some((s) => s.id === store.id && (s.isOwner || s.permissions.includes('FULL_ACCESS') || s.permissions.includes('MANAGE_ITEMS'))))),
-    [store, user, managedStores],
+  const canPost = Boolean(
+    store &&
+      user &&
+      managedStores.some(
+        (s) => s.id === store.id && (s.isOwner || s.permissions.includes('FULL_ACCESS') || s.permissions.includes('MANAGE_ITEMS')),
+      ),
   )
 
-  const handleRiverPost = useCallback(
+  const handlePost = useCallback(
     async (content: string, media: MediaItem[]) => {
       if (!store?.id) return
       try {
-        await apiClient.river.createPost({
-          storeId: store.id,
-          content,
-          mediaUrls: media,
-          source: 'MANUAL',
-        })
+        await apiClient.river.createPost({ storeId: store.id, content, mediaUrls: media, source: 'MANUAL' })
         toast.success('Update published')
         await queryClient.invalidateQueries({ queryKey: ['store-feed', store.id] })
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Could not publish update')
-        throw e
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Could not publish update')
+        throw error
       }
     },
     [queryClient, store],
   )
 
   if (isStoreLoading) {
-    return <StateBlock title="Loading kitchen" message="Please wait while we load this kitchen." />
+    return <StateBlock title="Loading store" message="One moment while we open this store." />
   }
 
   if (storeError || !store || !storeIsPublic) {
     return (
       <StateBlock
-        title="Kitchen not found"
-        message="The kitchen could not be loaded."
-        actionLabel="Back to search"
-        onAction={() => navigate('/search')}
+        title="Store not found"
+        message="This store could not be loaded."
+        actionLabel="Back to browsing"
+        onAction={() => navigate('/')}
       />
     )
   }
 
-  if (isItemsLoading || isBundlesLoading) {
-    return <StateBlock title="Loading menu" message="Please wait while we load menu items." />
-  }
-
-  if (itemsError) {
+  if (itemsError || storefrontError) {
     return (
       <StateBlock
         title="Menu unavailable"
-        message={itemsError.message}
+        message={(itemsError ?? storefrontError)?.message ?? 'Please try again.'}
         actionLabel="Retry"
         onAction={() => navigate(0)}
       />
     )
   }
 
-  const hasContent = (items?.length ?? 0) > 0 || bundles.length > 0
-  const acceptsOnlineCards = (store as { acceptsOnlineCardPayments?: boolean }).acceptsOnlineCardPayments
+  if (isItemsLoading || isStorefrontLoading || !storefront) {
+    return <StateBlock title="Loading menu" message="One moment while we load the menu." />
+  }
 
-  return (
-    <div className="space-y-8">
-      <StoreHeader store={store} />
-
-      {!hasContent ? (
-        <p className="text-sm text-muted-foreground">
-          No active menu items right now.{' '}
-          <button
-            type="button"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            onClick={() => navigate('/search')}
-          >
-            Back to search
-          </button>
-        </p>
+  const storeName = store.name
+  const updates = (
+    <>
+      {canPost ? (
+        <PostComposer
+          variant="prominent"
+          storeId={store.id}
+          storeName={storeName}
+          storeImage={(store as { imageUrl?: string | null }).imageUrl ?? undefined}
+          onPost={handlePost}
+        />
       ) : null}
-
-      {hasContent && menuSections.length > 0
-        ? menuSections.map((section) => (
-            <section key={section.label}>
-              <h2 className="mb-4 text-xl font-bold text-foreground">{section.label}</h2>
-              <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2">
-                {section.items.map((item) => (
-                  <ItemCard key={item.id} item={item} store={{ id: store.id, name: store.name }} />
-                ))}
-              </div>
-            </section>
-          ))
-        : null}
-
-      <div
-        role="region"
-        aria-labelledby="store-river-heading"
-        className="w-full"
-      >
-        <section className="">
-
-          {canComposeRiver ? (
-            <PostComposer
-              variant="prominent"
-              storeId={store.id}
-              storeName={store.name}
-              storeImage={(store as { imageUrl?: string | null }).imageUrl ?? undefined}
-              onPost={handleRiverPost}
-            />
-          ) : undefined}
-
-          <StoreFeedSection storeId={store.id} storeName={store.name} showFeedHeader={false} layout="store" />
-        </section>
-      </div>
-
-      <aside className="sticky bottom-4 z-20 p-4 w-full rounded-xl border shadow-lg backdrop-blur border-border bg-background/95">
-        <div className="flex gap-3 justify-between items-center">
-          <div className="flex gap-2 items-center">
-            <CartBadge count={cartCount} />
-            <div>
-              <p className="text-sm text-muted-foreground">Cart</p>
-              <p className="font-semibold">{cartCount} {cartCount === 1 ? 'item' : 'items'}</p>
-            </div>
-          </div>
-          <Link
-            to="/cart"
-            className="inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-md transition bg-primary text-primary-foreground hover:opacity-90"
-          >
-            View cart
-          </Link>
-        </div>
-      </aside>
-    </div>
+      <StoreFeedSection storeId={store.id} storeName={storeName} showFeedHeader={false} layout="store" />
+    </>
   )
-}
 
-export default function StoreDetailPage() {
   return (
-    <PageShell className="bg-background" containerClassName="max-w-5xl" contentClassName="py-6 md:py-12">
-      <KitchenContainer />
-    </PageShell>
+    <Storefront
+      store={store}
+      data={storefront}
+      items={items}
+      sections={sections}
+      bundles={storefront.bundles}
+      mode="live"
+      stickyTop={CHROME_HEIGHT_PX}
+      updates={updates}
+    />
   )
 }

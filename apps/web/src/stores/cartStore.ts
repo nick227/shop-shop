@@ -4,6 +4,8 @@ import type { CartWithTotals, ItemResponse } from '@api/types'
 
 interface AddCartItemInput {
   storeId: string
+  /** The shopper confirmed starting a new cart; required when the cart holds another store's items. */
+  replaceCart?: boolean
   itemId: string
   quantity: number
   title?: string
@@ -13,6 +15,8 @@ interface AddCartItemInput {
 
 export interface AddBundleToCartInput {
   storeId: string
+  /** The shopper confirmed starting a new cart; required when the cart holds another store's items. */
+  replaceCart?: boolean
   bundleId: string
   title: string
   unitPrice: string | number
@@ -31,6 +35,30 @@ interface CartStoreState {
   setCart: (cart: CartWithTotals | undefined) => void
   clearCart: () => void
   setHasHydrated: (hasHydrated: boolean) => void
+}
+
+/**
+ * Thrown instead of replacing a cart that holds another store's items. A cart is only ever discarded
+ * after the shopper says so (see `useCartSwitch`).
+ */
+export class CartStoreConflictError extends Error {
+  constructor() {
+    super('Your cart contains items from another store.')
+    this.name = 'CartStoreConflictError'
+  }
+}
+
+/** Whether adding from `storeId` would mean starting a new cart. */
+export function cartBelongsToAnotherStore(cart: CartWithTotals | undefined, storeId: string): boolean {
+  if (!cart || cart.storeId === storeId) return false
+  const lines = (cart as any).items
+  return Array.isArray(lines) && lines.some((line: { quantity?: number }) => (line.quantity ?? 0) > 0)
+}
+
+function baseCartFor(currentCart: CartWithTotals | undefined, input: { storeId: string; replaceCart?: boolean }): CartWithTotals {
+  if (currentCart?.storeId === input.storeId) return currentCart
+  if (cartBelongsToAnotherStore(currentCart, input.storeId) && !input.replaceCart) throw new CartStoreConflictError()
+  return createEmptyCart(input.storeId)
 }
 
 function toNumber(value: unknown): number {
@@ -93,10 +121,7 @@ export const useCartStore = create<CartStoreState>()(
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
       addItem: (input) => {
-        const currentCart = get().cart
-        const baseCart = currentCart?.storeId === input.storeId
-          ? currentCart
-          : createEmptyCart(input.storeId)
+        const baseCart = baseCartFor(get().cart, input)
         const baseItems = (baseCart as any).items
         const items: any[] = Array.isArray(baseItems) ? [...baseItems] : []
         const existingIndex = items.findIndex((item) => item.itemId === input.itemId)
@@ -128,9 +153,7 @@ export const useCartStore = create<CartStoreState>()(
       },
 
       addBundle: (input) => {
-        const currentCart = get().cart
-        const baseCart =
-          currentCart?.storeId === input.storeId ? currentCart : createEmptyCart(input.storeId)
+        const baseCart = baseCartFor(get().cart, input)
         const baseItems = (baseCart as any).items
         const items: any[] = Array.isArray(baseItems) ? [...baseItems] : []
         const existingIndex = items.findIndex((item) => item.bundleId === input.bundleId)

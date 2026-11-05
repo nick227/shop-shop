@@ -1,6 +1,6 @@
 /**
- * StoreItemsPage - the store's menu: every item, grouped by the store's own categories,
- * with each item's sales for the chosen period on the same row.
+ * StoreItemsPage - the store's menu: every item, grouped by the store's own sections (empty and hidden
+ * ones included, so the vendor can fill them), with each item's sales for the chosen period on the row.
  */
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useMemo, useState } from 'react'
@@ -22,15 +22,19 @@ import {
 } from '@shared/ui/primitives'
 import { VendorPage } from '@layouts/VendorLayout/page'
 import { EmptyState } from '@shared/ui/primitives/ui/EmptyState/EmptyState'
-import { Edit, FolderCog, Package, Plus, Trash2 } from 'lucide-react'
+import { Edit, EyeOff, FolderCog, Package, Plus, Trash2 } from 'lucide-react'
 import type { ItemResponse } from '@api/types'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
 import { authGet } from '@shared/lib/auth/authFetch'
 import { storeItemsQueryKey, useStoreItems } from '@shared/hooks/hooks/vendor/useStoreItems'
 import { CsvImportButton } from './components/CsvImportButton'
 import { MenuTabs } from './components/MenuTabs'
-import { ManageCategoriesDialog } from './components/ManageCategoriesDialog'
-import { UNCATEGORIZED, inCategory, itemCategory, storeCategories } from './menuCategories'
+import { ManageSectionsDialog } from './components/ManageSectionsDialog'
+import { groupItemsBySection, matchesMenuSearch } from '@shared/lib/menu/menuSections'
+import { useMenuSections } from '@shared/hooks/hooks/useMenuSections'
+
+/** Heading for items that are not in any section yet. */
+const NOT_IN_A_SECTION = 'Not in a section'
 
 type Period = '7d' | '30d' | '90d' | 'all'
 type SortMode = 'menu' | 'best' | 'price' | 'name'
@@ -103,6 +107,7 @@ export default function StoreItemsPage() {
   })
 
   const { data: items = [], isLoading: isLoadingItems } = useStoreItems(storeId)
+  const { data: sections = [], isLoading: isLoadingSections } = useMenuSections(storeId, { view: 'team' })
 
   const { data: sales } = useQuery({
     queryKey: ['item-analytics', storeId, period],
@@ -123,34 +128,30 @@ export default function StoreItemsPage() {
     },
   })
 
-  const categories = useMemo(() => storeCategories(items), [items])
-  const uncategorizedCount = useMemo(() => items.filter((i) => !itemCategory(i)).length, [items])
+  const groups = useMemo(
+    () => groupItemsBySection(items, sections, { includeEmpty: true, unsectionedName: NOT_IN_A_SECTION }),
+    [items, sections],
+  )
 
-  // A category can disappear (renamed, last item deleted); fall back to the whole menu.
-  const activeCategory =
-    category === ALL ||
-    (category === UNCATEGORIZED && uncategorizedCount > 0) ||
-    categories.some((c) => c.name === category)
-      ? category
-      : ALL
+  // A section can disappear (deleted, or emptied of its last unsectioned item); fall back to the whole menu.
+  const activeCategory = category === ALL || groups.some((g) => g.id === category) ? category : ALL
+  const searching = searchQuery.trim().length > 0
 
-  const sections = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    const matches = (item: ItemResponse) =>
-      !query ||
-      item.title.toLowerCase().includes(query) ||
-      (item.description ?? '').toLowerCase().includes(query)
-    const names = [
-      ...categories.map((c) => c.name),
-      ...(uncategorizedCount > 0 ? [UNCATEGORIZED] : []),
-    ].filter((name) => activeCategory === ALL || name === activeCategory)
-    return names
-      .map((name) => ({
-        name,
-        items: sortItems(items.filter((item) => inCategory(item, name) && matches(item)), sortMode, sales),
-      }))
-      .filter((section) => section.items.length > 0)
-  }, [items, categories, uncategorizedCount, activeCategory, searchQuery, sortMode, sales])
+  const visibleGroups = useMemo(
+    () =>
+      groups
+        .filter((group) => activeCategory === ALL || group.id === activeCategory)
+        .map((group) => ({
+          ...group,
+          items: sortItems(group.items.filter((item) => matchesMenuSearch(item, searchQuery)), sortMode, sales),
+        }))
+        // While searching, only sections with a match; otherwise empty sections stay, ready to fill.
+        .filter((group) => !searching || group.items.length > 0),
+    [groups, activeCategory, searchQuery, searching, sortMode, sales],
+  )
+
+  const addItemPath = (sectionId?: string) =>
+    `${vendorPaths.newItem(storeId!)}${sectionId ? `?section=${encodeURIComponent(sectionId)}` : ''}`
 
   const handleDeleteItem = (item: ItemResponse) => {
     if (confirm(`Delete "${item.title}"?`)) deleteItemMutation.mutate(item.id)
@@ -164,43 +165,49 @@ export default function StoreItemsPage() {
 
   const categoryChoices = [
     { id: ALL, label: 'All', count: items.length },
-    ...categories.map((c) => ({ id: c.name, label: c.name, count: c.count })),
-    ...(uncategorizedCount > 0 ? [{ id: UNCATEGORIZED, label: UNCATEGORIZED, count: uncategorizedCount }] : []),
+    ...groups.map((g) => ({ id: g.id, label: g.name, count: g.items.length })),
   ]
+  const menuIsBlank = items.length === 0 && sections.length === 0
 
   return (
     <VendorPage
       title="Menu"
-      loading={isLoadingStore || isLoadingItems}
+      loading={isLoadingStore || isLoadingItems || isLoadingSections}
       error={!isLoadingStore && !store ? { message: 'This store could not be loaded' } : undefined}
       tabs={<MenuTabs storeId={storeId!} />}
       actions={
         <>
           <CsvImportButton storeId={storeId!} />
-          <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
+          <Button variant="primary" onClick={() => navigate(addItemPath())}>
             <Plus className="mr-1.5 h-4 w-4" />
             Add item
           </Button>
         </>
       }
     >
-      {items.length === 0 ? (
+      {menuIsBlank ? (
         <EmptyState
           icon={Package}
           title="Your menu is empty"
-          description="Add your first item, or import a CSV. Give items a category (like “Tacos” or “Drinks”) and your menu groups itself."
+          description="Start with sections like “Breakfast” or “Drinks”, then add items to them. You can also import a CSV."
           action={
-            <Button variant="primary" onClick={() => navigate(vendorPaths.newItem(storeId!))}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add your first item
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="primary" onClick={() => setManaging(true)}>
+                <FolderCog className="mr-2 h-4 w-4" />
+                Add sections
+              </Button>
+              <Button variant="outline" onClick={() => navigate(addItemPath())}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add an item
+              </Button>
+            </div>
           }
         />
       ) : (
         <div className="space-y-5">
           <div className="-mx-1 overflow-x-auto px-1 pb-1">
             <SegmentedControl
-              label="Menu categories"
+              label="Menu sections"
               items={categoryChoices}
               value={activeCategory}
               onChange={setCategory}
@@ -231,7 +238,7 @@ export default function StoreItemsPage() {
               </Select>
               <Button variant="outline" onClick={() => setManaging(true)}>
                 <FolderCog className="mr-1.5 h-4 w-4" />
-                Categories
+                Sections
               </Button>
             </div>
           </div>
@@ -243,40 +250,61 @@ export default function StoreItemsPage() {
             {sales && ` · ${periodUnits} sold for ${formatCurrency(periodRevenue)} (${period === 'all' ? 'all time' : `last ${period}`})`}
           </p>
 
-          {sections.length === 0 ? (
+          {visibleGroups.length === 0 ? (
             <EmptyState icon={Package} title="No items found" description="No items match your search." />
           ) : (
-            sections.map((section) => (
-              <section key={section.name} aria-labelledby={`cat-${section.name}`} className="space-y-2">
-                <h2 id={`cat-${section.name}`} className="flex items-baseline gap-2 text-base font-semibold">
-                  {section.name}
-                  <span className="text-sm font-normal text-muted-foreground">{section.items.length}</span>
-                </h2>
-                <ul className="divide-y overflow-hidden rounded-lg border bg-card">
-                  {section.items.map((item) => (
-                    <MenuItemRow
-                      key={item.id}
-                      item={item}
-                      sales={sales?.get(item.id)}
-                      salesLoaded={!!sales}
-                      onEdit={() => navigate(vendorPaths.item(storeId!, item.id))}
-                      onDelete={() => handleDeleteItem(item)}
-                      isDeleting={deleteItemMutation.isPending && deleteItemMutation.variables === item.id}
-                    />
-                  ))}
-                </ul>
+            visibleGroups.map((group) => (
+              <section key={group.id} aria-labelledby={`section-${group.id}`} className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <h2 id={`section-${group.id}`} className="flex items-baseline gap-2 text-base font-semibold">
+                    {group.name}
+                    <span className="text-sm font-normal text-muted-foreground">{group.items.length}</span>
+                  </h2>
+                  {group.section && !group.section.isVisible ? (
+                    <Badge variant="warning" className="gap-1">
+                      <EyeOff className="h-3 w-3" aria-hidden />
+                      Hidden from shoppers
+                    </Badge>
+                  ) : null}
+                  {group.section ? (
+                    <Button
+                      variant="link"
+                      size="small"
+                      className="ml-auto h-auto px-0"
+                      onClick={() => navigate(addItemPath(group.id))}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add item
+                    </Button>
+                  ) : null}
+                </div>
+                {group.description ? <p className="text-sm text-muted-foreground">{group.description}</p> : null}
+                {group.items.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                    No items yet. Shoppers won’t see this section until it has one.
+                  </p>
+                ) : (
+                  <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+                    {group.items.map((item) => (
+                      <MenuItemRow
+                        key={item.id}
+                        item={item}
+                        sales={sales?.get(item.id)}
+                        salesLoaded={!!sales}
+                        onEdit={() => navigate(vendorPaths.item(storeId!, item.id))}
+                        onDelete={() => handleDeleteItem(item)}
+                        isDeleting={deleteItemMutation.isPending && deleteItemMutation.variables === item.id}
+                      />
+                    ))}
+                  </ul>
+                )}
               </section>
             ))
           )}
         </div>
       )}
 
-      <ManageCategoriesDialog
-        open={managing}
-        onOpenChange={setManaging}
-        storeId={storeId!}
-        categories={categories}
-      />
+      <ManageSectionsDialog open={managing} onOpenChange={setManaging} storeId={storeId!} sections={sections} />
     </VendorPage>
   )
 }

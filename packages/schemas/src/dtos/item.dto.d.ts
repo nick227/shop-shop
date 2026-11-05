@@ -8,6 +8,8 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     isSoldOut: z.ZodOptional<z.ZodBoolean>;
     sortIndex: z.ZodOptional<z.ZodNumber>;
     optionsJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    /** The store's menu section; null takes the item out of every section. */
+    sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     stockQty: z.ZodOptional<z.ZodNumber>;
     allergensJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodOptional<z.ZodBoolean>;
@@ -20,10 +22,11 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     title: string;
     storeId: string;
     price: string;
+    sortIndex?: number | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -36,10 +39,11 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     title: string;
     storeId: string;
     price: string;
+    sortIndex?: number | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -57,6 +61,8 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     isSoldOut: z.ZodOptional<z.ZodBoolean>;
     sortIndex: z.ZodOptional<z.ZodNumber>;
     optionsJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    /** The store's menu section; null takes the item out of every section. */
+    sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     stockQty: z.ZodOptional<z.ZodNumber>;
     allergensJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodOptional<z.ZodBoolean>;
@@ -68,11 +74,12 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     description: string;
     title: string;
     price: string;
+    sortIndex?: number | undefined;
     storeId?: string | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -84,11 +91,12 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     description: string;
     title: string;
     price: string;
+    sortIndex?: number | undefined;
     storeId?: string | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -100,11 +108,12 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     description: string;
     title: string;
     price: string;
+    sortIndex?: number | undefined;
     storeId?: string | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -116,11 +125,12 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     description: string;
     title: string;
     price: string;
+    sortIndex?: number | undefined;
     storeId?: string | undefined;
     isActive?: boolean | undefined;
     isSoldOut?: boolean | undefined;
-    sortIndex?: number | undefined;
     optionsJson?: Record<string, unknown> | undefined;
+    sectionId?: string | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -139,6 +149,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
     isSoldOut: z.ZodNullable<z.ZodBoolean>;
     sortIndex: z.ZodNullable<z.ZodNumber>;
     optionsJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     stockQty: z.ZodNullable<z.ZodNumber>;
     allergensJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodNullable<z.ZodBoolean>;
@@ -146,6 +157,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
     isGlutenFree: z.ZodNullable<z.ZodBoolean>;
     isDairyFree: z.ZodNullable<z.ZodBoolean>;
     spicyLevel: z.ZodNullable<z.ZodNumber>;
+    imageUrl: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     media: z.ZodString;
     cartItems: z.ZodString;
     orderItems: z.ZodString;
@@ -180,14 +192,13 @@ export declare const ItemResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     description: string;
     title: string;
-    store: string;
     FavoriteItem: string;
-    storeId: string;
     media: string;
+    sortIndex: number | null;
+    storeId: string;
     price: string;
     isActive: boolean | null;
     isSoldOut: boolean | null;
-    sortIndex: number | null;
     optionsJson: Record<string, unknown> | null;
     stockQty: number | null;
     allergensJson: Record<string, unknown> | null;
@@ -196,6 +207,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
     isGlutenFree: boolean | null;
     isDairyFree: boolean | null;
     spicyLevel: number | null;
+    store: string;
     cartItems: string;
     orderItems: string;
     bundleItems: string;
@@ -204,22 +216,23 @@ export declare const ItemResponseSchema: z.ZodObject<{
         label: string;
         category: string;
     }[] | undefined;
+    imageUrl?: string | null | undefined;
     mediaAssets?: {
         url: string;
         kind: string;
         sortIndex?: number | null | undefined;
     }[] | undefined;
+    sectionId?: string | null | undefined;
 }, {
     description: string;
     title: string;
-    store: string;
     FavoriteItem: string;
-    storeId: string;
     media: string;
+    sortIndex: number | null;
+    storeId: string;
     price: string;
     isActive: boolean | null;
     isSoldOut: boolean | null;
-    sortIndex: number | null;
     optionsJson: Record<string, unknown> | null;
     stockQty: number | null;
     allergensJson: Record<string, unknown> | null;
@@ -228,6 +241,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
     isGlutenFree: boolean | null;
     isDairyFree: boolean | null;
     spicyLevel: number | null;
+    store: string;
     cartItems: string;
     orderItems: string;
     bundleItems: string;
@@ -236,11 +250,13 @@ export declare const ItemResponseSchema: z.ZodObject<{
         label: string;
         category: string;
     }[] | undefined;
+    imageUrl?: string | null | undefined;
     mediaAssets?: {
         url: string;
         kind: string;
         sortIndex?: number | null | undefined;
     }[] | undefined;
+    sectionId?: string | null | undefined;
 }>;
 export declare const ItemListResponseSchema: z.ZodObject<{
     data: z.ZodArray<z.ZodObject<{
@@ -253,6 +269,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isSoldOut: z.ZodNullable<z.ZodBoolean>;
         sortIndex: z.ZodNullable<z.ZodNumber>;
         optionsJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+        sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         stockQty: z.ZodNullable<z.ZodNumber>;
         allergensJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
         isVegan: z.ZodNullable<z.ZodBoolean>;
@@ -260,6 +277,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isGlutenFree: z.ZodNullable<z.ZodBoolean>;
         isDairyFree: z.ZodNullable<z.ZodBoolean>;
         spicyLevel: z.ZodNullable<z.ZodNumber>;
+        imageUrl: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         media: z.ZodString;
         cartItems: z.ZodString;
         orderItems: z.ZodString;
@@ -294,14 +312,13 @@ export declare const ItemListResponseSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         description: string;
         title: string;
-        store: string;
         FavoriteItem: string;
-        storeId: string;
         media: string;
+        sortIndex: number | null;
+        storeId: string;
         price: string;
         isActive: boolean | null;
         isSoldOut: boolean | null;
-        sortIndex: number | null;
         optionsJson: Record<string, unknown> | null;
         stockQty: number | null;
         allergensJson: Record<string, unknown> | null;
@@ -310,6 +327,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isGlutenFree: boolean | null;
         isDairyFree: boolean | null;
         spicyLevel: number | null;
+        store: string;
         cartItems: string;
         orderItems: string;
         bundleItems: string;
@@ -318,22 +336,23 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             label: string;
             category: string;
         }[] | undefined;
+        imageUrl?: string | null | undefined;
         mediaAssets?: {
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
         }[] | undefined;
+        sectionId?: string | null | undefined;
     }, {
         description: string;
         title: string;
-        store: string;
         FavoriteItem: string;
-        storeId: string;
         media: string;
+        sortIndex: number | null;
+        storeId: string;
         price: string;
         isActive: boolean | null;
         isSoldOut: boolean | null;
-        sortIndex: number | null;
         optionsJson: Record<string, unknown> | null;
         stockQty: number | null;
         allergensJson: Record<string, unknown> | null;
@@ -342,6 +361,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isGlutenFree: boolean | null;
         isDairyFree: boolean | null;
         spicyLevel: number | null;
+        store: string;
         cartItems: string;
         orderItems: string;
         bundleItems: string;
@@ -350,28 +370,28 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             label: string;
             category: string;
         }[] | undefined;
+        imageUrl?: string | null | undefined;
         mediaAssets?: {
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
         }[] | undefined;
+        sectionId?: string | null | undefined;
     }>, "many">;
     total: z.ZodNumber;
     page: z.ZodNumber;
     limit: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
-    total: number;
     data: {
         description: string;
         title: string;
-        store: string;
         FavoriteItem: string;
-        storeId: string;
         media: string;
+        sortIndex: number | null;
+        storeId: string;
         price: string;
         isActive: boolean | null;
         isSoldOut: boolean | null;
-        sortIndex: number | null;
         optionsJson: Record<string, unknown> | null;
         stockQty: number | null;
         allergensJson: Record<string, unknown> | null;
@@ -380,6 +400,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isGlutenFree: boolean | null;
         isDairyFree: boolean | null;
         spicyLevel: number | null;
+        store: string;
         cartItems: string;
         orderItems: string;
         bundleItems: string;
@@ -388,27 +409,28 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             label: string;
             category: string;
         }[] | undefined;
+        imageUrl?: string | null | undefined;
         mediaAssets?: {
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
         }[] | undefined;
+        sectionId?: string | null | undefined;
     }[];
+    total: number;
     page: number;
     limit: number;
 }, {
-    total: number;
     data: {
         description: string;
         title: string;
-        store: string;
         FavoriteItem: string;
-        storeId: string;
         media: string;
+        sortIndex: number | null;
+        storeId: string;
         price: string;
         isActive: boolean | null;
         isSoldOut: boolean | null;
-        sortIndex: number | null;
         optionsJson: Record<string, unknown> | null;
         stockQty: number | null;
         allergensJson: Record<string, unknown> | null;
@@ -417,6 +439,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         isGlutenFree: boolean | null;
         isDairyFree: boolean | null;
         spicyLevel: number | null;
+        store: string;
         cartItems: string;
         orderItems: string;
         bundleItems: string;
@@ -425,12 +448,15 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             label: string;
             category: string;
         }[] | undefined;
+        imageUrl?: string | null | undefined;
         mediaAssets?: {
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
         }[] | undefined;
+        sectionId?: string | null | undefined;
     }[];
+    total: number;
     page: number;
     limit: number;
 }>;

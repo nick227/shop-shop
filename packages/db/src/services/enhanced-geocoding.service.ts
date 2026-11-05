@@ -9,6 +9,7 @@ import {
   createGeocodingAdapter,
   GeocodingResult as ApiResult,
 } from '../adapters/geocoding.adapter.js'
+import { lookupPostalCode } from '../geo/place-directory.js'
 
 export interface GeocodingConfig {
   apiKey: string
@@ -96,6 +97,8 @@ export class EnhancedGeocodingService {
   }
 
   async geocodeZip(zipCode: string): Promise<GeocodingResult | null> {
+    const postal = await lookupPostalCode(this.prisma, zipCode)
+    if (postal) return postal
     return this.geocodeWithCache(
       { queryType: 'zip', queryValue: zipCode },
       `zip=${zipCode}`,

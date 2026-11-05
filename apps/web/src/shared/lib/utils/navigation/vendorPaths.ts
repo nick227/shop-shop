@@ -12,6 +12,7 @@ export const vendorPaths = {
   overview: (storeId: string) => store(storeId),
   orders: (storeId: string) => store(storeId, '/orders'),
   menu: (storeId: string) => store(storeId, '/menu'),
+  storefront: (storeId: string) => store(storeId, '/storefront'),
   newItem: (storeId: string) => store(storeId, '/menu/items/new'),
   item: (storeId: string, itemId: string) => store(storeId, `/menu/items/${itemId}`),
   bundles: (storeId: string) => store(storeId, '/menu/bundles'),

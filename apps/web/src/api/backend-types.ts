@@ -55,6 +55,8 @@ export type ItemResponse = ListItems200ResponseDataInner & {
   updatedAt: string
   tags?: ItemTag[]
   mediaAssets?: { url: string; kind: string; sortIndex?: number | null }[]
+  /** The store's menu section the item is listed under; null when it is in none. */
+  sectionId?: string | null
 }
 
 export type OrderResponse = ListOrders200ResponseDataInner & {

@@ -4,6 +4,7 @@ import { AccountAccessSync } from '@features/account/AccountAccessSync'
  */
 import { Outlet, useMatches, useLocation } from 'react-router-dom'
 import { CartWidget } from '../features/cart/components/CartWidget'
+import { CartSwitchDialog } from '../features/cart/cartSwitch'
 import { Header } from '../components/header/Header'
 import { HeaderAddressExtrasProvider } from '../components/header/HeaderAddressExtrasContext'
 import { ShoppingShell } from '../features/home/shell/ShoppingShell'
@@ -51,6 +52,7 @@ export function Layout() {
         </>
       )}
       <CartWidget />
+      <CartSwitchDialog />
     </HeaderAddressExtrasProvider>
   )
 }

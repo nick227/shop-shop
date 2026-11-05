@@ -26,6 +26,9 @@ const mockCacheService = {
 
 // Mock Prisma client
 const mockPrisma = {
+  postalCode: {
+    findUnique: vi.fn().mockResolvedValue(null),
+  },
   geocodingCache: {
     findUnique: vi.fn(),
     upsert: vi.fn(),

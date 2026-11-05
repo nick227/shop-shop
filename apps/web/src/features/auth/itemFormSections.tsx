@@ -5,6 +5,8 @@
 import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import { ProductMediaGrid } from './ProductMediaGrid'
+import { SectionPicker } from '@features/products/components/SectionPicker'
+import type { MenuSection } from '@shared/lib/menu/menuSections'
 import type { FormSection } from '@shared/ui/templates'
 import type { ItemFormData } from '@api/types'
 
@@ -58,14 +60,15 @@ export function createItemFormSections(
   options?: {
     storeId?: string
     itemId?: string
-    /** The store's own categories, offered as suggestions. Vendors can type a new one. */
-    storeCategories?: readonly string[]
+    /** The store's menu sections, and how to make a new one from the item form. */
+    sections?: readonly MenuSection[]
+    sectionId?: string
+    onSectionChange?: (sectionId: string) => void
+    onCreateSection?: (name: string) => Promise<string>
     pendingFiles?: readonly File[]
     onPendingFiles?: (files: File[]) => void
   }
 ): FormSection[] {
-  const categoryListId = `store-categories-${options?.storeId ?? 'new'}`
-
   return [
     {
       id: 'basic',
@@ -83,21 +86,12 @@ export function createItemFormSections(
                 required
               />
               
-              <Input
-                label="Category"
-                value={formData.category || ''}
-                onChange={(e) => onChange('category', e.target.value)}
-                placeholder="e.g. Tacos, Drinks, Specials"
-                list={categoryListId}
-                autoComplete="off"
-                maxLength={60}
-                helperText="Reuse existing category."
+              <SectionPicker
+                sections={options?.sections ?? []}
+                value={options?.sectionId ?? ''}
+                onChange={(id) => options?.onSectionChange?.(id)}
+                onCreate={(name) => options?.onCreateSection?.(name) ?? Promise.reject(new Error('Sections are unavailable'))}
               />
-              <datalist id={categoryListId}>
-                {(options?.storeCategories ?? []).map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
             </div>
             
             <div className="space-y-2">

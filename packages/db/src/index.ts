@@ -30,6 +30,10 @@ export type { ExtendedPrismaClient } from './client.js'
 
 export { haversineMiles } from './geo/haversine.js'
 export type { GeoPoint } from './geo/haversine.js'
+export { WEST_CAMPUS_PLACE_ID } from './geo/gazetteer.js'
+export { ensureGazetteer, lookupPostalCode, backfillStorePlaces } from './geo/place-directory.js'
+export { readGeoScopeInput, itemGeoScope, storeWhereForScope } from './geo/scope.js'
+export type { GeoScopeInput, StoreScope } from './geo/scope.js'
 
 export {
   OFFICIAL_PLATFORM_STORE_SLUG,

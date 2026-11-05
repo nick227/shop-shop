@@ -16,6 +16,8 @@ import {
   DollarSign,
   Newspaper,
   Layers,
+  MapPin,
+  Building2,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { path: '/admin/delivery', label: 'Delivery', icon: Truck },
   { path: '/admin/catalog', label: 'Catalog', icon: Package },
+  { path: '/admin/neighborhoods', label: 'Neighborhoods', icon: MapPin },
+  { path: '/admin/businesses/import', label: 'Directory', icon: Building2 },
   { path: '/admin/affiliates', label: 'Affiliates', icon: Handshake },
   { path: '/admin/payout-groups', label: 'Payout Groups', icon: Layers },
   { path: '/admin/finance', label: 'Finance', icon: DollarSign },

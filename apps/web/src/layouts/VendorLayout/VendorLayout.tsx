@@ -12,7 +12,7 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Button, Spinner } from '@shared/ui/primitives'
 import { AppShell } from '@shared/ui/layout/AppShell'
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   readOrderAlertChoice,
   useVendorStores,
@@ -86,6 +86,13 @@ const NO_STORES: readonly VendorStore[] = []
 
 export function VendorLayout() {
   const { data: stores = NO_STORES, isLoading, error, refetch } = useVendorStores()
+  const { pathname } = useLocation()
+  const onCreatePath = CREATE_STORE_PATHS.has(pathname)
+  // A first store is created in place: swapping to the full workspace would remount the form and drop
+  // what the seller has typed, so the bare frame stays until they leave the create page.
+  const [inFirstStoreFlow, setInFirstStoreFlow] = useState(false)
+  if (!inFirstStoreFlow && onCreatePath && !isLoading && stores.length === 0) setInFirstStoreFlow(true)
+  if (inFirstStoreFlow && !onCreatePath) setInFirstStoreFlow(false)
 
   if (isLoading) {
     return (
@@ -99,7 +106,7 @@ export function VendorLayout() {
 
   return (
     <VendorActiveStoreProvider stores={stores}>
-      {stores.length === 0 ? <FirstStoreFrame /> : <VendorWorkspace />}
+      {stores.length === 0 || inFirstStoreFlow ? <FirstStoreFrame /> : <VendorWorkspace />}
     </VendorActiveStoreProvider>
   )
 }

@@ -4,9 +4,8 @@
  */
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { createEnhancedGeocodingService } from '@packages/db'
+import { createEnhancedGeocodingService, ensureGazetteer, backfillStorePlaces, lookupPostalCode, prisma } from '@packages/db'
 import { env } from '../env.js'
-import { prisma } from '@packages/db'
 
 // Request schemas
 const ZipCodeQuerySchema = z.object({
@@ -42,13 +41,40 @@ function isUSCoordinates(lat: number, lon: number): boolean {
   return lat >= 24.5 && lat <= 49 && lon >= -125 && lon <= -66
 }
 
+async function postalZipResponse(zip: string): Promise<GeocodeResponse | null> {
+  const hit = await lookupPostalCode(prisma, zip)
+  if (!hit) return null
+  return {
+    latitude: hit.latitude,
+    longitude: hit.longitude,
+    city: hit.city,
+    state: hit.state,
+    zip: hit.zip,
+    country: hit.country || 'US',
+    displayName: hit.formattedAddress || `${hit.city}, ${hit.state} ${hit.zip}`,
+  }
+}
+
 export async function geocodingRoutes(app: FastifyInstance) {
+  try {
+    await ensureGazetteer(prisma)
+    await backfillStorePlaces(prisma)
+  } catch (error) {
+    app.log.warn({ error }, 'Failed to prepare the place directory')
+  }
+
   // Check if geocoding is enabled
   if (!env.GEOCODING_API_KEY) {
     app.log.warn('⚠️  Geocoding API key not configured - geocoding endpoints will return 503')
     
-    // Register routes that return 503 Service Unavailable
+    // Known ZIPs still resolve from the place directory. Unknown ZIPs need the external geocoder.
     app.get('/geocode/zip', async (req, reply) => {
+      const parsed = ZipCodeQuerySchema.safeParse(req.query)
+      if (!parsed.success) {
+        return reply.status(400).send({ error: 'Validation Error', message: parsed.error.errors[0]?.message || 'Invalid request' })
+      }
+      const postal = await postalZipResponse(parsed.data.zip)
+      if (postal) return reply.send(postal)
       return reply.status(503).send({
         error: 'Service Unavailable',
         message: 'Geocoding API key not configured. Set GEOCODING_API_KEY in environment variables.'

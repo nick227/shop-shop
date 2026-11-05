@@ -3,6 +3,8 @@ const KEY = 'shopshop.home.place'
 /** Metro-sized range for the home delivery area. Shoppers do not pick a radius. */
 export const HOME_RADIUS_MILES = 25
 
+export const DEFAULT_STORE_IMAGE = '/logo.png'
+
 export function rememberPlace(search: string): void {
   const value = search.startsWith('?') ? search.slice(1) : search
   if (!new URLSearchParams(value).get('zip')) return

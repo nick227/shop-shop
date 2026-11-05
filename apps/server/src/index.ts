@@ -43,11 +43,16 @@ import { favoritesRoutes } from './routes/favorites.route.js'
 import { searchUnifiedRoutes } from './routes/search-unified.route.js'
 import { tagsRoutes } from './routes/tags.route.js'
 import { itemAnalyticsRoutes } from './routes/item-analytics.route.js'
-import { menuCategoryRoutes } from './routes/menu-categories.route.js'
+import { menuSectionRoutes } from './routes/menu-sections.route.js'
+import { storefrontRoutes } from './routes/storefront.route.js'
 import { adminRoutes } from './routes/admin.route.js'
 import { adminCatalogRoutes } from './routes/admin-catalog.route.js'
 import { adminStoresRoutes } from './routes/admin-stores.route.js'
 import { adminBulkRoutes } from './routes/admin-bulk.route.js'
+import { adminNeighborhoodRoutes } from './routes/admin-neighborhoods.route.js'
+import { placeRoutes } from './routes/places.route.js'
+import { adminBusinessImportRoutes } from './routes/admin-business-imports.route.js'
+import { directoryRoutes } from './routes/directory.route.js'
 import { settingsPublicRoutes } from './routes/settings-public.route.js'
 import { ALL_RESOURCES } from './resources/index.js'
 import { registerAllResources } from './routes/loader.js'
@@ -226,7 +231,8 @@ await app.register(favoritesRoutes, { prefix: '/api' })
 
 // Item analytics must register before `/api/items/:id` so `/api/items/analytics` is not parsed as an id.
 await app.register(itemAnalyticsRoutes, { prefix: '/api' })
-await app.register(menuCategoryRoutes, { prefix: '/api' })
+await app.register(menuSectionRoutes, { prefix: '/api' })
+await app.register(storefrontRoutes, { prefix: '/api' })
 
 // Auto-register all resources (promotions, stores, items, carts, addresses, orders, posts)
 await registerAllResources(app, ALL_RESOURCES, { prefix: '/api' })
@@ -236,6 +242,10 @@ await app.register(adminRoutes, { prefix: '/api' })
 await app.register(adminCatalogRoutes, { prefix: '/api' })
 await app.register(adminStoresRoutes, { prefix: '/api/admin' })
 await app.register(adminBulkRoutes, { prefix: '/api/admin' })
+await app.register(adminNeighborhoodRoutes, { prefix: '/api' })
+await app.register(placeRoutes, { prefix: '/api' })
+await app.register(adminBusinessImportRoutes(), { prefix: '/api' })
+await app.register(directoryRoutes, { prefix: '/api' })
 // Public settings (no auth)
 await app.register(settingsPublicRoutes, { prefix: '/api' })
 
