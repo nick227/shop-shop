@@ -1,22 +1,49 @@
 /**
- * useCheckoutQuote - the totals checkout will charge for the cart, from the server's pricing code.
- * The cart only knows what the shopper added; prices, fees and tax always come from here.
+ * useCheckoutQuote - the totals checkout will charge, and whether pickup and delivery are possible,
+ * from the server's pricing code. The cart only knows what the shopper added; prices, fees, tax and
+ * delivery eligibility always come from here.
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CartWithTotals } from '@api/types'
 import { authPost } from '@shared/lib/auth/authFetch'
 
+export type FulfillmentType = 'PICKUP' | 'DELIVERY'
+
+export interface DeliveryAddressDraft {
+  readonly line1: string
+  readonly line2?: string
+  readonly city: string
+  readonly state: string
+  readonly postalCode: string
+  readonly instructions?: string
+}
+
+export type DeliveryAvailability =
+  | { readonly available: true; readonly fee: number; readonly minimum: number | null; readonly distanceMiles: number | null }
+  | {
+      readonly available: false
+      readonly code: string
+      readonly message: string
+      readonly minimum: number | null
+      readonly shortBy: number | null
+    }
+
 export interface CheckoutQuote {
   readonly storeId: string
-  readonly deliveryType: 'PICKUP' | 'DELIVERY'
+  readonly deliveryType: FulfillmentType
   readonly lines: readonly { itemId: string | null; bundleId: string | null; title: string; quantity: number; unitPrice: number }[]
   readonly subtotal: number
   readonly deliveryFee: number
   readonly tax: number
+  /** The tax is a development estimate and must be labeled so. */
+  readonly taxEstimated: boolean
   readonly serviceFee: number
   readonly tip: number
   readonly total: number
-  readonly fulfillment: { readonly pickup: boolean; readonly delivery: boolean }
+  /** Why the chosen way to get the order isn't possible; the totals can't be paid while set. */
+  readonly blocked: { readonly code: string; readonly message: string } | null
+  readonly fulfillment: { readonly pickup: { readonly available: boolean }; readonly delivery: DeliveryAvailability }
+  readonly destination: { readonly addressId: string | null; readonly address: DeliveryAddressDraft; readonly approximate: boolean } | null
 }
 
 export type CheckoutLine = { itemId: string; quantity: number } | { bundleId: string; quantity: number }
@@ -32,24 +59,37 @@ export function checkoutLines(cart: CartWithTotals | undefined): CheckoutLine[] 
   })
 }
 
-export function useCheckoutQuote(
-  cart: CartWithTotals | undefined,
-  options: { deliveryType: 'PICKUP' | 'DELIVERY'; tipAmount?: number },
-) {
-  const items = checkoutLines(cart)
-  const tipAmount = Math.max(0, Math.round((options.tipAmount ?? 0) * 100) / 100)
+export interface QuoteOptions {
+  readonly deliveryType: FulfillmentType
+  readonly tipAmount?: number
+  readonly deliveryAddressId?: string | null
+  readonly deliveryAddress?: DeliveryAddressDraft | null
+}
+
+export function quoteRequestBody(cart: CartWithTotals | undefined, options: QuoteOptions) {
+  return {
+    items: checkoutLines(cart),
+    deliveryType: options.deliveryType,
+    tipAmount: Math.max(0, Math.round((options.tipAmount ?? 0) * 100) / 100),
+    ...(options.deliveryAddressId ? { deliveryAddressId: options.deliveryAddressId } : {}),
+    ...(!options.deliveryAddressId && options.deliveryAddress ? { deliveryAddress: options.deliveryAddress } : {}),
+  }
+}
+
+export function useCheckoutQuote(cart: CartWithTotals | undefined, options: QuoteOptions) {
+  const body = quoteRequestBody(cart, options)
   return useQuery({
-    queryKey: ['checkout-quote', cart?.storeId, JSON.stringify(items), options.deliveryType, tipAmount],
+    queryKey: ['checkout-quote', cart?.storeId, JSON.stringify(body)],
     queryFn: async (): Promise<CheckoutQuote> => {
-      const response = await authPost('/api/v1/checkout/quote', { items, deliveryType: options.deliveryType, tipAmount })
+      const response = await authPost('/api/v1/checkout/quote', body)
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string; message?: string }
-        throw new Error(body.error ?? body.message ?? 'Prices could not be checked')
+        const payload = (await response.json().catch(() => ({}))) as { error?: string; message?: string }
+        throw new Error(payload.error ?? payload.message ?? 'Prices could not be checked')
       }
       return (await response.json()) as CheckoutQuote
     },
-    enabled: items.length > 0,
-    // Keep showing the last totals while a change (quantity, tip) is re-priced.
+    enabled: body.items.length > 0,
+    // Keep the last totals on screen while a change (address, tip, method) is re-priced.
     placeholderData: keepPreviousData,
     retry: false,
   })

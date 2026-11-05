@@ -108,8 +108,8 @@ function Fulfillment({ ordering }: { readonly ordering: StorefrontOrdering }) {
           <Bike className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span>
             <span className="font-medium">Delivery</span>
-            {/* Courier time and fee depend on the address; checkout works them out. */}
-            <span className="text-muted-foreground"> · time and fee at checkout</span>
+            {/* The fee depends on the address; checkout quotes it. No timing is promised. */}
+            <span className="text-muted-foreground"> · fee shown at checkout</span>
           </span>
         </p>
       ) : null}

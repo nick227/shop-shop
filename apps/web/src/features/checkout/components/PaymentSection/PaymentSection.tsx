@@ -31,6 +31,8 @@ export interface PaymentSectionProps {
   readonly paymentError?: string
   /** Mirrors server ENABLE_COD_PAYMENTS — cash on pickup/delivery test flow. */
   readonly enableCod?: boolean
+  /** Hide the amount breakdown when the page already shows the order summary beside it. */
+  readonly showBreakdown?: boolean
 }
 
 export function PaymentSection({
@@ -45,6 +47,7 @@ export function PaymentSection({
   isProcessing = false,
   paymentError,
   enableCod = false,
+  showBreakdown = true,
 }: PaymentSectionProps) {
   const hasStripeKey = Boolean(getStripePublishableKey())
   const [paymentMethod, setPaymentMethod] = useState<'test' | 'stripe'>(() =>
@@ -202,6 +205,7 @@ export function PaymentSection({
         </span>
       </label>
 
+      {showBreakdown ? (
       <div className="rounded-xl border border-border bg-card p-4">
         <h3 className="mb-4 text-lg font-bold text-foreground">Order Total</h3>
         <div className="space-y-2">
@@ -230,6 +234,7 @@ export function PaymentSection({
           </div>
         </div>
       </div>
+      ) : null}
 
       {paymentError && (
         <div

@@ -113,8 +113,8 @@ describe('Storefront', () => {
     const ordering = screen.getByRole('region', { name: 'Ordering' })
     expect(ordering).toHaveTextContent('Taking orders')
     expect(ordering).toHaveTextContent('Pickup · ready in about 15 min')
-    // Checkout takes pickup orders only today, so the storefront doesn't offer delivery.
-    expect(ordering).not.toHaveTextContent('Delivery')
+    // Delivery is offered without inventing a time; the fee comes from checkout.
+    expect(ordering).toHaveTextContent('Delivery · fee shown at checkout')
     expect(ordering).not.toHaveTextContent(/\d+–\d+ min/)
     // No posted hours, so no claim about being open.
     expect(ordering).not.toHaveTextContent(/Open now|Closed now/)
