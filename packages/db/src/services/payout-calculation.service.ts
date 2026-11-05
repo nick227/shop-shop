@@ -56,9 +56,9 @@ export function snapshotOrderForPayout(order: OrderSnapshotForPayout): PayoutOrd
   const discountsCents = 0
   const refundsCents = 0
 
-  // v1: use `netToVendor` (already computed in the order) plus tips.
-  // This remains consistent with the payout waterfall where tips are added back.
-  const netContributionCents = decimalToCents(order.netToVendor) + tipsCents
+  // `netToVendor` is the order total minus the platform's fees, so it already holds the checkout tip.
+  // Adding `tip` again paid every tip twice; tips are reported (tipsCents) but not added back.
+  const netContributionCents = decimalToCents(order.netToVendor)
 
   return {
     orderId: order.id,

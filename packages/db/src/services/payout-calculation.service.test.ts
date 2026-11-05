@@ -60,9 +60,11 @@ describe('payout-calculation.service', () => {
         status: 'DELIVERED',
         paymentStatus: 'PAID',
         subtotal: '10.00',
-        serviceFeeAmount: '1.00',
+        serviceFeeAmount: '0.00',
+        vendorCommissionAmount: '0.30',
         tip: '2.00',
-        netToVendor: '9.00',
+        // total 12.00 (subtotal + tip) minus the 0.30 commission: the tip is already in here.
+        netToVendor: '11.70',
       })
       const o2 = snapshotOrderForPayout({
         id: 'o2',
@@ -78,9 +80,10 @@ describe('payout-calculation.service', () => {
       const breakdown = computePayoutBreakdownCents({ orders: [o1, o2] })
 
       expect(breakdown.grossSalesCents).toBe(1000 + 2550)
-      expect(breakdown.platformFeesCents).toBe(100 + 255)
+      expect(breakdown.platformFeesCents).toBe(30 + 255)
       expect(breakdown.tipsCents).toBe(200 + 0)
-      expect(breakdown.netPayoutCents).toBe((900 + 200) + (2295 + 0))
+      // Tips are reported, but paid once: they are already part of netToVendor.
+      expect(breakdown.netPayoutCents).toBe(1170 + 2295)
     })
 
     it('applies adjustments to net payout (future payouts only)', () => {

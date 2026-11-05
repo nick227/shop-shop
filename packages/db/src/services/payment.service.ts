@@ -17,6 +17,14 @@ import { orderService } from './order.service.js'
 import { publishOrderCreated } from './order-realtime.publisher.js'
 import { runAffiliateCommissions } from './affiliate-commission.service.js'
 
+/**
+ * What the platform keeps from an order's charge (the Stripe application fee): the shopper service fee
+ * plus the vendor's commission. Everything else, tips, delivery and tax included, goes to the vendor.
+ */
+export function platformApplicationFee(order: { serviceFeeAmount: unknown; vendorCommissionAmount: unknown }): Decimal {
+  return new Decimal(String(order.serviceFeeAmount)).plus(String(order.vendorCommissionAmount ?? 0))
+}
+
 function parseTeamPermissionsJson(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.filter((p): p is string => typeof p === 'string')
@@ -168,8 +176,7 @@ export const processOrderPayment = async (
     orderId: order.id,
     paymentMethodId: pm,
     connectedAccountId: order.store.stripeAccountId!,
-    // What the platform keeps: the shopper service fee plus the vendor's commission.
-    applicationFeeAmount: new Decimal(order.serviceFeeAmount.toString()).plus(order.vendorCommissionAmount.toString()),
+    applicationFeeAmount: platformApplicationFee(order),
     idempotencyKey: `paymentintent-order-${order.id}`,
   }
 

@@ -248,7 +248,7 @@ export async function getStoresReadyForPayout(
       _sum: {
         subtotal: true,
         serviceFeeAmount: true,
-      vendorCommissionAmount: true,
+        vendorCommissionAmount: true,
         netToVendor: true,
         tip: true,
       },
@@ -268,9 +268,12 @@ export async function getStoresReadyForPayout(
     
     if (orderCount > 0 && aggregates) {
       const grossSalesCents = decimalToCents(aggregates.subtotal || 0)
-      const platformFeesCents = decimalToCents(aggregates.serviceFeeAmount || 0)
+      // Platform fees: shopper service fee plus vendor commission.
+      const platformFeesCents =
+        decimalToCents(aggregates.serviceFeeAmount || 0) + decimalToCents(aggregates.vendorCommissionAmount || 0)
       const tipsCents = decimalToCents(aggregates.tip || 0)
-      const netPayoutCents = decimalToCents(aggregates.netToVendor || 0) + tipsCents
+      // netToVendor already includes checkout tips; see snapshotOrderForPayout.
+      const netPayoutCents = decimalToCents(aggregates.netToVendor || 0)
 
       summaries.push({
         storeId: store.id,
