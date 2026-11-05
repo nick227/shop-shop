@@ -82,6 +82,12 @@ describe('delivery at checkout', () => {
     expect(result.blocked?.message).toMatch(/delivers within 2 miles/)
   })
 
+  it('never delivers "anywhere" when the store has no radius or zones', async () => {
+    await prisma.store.update({ where: { id: storeId }, data: { deliveryDistance: 0 } })
+    const result = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddress: HOME })
+    expect(result.blocked).toMatchObject({ code: 'NO_DELIVERY_AREA' })
+  })
+
   it('explains an address it can’t find', async () => {
     const result = await quote([{ itemId: burger, quantity: 2 }], { deliveryAddress: NOWHERE })
     expect(result.blocked).toMatchObject({ code: 'ADDRESS_NOT_FOUND' })

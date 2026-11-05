@@ -43,6 +43,7 @@ export type DeliveryUnavailableCode =
   | 'OUTSIDE_DELIVERY_AREA'
   | 'BELOW_DELIVERY_MINIMUM'
   | 'STORE_LOCATION_MISSING'
+  | 'NO_DELIVERY_AREA'
 
 export type DeliveryEligibility =
   | {
@@ -192,12 +193,13 @@ export async function deliveryEligibility(
     minimum = num(zone.minOrder) ?? storeMinimum
     zoneName = zone.name
   } else {
+    // Without zones, a store delivers within its radius. No radius means no delivery area yet,
+    // never "anywhere".
     const radius = num(store.deliveryDistance)
-    if (radius !== null) {
-      if (distanceMiles === null) return unavailable('STORE_LOCATION_MISSING', 'This store hasn’t set its location for delivery yet.')
-      if (distanceMiles > radius) {
-        return unavailable('OUTSIDE_DELIVERY_AREA', `This address is ${distanceMiles} miles away; the store delivers within ${radius} miles.`)
-      }
+    if (radius === null || radius <= 0) return unavailable('NO_DELIVERY_AREA', 'This store hasn’t set its delivery area yet. Pickup is available.')
+    if (distanceMiles === null) return unavailable('STORE_LOCATION_MISSING', 'This store hasn’t set its location for delivery yet.')
+    if (distanceMiles > radius) {
+      return unavailable('OUTSIDE_DELIVERY_AREA', `This address is ${distanceMiles} miles away; the store delivers within ${radius} miles.`)
     }
     fee = num(store.deliveryCharge) ?? DEFAULT_DELIVERY_FEE
   }

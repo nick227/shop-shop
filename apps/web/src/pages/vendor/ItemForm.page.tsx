@@ -34,6 +34,7 @@ export default function ItemFormPage() {
     description: '',
     price: '',
     sectionId: searchParams.get('section') ?? '',
+    taxCategory: '',
     type: '',
     isActive: true,
     isSoldOut: false,
@@ -80,6 +81,7 @@ export default function ItemFormPage() {
         description: item.description || '',
         price: item.price?.toString() || '',
         sectionId: item.sectionId || '',
+        taxCategory: (item as { taxCategory?: string | null }).taxCategory || '',
         type: (item.optionsJson as any)?.type || '',
         isActive: item.isActive ?? true,
         isSoldOut: item.isSoldOut ?? false,
@@ -107,6 +109,7 @@ export default function ItemFormPage() {
           sortIndex: data.sortIndex,
           tags: data.tags,
           sectionId: data.sectionId || null,
+          taxCategory: data.taxCategory || null,
           optionsJson: {
             ...(data.optionsJson || {}),
             type: data.type || undefined,
@@ -161,6 +164,7 @@ export default function ItemFormPage() {
           sortIndex: data.sortIndex,
           tags: data.tags,
           sectionId: data.sectionId || null,
+          taxCategory: data.taxCategory || null,
           optionsJson: {
             ...(data.optionsJson || {}),
             imageUrl: data.imageUrl || undefined,

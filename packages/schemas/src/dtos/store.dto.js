@@ -25,6 +25,8 @@ export const CreateStoreInputSchema = z.object({
     hoursJson: z.record(z.unknown()).optional(),
     deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
     deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    deliveryMinimum: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable().optional(),
+    defaultTaxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
     latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
     longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
     addressStreet: z.string().optional(),
@@ -68,6 +70,8 @@ export const UpdateStoreInputSchema = z.object({
     hoursJson: z.record(z.unknown()).optional(),
     deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
     deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').optional(),
+    deliveryMinimum: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable().optional(),
+    defaultTaxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
     latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
     longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').optional(),
     addressStreet: z.string().optional(),
@@ -106,6 +110,8 @@ export const StoreResponseSchema = z.object({
     hoursJson: z.record(z.unknown()).nullable(),
     deliveryDistance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable(),
     deliveryCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable(),
+    deliveryMinimum: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid decimal').nullable().optional(),
+    defaultTaxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
     deliveryZones: z.string(),
     latitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').nullable(),
     longitude: z.string().regex(/^-?\d+(\.\d+)?$/, 'Must be a valid decimal').nullable(),
@@ -133,7 +139,25 @@ export const StoreResponseSchema = z.object({
     teamMembers: z.string(),
     invitations: z.string(),
     Promotion: z.string(),
-    FavoriteStore: z.string()
+    FavoriteStore: z.string(),
+    /** Enriched on read — see store.resource afterRead */
+    mediaAssets: z
+        .array(z.object({
+        url: z.string(),
+        kind: z.string(),
+        sortIndex: z.number().nullable().optional(),
+    }))
+        .optional(),
+    tags: z
+        .array(z.object({
+        slug: z.string(),
+        label: z.string(),
+        category: z.string(),
+    }))
+        .optional(),
+    storeType: z.string().nullable().optional(),
+    priceRange: z.string().nullable().optional(),
+    searchKeywords: z.union([z.string(), z.array(z.string())]).nullable().optional(),
 });
 export const StoreListResponseSchema = z.object({
     data: z.array(StoreResponseSchema),

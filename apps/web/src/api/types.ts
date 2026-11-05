@@ -85,6 +85,10 @@ export interface StoreFormData {
   prepTimeMin: number
   deliveryDistance: string
   deliveryCharge: string
+  /** Smallest delivery subtotal; '' for none. */
+  deliveryMinimum?: string
+  /** Sales tax category for items without their own; '' derives it from the store type. */
+  defaultTaxCategory?: string
   latitude: string
   longitude: string
   addressStreet: string
@@ -136,6 +140,10 @@ export interface StoreUpdateFormData {
   prepTimeMin: number
   deliveryDistance: string
   deliveryCharge: string
+  /** Smallest delivery subtotal; '' for none. */
+  deliveryMinimum?: string
+  /** Sales tax category for items without their own; '' derives it from the store type. */
+  defaultTaxCategory?: string
   latitude: string
   longitude: string
   addressStreet: string

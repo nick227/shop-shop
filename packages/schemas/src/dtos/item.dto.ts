@@ -15,6 +15,7 @@ export const CreateItemInputSchema = z.object({
   optionsJson: z.record(z.unknown()).optional(),
   /** The store's menu section; null takes the item out of every section. */
   sectionId: z.string().nullable().optional(),
+  taxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
   stockQty: z.coerce.number().int().min(0).optional(),
   allergensJson: z.record(z.unknown()).optional(),
   isVegan: z.boolean().optional(),
@@ -35,6 +36,7 @@ export const UpdateItemInputSchema = z.object({
   optionsJson: z.record(z.unknown()).optional(),
   /** The store's menu section; null takes the item out of every section. */
   sectionId: z.string().nullable().optional(),
+  taxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
   stockQty: z.coerce.number().int().min(0).optional(),
   allergensJson: z.record(z.unknown()).optional(),
   isVegan: z.boolean().optional(),
@@ -61,6 +63,7 @@ export const ItemResponseSchema = z.object({
   sortIndex: z.number().int().nullable(),
   optionsJson: z.record(z.unknown()).nullable(),
   sectionId: z.string().nullable().optional(),
+  taxCategory: z.enum(['PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL']).nullable().optional(),
   stockQty: z.number().int().nullable(),
   allergensJson: z.record(z.unknown()).nullable(),
   isVegan: z.boolean().nullable(),

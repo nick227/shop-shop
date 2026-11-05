@@ -6,6 +6,7 @@ import { Input, TextArea, Checkbox, Select, SelectItem, SelectContent, SelectTri
 import { CharCount, FormRow, CheckboxGroup } from '@shared/ui/templates'
 import { ProductMediaGrid } from './ProductMediaGrid'
 import { SectionPicker } from '@features/products/components/SectionPicker'
+import { TAX_CATEGORY_OPTIONS } from '@shared/lib/tax/taxCategories'
 import type { MenuSection } from '@shared/lib/menu/menuSections'
 import type { FormSection } from '@shared/ui/templates'
 import type { ItemFormData } from '@api/types'
@@ -92,6 +93,24 @@ export function createItemFormSections(
                 onChange={(id) => options?.onSectionChange?.(id)}
                 onCreate={(name) => options?.onCreateSection?.(name) ?? Promise.reject(new Error('Sections are unavailable'))}
               />
+              <div className="space-y-1.5">
+                <label htmlFor="item-tax-category" className="text-sm font-medium text-foreground">
+                  Sales tax category
+                </label>
+                <select
+                  id="item-tax-category"
+                  value={(formData as { taxCategory?: string }).taxCategory ?? ''}
+                  onChange={(e) => onChange('taxCategory' as keyof ItemFormData, e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Same as the store</option>
+                  {TAX_CATEGORY_OPTIONS.map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             <div className="space-y-2">

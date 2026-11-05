@@ -10,6 +10,7 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     optionsJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     /** The store's menu section; null takes the item out of every section. */
     sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    taxCategory: z.ZodOptional<z.ZodNullable<z.ZodEnum<["PREPARED_FOOD", "GROCERY", "CANDY", "SOFT_DRINK", "BOTTLED_WATER", "ALCOHOL", "GENERAL"]>>>;
     stockQty: z.ZodOptional<z.ZodNumber>;
     allergensJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodOptional<z.ZodBoolean>;
@@ -27,6 +28,7 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -44,6 +46,7 @@ export declare const CreateItemInputSchema: z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -63,6 +66,7 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     optionsJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     /** The store's menu section; null takes the item out of every section. */
     sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    taxCategory: z.ZodOptional<z.ZodNullable<z.ZodEnum<["PREPARED_FOOD", "GROCERY", "CANDY", "SOFT_DRINK", "BOTTLED_WATER", "ALCOHOL", "GENERAL"]>>>;
     stockQty: z.ZodOptional<z.ZodNumber>;
     allergensJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodOptional<z.ZodBoolean>;
@@ -80,6 +84,7 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -97,6 +102,7 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -114,6 +120,7 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -131,6 +138,7 @@ export declare const UpdateItemInputSchema: z.ZodEffects<z.ZodObject<{
     isSoldOut?: boolean | undefined;
     optionsJson?: Record<string, unknown> | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     stockQty?: number | undefined;
     allergensJson?: Record<string, unknown> | undefined;
     isVegan?: boolean | undefined;
@@ -150,6 +158,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
     sortIndex: z.ZodNullable<z.ZodNumber>;
     optionsJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    taxCategory: z.ZodOptional<z.ZodNullable<z.ZodEnum<["PREPARED_FOOD", "GROCERY", "CANDY", "SOFT_DRINK", "BOTTLED_WATER", "ALCOHOL", "GENERAL"]>>>;
     stockQty: z.ZodNullable<z.ZodNumber>;
     allergensJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     isVegan: z.ZodNullable<z.ZodBoolean>;
@@ -223,6 +232,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
         sortIndex?: number | null | undefined;
     }[] | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
 }, {
     description: string;
     title: string;
@@ -257,6 +267,7 @@ export declare const ItemResponseSchema: z.ZodObject<{
         sortIndex?: number | null | undefined;
     }[] | undefined;
     sectionId?: string | null | undefined;
+    taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
 }>;
 export declare const ItemListResponseSchema: z.ZodObject<{
     data: z.ZodArray<z.ZodObject<{
@@ -270,6 +281,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
         sortIndex: z.ZodNullable<z.ZodNumber>;
         optionsJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
         sectionId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        taxCategory: z.ZodOptional<z.ZodNullable<z.ZodEnum<["PREPARED_FOOD", "GROCERY", "CANDY", "SOFT_DRINK", "BOTTLED_WATER", "ALCOHOL", "GENERAL"]>>>;
         stockQty: z.ZodNullable<z.ZodNumber>;
         allergensJson: z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
         isVegan: z.ZodNullable<z.ZodBoolean>;
@@ -343,6 +355,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             sortIndex?: number | null | undefined;
         }[] | undefined;
         sectionId?: string | null | undefined;
+        taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     }, {
         description: string;
         title: string;
@@ -377,6 +390,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             sortIndex?: number | null | undefined;
         }[] | undefined;
         sectionId?: string | null | undefined;
+        taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     }>, "many">;
     total: z.ZodNumber;
     page: z.ZodNumber;
@@ -416,6 +430,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             sortIndex?: number | null | undefined;
         }[] | undefined;
         sectionId?: string | null | undefined;
+        taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     }[];
     total: number;
     page: number;
@@ -455,6 +470,7 @@ export declare const ItemListResponseSchema: z.ZodObject<{
             sortIndex?: number | null | undefined;
         }[] | undefined;
         sectionId?: string | null | undefined;
+        taxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
     }[];
     total: number;
     page: number;
