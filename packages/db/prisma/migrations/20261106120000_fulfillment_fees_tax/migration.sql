@@ -1,0 +1,13 @@
+-- AlterTable
+ALTER TABLE `Item` ADD COLUMN `taxCategory` ENUM('PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL') NULL;
+
+-- AlterTable
+ALTER TABLE `Order` ADD COLUMN `taxCalculationId` VARCHAR(191) NULL,
+    ADD COLUMN `taxProvider` VARCHAR(20) NULL,
+    ADD COLUMN `vendorCommissionAmount` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN `vendorCommissionPercent` DECIMAL(5, 2) NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `Store` ADD COLUMN `defaultTaxCategory` ENUM('PREPARED_FOOD', 'GROCERY', 'CANDY', 'SOFT_DRINK', 'BOTTLED_WATER', 'ALCOHOL', 'GENERAL') NULL,
+    ADD COLUMN `deliveryMinimum` DECIMAL(10, 2) NULL;
+

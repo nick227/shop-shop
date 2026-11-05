@@ -4,14 +4,13 @@ import type { RiverPost } from '@api/types'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { discoveryLocated } from './discoveryLocated'
 import { type NeighborhoodCard } from './neighborhoodHero'
-import { apiOrigin, loadProducts, loadStores, loadStories } from './loadDiscovery'
-
-async function loadNeighborhoods(zip: string): Promise<NeighborhoodCard[]> {
-  const response = await fetch(`${apiOrigin()}/api/places/by-zip/${zip}`)
-  if (!response.ok) return []
-  const body = await response.json() as { neighborhoods?: NeighborhoodCard[] }
-  return body.neighborhoods ?? []
-}
+import {
+  loadNeighborhoodsByZip,
+  loadProducts,
+  loadPublishedNeighborhoods,
+  loadStores,
+  loadStories,
+} from './loadDiscovery'
 
 export function useNeighborhoodData() {
   const [params] = useSearchParams()
@@ -20,35 +19,30 @@ export function useNeighborhoodData() {
   const zipCode = (location?.zip || zip || '').replace(/\D/g, '').slice(0, 5)
   const located = discoveryLocated(Boolean(location))
   const waitingForZip = Boolean(zip) && !location && !urlLocationNotice
+  const ready = located || (!zip && !waitingForZip)
 
   const storeQuery = useQuery({
-    queryKey: ['home-stores', location?.latitude, location?.longitude, location?.radiusMiles],
-    enabled: located,
-    queryFn: () => {
-      if (!location) throw new Error('ZIP is not resolved')
-      return loadStores(location)
-    },
+    queryKey: ['home-stores', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
+    enabled: ready,
+    queryFn: () => loadStores(location),
   })
 
   const productQuery = useQuery({
-    queryKey: ['home-products', location?.latitude, location?.longitude, location?.radiusMiles],
-    queryFn: () => {
-      if (!location) throw new Error('ZIP is not resolved')
-      return loadProducts(location)
-    },
-    enabled: located,
+    queryKey: ['home-products', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
+    queryFn: () => loadProducts(location),
+    enabled: ready,
     staleTime: 5 * 60 * 1000,
   })
 
-  const neighborhoodQuery = useQuery({
-    queryKey: ['home-neighborhood', zipCode],
-    enabled: zipCode.length === 5,
-    queryFn: () => loadNeighborhoods(zipCode),
+  const neighborhoodQuery = useQuery<NeighborhoodCard[]>({
+    queryKey: ['home-neighborhood', zipCode || 'published'],
+    enabled: zipCode.length === 5 || (!zip && !waitingForZip),
+    queryFn: () => (zipCode.length === 5 ? loadNeighborhoodsByZip(zipCode) : loadPublishedNeighborhoods()),
   })
 
   const storyQuery = useQuery<RiverPost[]>({
-    queryKey: ['home-stories', location?.latitude, location?.longitude, location?.radiusMiles],
-    enabled: located,
+    queryKey: ['home-stories', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
+    enabled: ready,
     queryFn: () => loadStories(location),
   })
 

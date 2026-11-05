@@ -12,7 +12,7 @@ const BLOCKED = [
   /^\/refund-policy$/,
 ]
 
-const SHOPPING = /^\/($|river$|search$|kitchen\/|items\/|cart$|checkout$|orders(?:\/|$)|menu(?:\/|$)|account(?:\/|$))/
+const SHOPPING = /^\/($|river$|search$|explore(?:\/|$)|neighborhoods(?:\/|$)|directory\/|kitchen\/|items\/|cart$|checkout$|orders(?:\/|$)|menu(?:\/|$)|account(?:\/|$))/
 
 export function isShoppingPath(pathname: string): boolean {
   if (BLOCKED.some((pattern) => pattern.test(pathname))) return false

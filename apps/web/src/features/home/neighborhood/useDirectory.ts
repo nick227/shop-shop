@@ -7,16 +7,18 @@ export function useDirectory(latitude?: number, longitude?: number, options?: { 
   const q = options?.q ?? ''
   const group = options?.group ?? ''
   const limit = options?.limit ?? 40
+  const located = latitude != null && longitude != null
   return useQuery({
-    queryKey: ['directory', latitude, longitude, q, group, limit],
-    enabled: latitude != null && longitude != null,
+    queryKey: ['directory', latitude ?? 'all', longitude ?? 'all', q, group, limit],
     queryFn: async () => {
       const params = new URLSearchParams({
-        latitude: String(latitude),
-        longitude: String(longitude),
-        radiusMiles: String(HOME_RADIUS_MILES),
         limit: String(limit),
       })
+      if (located) {
+        params.set('latitude', String(latitude))
+        params.set('longitude', String(longitude))
+        params.set('radiusMiles', String(HOME_RADIUS_MILES))
+      }
       if (q) params.set('q', q)
       if (group) params.set('group', group)
       const response = await fetch(`${apiOrigin()}/api/directory?${params}`)

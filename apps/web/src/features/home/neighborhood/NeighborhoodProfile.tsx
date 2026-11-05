@@ -9,8 +9,8 @@ import { NeighborhoodMap } from '../discovery/NeighborhoodMap'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from '../discovery/tiles'
 import '../discovery/discovery.css'
 import { NeighborhoodGuide } from './NeighborhoodGuide'
-import { PlaceCard } from './PlaceCard'
-import { neighborhoodPath, type NeighborhoodCard } from './neighborhoodHero'
+import { PlaceCard, placeCardFromNeighborhood } from './PlaceCard'
+import { type NeighborhoodCard } from './neighborhoodHero'
 import { apiOrigin, loadProducts, loadStores, loadStories } from './loadDiscovery'
 
 type NeighborhoodProfile = {
@@ -107,7 +107,7 @@ export function NeighborhoodProfile() {
           {profile.nearby.length > 0 ? (
             <div className="place-row">
               {profile.nearby.map((area) => (
-                <PlaceCard key={area.id} place={{ id: area.id, href: neighborhoodPath(area.slug), name: area.name, categoryLabel: 'Neighborhood', meta: area.headline, imageUrl: area.coverUrl }} />
+                <PlaceCard key={area.id} place={placeCardFromNeighborhood(area)} />
               ))}
             </div>
           ) : null}

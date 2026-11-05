@@ -38,8 +38,13 @@ export type CheckoutTotals = Readonly<{
   tax: Decimal
   tip: Decimal
   total: Decimal
+  /** The shopper's service fee (platform policy), part of `total`. */
   serviceFeePercent: Decimal
   serviceFeeAmount: Decimal
+  /** The vendor's commission, taken from the vendor's share; not part of `total`. */
+  vendorCommissionPercent: Decimal
+  vendorCommissionAmount: Decimal
+  /** What the vendor keeps: total minus the shopper service fee and the commission. */
   netToVendor: Decimal
   storeId: string
   storeLatitude: number | null
@@ -47,10 +52,24 @@ export type CheckoutTotals = Readonly<{
 }>
 
 export type CheckoutTotalsConfig = Readonly<{
+  /** Used only when no tax amount is supplied (the server always supplies one from its tax provider). */
   taxRate: number
   defaultDeliveryFee: number
+  /** Default vendor commission, when the store has no rate of its own. */
   platformFeePercent: number
+  /** The shopper service fee policy, as a percent of the subtotal. */
+  shopperServiceFeePercent?: number
+  shopperServiceFeeMinimum?: number
+  shopperServiceFeeMaximum?: number
 }>
+
+/** Amounts the server works out before totals: delivery from the service area, tax from the provider. */
+export type CheckoutTotalsOverrides = Readonly<{
+  deliveryFee?: number
+  tax?: number
+}>
+
+const cents = (value: number) => Math.round(value * 100) / 100
 
 export function placementFailureReason(cart: CheckoutCart | null, userId: string): string | null {
   if (!cart) {
@@ -99,31 +118,41 @@ export function computeCheckoutTotals(
   deliveryType: 'DELIVERY' | 'PICKUP',
   tipAmount: number,
   config: CheckoutTotalsConfig,
+  overrides: CheckoutTotalsOverrides = {},
 ): CheckoutTotals {
   let subtotalNum = 0
   for (const cartItem of cart.items) {
     const itemPrice = Number.parseFloat(cartItem.unitPrice.toString())
     subtotalNum += itemPrice * cartItem.quantity
   }
+  subtotalNum = cents(subtotalNum)
 
   let feesNum = 0
   if (deliveryType === 'DELIVERY') {
-    feesNum = cart.store.deliveryCharge
-      ? Number.parseFloat(cart.store.deliveryCharge.toString())
-      : config.defaultDeliveryFee
+    feesNum =
+      overrides.deliveryFee ??
+      (cart.store.deliveryCharge ? Number.parseFloat(cart.store.deliveryCharge.toString()) : config.defaultDeliveryFee)
   }
+  feesNum = cents(feesNum)
 
-  const taxNum = subtotalNum * config.taxRate
-  const tipNum = tipAmount
-  const totalBeforeFee = subtotalNum + feesNum + taxNum + tipNum
+  const taxNum = cents(overrides.tax ?? subtotalNum * config.taxRate)
+  const tipNum = cents(Math.max(0, tipAmount))
 
-  const serviceFeePercent = cart.store.commissionRate
+  // Shopper service fee: an explicit platform policy on the subtotal (not on tax or tip).
+  const servicePercent = config.shopperServiceFeePercent ?? 0
+  let serviceFeeNum = subtotalNum * (servicePercent / 100)
+  if (subtotalNum > 0 && config.shopperServiceFeeMinimum !== undefined) serviceFeeNum = Math.max(serviceFeeNum, config.shopperServiceFeeMinimum)
+  if (config.shopperServiceFeeMaximum !== undefined) serviceFeeNum = Math.min(serviceFeeNum, config.shopperServiceFeeMaximum)
+  serviceFeeNum = cents(serviceFeeNum)
+
+  const totalNum = cents(subtotalNum + feesNum + taxNum + tipNum + serviceFeeNum)
+
+  // Vendor commission: the store's rate (or the platform default) on the subtotal, paid by the vendor.
+  const commissionPercent = cart.store.commissionRate
     ? Number.parseFloat(cart.store.commissionRate.toString())
     : config.platformFeePercent
-
-  const serviceFeeAmountNum = totalBeforeFee * (serviceFeePercent / 100)
-  const totalNum = totalBeforeFee + serviceFeeAmountNum
-  const netToVendorNum = totalNum - serviceFeeAmountNum
+  const commissionNum = cents(subtotalNum * (commissionPercent / 100))
+  const netToVendorNum = cents(totalNum - serviceFeeNum - commissionNum)
 
   return {
     subtotal: new Decimal(subtotalNum.toFixed(2)),
@@ -131,8 +160,10 @@ export function computeCheckoutTotals(
     tax: new Decimal(taxNum.toFixed(2)),
     tip: new Decimal(tipNum.toFixed(2)),
     total: new Decimal(totalNum.toFixed(2)),
-    serviceFeePercent: new Decimal(serviceFeePercent.toFixed(2)),
-    serviceFeeAmount: new Decimal(serviceFeeAmountNum.toFixed(2)),
+    serviceFeePercent: new Decimal(servicePercent.toFixed(2)),
+    serviceFeeAmount: new Decimal(serviceFeeNum.toFixed(2)),
+    vendorCommissionPercent: new Decimal(commissionPercent.toFixed(2)),
+    vendorCommissionAmount: new Decimal(commissionNum.toFixed(2)),
     netToVendor: new Decimal(netToVendorNum.toFixed(2)),
     storeId: cart.store.id,
     storeLatitude: cart.store.latitude != null ? Number(cart.store.latitude) : null,

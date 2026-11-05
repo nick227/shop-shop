@@ -11,6 +11,7 @@ import {
   type LocationData,
 } from './utils/urlLocationUtils'
 import { locationValidator } from '@shared/lib/utils/validation/unified'
+import { rememberZip } from '@features/home/shell/placeMemory'
 import { geocodeZip } from '../../../services/geocoding'
 import type { UrlLocationNoticePayload } from '@features/home/components'
 
@@ -70,6 +71,8 @@ export function useUrlLocation(): UseUrlLocationResult {
           ? Number.parseFloat(memoizedUrlParams.radiusMiles)
           : 25
         const radiusMiles = Number.isFinite(radiusRaw) ? radiusRaw : 25
+        const resolvedZip = geo.zip ?? memoizedUrlParams.zip
+        if (resolvedZip) rememberZip(resolvedZip)
         const next: LocationData = {
           latitude: geo.latitude,
           longitude: geo.longitude,
@@ -78,7 +81,7 @@ export function useUrlLocation(): UseUrlLocationResult {
           source: 'search',
           city: geo.city,
           state: geo.state,
-          zip: geo.zip ?? memoizedUrlParams.zip,
+          zip: resolvedZip,
         }
         setLocation((prev) => (isSameLocation(prev, next) ? prev : next))
         setUrlLocationNotice(undefined)

@@ -1,3 +1,4 @@
+import { executeOrderCommand, type OrderCommand } from './order-lifecycle.service.js'
 /**
  * Order Service
  * Handles order operations with real-time broadcasting
@@ -9,9 +10,7 @@ import { runAffiliateCommissions } from './affiliate-commission.service.js'
 import {
   configureOrderRealtimePublisher,
   publishOrderCreated,
-  publishOrderStatusChanged,
 } from './order-realtime.publisher.js'
-import { assertValidTransition } from '../order-state-machine.js'
 
 export interface BroadcastFunction {
   (topic: string, event: { type: string; timestamp: string; payload: Record<string, unknown> }): void
@@ -23,12 +22,7 @@ export interface CreateOrderEventInput {
   note?: string
 }
 
-export interface UpdateOrderStatusInput {
-  orderId: string
-  newStatus: OrderStatus
-  note?: string
-  changedBy?: string
-}
+export type UpdateOrderStatusInput = OrderCommand & { newStatus: OrderStatus }
 
 export class OrderService {
   /**
@@ -52,57 +46,12 @@ export class OrderService {
    * This is the single entry point for all programmatic status changes.
    */
   async transitionOrderStatus(input: UpdateOrderStatusInput): Promise<Order> {
-    const { orderId, newStatus, note, changedBy } = input
-
-    const currentOrder = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: { id: true, status: true },
-    })
-
-    if (!currentOrder) {
-      throw new Error('Order not found')
-    }
-
-    const oldStatus = currentOrder.status
-
-    // Validate transition against state machine
-    assertValidTransition(oldStatus, newStatus)
-
-    // Structured transition log (one JSON line per transition)
-    console.log(
-      JSON.stringify({
-        event: 'order.transition',
-        orderId,
-        from: oldStatus,
-        to: newStatus,
-        changedBy: changedBy ?? 'system',
-        note: note ?? null,
-        timestamp: new Date().toISOString(),
-      }),
-    )
-
-    // Commission fires on the first transition to DELIVERED or COMPLETED.
-    // The commission builder handles both Stripe-paid and COD-fulfilled eligibility.
-    const isDeliveryMilestone =
-      (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') &&
-      oldStatus !== 'DELIVERED' &&
-      oldStatus !== 'COMPLETED'
-
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: { status: newStatus },
-    })
-
-    // Audit trail
-    await this.createOrderEvent({ orderId, status: newStatus, note })
-
-    if (isDeliveryMilestone) {
-      await runAffiliateCommissions(orderId)
-    }
-
-    await publishOrderStatusChanged(orderId, oldStatus, newStatus, { note, changedBy })
-
-    return updatedOrder
+    const order = await executeOrderCommand(input)
+    // Preserve immediate legacy commission behavior; durable work remains the retry fallback.
+    try {
+      if (input.newStatus === 'COMPLETED' || input.newStatus === 'DELIVERED') await runAffiliateCommissions(input.orderId)
+    } catch (error) { console.warn('Commission work remains queued', error) }
+    return order
   }
 
   /**

@@ -40,3 +40,6 @@ export {
   PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
 } from './constants/platform-store.js'
 
+
+export * from './services/order-lifecycle.service.js'
+export * from './services/order-operations-worker.js'

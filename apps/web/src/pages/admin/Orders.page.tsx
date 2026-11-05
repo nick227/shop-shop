@@ -1,3 +1,4 @@
+import { OrderWorkspace } from '@features/orders/components/OrderWorkspace'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -95,6 +96,7 @@ export default function AdminOrdersPage() {
         <p className="text-sm text-muted-foreground">All orders across the platform.</p>
       </div>
 
+      <section aria-label="Operational recovery"><h2 className="mb-3 text-lg font-semibold">Needs attention</h2><OrderWorkspace operationsOnly /></section>
       <div className="flex flex-wrap gap-2">
         <input
           type="text"

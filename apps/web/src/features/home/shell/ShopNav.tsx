@@ -3,10 +3,16 @@ import { useAuthStore } from '@stores/authStore'
 import { cn } from '@shared/lib/cn'
 import { BrowseNav } from './BrowseNav'
 import { SHOP_NAV } from './navConfig'
+import { placeTarget } from './placeMemory'
 import { resetHomeTaste } from '../neighborhood/taste'
 
+function navDestination(to: string, search: string) {
+  if (to === '/river' || to === '/explore') return placeTarget(to, search)
+  return to
+}
+
 function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonly showReset: boolean }) {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const authed = useAuthStore((state) => state.isAuthenticated)
   const items = SHOP_NAV.map((item) =>
     item.label === 'Account' && !authed ? { ...item, to: '/login' } : item,
@@ -21,7 +27,7 @@ function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonl
           return (
             <Link
               key={item.label}
-              to={item.to}
+              to={navDestination(item.to, search)}
               aria-current={active ? 'page' : undefined}
               title={item.label}
               className={cn(
@@ -51,9 +57,10 @@ function NavLinks({ expanded, showReset }: { readonly expanded: boolean; readonl
 }
 
 export function RailNav() {
+  const { search } = useLocation()
   return (
     <nav className="shop-rail" aria-label="Primary">
-      <Link to="/river" className="shop-display mb-4 flex min-h-11 items-center px-3 text-lg font-bold">
+      <Link to={placeTarget('/river', search)} className="shop-display mb-4 flex min-h-11 items-center px-3 text-lg font-bold">
         <span className="shop-rail-label">ShopShop</span>
         <span className="shop-rail-mark" style={{ color: 'var(--quiet)', padding: '9px', marginLeft: '-9px', border: '1px solid var(--quiet)', borderRadius: '999px' }}>SH</span>
       </Link>

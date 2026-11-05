@@ -125,13 +125,29 @@ async function nearbyListings(latitude: number, longitude: number, exceptId: str
 export async function directoryRoutes(app: FastifyInstance) {
   app.get('/directory', async (req, reply) => {
     const query = req.query as Record<string, string>
+    const limit = Math.min(Math.max(Number(query.limit || '12') || 12, 1), 40)
+    const q = query.q?.trim()
+    const hasCoords = query.latitude !== undefined || query.longitude !== undefined
+    if (!hasCoords) {
+      const rows = await prisma.businessListing.findMany({
+        where: {
+          published: true,
+          ...(q ? { name: { contains: q } } : {}),
+          ...groupWhere(query.group),
+        },
+        orderBy: [{ featured: 'desc' }, { name: 'asc' }],
+        select: listingSelect,
+        take: limit,
+      })
+      const listings = rows.map((row) => ({ ...publicListing(row), distance: null }))
+      const covers = await coverUrls(listings.map((listing) => listing.id))
+      return { listings: listings.map((listing) => ({ ...listing, coverUrl: covers.get(listing.id) ?? null })) }
+    }
     const latitude = Number(query.latitude)
     const longitude = Number(query.longitude)
     const radiusMiles = Number(query.radiusMiles || '25')
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return reply.code(400).send({ error: 'Latitude and longitude are required' })
     const span = radiusMiles / 69
-    const limit = Math.min(Math.max(Number(query.limit || '12') || 12, 1), 40)
-    const q = query.q?.trim()
     const rows = await prisma.businessListing.findMany({
       where: {
         published: true,

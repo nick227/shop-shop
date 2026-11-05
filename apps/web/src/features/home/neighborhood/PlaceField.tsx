@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Input } from '@shared/ui/primitives'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { locationValidator } from '@shared/lib/utils/validation/unified'
-import { HOME_RADIUS_MILES, placeZip } from '../shell/placeMemory'
+import { HOME_RADIUS_MILES, placeZip, rememberPlace } from '../shell/placeMemory'
 
 export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
   const navigate = useNavigate()
@@ -18,6 +18,7 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
   }, [sharedZip])
 
   const commit = (next: URLSearchParams) => {
+    rememberPlace(next.toString())
     navigate({ search: next.toString() }, { replace: true })
   }
 

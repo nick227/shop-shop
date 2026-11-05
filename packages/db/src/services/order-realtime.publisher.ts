@@ -100,7 +100,7 @@ export async function publishOrderStatusChanged(
 ): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { userId: true, storeId: true },
+    select: { userId: true, storeId: true, status: true, promisedReadyAt: true, version: true },
   })
 
   if (!order) {
@@ -108,15 +108,16 @@ export async function publishOrderStatusChanged(
   }
 
   const timestamp = new Date().toISOString()
-  const estimatedReady =
-    newStatus === 'ACCEPTED'
-      ? new Date(Date.now() + 20 * 60 * 1000).toISOString()
-      : undefined
+  // Retries publish the latest snapshot, never an obsolete transition over newer state.
+  newStatus = order.status
+  const estimatedReady = order.promisedReadyAt?.toISOString()
 
   const payload: Record<string, unknown> = {
     orderId,
     oldStatus,
     newStatus,
+    version: order.version,
+    promisedReadyAt: estimatedReady,
     changedBy: options?.changedBy,
     note: options?.note,
   }

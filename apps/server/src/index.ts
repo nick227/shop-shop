@@ -1,3 +1,5 @@
+import orderOperationsRoutes from './routes/order-operations.route.js'
+import { processOrderWork, processOrderAcceptance } from '@packages/db'
 import Fastify from 'fastify'
 import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod'
 import swagger from '@fastify/swagger'
@@ -188,6 +190,7 @@ app.get('/healthz', async () => ({ ok: true }))
 await app.register(accountAccessRoutes, { prefix: '/api' })
 await app.register(authRoutes, { prefix: '/api/auth/v1' })
 await app.register(checkoutRoutes, { prefix: '/api/v1/checkout' })
+await app.register(orderOperationsRoutes, { prefix: '/api' })
 await app.register(orderStatusRoutes, { prefix: '/api/v1/orders' })
 await app.register(orderDispatchRoutes, { prefix: '/api/v1/orders' })
 await app.register(deliveryCancelRoutes)
@@ -275,6 +278,17 @@ process.on('unhandledRejection', handleUnhandledRejection)
 const port = env.PORT
 
 if (process.env.NODE_ENV !== 'test') {
+  let processingOrders = false
+  const timer = setInterval(async () => {
+    if (processingOrders) return
+    processingOrders = true
+    try { await processOrderAcceptance(); await processOrderWork() }
+    catch (error) { app.log.error({ err: error }, 'Order operations worker failed') }
+    finally { processingOrders = false }
+  }, 10000)
+  timer.unref()
+  app.addHook('onClose', async () => { clearInterval(timer) })
+
   app.listen({ port, host: '0.0.0.0' }).then(() => {
     app.log.info(`listening on http://localhost:${port}`)
     if (serveApiDocs) {

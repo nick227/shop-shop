@@ -31,13 +31,13 @@ export function OrderDetailsCard({
   address,
 }: OrderDetailsCardProps) {
   return (
-    <div className="bg-white rounded-lg p-6 border-2 border-gray-200 shadow-lg">
+    <div className="bg-card rounded-xl p-5 border border-border">
       <h2 className="text-xl font-bold text-gray-900 mb-4">Order Details</h2>
 
       {/* Restaurant */}
       {storeName && (
         <div className="mb-4 pb-4 border-b border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Restaurant</div>
+          <div className="text-sm font-medium text-gray-500">Store</div>
           <div className="text-base font-semibold text-gray-900">{storeName}</div>
         </div>
       )}
@@ -60,7 +60,7 @@ export function OrderDetailsCard({
                 <span className="text-sm font-medium text-gray-700 mr-2">{item.quantity}x</span>
                 <span className="flex-1 text-sm text-gray-900">{item.titleSnapshot}</span>
                 <span className="text-sm font-semibold text-gray-900 ml-2">
-                  {formatPriceCurrency(item.unitPrice)}
+                  {formatPriceCurrency(Number(item.unitPrice) * item.quantity)}
                 </span>
               </div>
             ))}

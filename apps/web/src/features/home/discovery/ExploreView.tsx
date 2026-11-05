@@ -4,15 +4,16 @@ import type { ItemResponse } from '@api/types'
 import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'
 import { itemImage } from '@features/storefront/components/ProductTile'
 import { formatCurrency, parsePrice } from '@shared/lib/utils/format'
-import { HOME_RADIUS_MILES, rememberedPlace } from '../shell/placeMemory'
+import { HOME_RADIUS_MILES, rememberedPlace, rememberZip } from '../shell/placeMemory'
 import { realPhoto } from './photo'
 import { NeighborhoodMap } from './NeighborhoodMap'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { MemberShops } from '../neighborhood/MemberShops'
-import { PlaceCard, placeCardFromListing } from '../neighborhood/PlaceCard'
+import { PlaceCard, placeCardFromListing, placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
 import { PlaceGrid, PlaceSkeleton } from '../neighborhood/PlaceGrid'
-import { neighborhoodPath } from '../neighborhood/neighborhoodHero'
+import { defaultAddressZip } from '../neighborhood/signedInSelect'
+import { useSignedInHome } from '../neighborhood/useSignedInHome'
 import './discovery.css'
 
 const GROUPS = [
@@ -28,6 +29,8 @@ export function ExploreView() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const data = useNeighborhoodData()
+  const account = useSignedInHome()
+  const accountZip = defaultAddressZip(account.addresses, account.orders)
   const [draft, setDraft] = useState(params.get('q') ?? '')
   const q = params.get('q') ?? ''
   const group = params.get('group') ?? ''
@@ -36,13 +39,15 @@ export function ExploreView() {
   const products = ((data.products ?? []) as ItemResponse[]).filter((item) => !q || item.title.toLowerCase().includes(q.toLowerCase())).slice(0, 8)
 
   useEffect(() => {
-    const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip')
-    if (!zip || (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES))) return
+    const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
+    if (!zip) return
+    rememberZip(zip)
+    if (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES)) return
     const next = new URLSearchParams(params)
     next.set('zip', zip)
     next.set('radius', String(HOME_RADIUS_MILES))
     setParams(next, { replace: true })
-  }, [params, setParams])
+  }, [accountZip, params, setParams])
 
   const setGroup = (id: string) => {
     const next = new URLSearchParams(params)
@@ -68,11 +73,11 @@ export function ExploreView() {
       <div className="explore-layout">
         <div>
           {data.neighborhoods.length > 0 && !q && !group ? (
-            <section className="place-band" aria-label="Neighborhoods in this ZIP">
-              <p className="tile-kicker">Neighborhoods in this ZIP</p>
+            <section className="place-band" aria-label={data.location?.zip ? 'Neighborhoods in this ZIP' : 'Austin neighborhoods'}>
+              <p className="tile-kicker">{data.location?.zip ? 'Neighborhoods in this ZIP' : 'Austin neighborhoods'}</p>
               <div className="place-row">
                 {data.neighborhoods.map((area) => (
-                  <PlaceCard key={area.id} place={{ id: area.id, href: neighborhoodPath(area.slug), name: area.name, categoryLabel: 'Neighborhood', meta: area.headline, imageUrl: area.coverUrl }} />
+                  <PlaceCard key={area.id} place={placeCardFromNeighborhood(area)} />
                 ))}
               </div>
               <p className="discover-lede">A ZIP can include more than one neighborhood. <Link to="/neighborhoods">Browse the city</Link></p>

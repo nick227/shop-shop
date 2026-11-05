@@ -19,6 +19,7 @@ export class OrderDomain {
 
   constructor(config?: Partial<CheckoutTotalsConfig>) {
     this.totalsConfig = {
+      ...config,
       taxRate: config?.taxRate ?? 0.1,
       defaultDeliveryFee: config?.defaultDeliveryFee ?? 5.0,
       platformFeePercent:

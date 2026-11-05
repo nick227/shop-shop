@@ -242,7 +242,9 @@ export class BaseCrudController {
       }
       
       // Update resource
-      const result = await this.service.update(id, processedInput)
+      const result = processedInput && typeof processedInput === 'object' && '_skipUpdate' in processedInput
+        ? (processedInput as { _result: unknown })._result
+        : await this.service.update(id, processedInput)
       
       // After hook
       if (this.resource.customHooks?.afterUpdate) {

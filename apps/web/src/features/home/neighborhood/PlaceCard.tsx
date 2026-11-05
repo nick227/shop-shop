@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { realPhoto } from '../discovery/photo'
+import { neighborhoodPath, type NeighborhoodCard } from './neighborhoodHero'
 import { placeTone } from './placeTone'
 
 export type PlaceCardData = {
@@ -11,6 +13,39 @@ export type PlaceCardData = {
   readonly categoryLabel: string
   readonly meta?: string | null
   readonly imageUrl?: string | null
+}
+
+export function placeCardFromNeighborhood(area: NeighborhoodCard & {
+  readonly city?: { readonly name: string; readonly state?: string | null } | null
+  readonly postalCodes?: readonly string[]
+}): PlaceCardData {
+  const meta = [area.headline, area.city?.name, area.postalCodes?.join(', ')].filter(Boolean).join(' · ')
+  return {
+    id: area.id,
+    href: neighborhoodPath(area.slug),
+    name: area.name,
+    categoryLabel: 'Neighborhood',
+    meta: meta || null,
+    imageUrl: realPhoto(area.coverUrl) ?? null,
+  }
+}
+
+export function placeCardFromStore(store: {
+  readonly id: string
+  readonly name: string
+  readonly typeLabel?: string
+  readonly image?: string | null
+  readonly distance?: number
+}): PlaceCardData {
+  return {
+    id: store.id,
+    href: getStoreRoute({ id: store.id, name: store.name }),
+    name: store.name,
+    category: 'RETAIL',
+    categoryLabel: store.typeLabel ?? 'Shop',
+    meta: store.distance == null ? null : `${store.distance.toFixed(1)} mi`,
+    imageUrl: realPhoto(store.image) ?? null,
+  }
 }
 
 export function placeCardFromListing(listing: {

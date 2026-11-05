@@ -124,6 +124,7 @@ export function composeDiscovery(input: {
   readonly stories: readonly StoryTile[]
   readonly tiles: readonly DiscoveryTile[]
   readonly places: readonly DiscoveryStore[]
+  readonly storeTiles: readonly StoreTile[]
   readonly nearest: readonly StoreTile[]
 } {
   const q = input.query.trim().toLowerCase()
@@ -188,7 +189,7 @@ export function composeDiscovery(input: {
     if (story && index === 0) tiles.push(story)
   }
   const nearest = [...storeTiles].sort((a, b) => (a.distance ?? 99) - (b.distance ?? 99)).slice(0, 3)
-  return { hero, stories, tiles, places: stores, nearest }
+  return { hero, stories, tiles, places: stores, storeTiles, nearest }
 }
 
 export function mapPoints(stores: readonly DiscoveryStore[]): { id: string; name: string; latitude: number; longitude: number }[] {

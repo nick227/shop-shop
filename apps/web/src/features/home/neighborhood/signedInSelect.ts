@@ -12,6 +12,7 @@ export interface HomeOrder {
   readonly cartId?: string | null
   readonly createdAt?: string
   readonly items?: unknown
+  readonly addressSnapshot?: { readonly postalCode?: string; readonly zip?: string } | string | null
 }
 
 export interface HomeAddress {
@@ -21,9 +22,28 @@ export interface HomeAddress {
   readonly geo?: { lat?: number; lng?: number; latitude?: number; longitude?: number } | null
 }
 
-export function defaultAddressZip(addresses: readonly HomeAddress[]): string | undefined {
-  const chosen = addresses.find((address) => address.isDefault) ?? addresses[0]
-  return chosen?.postalCode?.slice(0, 5)
+function cleanZip(raw: string | undefined | null): string | undefined {
+  const digits = (raw ?? '').replace(/\D/g, '').slice(0, 5)
+  return digits.length === 5 ? digits : undefined
+}
+
+export function defaultAddressZip(
+  addresses: readonly HomeAddress[],
+  orders: readonly HomeOrder[] = [],
+): string | undefined {
+  const chosen = addresses.find((address) => address.isDefault && cleanZip(address.postalCode))
+    ?? addresses.find((address) => cleanZip(address.postalCode))
+  const fromAddress = cleanZip(chosen?.postalCode)
+  if (fromAddress) return fromAddress
+
+  for (const order of orders) {
+    const snap = typeof order.addressSnapshot === 'string'
+      ? (parseJson(order.addressSnapshot) as { postalCode?: string; zip?: string } | undefined)
+      : order.addressSnapshot
+    const fromOrder = cleanZip(snap?.postalCode ?? snap?.zip)
+    if (fromOrder) return fromOrder
+  }
+  return undefined
 }
 
 export interface SavedItem {

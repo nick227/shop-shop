@@ -66,8 +66,7 @@ async function readFavorites(): Promise<HomeFavorites> {
 
 export function useSignedInHome() {
   const userId = useAuthStore((state) => state.user?.id)
-  const role = useAuthStore((state) => state.user?.role)
-  const enabled = Boolean(userId) && role === 'USER'
+  const enabled = Boolean(userId)
 
   const orderQuery = useQuery({
     queryKey: ['home-orders', userId],

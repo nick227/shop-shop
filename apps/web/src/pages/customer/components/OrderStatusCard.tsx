@@ -1,3 +1,4 @@
+import { orderLabels } from '@features/orders/operations'
 /**
  * Order Status Card Component
  * 
@@ -65,39 +66,23 @@ export function OrderStatusCard({
             Order #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <Badge variant={safeBadgeVariant}>
-            {order.status}
+            {orderLabels[order.status] ?? order.status}
           </Badge>
         </div>
 
-        {/* Time Information */}
-        <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
-          <span>Placed {orderAge.display}</span>
-          {!isCanceled && !isCompleted && (
-            <span className="font-medium text-primary">Est. {estimatedReady.display}</span>
-          )}
+        <div className="rounded-xl bg-primary/5 p-5">
+          <p className="text-sm text-muted-foreground">{order.status === 'READY' ? 'Your order is ready' : 'Vendor-confirmed ready time'}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{estimatedReady.display}</p>
+          {estimatedReady.isLate && <p className="mt-2 text-sm text-destructive">Preparation is taking longer than promised. Contact the store for an update.</p>}
+          <p className="mt-3 text-xs text-muted-foreground">Placed {orderAge.display}</p>
         </div>
-
+        {order.deliveryType === 'PICKUP' && order.status === 'READY' && order.collectionCode && <div className="rounded-xl border border-primary/30 p-5"><p className="text-sm font-medium">Show this code when you collect your order</p><p className="mt-3 font-mono text-3xl font-semibold tracking-[0.25em]">{order.collectionCode}</p><p className="mt-2 text-sm text-muted-foreground">The store will confirm collection at handoff.</p></div>}
+        {isCanceled && <p className="text-sm">{order.cancelReason || 'This order was canceled.'}</p>}
+        {order.refundState && order.refundState !== 'NONE' && <div role="status" className="rounded-xl border border-border p-4"><p className="font-medium">{order.refundState === 'SUCCEEDED' ? 'Refund confirmed' : order.refundState === 'FAILED' ? 'Refund needs attention' : 'Refund in progress'}</p><p className="mt-1 text-sm text-muted-foreground">{order.refundState === 'SUCCEEDED' ? 'The payment provider has confirmed your refund.' : 'Your refund is still being resolved. Contact the store if you need help.'}</p></div>}
         {/* Progress Tracker */}
-        <OrderProgressTracker currentStatus={order.status} isCanceled={isCanceled} />
+        <OrderProgressTracker currentStatus={order.status} isCanceled={isCanceled} deliveryType={order.deliveryType} />
 
-        {/* Live Status */}
-        {!isCanceled && (
-          <div className="pt-5 border-t border-border">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-md">Live</span>
-              {estimatedReady.isLate && (
-                <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-1 rounded-md">Running late</span>
-              )}
-            </div>
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-            <p className="text-sm text-center text-muted-foreground font-medium">{statusMessage}</p>
-          </div>
-        )}
+
       </CardContent>
     </Card>
   )

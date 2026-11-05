@@ -4,7 +4,7 @@
  * Provides centralized order status management and validation logic.
  */
 
-export type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'COMPLETED' | 'CANCELLED'
+export type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'COMPLETED' | 'CANCELED' | 'DELIVERED' | 'PENDING_PAYMENT'
 
 export interface OrderStatusConfig {
   variant: 'warning' | 'secondary' | 'default' | 'success' | 'destructive'
@@ -19,17 +19,19 @@ export interface OrderStatusConfig {
 // ========================================
 
 export const ORDER_STATUS_CONFIG: Record<OrderStatus, OrderStatusConfig> = {
+  PENDING_PAYMENT: { variant: 'warning', label: 'Awaiting payment', canTransitionTo: [] },
+  DELIVERED: { variant: 'success', label: 'Delivered', canTransitionTo: [] },
   PLACED: {
     variant: 'warning',
     label: 'Placed',
-    canTransitionTo: ['ACCEPTED', 'CANCELLED'],
+    canTransitionTo: ['ACCEPTED', 'CANCELED'],
     actionLabel: 'Accept',
     actionIcon: '✅'
   },
   ACCEPTED: {
     variant: 'secondary',
     label: 'Accepted',
-    canTransitionTo: ['PREPARING', 'CANCELLED'],
+    canTransitionTo: ['PREPARING', 'CANCELED'],
     actionLabel: 'Start Preparing',
     actionIcon: '👨‍🍳'
   },
@@ -50,18 +52,18 @@ export const ORDER_STATUS_CONFIG: Record<OrderStatus, OrderStatusConfig> = {
   OUT_FOR_DELIVERY: {
     variant: 'success',
     label: 'Out for Delivery',
-    canTransitionTo: ['COMPLETED'],
+    canTransitionTo: ['DELIVERED'],
     actionLabel: 'Delivered',
     actionIcon: '✅'
   },
   COMPLETED: {
     variant: 'default',
-    label: 'Completed',
+    label: 'Collected',
     canTransitionTo: [],
     actionLabel: undefined,
     actionIcon: undefined
   },
-  CANCELLED: {
+  CANCELED: {
     variant: 'destructive',
     label: 'Cancelled',
     canTransitionTo: [],
@@ -78,7 +80,7 @@ export const ORDER_STATUS_CONFIG: Record<OrderStatus, OrderStatusConfig> = {
  * Get status configuration for an order
  */
 export function getOrderStatusConfig(status: string): OrderStatusConfig {
-  return ORDER_STATUS_CONFIG[status as OrderStatus] || ORDER_STATUS_CONFIG.PLACED
+  return ORDER_STATUS_CONFIG[status as OrderStatus] || { variant: 'secondary' as const, label: 'Status unavailable', canTransitionTo: [] }
 }
 
 /**
@@ -101,7 +103,7 @@ export function getActionButtonConfig(status: string, isDelivery: boolean) {
   
   // Special handling for READY status based on delivery type
   if (status === 'READY') {
-    actionLabel = isDelivery ? '🚗 Out' : '✅ Delivered'
+    actionLabel = isDelivery ? '🚗 Out' : 'Confirm collected'
     nextStatus = isDelivery ? 'OUT_FOR_DELIVERY' : 'COMPLETED'
   }
   

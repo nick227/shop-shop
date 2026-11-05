@@ -43,19 +43,17 @@ export function MarketFeed({
   tiles,
   nearest,
   onOpen,
+  showCategories = true,
 }: {
   readonly tiles: readonly DiscoveryTile[]
   readonly nearest: readonly StoreTile[]
   readonly onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void
+  readonly showCategories?: boolean
 }) {
-  const blocks = marketBlocks(tiles, nearest)
-  if (blocks.length === 1) {
-    return (
-      <>
-        <CategoryCircles />
-      </>
-    )
-  }
+  const allBlocks = marketBlocks(tiles, nearest)
+  const blocks = showCategories ? allBlocks : allBlocks.filter((block) => block.type !== 'circles')
+  if (blocks.length === 0) return null
+
   return (
     <div className="market-feed" id="market">
       {blocks.map((block) => {

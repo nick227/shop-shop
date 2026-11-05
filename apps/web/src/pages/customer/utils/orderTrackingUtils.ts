@@ -19,6 +19,10 @@ export interface OrderItem {
 
 export interface ParsedOrder {
   id: string
+  promisedReadyAt?: string | null
+  collectionCode?: string | null
+  refundState?: string
+  cancelReason?: string | null
   status: string
   deliveryType: string
   deliveryMode: string
@@ -127,10 +131,10 @@ export function getOrderStatusInfo(order: ParsedOrder) {
 
 export function getOrderTimeInfo(order: ParsedOrder) {
   const orderAge = getOrderAge(order.createdAt)
-  const estimatedReadyDate = getEstimatedReadyTime(order.createdAt, 20)
+  const estimatedReadyDate = order.promisedReadyAt ? new Date(order.promisedReadyAt) : null
   const estimatedReady = {
-    display: estimatedReadyDate.toLocaleTimeString(),
-    isLate: estimatedReadyDate < new Date()
+    display: estimatedReadyDate ? estimatedReadyDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Awaiting store confirmation',
+    isLate: Boolean(estimatedReadyDate && estimatedReadyDate < new Date() && ['ACCEPTED', 'PREPARING'].includes(order.status))
   }
   
   return {
@@ -152,7 +156,7 @@ export function getOrderProgress(order: ParsedOrder) {
     'PLACED': 10,
     'ACCEPTED': 25,
     'PREPARING': 50,
-    'READY': 100, // Pickup orders complete at READY
+    'READY': 80,
     'COMPLETED': 100,
     'CANCELED': 0
   }

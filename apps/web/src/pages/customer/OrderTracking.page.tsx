@@ -135,7 +135,7 @@ export default function OrderTrackingPage() {
             className={`inline-block h-2 w-2 rounded-full ${isDeliveryRealtimeConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
           />
           <span>
-            {isDeliveryRealtimeConnected
+            {order.deliveryType === 'PICKUP' ? (orderStatusInfo.isCompleted || orderStatusInfo.isCanceled ? 'Order finished' : 'Order updates every 10 seconds') : isDeliveryRealtimeConnected
               ? 'Live updates connected'
               : deliveryPollIntervalMs
                 ? `Polling every ${Math.round(deliveryPollIntervalMs / 1000)}s`
@@ -261,6 +261,11 @@ export default function OrderTrackingPage() {
         </Card>
       ) : null}
 
+      {order.deliveryType === 'PICKUP' && <Card><CardContent className="space-y-3 pt-5"><h2 className="font-semibold">Collect from {store?.name ?? 'the store'}</h2><p className="text-sm text-muted-foreground">Wait until your order is marked ready, then show your collection code to the store team.</p>
+        {(store as { addressStreet?: string } | undefined)?.addressStreet && <a className="block text-sm font-semibold text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([(store as { addressStreet?: string })?.addressStreet, (store as { addressCity?: string })?.addressCity].filter(Boolean).join(', '))}`}>Get directions</a>}
+        {store?.phone && <a className="block text-sm font-semibold text-primary underline" href={`tel:${store.phone}`}>Call {store.name}</a>}
+      </CardContent></Card>}
+
       <OrderDetailsCard
         storeName={store?.name ?? 'Loading...'}
         deliveryType={(order.deliveryType as 'PICKUP' | 'DELIVERY') ?? 'PICKUP'}
@@ -270,7 +275,7 @@ export default function OrderTrackingPage() {
         tax={order.tax}
         tip={order.tip}
         total={order.total}
-        paymentMethod={paymentStatus === 'PAID' ? 'Paid' : 'Pending'}
+        paymentMethod={paymentStatus === 'REFUNDED' ? 'Refunded' : paymentStatus === 'PAID' ? 'Paid' : 'Pending'}
         address={normalizedAddress}
       />
 

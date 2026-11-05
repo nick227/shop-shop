@@ -1,3 +1,4 @@
+import { orderRequest, type OperationalOrder } from '@features/orders/operations'
 /**
  * Order Tracking Hook
  * 
@@ -43,14 +44,14 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
   const { data: orderData, isLoading } = useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
-      const rawOrder = await apiClient.orders().getOrderById({ id: orderId! })
-      return mapOrder(rawOrder)
+      const rawOrder = await orderRequest<OperationalOrder>(`/orders/${orderId}/operations`)
+      return rawOrder
     },
     enabled: !!orderId,
     refetchInterval: (query) => {
       const data = query.state.data
       const status = (data as { status?: string } | undefined)?.status
-      return ['COMPLETED', 'DELIVERED', 'CANCELED'].includes(status ?? '') ? false : 10_000
+      return ['COMPLETED', 'DELIVERED', 'CANCELED'].includes(status ?? '') && !['PENDING', 'FAILED'].includes((data as { refundState?: string })?.refundState ?? '') ? false : 10_000
     },
   })
 
@@ -106,14 +107,13 @@ export function useOrderTracking({ onTipSuccess, onTipError }: UseOrderTrackingP
   const { createTip, isLoading: isTipLoading } = useTip()
   // Derive storeId without referencing parsed `order` (hooks must run before derived vars).
   const storeId = ((orderData as any)?.storeId ?? (orderData as any)?.data?.storeId ?? '') as string
-  const storeQuery = useStore(storeId)
   
   // ========================================
   // Parsed Data
   // ========================================
   
-  const store = storeQuery.data as { name?: string } | undefined
-  const orderItems = orderData ? parseOrderItems((orderData as unknown as Record<string, unknown>).orderItems as string) : []
+  const store = orderData?.store as { name?: string; phone?: string; addressStreet?: string; addressCity?: string } | undefined
+  const orderItems = orderData ? parseOrderItems(JSON.stringify(orderData.items)) : []
   
   // ========================================
   // Computed Values

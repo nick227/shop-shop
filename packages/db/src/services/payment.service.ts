@@ -347,39 +347,19 @@ export const refundOrder = async (input: RefundOrderInput) => {
     throw new Error('Order not found')
   }
 
-  // Only vendor or admin can refund
-  if (!(await getAccountCapabilities(input.userId)).canAccessVendorPortal || order.store.ownerUserId !== input.userId) {
-    throw new Error('Unauthorized: Only store owner can issue refunds')
-  }
-
-  if (order.paymentStatus !== 'PAID') {
-    throw new Error('Order not paid, cannot refund')
-  }
-
-  if (!order.stripePaymentIntentId) {
-    throw new Error('No payment intent found for order')
-  }
-
-  // Create refund in Stripe
-  const refund = await stripeCreateRefund(
-    order.stripePaymentIntentId,
-    input.amount
-  )
-
-  // Update order status
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      paymentStatus: 'REFUNDED',
-      stripeRefundId: refund.id,
-    },
+  const access = await getAccountCapabilities(input.userId)
+  if (!access.canAdministerStores && !(access.canAccessVendorPortal && order.store.ownerUserId === input.userId)) throw new Error('Unauthorized: Only store owner or admin can issue refunds')
+  if (input.amount && !input.amount.equals(order.total.toString())) throw new Error('Partial refunds are not supported by order recovery')
+  if (order.paymentStatus !== 'PAID' && order.paymentStatus !== 'REFUNDED') throw new Error('Order not paid, cannot refund')
+  await prisma.$transaction(async tx => {
+    const claimed = await tx.order.updateMany({ where: { id: order.id, paymentStatus: 'PAID', refundState: 'NONE' }, data: { refundState: 'PENDING', refundReason: input.reason ?? 'Requested by store', version: { increment: 1 } } })
+    if (claimed.count) {
+      await tx.orderWork.create({ data: { orderId: order.id, kind: 'REFUND', payload: {} } })
+      await tx.orderEvent.create({ data: { orderId: order.id, status: order.status, actorId: input.userId, note: 'Full refund requested' } })
+    }
   })
+  return { refundId: order.stripeRefundId, amount: Math.round(Number(order.total) * 100), status: order.paymentStatus === 'REFUNDED' ? 'succeeded' : 'pending' }
 
-  return {
-    refundId: refund.id,
-    amount: refund.amount,
-    status: refund.status,
-  }
 }
 
 // ========================================
@@ -420,13 +400,21 @@ export const handlePaymentIntentSucceeded = async (paymentIntentId: string) => {
     }),
   )
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { paymentStatus: 'PAID' },
+  await prisma.$transaction(async tx => {
+    // Serialize payment confirmation against cancellation before inspecting the latest state.
+    await tx.order.updateMany({ where: { id: order.id, paymentStatus: { not: 'REFUNDED' } }, data: { version: { increment: 1 } } })
+    const current = await tx.order.findUniqueOrThrow({ where: { id: order.id } })
+    if (current.paymentStatus === 'REFUNDED') return
+    const needsRefund = current.status === 'CANCELED' && current.refundState === 'NONE'
+    await tx.order.update({ where: { id: order.id }, data: { paymentStatus: 'PAID', ...(needsRefund ? { refundState: 'PENDING' } : {}) } })
+    if (needsRefund) {
+      await tx.orderWork.create({ data: { orderId: order.id, kind: 'REFUND', payload: {} } })
+      await tx.orderEvent.create({ data: { orderId: order.id, status: current.status, note: 'Payment confirmed after cancellation; refund pending' } })
+    }
   })
 
   // Transition PENDING_PAYMENT → PLACED now that payment is confirmed
-  if (order.status === 'PENDING_PAYMENT') {
+  if (order.status === 'PENDING_PAYMENT' && (await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status === 'PENDING_PAYMENT') {
     await orderService.transitionOrderStatus({
       orderId: order.id,
       newStatus: 'PLACED',

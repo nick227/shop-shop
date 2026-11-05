@@ -145,6 +145,17 @@ enum StoreStatus {
   DISABLED
 }
 
+/// What an item is for sales tax. Maps to a provider tax code (see apps/server/src/commerce/tax).
+enum TaxCategory {
+  PREPARED_FOOD
+  GROCERY
+  CANDY
+  SOFT_DRINK
+  BOTTLED_WATER
+  ALCOHOL
+  GENERAL
+}
+
 enum StoreType {
   RESTAURANT
   CONVENIENCE
@@ -298,6 +309,8 @@ model Store {
   disabledReason   String?     @db.Text
   deliveryEnabled  Boolean     @default(true)
   pickupEnabled    Boolean     @default(true)
+  autoAcceptOrders Boolean @default(false)
+  acceptanceTimeoutMin Int @default(10)
   prepTimeMin      Int         @default(15)
   feesJson         Json?
   hoursJson        Json?
@@ -311,6 +324,10 @@ model Store {
   // Delivery Settings
   deliveryDistance Decimal?       @db.Decimal(5, 2) // Preferred delivery distance in miles
   deliveryCharge   Decimal?       @db.Decimal(10, 2) // Delivery charge amount
+  /// Smallest subtotal accepted for delivery; null means no minimum.
+  deliveryMinimum  Decimal?       @db.Decimal(10, 2)
+  /// Sales tax category for items that don't set their own; null derives it from storeType.
+  defaultTaxCategory TaxCategory?
   deliveryZones    DeliveryZone[]
 
   // Geographic Coordinates (for distance-based search)
@@ -593,6 +610,9 @@ model Item {
   allergensJson Json? // Array of allergen strings
   spicyLevel    Int? // 0-5 scale
 
+  /// Sales tax category; null uses the store's default.
+  taxCategory TaxCategory?
+
   /// The store's own menu section this item is listed under; null means not yet placed in one.
   sectionId String?      @db.Char(36)
   section   MenuSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
@@ -723,6 +743,12 @@ model Order {
   total                  Decimal       @db.Decimal(10, 2)
   serviceFeePercent      Decimal       @db.Decimal(5, 2)
   serviceFeeAmount       Decimal       @db.Decimal(10, 2)
+  /// The vendor's commission, taken from the vendor's share; never added to the shopper's total.
+  vendorCommissionPercent Decimal      @default(0) @db.Decimal(5, 2)
+  vendorCommissionAmount Decimal       @default(0) @db.Decimal(10, 2)
+  /// Which tax provider priced the order ('stripe' or 'estimate'), and its calculation id if any.
+  taxProvider            String?       @db.VarChar(20)
+  taxCalculationId       String?       @db.VarChar(191)
   netToVendor            Decimal       @db.Decimal(10, 2)
   stripePaymentIntentId  String?       @unique
   stripeChargeId         String?
@@ -739,6 +765,17 @@ model Order {
   deliveryDistanceMiles Decimal?  @db.Decimal(6, 2)
   estimatedDeliveryAt   DateTime?
 
+  automationEligible Boolean @default(true)
+  version Int @default(0)
+  promisedReadyAt DateTime?
+  acceptedAt DateTime?
+  readyAt DateTime?
+  collectedAt DateTime?
+  collectionCode String? @db.VarChar(12)
+  acceptanceDeadline DateTime?
+  refundState String @default("NONE") @db.VarChar(24)
+  refundError String? @db.Text
+
   // Cancellation & Refund tracking
   cancelReason String?   @db.Text
   canceledBy   String?   @db.Char(36) // User ID who canceled
@@ -748,6 +785,7 @@ model Order {
 
   items        OrderItem[]
   events       OrderEvent[]
+  work         OrderWork[]
   tips         Tip[]
   commissions  Commission[]
   payoutOrder  PayoutOrder?
@@ -815,6 +853,9 @@ model OrderEvent {
   orderId   String      @db.Char(36)
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   status    OrderStatus
+  actorId String? @db.Char(36)
+  operationId String? @unique @db.VarChar(100)
+  requestFingerprint String? @db.VarChar(64)
   note      String?
   createdAt DateTime    @default(now())
 
@@ -1768,4 +1809,20 @@ model StorefrontConfig {
   draftUpdatedAt DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// Durable work survives browser closure and server restarts. External calls occur after commit.
+model OrderWork {
+  id String @id @default(uuid()) @db.Char(36)
+  orderId String @db.Char(36)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind String @db.VarChar(24)
+  payload Json
+  attempts Int @default(0)
+  availableAt DateTime @default(now())
+  completedAt DateTime?
+  lastError String? @db.Text
+  createdAt DateTime @default(now())
+  @@index([completedAt, availableAt])
+  @@index([orderId])
 }

@@ -24,6 +24,7 @@ async function transitionOrder(orderId: string, newStatus: string, note?: string
     newStatus: newStatus as Parameters<typeof orderService.transitionOrderStatus>[0]['newStatus'],
     note,
     changedBy: 'test-runner',
+    ...(newStatus === 'ACCEPTED' ? { prepMinutes: 20 } : {}),
   })
 }
 
@@ -216,9 +217,9 @@ describe('Order State Machine', () => {
       await prisma.order.delete({ where: { id: order.id } })
     })
 
-    it('cannot cancel an already-CANCELED order', async () => {
+    it('repeating cancellation is a no-op', async () => {
       const order = await createTestOrder(userId, storeId, { status: 'CANCELED' })
-      await expect(transitionOrder(order.id, 'CANCELED')).rejects.toThrow()
+      expect((await transitionOrder(order.id, 'CANCELED')).status).toBe('CANCELED')
       await prisma.order.delete({ where: { id: order.id } })
     })
   })

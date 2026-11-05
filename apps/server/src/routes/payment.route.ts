@@ -187,12 +187,12 @@ export const paymentRoutes = async (app: FastifyInstance) => {
       })
 
       req.log.info({
-        event: 'refund_issued',
+        event: 'refund_requested',
         userId: req.user!.id,
         orderId,
         refundId: result.refundId,
         amount: result.amount,
-      }, 'Refund issued')
+      }, 'Refund requested')
 
       return reply.code(200).send(result)
     } catch (error) {
@@ -200,7 +200,7 @@ export const paymentRoutes = async (app: FastifyInstance) => {
         if (error.message.includes('not found') || error.message.includes('Unauthorized')) {
           return reply.code(404).send({ error: error.message })
         }
-        if (error.message.includes('not paid')) {
+        if (error.message.includes('not paid') || error.message.includes('Partial refunds')) {
           return reply.code(400).send({ error: error.message })
         }
       }

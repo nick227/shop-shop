@@ -2,33 +2,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import '../discovery/discovery.css'
-import { apiOrigin } from './loadDiscovery'
-import { neighborhoodPath } from './neighborhoodHero'
-import { PlaceCard } from './PlaceCard'
-
-type Row = {
-  readonly id: string
-  readonly name: string
-  readonly slug: string
-  readonly headline: string | null
-  readonly city: { readonly name: string; readonly state: string | null } | null
-  readonly postalCodes: readonly string[]
-  readonly coverUrl: string | null
-}
+import { loadPublishedNeighborhoods } from './loadDiscovery'
+import { PlaceCard, placeCardFromNeighborhood } from './PlaceCard'
 
 export function NeighborhoodIndex() {
   const [q, setQ] = useState('')
   const [submitted, setSubmitted] = useState('')
   const query = useQuery({
     queryKey: ['published-neighborhoods', submitted],
-    queryFn: async () => {
-      const params = submitted ? `?q=${encodeURIComponent(submitted)}` : ''
-      const response = await fetch(`${apiOrigin()}/api/places/neighborhoods${params}`)
-      if (!response.ok) throw new Error('Could not load neighborhoods')
-      return response.json() as Promise<{ neighborhoods: Row[] }>
-    },
+    queryFn: () => loadPublishedNeighborhoods(submitted),
   })
-  const rows = query.data?.neighborhoods ?? []
+  const rows = query.data ?? []
   return (
     <div className="discover">
       <p className="tile-kicker">Austin</p>
@@ -42,14 +26,7 @@ export function NeighborhoodIndex() {
         {rows.map((area) => (
           <PlaceCard
             key={area.id}
-            place={{
-              id: area.id,
-              href: neighborhoodPath(area.slug),
-              name: area.name,
-              categoryLabel: 'Neighborhood',
-              meta: [area.headline, area.city?.name, area.postalCodes.join(', ')].filter(Boolean).join(' · '),
-              imageUrl: area.coverUrl,
-            }}
+            place={placeCardFromNeighborhood(area)}
           />
         ))}
       </div>

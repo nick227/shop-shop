@@ -421,7 +421,8 @@ export const storeResource = defineResource({
           return { data: withMedia.slice(start, start + limit), total: withMedia.length }
         }
 
-        return listResult
+        const withMedia = await attachStoreMedia(listResult.data)
+        return { ...listResult, data: withMedia }
       }
       
       const prismaFilters = await buildStoreListFilters(filters)

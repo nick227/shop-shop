@@ -1,3 +1,4 @@
+import { executeOrderCommand } from './order-lifecycle.service.js'
 import { getAccountCapabilities } from './account-capabilities.service.js'
 ﻿import { prisma } from '../client.js'
 import { refundOrder } from './payment.service.js'
@@ -83,77 +84,12 @@ export async function cancelOrder(input: CancelOrderInput): Promise<CancelOrderR
     throw new Error('Unauthorized: Only customer, store staff, or admin can cancel this order')
   }
 
-  // Check if cancellation is a valid transition (state machine enforced)
-  assertValidTransition(order.status, 'CANCELED')
-
-  // Determine if refund is needed
-  let refunded = false
-  let refundAmount: number | undefined
-
-  if (input.shouldRefund && order.paymentStatus === 'PAID') {
-    try {
-      const refundResult = await refundOrder({
-        orderId: input.orderId,
-        userId: input.userId,
-      })
-      
-      refunded = true
-      refundAmount = refundResult.amount
-    } catch (error) {
-      console.error('Refund failed during cancellation:', error)
-      // Continue with cancellation even if refund fails
-    }
+  if (isCustomer && !isStoreSide && !isAdmin && !['PENDING_PAYMENT', 'PLACED'].includes(order.status)) {
+    throw new Error('Unauthorized: Contact the store to cancel after acceptance')
   }
+  const updated = await executeOrderCommand({ orderId: input.orderId, newStatus: 'CANCELED', customerOnly: isCustomer && !isStoreSide && !isAdmin, changedBy: input.userId, note: input.reason })
+  return { orderId: updated.id, status: updated.status, canceledAt: updated.canceledAt!, refunded: updated.paymentStatus === 'REFUNDED' }
 
-  const previousStatus = order.status
-
-  console.log(
-    JSON.stringify({
-      event: 'order.transition',
-      orderId: input.orderId,
-      from: previousStatus,
-      to: 'CANCELED',
-      changedBy: input.userId,
-      note: `Canceled: ${input.reason}`,
-      timestamp: new Date().toISOString(),
-    }),
-  )
-
-  const updatedOrder = await prisma.order.update({
-    where: { id: input.orderId },
-    data: {
-      status: 'CANCELED',
-      cancelReason: input.reason as unknown,
-      canceledBy: input.userId as unknown,
-      canceledAt: new Date() as unknown,
-      ...(refunded && {
-        paymentStatus: 'REFUNDED',
-        refundedAt: new Date() as unknown,
-      }),
-    } as object,
-  })
-
-  // Create order event for audit trail
-  await prisma.orderEvent.create({
-    data: {
-      orderId: input.orderId,
-      status: 'CANCELED',
-      note: `Canceled: ${input.reason}`,
-    },
-  })
-
-  await publishOrderStatusChanged(updatedOrder.id, previousStatus, updatedOrder.status, {
-    note: `Canceled: ${input.reason}`,
-    changedBy: input.userId,
-  })
-
-  return {
-    orderId: updatedOrder.id,
-    status: updatedOrder.status,
-    canceledAt: (updatedOrder as unknown as { canceledAt: Date }).canceledAt,
-    refunded,
-    refundAmount,
-  }
 }
 
 /**
@@ -274,6 +210,8 @@ export async function canCancelOrder(orderId: string, userId: string): Promise<{
   if (!isCustomer && !isStoreSide && !isAdmin) {
     return { canCancel: false, reason: 'Unauthorized', requiresRefund: false }
   }
+
+  if (isCustomer && !isStoreSide && !isAdmin && !['PENDING_PAYMENT', 'PLACED'].includes(order.status)) return { canCancel: false, reason: 'Contact the store after acceptance', requiresRefund: false }
 
   const { valid, reason } = canTransitionTo(order.status, 'CANCELED')
   if (!valid) {

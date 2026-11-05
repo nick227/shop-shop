@@ -1,3 +1,5 @@
+import { executeOrderCommand } from '@packages/db'
+import { canManageOrder } from '../routes/order-operations.route.js'
 import { getAccountCapabilities } from '@packages/db'
 import { defineResource } from '@packages/schemas/core'
 import {
@@ -25,18 +27,6 @@ import {
 } from './order-create.helpers.js'
 
 const orderDomain = new OrderDomain()
-
-/** Correlates PATCH body with prior row so we emit oldStatus exactly once per status change */
-const pendingOrderStatusChange = new Map<
-  string,
-  { oldStatus: string; note?: string; changedBy?: string }
->()
-
-type PatchBody = Readonly<{
-  status?: string
-  note?: string
-  assignedToUserId?: string | null
-}>
 
 function parsePermissions(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((p): p is string => typeof p === 'string') : []
@@ -153,55 +143,19 @@ export const orderResource = defineResource({
         throw new Error('Order not found')
       }
 
-      const body = input as PatchBody
-
-      if (body.assignedToUserId !== undefined && body.assignedToUserId !== null) {
-        if (!(await actorCanAssignDeliveries(context?.userId, existing.storeId))) {
-          throw new Error('You cannot assign deliveries for this store')
-        }
-        if (!(await userCanReceiveDelivery(body.assignedToUserId, existing.storeId))) {
-          throw new Error('Assignee must be an active store driver')
-        }
-      }
-
-      if (body.status !== undefined && body.status !== existing.status) {
-        // Enforce state machine — throws InvalidOrderTransitionError on invalid
-        assertValidTransition(existing.status, body.status)
-
-        console.log(
-          JSON.stringify({
-            event: 'order.transition',
-            orderId: id,
-            from: existing.status,
-            to: body.status,
-            changedBy: context?.userId ?? 'unknown',
-            note: body.note ?? null,
-            timestamp: new Date().toISOString(),
-          }),
-        )
-
-        pendingOrderStatusChange.set(id, {
-          oldStatus: existing.status,
-          note: body.note,
-          changedBy: context?.userId,
-        })
-      } else {
-        pendingOrderStatusChange.delete(id)
-      }
-
-      const prismaData: {
-        status?: string
-        assignedToUserId?: string | null
-        paymentStatus?: string
-      } = {}
-      if (body.status !== undefined) {
-        prismaData.status = body.status
-      }
+      const body = input as { status?: any; assignedToUserId?: string | null; note?: string; prepMinutes?: number; expectedVersion?: number; operationId?: string; collectionCode?: string }
+      const manager = await canManageOrder(context!.userId!, existing.storeId)
+      const customerCancel = existing.userId === context?.userId && body.status === 'CANCELED' && ['PENDING_PAYMENT', 'PLACED'].includes(existing.status)
+      if (!manager && !customerCancel) throw new Error('Order management permission required')
+      if (body.status === 'PLACED') throw new Error('Payment confirmation owns order placement')
       if (body.assignedToUserId !== undefined) {
-        prismaData.assignedToUserId = body.assignedToUserId
+        if (body.status) throw new Error('Assign a driver separately from a status action')
+        if (!await actorCanAssignDeliveries(context?.userId, existing.storeId)) throw new Error('Delivery assignment permission required')
+        if (body.assignedToUserId && !await userCanReceiveDelivery(body.assignedToUserId, existing.storeId)) throw new Error('Assignee must be an active store driver')
+        return { assignedToUserId: body.assignedToUserId }
       }
-
-      return prismaData
+      const result = await executeOrderCommand({ ...body, orderId: id, newStatus: body.status, customerOnly: !manager, changedBy: context?.userId })
+      return { _skipUpdate: true, _result: result }
     },
     beforeCreate: async (data, context) => {
       const input = asOrderBeforeCreateInput(data)
@@ -307,22 +261,6 @@ export const orderResource = defineResource({
       await eventBus.emit(DomainEvents.ORDER_PLACED, result)
       // publishOrderCreated fires from the Stripe webhook after payment_intent.succeeded
       // so vendors are only notified once payment is confirmed
-    },
-    afterUpdate: async (result) => {
-      const order = result as { id: string; status: string }
-      const pending = pendingOrderStatusChange.get(order.id)
-      pendingOrderStatusChange.delete(order.id)
-      if (!pending) {
-        return
-      }
-      try {
-        await publishOrderStatusChanged(order.id, pending.oldStatus, order.status, {
-          note: pending.note,
-          changedBy: pending.changedBy,
-        })
-      } catch (error) {
-        console.error('[Order] publishOrderStatusChanged failed:', error)
-      }
     },
   },
 })

@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
 import { recordRecent } from '../neighborhood/recentViews'
 import { useSignedInHome } from '../neighborhood/useSignedInHome'
 import { defaultAddressZip } from '../neighborhood/signedInSelect'
-import { HOME_RADIUS_MILES, placeZip, rememberedPlace } from '../shell/placeMemory'
+import { HOME_RADIUS_MILES, placeZip, rememberedPlace, rememberZip } from '../shell/placeMemory'
+import { CategorySection } from './CategoryCircles'
 import { DetailPanel } from './DetailPanel'
 import { MarketFeed } from './MarketFeed'
-import { LocationHero } from './Opening'
+import { LocationHero, PlatformFeatures } from './Opening'
 import { RecentFeed } from './RecentFeed'
 import { DirectoryList } from '../neighborhood/DirectoryList'
 import { DirectorySections } from '../neighborhood/DirectorySections'
 import { MemberShops } from '../neighborhood/MemberShops'
+import { placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
+import { PlaceGrid } from '../neighborhood/PlaceGrid'
 import { useDirectory } from '../neighborhood/useDirectory'
 import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
@@ -23,12 +26,13 @@ export function DiscoveryPage() {
   const data = useNeighborhoodData()
   const directory = useDirectory(data.location?.latitude, data.location?.longitude)
   const account = useSignedInHome()
-  const accountZip = defaultAddressZip(account.addresses)
+  const accountZip = defaultAddressZip(account.addresses, account.orders)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
 
   useEffect(() => {
     const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
     if (!zip) return
+    rememberZip(zip)
     if (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES)) return
     const next = new URLSearchParams(params)
     next.set('zip', zip)
@@ -85,6 +89,7 @@ export function DiscoveryPage() {
   const marketTiles = composed.stories[0]
     ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
     : composed.tiles
+  const hasLocation = Boolean(data.location)
 
   return (
     <div className="discover">
@@ -104,14 +109,31 @@ export function DiscoveryPage() {
         onSelectStore={openStore}
         neighborhoods={data.neighborhoods}
       />
-      <MemberShops stores={composed.nearest} />
-      {data.location ? (
+      {!hasLocation ? (
+        <>
+          <PlatformFeatures />
+          <CategorySection />
+          {data.neighborhoods.length > 0 ? (
+            <PlaceGrid
+              label="Austin neighborhoods"
+              featureFirst
+              places={data.neighborhoods.slice(0, 8).map(placeCardFromNeighborhood)}
+              footer={<p className="discover-lede"><Link to="/neighborhoods">Browse all Austin neighborhoods</Link></p>}
+            />
+          ) : null}
+        </>
+      ) : null}
+      <MemberShops stores={composed.storeTiles} />
+      {hasLocation || marketTiles.length > 0 ? (
         <MarketFeed
           tiles={marketTiles}
           nearest={composed.nearest}
+          showCategories={hasLocation}
           onOpen={(tile, anchor) => setSelected({ tile, anchor })}
         />
       ) : null}
+      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading} />
+      <DirectorySections listings={(directory.data ?? []).slice(8)} />
       <RecentFeed
         orders={account.orders}
         savedItems={account.favorites.items}
@@ -121,8 +143,6 @@ export function DiscoveryPage() {
         tiles={composed.tiles}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
-      <DirectoryList listings={(directory.data ?? []).slice(0, 8)} loading={directory.isLoading && Boolean(data.location)} />
-      <DirectorySections listings={(directory.data ?? []).slice(8)} />
 
       {selected ? (
         <DetailPanel

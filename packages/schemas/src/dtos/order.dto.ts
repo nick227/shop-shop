@@ -158,10 +158,15 @@ export const UpdateOrderStatusSchema = z.object({
     'READY',
     'OUT_FOR_DELIVERY',
     'DELIVERED',
+    'COMPLETED',
     'CANCELED',
   ]).optional(),
   assignedToUserId: z.string().nullable().optional(),
-  note: z.string().optional(),
+  note: z.string().max(1000).optional(),
+  prepMinutes: z.number().int().min(1).max(240).optional(),
+  expectedVersion: z.number().int().min(0).optional(),
+  operationId: z.string().min(8).max(100).optional(),
+  collectionCode: z.string().max(12).optional(),
 }).refine(data => Object.keys(data).some(k => (data as Record<string, unknown>)[k] !== undefined), 'At least one field must be provided')
 
 

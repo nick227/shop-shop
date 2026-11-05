@@ -23,3 +23,12 @@ export function CategoryCircles() {
     </div>
   )
 }
+
+export function CategorySection() {
+  return (
+    <section className="place-band" aria-label="Categories">
+      <p className="tile-kicker">Browse by category</p>
+      <CategoryCircles />
+    </section>
+  )
+}

@@ -1,4 +1,4 @@
-import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
+import { placeCardFromStore } from './PlaceCard'
 import { PlaceGrid } from './PlaceGrid'
 
 export function MemberShops({ stores }: {
@@ -9,14 +9,7 @@ export function MemberShops({ stores }: {
     <PlaceGrid
       label="Shops on Shop-Shop"
       featureFirst
-      places={stores.slice(0, 8).map((store) => ({
-        id: store.id,
-        href: getStoreRoute({ id: store.id, name: store.name }),
-        name: store.name,
-        categoryLabel: store.typeLabel ?? 'Shop',
-        meta: store.distance == null ? null : `${store.distance.toFixed(1)} mi`,
-        imageUrl: store.image ?? null,
-      }))}
+      places={stores.slice(0, 8).map(placeCardFromStore)}
     />
   )
 }

@@ -9,6 +9,8 @@ export interface MapPoint {
   readonly longitude: number
 }
 
+const DEFAULT_CENTER: L.LatLngTuple = [30.2672, -97.7431]
+
 export function NeighborhoodMap({
   points,
   userLat,
@@ -27,7 +29,7 @@ export function NeighborhoodMap({
 
   useEffect(() => {
     const node = nodeRef.current
-    if (!node || (points.length === 0 && userLat == undefined)) return
+    if (!node) return
     if (!mapRef.current) {
       const map = L.map(node, { zoomControl: true, attributionControl: false })
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
@@ -63,8 +65,9 @@ export function NeighborhoodMap({
       marker.bindTooltip(point.name, { direction: 'top', offset: [0, -8] })
       marker.addTo(map)
     }
-    if (bounds.length === 1) map.setView(bounds[0], 13)
-    else if (bounds.length > 1) map.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 })
+    if (bounds.length === 0) map.setView(DEFAULT_CENTER, 12)
+    else if (bounds.length === 1) map.setView(bounds[0], 13)
+    else map.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 })
     window.setTimeout(() => map.invalidateSize(), 60)
   }, [points, userLat, userLng])
 

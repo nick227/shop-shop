@@ -156,7 +156,8 @@ export const cancelPaymentIntent = async (
 
 export const createRefund = async (
   paymentIntentId: string,
-  amount?: Decimal
+  amount?: Decimal,
+  idempotencyKey?: string
 ): Promise<Stripe.Refund> => {
   const stripe = getStripe()
   
@@ -168,7 +169,7 @@ export const createRefund = async (
     refundParams.amount = amount.times(100).toNumber()
   }
 
-  return stripe.refunds.create(refundParams)
+  return stripe.refunds.create(refundParams, idempotencyKey ? { idempotencyKey } : undefined)
 }
 
 // ========================================
@@ -369,3 +370,5 @@ export const setDefaultPaymentMethod = async (
     },
   })
 }
+
+export const retrieveOrderRefund = (id: string) => getStripe().refunds.retrieve(id)

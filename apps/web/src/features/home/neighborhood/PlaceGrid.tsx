@@ -1,13 +1,16 @@
+import type { ReactNode } from 'react'
 import { PlaceCard, type PlaceCardData } from './PlaceCard'
 
 export function PlaceGrid({
   places,
   label,
   featureFirst = false,
+  footer,
 }: {
   readonly places: readonly PlaceCardData[]
   readonly label: string
   readonly featureFirst?: boolean
+  readonly footer?: ReactNode
 }) {
   if (places.length === 0) return null
   return (
@@ -18,6 +21,7 @@ export function PlaceGrid({
           <PlaceCard key={place.id} place={place} feature={featureFirst && index === 0} />
         ))}
       </div>
+      {footer}
     </section>
   )
 }
