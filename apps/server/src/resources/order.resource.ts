@@ -11,6 +11,7 @@ import {
 } from '@packages/schemas/dtos'
 import { OrderDomain, eventBus, DomainEvents } from '@packages/domain'
 import { CHECKOUT_TOTALS_CONFIG } from '../commerce/pricingPolicy.js'
+import { priceCartForOrder } from '../services/checkout.service.js'
 import {
   prisma,
   publishOrderStatusChanged,
@@ -162,12 +163,17 @@ export const orderResource = defineResource({
       const input = asOrderBeforeCreateInput(data)
       const userId = context!.userId!
       const tipAmount = Number.parseFloat(input.tip || '0.00')
-      const totals = await orderDomain.calculateOrderTotals(
-        input.cartId,
+      // Cart ownership and item availability, then the same pricing as checkout.
+      const placement = await orderDomain.validateOrderPlacement(input.cartId, userId)
+      if (!placement.valid) throw new Error(placement.reason ?? 'This order can’t be placed')
+      const priced = await priceCartForOrder({
+        cartId: input.cartId,
         userId,
-        input.deliveryType,
-        tipAmount,
-      )
+        deliveryType: input.deliveryType,
+        tip: tipAmount,
+        addressId: input.addressId,
+      })
+      const totals = priced.totals
 
       const address = await loadVerifiedAddressForOrder(prisma, input.addressId, userId)
       const resolved = resolveOrderDeliveryCoords(input, address)
@@ -238,6 +244,8 @@ export const orderResource = defineResource({
         vendorCommissionPercent: totals.vendorCommissionPercent,
         vendorCommissionAmount: totals.vendorCommissionAmount,
         netToVendor: totals.netToVendor,
+        taxProvider: priced.tax.provider,
+        taxCalculationId: priced.tax.calculationId,
         addressId: input.addressId,
         addressSnapshot,
         deliveryLatitude: persistPair ? persistPair.lat.toFixed(8) : null,

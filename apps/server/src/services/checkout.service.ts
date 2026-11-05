@@ -307,6 +307,29 @@ export async function quoteCheckout(input: CheckoutQuoteInput, userId: string | 
   }
 }
 
+/**
+ * Prices a saved cart for the generic `POST /orders` path with the same code as checkout: delivery
+ * eligibility and fee from the service area, tax from the tax provider, fees from the platform policy.
+ * Delivery there needs one of the shopper's saved addresses.
+ */
+export async function priceCartForOrder(args: {
+  cartId: string
+  userId: string
+  deliveryType: 'PICKUP' | 'DELIVERY'
+  tip: number
+  addressId?: string | null
+}) {
+  const items = await prisma.cartItem.findMany({ where: { cartId: args.cartId }, select: { itemId: true, bundleId: true, quantity: true, notes: true } })
+  const { storeId, lines } = await resolveCheckoutLines(
+    items.map((ci) => ({ itemId: ci.itemId, bundleId: ci.bundleId, quantity: ci.quantity, specialInstructions: ci.notes ?? undefined })),
+  )
+  const destination =
+    args.deliveryType === 'DELIVERY' ? await resolveDestination({ deliveryAddressId: args.addressId ?? null }, args.userId) : null
+  const priced = await priceCheckout({ storeId, lines, deliveryType: args.deliveryType, tip: Math.max(0, args.tip || 0), destination })
+  if (priced.blocked) throw blockedError(priced.blocked)
+  return { totals: priced.totals, tax: priced.tax, delivery: priced.delivery }
+}
+
 export type CreateSessionInput = {
   items: CheckoutLineInput[]
   deliveryType: 'PICKUP' | 'DELIVERY'
