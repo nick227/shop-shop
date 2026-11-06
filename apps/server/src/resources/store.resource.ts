@@ -12,6 +12,7 @@ import { prisma, getAffiliateByReferralCode, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSI
 import { checkStoreActivationRequirements } from '@packages/db/services'
 import { recordStoreCoordinates } from '../services/store-coordinates.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
+import { rankDeliveryFirst, wantsDeliveryFirst, withFulfillment } from '../services/store-fulfillment.service.js'
 
 // ========================================
 // Store Resource Definition
@@ -112,11 +113,24 @@ async function attachStoreMedia<T extends { id: string }>(stores: T[]) {
   }))
 }
 
+/**
+ * Every listed store carries its shopper-facing fulfillment state. With `delivery=true` the
+ * delivery-ready ones come first, ranked over the whole result set before the page is cut.
+ */
+async function presentStorePage<T extends { id: string }>(stores: T[], page: number, limit: number, deliveryFirst: boolean) {
+  const labeled = await withFulfillment(stores)
+  const ordered = deliveryFirst ? rankDeliveryFirst(labeled) : labeled
+  const start = (page - 1) * limit
+  return { data: await attachStoreMedia(ordered.slice(start, start + limit)), total: ordered.length }
+}
+
 async function buildStoreListFilters(filters: Record<string, unknown>): Promise<Record<string, unknown>> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { latitude, longitude, radiusMiles, city, state, zip, scope, place, q, browse, ...rest } = filters
+  // `delivery` ranks results in afterList; it never narrows them.
+  const { latitude, longitude, radiusMiles, city, state, zip, scope, place, q, browse, delivery, ...rest } = filters
   void scope
   void place
+  void delivery
   const prismaFilters: Record<string, unknown> = { ...rest }
 
   if (!prismaFilters.ownerUserId && !prismaFilters.status) {
@@ -358,10 +372,12 @@ export const storeResource = defineResource({
           store.stripeOnboarded &&
           store.stripeChargesEnabled,
       )
+      const [{ fulfillment }] = await withFulfillment([result as { id: string }])
       return {
         ...(result as Record<string, unknown>),
         mediaAssets,
         acceptsOnlineCardPayments,
+        fulfillment,
         tags: storeTagRows.map((row) => row.tag),
       }
     },
@@ -372,7 +388,7 @@ export const storeResource = defineResource({
         longitude?: number | null
         [key: string]: unknown
       }>, total: number }
-      
+
       // Extract location filters from query
       const filters = (context as unknown as { filters?: Record<string, unknown> })?.filters || {}
       const latitude = Number(filters.latitude)
@@ -380,30 +396,30 @@ export const storeResource = defineResource({
       const radiusMiles = Number(filters.radiusMiles) || 25
       const city = typeof filters.city === 'string' ? filters.city.trim() : ''
       const state = typeof filters.state === 'string' ? filters.state.trim() : ''
+      const deliveryFirst = wantsDeliveryFirst(filters.delivery)
       const hookContext = context as unknown as {
         page?: number
         limit?: number
         orderBy?: Record<string, unknown>
       }
-      
+
       const page = Math.max(Number(hookContext.page) || 1, 1)
       const limit = Math.max(Number(hookContext.limit) || 20, 1)
+      const loadAll = async (extra?: Record<string, unknown>) => {
+        const where = await buildStoreListFilters(filters)
+        addAndFilter(where, extra)
+        return prisma.store.findMany({ where, orderBy: hookContext.orderBy || { createdAt: 'desc' } })
+      }
+
       const scopeInput = readGeoScopeInput(filters)
       if (scopeInput) {
         const scopeWhere = await storeWhereForScope(prisma, scopeInput)
         if (!scopeWhere) return { data: [], total: 0 }
-        const scopedFilters = await buildStoreListFilters(filters)
-        addAndFilter(scopedFilters, scopeWhere.where)
-        const scopedStores = await prisma.store.findMany({
-          where: scopedFilters,
-          orderBy: hookContext.orderBy || { createdAt: 'desc' },
-        })
+        const scopedStores = await loadAll(scopeWhere.where as Record<string, unknown>)
         const located = scopeWhere.kind === 'radius'
           ? filterStoresForCoordinateSearch(scopedStores, scopeWhere.latitude, scopeWhere.longitude, scopeWhere.radiusMiles)
           : scopedStores
-        const withMedia = await attachStoreMedia(located)
-        const start = (page - 1) * limit
-        return { data: withMedia.slice(start, start + limit), total: withMedia.length }
+        return presentStorePage(located, page, limit, deliveryFirst)
       }
 
       const radiusRequested = filters.radiusMiles !== undefined && filters.radiusMiles !== ''
@@ -411,38 +427,16 @@ export const storeResource = defineResource({
       if (radiusRequested && !coordsReady) return { data: [], total: 0 }
 
       if (!coordsReady) {
-        if (city && state) {
-          const prismaFilters = await buildStoreListFilters(filters)
-          const cityStores = await prisma.store.findMany({
-            where: prismaFilters,
-            orderBy: hookContext.orderBy || { createdAt: 'desc' },
-          })
-          const withMedia = await attachStoreMedia(cityStores)
-          const start = (page - 1) * limit
-          return { data: withMedia.slice(start, start + limit), total: withMedia.length }
+        if ((city && state) || deliveryFirst) {
+          // Ranking has to see every match, not just the page the generic list already cut.
+          return presentStorePage(await loadAll(), page, limit, deliveryFirst)
         }
+        const labeled = await withFulfillment(listResult.data)
+        return { ...listResult, data: await attachStoreMedia(labeled) }
+      }
 
-        const withMedia = await attachStoreMedia(listResult.data)
-        return { ...listResult, data: withMedia }
-      }
-      
-      const prismaFilters = await buildStoreListFilters(filters)
-      const candidateStores = await prisma.store.findMany({
-        where: prismaFilters,
-        orderBy: hookContext.orderBy || { createdAt: 'desc' },
-      })
-      const storesWithDistance = filterStoresForCoordinateSearch(
-        candidateStores,
-        latitude,
-        longitude,
-        radiusMiles
-      )
-      const storesWithMedia = await attachStoreMedia(storesWithDistance)
-      const start = (page - 1) * limit
-      return {
-        data: storesWithMedia.slice(start, start + limit),
-        total: storesWithMedia.length,
-      }
+      const storesWithDistance = filterStoresForCoordinateSearch(await loadAll(), latitude, longitude, radiusMiles)
+      return presentStorePage(storesWithDistance, page, limit, deliveryFirst)
     },
   },
 })

@@ -23,6 +23,8 @@ export function discoveryResults(input: {
   readonly curated: readonly GuideListing[]
   readonly browse: string
   readonly query: string
+  /** Ranks delivery-ready shops first. Never removes a shop, product, story, or listing. */
+  readonly deliveryFirst?: boolean
 }) {
   const composed = composeDiscovery({
     stores: input.stores,
@@ -30,6 +32,7 @@ export function discoveryResults(input: {
     stories: input.stories,
     browse: input.browse,
     query: input.query,
+    deliveryFirst: input.deliveryFirst,
   })
   const visibleListings = mergeCurated(input.directory, input.curated)
     .filter((listing) => matchesDirectoryBrowse(listing, input.browse) && listingMatchesQuery(listing, input.query))

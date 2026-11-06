@@ -10,6 +10,7 @@
  * says a store is taking orders when checkout would refuse one, or the other way around.
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { deliveryReadyStoreIds, storeFulfillment } from '../services/store-fulfillment.service.js'
 import { computeBundlePrice, hasStorePermission, prisma, storeOrderingBlock, STORE_ORDERING_MESSAGES } from '@packages/db'
 import {
   defaultStorefrontConfig,
@@ -151,6 +152,9 @@ export async function storefrontRoutes(app: FastifyInstance) {
         prepTimeMin: true,
         deliveryCharge: true,
         deliveryDistance: true,
+        stripeAccountId: true,
+        stripeOnboarded: true,
+        stripeChargesEnabled: true,
         hoursJson: true,
         timezone: true,
         storefront: { select: { draftJson: true, publishedJson: true, publishedAt: true } },
@@ -166,7 +170,7 @@ export async function storefrontRoutes(app: FastifyInstance) {
     const row = store.storefront
     const config: StorefrontConfig = normalizeStorefrontConfig(wantsDraft ? row?.draftJson : row?.publishedJson)
 
-    const [popular, media, hours, bundles] = await Promise.all([
+    const [popular, media, hours, bundles, deliveryReady] = await Promise.all([
       popularItemIds(storeId),
       prisma.mediaAsset.findMany({
         where: { storeId, itemId: null, bundleId: null },
@@ -175,6 +179,7 @@ export async function storefrontRoutes(app: FastifyInstance) {
       }),
       hoursService.getStoreHoursStatus(storeId).catch(() => null),
       storefrontBundles(storeId),
+      deliveryReadyStoreIds([storeId]),
     ])
 
     const block = storeOrderingBlock(store)
@@ -195,6 +200,8 @@ export async function storefrontRoutes(app: FastifyInstance) {
           prepTimeMin: store.prepTimeMin,
           deliveryCharge: store.deliveryCharge === null ? null : Number(store.deliveryCharge),
           deliveryDistanceMiles: store.deliveryDistance === null ? null : Number(store.deliveryDistance),
+          // What the shopper can do, never why: setup and payment-account detail stays here.
+          fulfillment: storeFulfillment(store, deliveryReady.has(storeId)),
         },
         // Posted hours are information; a store without them makes no open/closed claim.
         hours: storeHours

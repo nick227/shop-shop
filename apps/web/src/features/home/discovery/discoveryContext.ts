@@ -9,6 +9,8 @@ export type DiscoveryContext = {
   readonly city?: string
   readonly q: string
   readonly view: DiscoveryView
+  /** Rank shops that deliver now first. Never hides a shop. Survives place changes. */
+  readonly deliveryFirst: boolean
   readonly hasExplicitPlace: boolean
 }
 
@@ -19,6 +21,7 @@ export type DiscoveryPatch = {
   readonly city?: string | null
   readonly q?: string | null
   readonly view?: DiscoveryView | null
+  readonly deliveryFirst?: boolean | null
   readonly listNeighborhoods?: boolean
 }
 
@@ -56,6 +59,7 @@ export function readDiscoveryContext(pathname: string, search: string): Discover
     city,
     q,
     view,
+    deliveryFirst: params.get('delivery') === '1',
     hasExplicitPlace: Boolean(zip || neighborhood || city || (params.has('lat') && params.has('lng')) || pathname === '/neighborhoods'),
   }
 }
@@ -96,6 +100,7 @@ export function applyDiscoveryPatch(
   const category = cleanCategory(patch.category === null ? '' : patch.category ?? current.category)
   const q = (patch.q === null ? '' : patch.q ?? current.q).trim()
   const view = patch.view === null ? 'feed' : patch.view ?? current.view
+  const deliveryFirst = patch.deliveryFirst === null ? false : patch.deliveryFirst ?? current.deliveryFirst
 
   let path = isDiscoveryPath(pathname) ? pathname : '/explore'
   if (patch.listNeighborhoods) path = '/neighborhoods'
@@ -105,7 +110,7 @@ export function applyDiscoveryPatch(
   }
 
   const params = new URLSearchParams(search)
-  for (const key of ['zip', 'neighborhood', 'city', 'category', 'browse', 'group', 'q', 'view', 'from', 'item']) params.delete(key)
+  for (const key of ['zip', 'neighborhood', 'city', 'category', 'browse', 'group', 'q', 'view', 'delivery', 'from', 'item']) params.delete(key)
   if (selectingNeighborhood || typeof patch.zip === 'string' || typeof patch.city === 'string' || patch.listNeighborhoods) {
     for (const key of ['lat', 'lng', 'state', 'source']) params.delete(key)
   }
@@ -115,6 +120,7 @@ export function applyDiscoveryPatch(
   if (category) params.set('category', category)
   if (q) params.set('q', q)
   if (view === 'map') params.set('view', 'map')
+  if (deliveryFirst) params.set('delivery', '1')
   if (params.has('zip') && !params.has('radius')) params.set('radius', '25')
   return { pathname: path, search: params.toString() }
 }

@@ -668,6 +668,8 @@ export const stores = {
     isPublished?: string
     sortBy?: string
     order?: string
+    /** 'true' ranks delivery-ready stores first. Every store is still returned. */
+    delivery?: string
   }): Promise<StoreListPageResult> => {
     const envelope = await handleRequest(async () => {
       const searchParams = new URLSearchParams()
@@ -680,6 +682,7 @@ export const stores = {
       setQueryParam(searchParams, 'isPublished', params?.isPublished)
       setQueryParam(searchParams, 'sortBy', params?.sortBy)
       setQueryParam(searchParams, 'order', params?.order)
+      setQueryParam(searchParams, 'delivery', params?.delivery)
 
       const query = searchParams.toString()
       const path = `/api/stores${query ? `?${query}` : ''}`

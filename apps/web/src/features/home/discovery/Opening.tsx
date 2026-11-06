@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
-import { ArrowUpRight, Bookmark, BookmarkCheck, Expand, MapPin, Minimize2, X } from 'lucide-react'
+import { ArrowUpRight, Bookmark, BookmarkCheck, Expand, MapPin, Minimize2, Truck, X } from 'lucide-react'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { PlaceField } from '../neighborhood/PlaceField'
 import { neighborhoodPath, type NeighborhoodCard } from '../neighborhood/neighborhoodHero'
@@ -143,6 +143,26 @@ function SaveStore({ store }: { readonly store: StoreTile }) {
   )
 }
 
+/** Puts shops that deliver now ahead of the rest. Every shop stays listed. Lives in the URL as `?delivery=1`. */
+export function DeliveryFirstToggle({ className = '' }: { readonly className?: string }) {
+  const navigate = useNavigate()
+  const { pathname, search } = useLocation()
+  const on = readDiscoveryContext(pathname, search).deliveryFirst
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className={`hero-delivery-toggle${on ? ' is-on' : ''}${className ? ` ${className}` : ''}`}
+      onClick={() => navigate(applyDiscoveryPatch(pathname, search, { deliveryFirst: on ? null : true }))}
+    >
+      <Truck className="h-3.5 w-3.5" aria-hidden="true" />
+      <span>Delivery first</span>
+      <span className="hero-delivery-track" aria-hidden="true"><span className="hero-delivery-thumb" /></span>
+    </button>
+  )
+}
+
 export function LocationHero({
   zip,
   error,
@@ -204,6 +224,7 @@ export function LocationHero({
         <div className={`hero-feature${image ? ' has-photo' : ' is-typographic'}`}>
           {image ? <img src={image} alt={feature.pictured ? `${feature.pictured}, ${identity.title}` : ''} className="hero-cover" /> : null}
           <div className="hero-feature-body">
+            <DeliveryFirstToggle className="is-on-photo" />
             {image && (feature.pictured || credit) ? (
               <p className="hero-credit">
                 {feature.pictured ? <span className="hero-pictured">Pictured: {feature.pictured}</span> : null}
@@ -247,6 +268,7 @@ export function LocationHero({
 
       <div className="hero-map">
         <NeighborhoodMap points={points} center={center} radiusMiles={radiusMiles} showYou={showYou} onSelect={onSelectStore} />
+        {mapView ? <DeliveryFirstToggle className="is-on-map" /> : null}
         <Link to={mapToggle} className="hero-map-toggle">
           {mapView ? <Minimize2 className="h-4 w-4" aria-hidden="true" /> : <Expand className="h-4 w-4" aria-hidden="true" />}
           {mapView ? 'Back to feed' : 'View larger map'}

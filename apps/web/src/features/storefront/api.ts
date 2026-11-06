@@ -1,3 +1,4 @@
+import type { StoreFulfillment } from '@features/stores/fulfillmentStatus'
 /**
  * Storefront data: the presentation config plus the live facts the page shows around it, and the
  * vendor editor's draft / publish / discard calls.
@@ -30,6 +31,8 @@ export interface StorefrontOrdering {
   readonly prepTimeMin: number
   readonly deliveryCharge: number | null
   readonly deliveryDistanceMiles: number | null
+  /** Shopper-level state from the server. Older responses may not carry it. */
+  readonly fulfillment?: StoreFulfillment
 }
 
 export interface StorefrontHours {

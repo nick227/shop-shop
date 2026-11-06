@@ -1,5 +1,6 @@
 import type { RiverPost, StoreWithDistance } from '@api/types'
 import { STORE_TYPE_GROUPS, STORE_TYPE_LABEL } from '@features/search/config/storeTypes'
+import { deliveryRank, type StoreFulfillment } from '@features/stores/fulfillmentStatus'
 import { editorialFor } from './editorialMedia'
 import { realPhoto } from './photo'
 
@@ -15,6 +16,7 @@ export interface DiscoveryStore {
   readonly storeType?: string | null
   readonly deliveryEnabled?: boolean
   readonly pickupEnabled?: boolean
+  readonly fulfillment?: StoreFulfillment
   readonly mediaAssets?: readonly { readonly url: string; readonly kind?: string }[]
 }
 
@@ -162,6 +164,8 @@ export function composeDiscovery(input: {
   readonly stories: readonly RiverPost[]
   readonly browse: string
   readonly query: string
+  /** Delivery-ready shops, and their products, sort ahead. Nothing is removed. */
+  readonly deliveryFirst?: boolean
 }): {
   readonly hero?: StoreTile
   readonly stories: readonly StoryTile[]
@@ -176,12 +180,15 @@ export function composeDiscovery(input: {
   const candidateStores = nonArtifactStores.length > 0 ? nonArtifactStores : rawStores
   const categoryStores = candidateStores.filter((store) => inVertical(store, input.browse))
   const categoryById = new Map(categoryStores.map((store) => [store.id, store]))
+  const deliveryOrder = (storeId: string) => (input.deliveryFirst ? deliveryRank(categoryById.get(storeId)?.fulfillment) : 0)
   const products = input.products
     .filter((item) => {
       if (!categoryById.has(item.storeId)) return false
       return textHit(`${item.title} ${item.description ?? ''}`, q)
     })
     .sort((a, b) => {
+      const byDelivery = deliveryOrder(a.storeId) - deliveryOrder(b.storeId)
+      if (byDelivery !== 0) return byDelivery
       const aPhoto = productPicture(a).image ? 1 : 0
       const bPhoto = productPicture(b).image ? 1 : 0
       return bPhoto - aPhoto
@@ -198,6 +205,8 @@ export function composeDiscovery(input: {
   const stores = categoryStores
     .filter((store) => textHit(`${store.name} ${store.description ?? ''}`, q) || matchedStoreIds.has(store.id))
     .sort((a, b) => {
+      const byDelivery = deliveryOrder(a.id) - deliveryOrder(b.id)
+      if (byDelivery !== 0) return byDelivery
       const aPhoto = ownStorePhoto(a) ? 1 : 0
       const bPhoto = ownStorePhoto(b) ? 1 : 0
       if (aPhoto !== bPhoto) return bPhoto - aPhoto

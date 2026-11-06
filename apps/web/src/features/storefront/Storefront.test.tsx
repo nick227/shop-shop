@@ -142,6 +142,41 @@ describe('Storefront', () => {
     expect(ordering).toHaveTextContent('Back at 5pm')
   })
 
+  it('keeps a pickup-only shop open for orders and says it does not deliver', () => {
+    renderStorefront({
+      data: data({ ordering: { ...data().ordering, deliveryEnabled: false, fulfillment: { delivery: 'not_offered', pickup: 'available' } } }),
+    })
+    const ordering = screen.getByRole('region', { name: 'Ordering' })
+    expect(ordering).toHaveTextContent('Taking orders')
+    expect(ordering).toHaveTextContent('Pickup · ready in about 15 min')
+    expect(ordering).toHaveTextContent('Delivery · not offered')
+    expect(ordering).toHaveTextContent('This shop doesn’t deliver. Order ahead and pick up in store.')
+  })
+
+  it('explains delivery that is switched on but not ready, without any setup detail', () => {
+    renderStorefront({
+      data: data({ ordering: { ...data().ordering, fulfillment: { delivery: 'temporarily_unavailable', pickup: 'available' } } }),
+    })
+    const ordering = screen.getByRole('region', { name: 'Ordering' })
+    expect(ordering).toHaveTextContent('Delivery · not available right now')
+    expect(ordering).toHaveTextContent('You can still order for pickup.')
+    expect(ordering).not.toHaveTextContent(/stripe|doordash|payout|onboard|zone|radius|setup/i)
+    // The menu is still there to browse.
+    expect(screen.getByRole('heading', { level: 1, name: 'Sample Kitchen' })).toBeInTheDocument()
+  })
+
+  it('marks both options unavailable while the shop is paused', () => {
+    renderStorefront({
+      data: data({
+        ordering: { ...data().ordering, acceptingOrders: false, message: 'Back at 5pm', fulfillment: { delivery: 'temporarily_unavailable', pickup: 'temporarily_unavailable' } },
+      }),
+    })
+    const ordering = screen.getByRole('region', { name: 'Ordering' })
+    expect(ordering).toHaveTextContent('Pickup · not available right now')
+    expect(ordering).toHaveTextContent('Delivery · not available right now')
+    expect(ordering).toHaveTextContent('Back at 5pm')
+  })
+
   it('shows the vendor’s visible sections in order and never a hidden section’s items', () => {
     renderStorefront()
     const nav = screen.getByRole('navigation', { name: 'Menu sections' })

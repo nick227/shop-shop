@@ -18,10 +18,12 @@ export function apiOrigin(): string {
   return import.meta.env.DEV ? '' : 'http://localhost:3005'
 }
 
-export async function loadStores(location?: LocationData) {
+export async function loadStores(location?: LocationData, deliveryFirst = false) {
+  const delivery = deliveryFirst ? { delivery: 'true' } : {}
   const envelope = await stores.listPage(
     location
       ? {
+          ...delivery,
           page: '1',
           limit: '24',
           isPublished: 'true',
@@ -30,6 +32,7 @@ export async function loadStores(location?: LocationData) {
           radiusMiles: location.radiusMiles ?? HOME_RADIUS_MILES,
         }
       : {
+          ...delivery,
           page: '1',
           limit: '24',
           isPublished: 'true',

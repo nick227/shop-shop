@@ -134,7 +134,8 @@ export function DiscoveryPage() {
     curated,
     browse,
     query,
-  }), [browse, curated, data.products, data.stores, data.stories, directory.data, query])
+    deliveryFirst: context.deliveryFirst,
+  }), [browse, context.deliveryFirst, curated, data.products, data.stores, data.stories, directory.data, query])
   const heroTags = useHeroTags({
     enabled: !data.placePending,
     placeTags: data.activePlace?.tags ?? data.cityPlace?.tags,
@@ -350,8 +351,8 @@ export function DiscoveryPage() {
         query={query}
         excludeIds={emphasis === 'search' ? new Set<string>() : featuredStoreIds}
         showCategories={false}
-        listKey={`${pathname}|${context.neighborhood ?? ''}|${context.zip ?? ''}|${context.city ?? ''}|${context.category}|${context.q}`}
-        note={resultsNote(points.length, context.category, context.q)}
+        listKey={`${pathname}|${context.neighborhood ?? ''}|${context.zip ?? ''}|${context.city ?? ''}|${context.category}|${context.q}|${context.deliveryFirst}`}
+        note={resultsNote(points.length, context.category, context.q, context.deliveryFirst ? composed.places.filter((store) => store.fulfillment?.delivery === 'available').length : undefined)}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
     ),

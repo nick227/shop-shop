@@ -25,4 +25,14 @@ describe('discovery context', () => {
       search: 'category=retail&q=bread',
     })
   })
+
+  it('keeps delivery-only across place changes until it is switched off', () => {
+    const on = applyDiscoveryPatch('/explore', 'zip=78704&radius=25', { deliveryFirst: true })
+    expect(readDiscoveryContext(on.pathname, on.search).deliveryFirst).toBe(true)
+    const moved = applyDiscoveryPatch(on.pathname, on.search, { neighborhood: 'austin-tx-zilker', category: 'food' })
+    expect(moved).toEqual({ pathname: '/neighborhoods/austin-tx-zilker', search: 'radius=25&category=food&delivery=1' })
+    const off = applyDiscoveryPatch(moved.pathname, moved.search, { deliveryFirst: null })
+    expect(readDiscoveryContext(off.pathname, off.search).deliveryFirst).toBe(false)
+    expect(off.search).toBe('radius=25&category=food')
+  })
 })

@@ -99,9 +99,11 @@ export function neighborhoodBandCopy(kind: PlaceKind, _zip?: string, city?: stri
   }
 }
 
-export function resultsNote(count: number, category: string, query: string): string | undefined {
-  if (!category && !query.trim()) return undefined
+/** `delivering` is set only under Delivery first: how many of the shown shops deliver now. */
+export function resultsNote(count: number, category: string, query: string, delivering?: number): string | undefined {
+  if (!category && !query.trim() && delivering === undefined) return undefined
   const filter = [CATEGORY_LABEL[category] ?? '', query.trim()].filter(Boolean).join(' · ')
   const noun = count === 1 ? 'place' : 'places'
-  return filter ? `${count} ${noun} · ${filter}` : `${count} ${noun}`
+  const base = filter ? `${count} ${noun} · ${filter}` : `${count} ${noun}`
+  return delivering === undefined ? base : `${base} · ${delivering} ${delivering === 1 ? 'delivers' : 'deliver'}`
 }

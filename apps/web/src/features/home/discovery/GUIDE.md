@@ -47,6 +47,7 @@ That stable order is intentional. A filter must not reorder the page.
 | `?category=` | One of `food`, `grocery`, `convenience`, `retail`, `arts`, `outdoors`. Legacy `browse` and `group` are rewritten to `category`. |
 | `?q=` | Search text. Does not clear category. |
 | `?view=map` | Map replaces the hero photo. Omitted means the feed layout. |
+| `?delivery=1` | Delivery first. Set by the hero switch (`DeliveryFirstToggle` in `Opening.tsx`; on the map in map view). Ranks, never hides. `GET /api/stores?delivery=true` puts delivery-ready stores first before the page is cut, and every listed store carries `fulfillment: { delivery, pickup }` (`available` \| `temporarily_unavailable` \| `not_offered`) from `store-fulfillment.service.ts`. `composeDiscovery` ranks shops and their products the same way. Map pins, counts, stories, and directory listings are unchanged. Stays on through place, category, and search changes. |
 | `?lat=&lng=` | Counts as an explicit place, so a remembered ZIP is not written over it. |
 
 Explicit place beats the remembered ZIP and the signed-in address. A neighborhood URL is not a ZIP. A ZIP does not assign a neighborhood (78704 is not Zilker).

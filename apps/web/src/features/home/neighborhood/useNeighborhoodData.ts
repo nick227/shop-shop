@@ -49,10 +49,10 @@ export function useNeighborhoodData() {
   const scope = location ? `${location.latitude}:${location.longitude}` : awaitingPlace ? 'pending' : 'all'
 
   const storeQuery = useQuery({
-    queryKey: ['home-stores', scope, location?.radiusMiles ?? 'all'],
+    queryKey: ['home-stores', scope, location?.radiusMiles ?? 'all', context.deliveryFirst],
     enabled: ready && scope !== 'pending',
     placeholderData: keepPreviousData,
-    queryFn: () => loadStores(location),
+    queryFn: () => loadStores(location, context.deliveryFirst),
   })
 
   const productQuery = useQuery({

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FulfillmentBadge } from './FulfillmentBadge'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { Heart, X } from 'lucide-react'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
@@ -80,7 +81,8 @@ export function DetailPanel({
           {tile.kind === 'product' ? <p className="tile-kicker">{tile.storeName}</p> : null}
           <h2>{title}</h2>
           {tile.kind === 'story' ? <p>{tile.body}</p> : null}
-          {tile.kind === 'store' ? <p>{tile.store.description || 'A neighborhood shop in your delivery area.'}</p> : null}
+          {tile.kind === 'store' ? <FulfillmentBadge fulfillment={tile.store.fulfillment} /> : null}
+          {tile.kind === 'store' ? <p>{tile.store.description || 'A neighborhood shop near you.'}</p> : null}
           {tile.kind === 'product' ? (
             <>
               <p className="detail-price">{tile.price}</p>

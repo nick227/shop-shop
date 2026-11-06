@@ -154,6 +154,106 @@
   background: rgba(var(--hero-scrim), 0.6);
 }
 
+.hero-delivery-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.75rem;
+  padding: 0 0.35rem 0 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(var(--hero-scrim), 0.38);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.hero-delivery-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(var(--hero-scrim), 0.6);
+}
+
+.hero-delivery-toggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.hero-delivery-track {
+  position: relative;
+  width: 1.9rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background 140ms ease;
+}
+
+.hero-delivery-thumb {
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 140ms ease;
+}
+
+.hero-delivery-toggle.is-on {
+  border-color: #fff;
+  background: #fff;
+  color: #142018;
+}
+
+.hero-delivery-toggle.is-on .hero-delivery-track {
+  background: var(--leaf);
+}
+
+.hero-delivery-toggle.is-on .hero-delivery-thumb {
+  transform: translateX(0.8rem);
+}
+
+/* Top-right of the photo at every width, so it never adds a line to the hero copy. */
+.hero-delivery-toggle.is-on-photo {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.75rem;
+  z-index: 2;
+}
+
+/* Leave the top-right corner to the switch. */
+.hero-feature-body .hero-credit {
+  max-width: calc(100% - 11.5rem);
+  text-overflow: ellipsis;
+}
+
+/* Map view hides the photo copy, so the switch rides on the map instead. */
+.hero-delivery-toggle.is-on-map {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 1000;
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  backdrop-filter: none;
+}
+
+.hero-delivery-toggle.is-on-map .hero-delivery-track {
+  background: var(--line);
+}
+
+.hero-delivery-toggle.is-on-map.is-on .hero-delivery-track {
+  background: var(--leaf);
+}
+
+.hero-delivery-toggle.is-on-map:focus-visible {
+  outline-color: var(--leaf);
+}
+
 /* Opens upward over the photo, so it never covers the title or changes the hero's height. */
 .hero-place-field {
   position: absolute;
@@ -2113,4 +2213,38 @@ a.hero-tag:hover {
   .place-card.is-neighborhood img {
     transition: none;
   }
+}
+
+/* Fulfillment status on shop cards and the shop panel. Text carries the meaning; color only groups it. */
+.fulfillment-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.3rem 0 0;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--quiet);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.fulfillment-badge::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.fulfillment-badge.is-ready {
+  border-color: color-mix(in srgb, var(--leaf) 40%, var(--line));
+  color: var(--leaf);
+}
+
+.fulfillment-badge.is-closed::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
 }

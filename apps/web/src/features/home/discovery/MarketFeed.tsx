@@ -1,4 +1,6 @@
 import { useLocation } from 'react-router-dom'
+import { fulfillmentBadge } from '@features/stores/fulfillmentStatus'
+import { FulfillmentBadge } from './FulfillmentBadge'
 import { readVisit, saveVisit } from '@features/discovery-navigation/context'
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { Heart } from 'lucide-react'
@@ -89,8 +91,9 @@ function StoreFeedCard({ tile, onOpen }: { readonly tile: StoreTile; readonly on
         <div className="feed-business-body">
           <span className="place-card-kicker">{tile.typeLabel}{distance}</span>
           <strong>{tile.name}</strong>
+          <FulfillmentBadge fulfillment={tile.store.fulfillment} />
           {tile.credit ? <span className="media-credit">{tile.credit}</span> : null}
-          <span className="store-action">Order</span>
+          <span className="store-action">{fulfillmentBadge(tile.store.fulfillment)?.tone === 'closed' ? 'View' : 'Order'}</span>
         </div>
       </button>
       <button
