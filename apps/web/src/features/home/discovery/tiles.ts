@@ -209,14 +209,15 @@ export function composeDiscovery(input: {
   const hero = storeTiles.find((tile) => tile.image) ?? storeTiles[0]
   const newest = [...stores].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .find((store) => store.description?.trim())
-  const opened: StoryTile | undefined = newest
+  const newestDescription = newest?.description?.trim()
+  const opened: StoryTile | undefined = newest && newestDescription
     ? {
         kind: 'story',
         id: `opened-${newest.id}`,
         kicker: `From ${newest.name}`,
         title: newest.name,
-        body: newest.description.trim(),
-        ...pictured(ownStorePhoto(newest), newest.description, newest.id),
+        body: newestDescription,
+        ...pictured(ownStorePhoto(newest), newestDescription, newest.id),
         storeId: newest.id,
         storeName: newest.name,
       }

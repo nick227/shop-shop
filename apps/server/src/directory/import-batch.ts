@@ -93,7 +93,7 @@ export async function publishImportEntries(batchId: string, entryIds: readonly s
   const entries = await prisma.businessImportEntry.findMany({ where: { batchId, id: { in: [...entryIds] } } })
   const imported: string[] = []
   for (const entry of entries) {
-    const candidates = entry.candidates as ListingCandidate[]
+    const candidates = entry.candidates as unknown as ListingCandidate[]
     const chosen = candidates.find((candidate) => candidate.sourceId === entry.selectedSourceId)
     if (!chosen) continue
     if (entry.status !== 'READY' && entry.status !== 'REVIEW') continue
@@ -107,7 +107,7 @@ export async function publishImportEntries(batchId: string, entryIds: readonly s
 export async function chooseImportCandidate(entryId: string, sourceId: string) {
   const entry = await prisma.businessImportEntry.findUnique({ where: { id: entryId } })
   if (!entry || entry.status === 'IMPORTED') return null
-  const candidates = entry.candidates as ListingCandidate[]
+  const candidates = entry.candidates as unknown as ListingCandidate[]
   if (!candidates.some((candidate) => candidate.sourceId === sourceId)) return null
   return prisma.businessImportEntry.update({ where: { id: entryId }, data: { selectedSourceId: sourceId, status: 'REVIEW' } })
 }

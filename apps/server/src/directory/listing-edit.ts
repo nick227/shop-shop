@@ -26,7 +26,9 @@ export type ListingEdit = {
   readonly storeId: string | null
 }
 
-export async function updateListing(id: string, input: ListingEdit) {
+type ListingFailure = { error: string; status: 400 | 404 | 409 }
+
+export async function updateListing(id: string, input: ListingEdit): Promise<{ id: string } | ListingFailure> {
   const current = await prisma.businessListing.findUnique({ where: { id }, select: { id: true, storeId: true } })
   if (!current) return { error: 'Listing not found', status: 404 }
   if (input.storeId && input.storeId !== current.storeId) {
@@ -80,7 +82,7 @@ export async function updateListing(id: string, input: ListingEdit) {
   return { id }
 }
 
-export async function mergeListings(keepId: string, dropId: string) {
+export async function mergeListings(keepId: string, dropId: string): Promise<{ id: string } | ListingFailure> {
   if (keepId === dropId) return { error: 'Choose two different listings', status: 400 }
   const [keep, drop] = await Promise.all([
     prisma.businessListing.findUnique({ where: { id: keepId } }),

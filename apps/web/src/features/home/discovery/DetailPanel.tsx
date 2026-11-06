@@ -101,7 +101,12 @@ export function DetailPanel({
                   title: tile.title,
                   unitPrice: tile.item.price,
                   // Discovery prices may be numbers; the cart toast reads the API's string price.
-                  item: { ...tile.item, price: String(tile.item.price) },
+                  item: {
+                    ...tile.item,
+                    price: String(tile.item.price),
+                    mediaAssets: tile.item.mediaAssets?.flatMap((asset) =>
+                      asset.url && asset.kind ? [{ url: asset.url, kind: asset.kind }] : []),
+                  },
                 })}
               >
                 {tile.item.isSoldOut ? 'Sold out' : `Add to cart · ${tile.price}`}

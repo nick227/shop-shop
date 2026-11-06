@@ -51,10 +51,10 @@ function centroid(rows: readonly PostalRow[]) {
 
 export async function loadNeighborhoodCity(parentId: string, postalCodes: readonly string[]) {
   const city = await prisma.place.findFirst({ where: { id: parentId, kind: 'CITY' } })
-  if (!city) return { error: 'City not found' as const }
+  if (!city) return { error: 'City not found' as const, status: 400 as const }
   const codes = [...new Set(postalCodes)]
   const postals = await prisma.postalCode.findMany({ where: { code: { in: codes }, cityPlaceId: city.id } })
-  if (postals.length !== codes.length) return { error: 'Zip codes must belong to the selected city' as const }
+  if (postals.length !== codes.length) return { error: 'Zip codes must belong to the selected city' as const, status: 400 as const }
   return { city, postals, codes }
 }
 
@@ -84,7 +84,7 @@ export async function createNeighborhood(input: NeighborhoodInput) {
   const loaded = await loadNeighborhoodCity(input.parentId, input.postalCodes)
   if ('error' in loaded) return loaded
   const slug = neighborhoodSlug(loaded.city.slug, input.name)
-  if (slug === loaded.city.slug || slug.endsWith('-')) return { error: 'Name needs letters or numbers' as const }
+  if (slug === loaded.city.slug || slug.endsWith('-')) return { error: 'Name needs letters or numbers' as const, status: 400 as const }
   const point = centroid(loaded.postals)
   const id = randomUUID()
   const imageUrls = input.imageUrls ?? []
@@ -124,7 +124,7 @@ export async function updateNeighborhood(id: string, input: NeighborhoodInput) {
   const loaded = await loadNeighborhoodCity(input.parentId, input.postalCodes)
   if ('error' in loaded) return loaded
   const slug = neighborhoodSlug(loaded.city.slug, input.name)
-  if (slug === loaded.city.slug || slug.endsWith('-')) return { error: 'Name needs letters or numbers' as const }
+  if (slug === loaded.city.slug || slug.endsWith('-')) return { error: 'Name needs letters or numbers' as const, status: 400 as const }
   const point = centroid(loaded.postals)
   const imageUrls = input.imageUrls ?? []
   const videoUrls = input.videoUrls ?? []
