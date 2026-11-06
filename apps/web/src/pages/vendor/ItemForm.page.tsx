@@ -128,10 +128,19 @@ export default function ItemFormPage() {
         await apiClient.items().updateItem({
           id: newId,
           updateItemRequest: {
+            title: data.title,
+            description: data.description || '',
+            price: String(data.price),
+            isActive: data.isActive,
+            isSoldOut: data.isSoldOut,
+            stockQty: data.stockQty ?? undefined,
+            sortIndex: data.sortIndex,
+            sectionId: data.sectionId || null,
+            taxCategory: data.taxCategory || null,
             optionsJson: {
               ...(data.optionsJson || {}),
               imageUrl: cover,
-              type: data.type || undefined,
+              ...(data.type ? { type: data.type } : {}),
             },
           },
         })

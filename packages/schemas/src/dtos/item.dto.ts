@@ -27,9 +27,9 @@ export const CreateItemInputSchema = z.object({
 
 export const UpdateItemInputSchema = z.object({
   storeId: z.string().optional(),
-  title: z.string(),
-  description: z.string(),
-  price: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  price: z.string().optional(),
   isActive: z.boolean().optional(),
   isSoldOut: z.boolean().optional(),
   sortIndex: z.number().int().optional(),

@@ -1,6 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
 import { authDelete, authFetch, authPost } from '@shared/lib/auth/authFetch'
+import { compressImage } from '@shared/lib/utils/media-compression'
 import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
+
+const JPEG_TYPES = new Set(['image/jpg', 'image/pjpeg', 'image/jfif', 'image/pipeg', 'image/x-citrix-jpeg', 'image/x-citrix-pjpeg'])
+
+function isProductImage(file: File): boolean {
+  return file.type.startsWith('image/') || /\.(jpe?g|jfif|png|gif|webp)$/i.test(file.name)
+}
+
+/** Browsers sometimes label a .jpg as image/pjpeg or leave the type blank. Upload it as image/jpeg. */
+function typedImage(file: File): File {
+  const declared = file.type.toLowerCase()
+  const jpeg = JPEG_TYPES.has(declared) || (!declared.startsWith('image/') && /\.(jpe?g|jfif)$/i.test(file.name))
+  const type = jpeg
+    ? 'image/jpeg'
+    : declared.startsWith('image/')
+      ? declared
+      : file.name.toLowerCase().endsWith('.png')
+        ? 'image/png'
+        : file.name.toLowerCase().endsWith('.gif')
+          ? 'image/gif'
+          : file.name.toLowerCase().endsWith('.webp')
+            ? 'image/webp'
+            : ''
+  if (!type || type === file.type) return file
+  return new File([file], file.name, { type, lastModified: file.lastModified })
+}
 
 interface ProductMediaGridProps {
   readonly storeId?: string
@@ -57,7 +83,7 @@ export function ProductMediaGrid({
   }, [pendingFiles])
 
   async function addFiles(list: FileList | readonly File[]) {
-    const images = [...list].filter((file) => file.type.startsWith('image/'))
+    const images = [...list].filter(isProductImage).map(typedImage)
     if (images.length === 0) {
       if (list.length > 0) setError('Choose an image')
       return
@@ -183,8 +209,9 @@ async function listItemPhotos(storeId: string, itemId: string): Promise<Photo[]>
 }
 
 export async function uploadItemPhoto(storeId: string, itemId: string, file: File): Promise<string> {
+  const prepared = (await compressImage(typedImage(file))).file
   const body = new FormData()
-  body.append('file', file)
+  body.append('file', prepared, prepared.name || file.name)
   body.append('storeId', storeId)
   body.append('itemId', itemId)
   const response = await authPost<{ url?: string }>('/api/media/upload', body)

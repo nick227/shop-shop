@@ -80,6 +80,39 @@ export const ALLOWED_IMAGE_TYPES = [
   'image/webp',
 ]
 
+/** JPEG types some browsers and cameras send instead of image/jpeg. */
+const JPEG_ALIASES = new Set([
+  'image/jpg',
+  'image/pjpeg',
+  'image/jfif',
+  'image/pipeg',
+  'image/x-citrix-jpeg',
+  'image/x-citrix-pjpeg',
+])
+
+const TYPE_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  jfif: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+}
+
+/** A type the allow-list understands. Blank and generic types fall back to the file name. */
+export function canonicalMediaType(mimetype: string, filename = ''): string {
+  const raw = mimetype.toLowerCase().split(';')[0].trim()
+  if (JPEG_ALIASES.has(raw)) return 'image/jpeg'
+  const extension = filename.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+  if (!raw || raw === 'application/octet-stream' || raw === 'binary/octet-stream') {
+    return TYPE_BY_EXTENSION[extension] ?? raw
+  }
+  return raw
+}
+
 export const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
   'video/webm',
@@ -130,19 +163,10 @@ export const validateVideoFile = (mimetype: string, size: number): ValidationRes
   return { valid: true }
 }
 
-export const validateMediaFile = (mimetype: string, size: number): ValidationResult => {
-  // Try image validation first
-  const imageValidation = validateImageFile(mimetype, size)
-  if (imageValidation.valid) {
-    return imageValidation
-  }
-
-  // Try video validation
-  const videoValidation = validateVideoFile(mimetype, size)
-  if (videoValidation.valid) {
-    return videoValidation
-  }
-
+export const validateMediaFile = (mimetype: string, size: number, filename = ''): ValidationResult => {
+  const type = canonicalMediaType(mimetype, filename)
+  if (type.startsWith('image/')) return validateImageFile(type, size)
+  if (type.startsWith('video/')) return validateVideoFile(type, size)
   return {
     valid: false,
     error: 'Invalid file type. Must be image or video.',

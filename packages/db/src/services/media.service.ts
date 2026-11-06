@@ -1,6 +1,6 @@
 import { hasStorePermission } from './team.service.js'
 import { prisma } from '../client.js'
-import { getStorageAdapter, validateMediaFile, type UploadFile } from '../adapters/storage.adapter.js'
+import { canonicalMediaType, getStorageAdapter, validateMediaFile, type UploadFile } from '../adapters/storage.adapter.js'
 
 // ========================================
 // Media Service
@@ -27,14 +27,14 @@ export interface UploadMediaResult {
 }
 
 export const uploadMedia = async (input: UploadMediaInput): Promise<UploadMediaResult> => {
-  // Validate file
-  const validation = validateMediaFile(input.file.mimetype, input.file.size)
+  const type = canonicalMediaType(input.file.mimetype, input.file.filename)
+  input.file.mimetype = type
+  const validation = validateMediaFile(type, input.file.size, input.file.filename)
   if (!validation.valid) {
     throw new Error(validation.error)
   }
 
-  // Determine media kind
-  const kind = input.file.mimetype.startsWith('image/') ? 'IMAGE' : 'VIDEO'
+  const kind = type.startsWith('image/') ? 'IMAGE' : 'VIDEO'
 
   // Set folder based on context
   const folder = input.storeId ? 'stores' : input.itemId ? 'items' : 'media'
