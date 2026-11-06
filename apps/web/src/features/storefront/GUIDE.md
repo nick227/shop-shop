@@ -70,9 +70,7 @@ BusinessNavigation     back link and city › neighborhood › category › name
 BusinessHeader         logo or initials, name, tagline, rating, address, Call, Directions, Website, Share
 OrderingStrip          taking orders, open/closed, pickup, delivery
 MenuBar                only when more than one section or more than 6 items
-beforeMenu             mosaic, announcements, bundles, featured, category tiles
-MenuSections           always, for a commerce page
-afterMenu              about, gallery, updates
+sections               one list from `STOREFRONT_SECTIONS`, menu included, in the saved order
 CartBar                live commerce only
 ItemSheet              ?item= on the live page
 ```
@@ -81,7 +79,7 @@ Directory order is that shell with commerce off, then a block `ListingProfile` r
 
 Empty sections return nothing. `Part` uses `empty:hidden`. A hidden optional section is invisible to shoppers. In the editor it is a dashed “Show” row.
 
-Search in the menu bar replaces the before-menu and after-menu blocks with a match count. The menu stays.
+Search in the menu bar replaces every block except the menu with a match count. The menu stays where it was placed.
 
 ## Variations that change what is on the page
 

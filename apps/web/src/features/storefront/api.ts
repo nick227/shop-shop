@@ -5,7 +5,7 @@ import type { StoreFulfillment } from '@features/stores/fulfillmentStatus'
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authGet, authPost, authPut } from '@shared/lib/auth/authFetch'
-import type { StorefrontConfig } from '@packages/shared/storefront'
+import { normalizeStorefrontConfig, type StorefrontConfig } from '@packages/shared/storefront'
 import type { StorefrontBundle } from './components/Merchandising'
 
 export interface StorefrontMedia {
@@ -73,6 +73,14 @@ async function failure(response: { json: () => Promise<unknown> }, fallback: str
   return new Error(body.error ?? fallback)
 }
 
+function editorState(data: StorefrontEditorState): StorefrontEditorState {
+  return {
+    ...data,
+    draft: normalizeStorefrontConfig(data.draft),
+    published: data.published ? normalizeStorefrontConfig(data.published) : null,
+  }
+}
+
 export function useStorefront(storeId: string | undefined, options: { view?: 'draft' | 'published'; enabled?: boolean } = {}) {
   const view = options.view ?? 'published'
   return useQuery({
@@ -80,7 +88,8 @@ export function useStorefront(storeId: string | undefined, options: { view?: 'dr
     queryFn: async (): Promise<StorefrontData> => {
       const response = await authGet(`${base(storeId!)}${view === 'draft' ? '?view=draft' : ''}`)
       if (!response.ok) throw await failure(response, 'This storefront could not be loaded')
-      return ((await response.json()) as { data: StorefrontData }).data
+      const data = ((await response.json()) as { data: StorefrontData }).data
+      return { ...data, config: normalizeStorefrontConfig(data.config) }
     },
     enabled: !!storeId && (options.enabled ?? true),
   })
@@ -95,7 +104,7 @@ export function useStorefrontEditor(storeId: string) {
     queryFn: async (): Promise<StorefrontEditorState> => {
       const response = await authGet(`${base(storeId)}/editor`)
       if (!response.ok) throw await failure(response, 'The storefront editor could not be loaded')
-      return ((await response.json()) as { data: StorefrontEditorState }).data
+      return editorState(((await response.json()) as { data: StorefrontEditorState }).data)
     },
   })
 
@@ -108,7 +117,7 @@ export function useStorefrontEditor(storeId: string) {
     mutationFn: async (config: StorefrontConfig): Promise<StorefrontEditorState> => {
       const response = await authPut(`${base(storeId)}/draft`, { config })
       if (!response.ok) throw await failure(response, 'Your changes could not be saved')
-      return ((await response.json()) as { data: StorefrontEditorState }).data
+      return editorState(((await response.json()) as { data: StorefrontEditorState }).data)
     },
     onSuccess: settle,
   })
@@ -117,7 +126,7 @@ export function useStorefrontEditor(storeId: string) {
     mutationFn: async (): Promise<StorefrontEditorState> => {
       const response = await authPost(`${base(storeId)}/publish`)
       if (!response.ok) throw await failure(response, 'The storefront could not be published')
-      return ((await response.json()) as { data: StorefrontEditorState }).data
+      return editorState(((await response.json()) as { data: StorefrontEditorState }).data)
     },
     onSuccess: (next) => {
       settle(next)
@@ -132,7 +141,7 @@ export function useStorefrontEditor(storeId: string) {
     mutationFn: async (): Promise<StorefrontEditorState> => {
       const response = await authPost(`${base(storeId)}/discard`)
       if (!response.ok) throw await failure(response, 'Your changes could not be discarded')
-      return ((await response.json()) as { data: StorefrontEditorState }).data
+      return editorState(((await response.json()) as { data: StorefrontEditorState }).data)
     },
     onSuccess: settle,
   })

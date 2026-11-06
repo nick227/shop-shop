@@ -16,10 +16,23 @@ export type StorefrontAppearance = 'light' | 'dark' | 'system'
 export type StorefrontFont = 'modern' | 'editorial' | 'bold'
 export type StorefrontPresentation = 'auto' | 'grid' | 'list'
 
-/** Optional sections shown between the ordering details and the full menu. */
-export type BeforeMenuSection = 'mosaic' | 'announcements' | 'bundles' | 'featured' | 'categories'
-/** Business content, always after the menu so shoppers reach products first. */
-export type AfterMenuSection = 'about' | 'gallery' | 'updates'
+/**
+ * Every block of the page that can be reordered, including the menu.
+ * `STOREFRONT_SECTIONS` is their default order. A saved config may list them differently.
+ */
+export const STOREFRONT_SECTIONS = [
+  'about',
+  'mosaic',
+  'announcements',
+  'bundles',
+  'featured',
+  'categories',
+  'menu',
+  'gallery',
+  'updates',
+] as const
+
+export type StorefrontSection = (typeof STOREFRONT_SECTIONS)[number]
 
 export interface SectionSetting<K extends string> {
   readonly key: K
@@ -70,10 +83,8 @@ export interface StorefrontConfig {
     readonly bundleIds: readonly string[]
     readonly excludedBundleIds: readonly string[]
   }
-  readonly sections: {
-    readonly beforeMenu: readonly SectionSetting<BeforeMenuSection>[]
-    readonly afterMenu: readonly SectionSetting<AfterMenuSection>[]
-  }
+  /** Page blocks in display order. The menu is one of them and is always shown. */
+  readonly sections: readonly SectionSetting<StorefrontSection>[]
   readonly announcements: readonly StorefrontAnnouncement[]
   readonly presentation: StorefrontPresentation
 }
@@ -119,16 +130,14 @@ export const STOREFRONT_FONTS: readonly { readonly id: StorefrontFont; readonly 
   { id: 'bold', name: 'Bold', heading: '"Bricolage Grotesque", Figtree, system-ui, sans-serif' },
 ]
 
-export const BEFORE_MENU_SECTIONS: readonly BeforeMenuSection[] = ['mosaic', 'announcements', 'bundles', 'featured', 'categories']
-export const AFTER_MENU_SECTIONS: readonly AfterMenuSection[] = ['about', 'gallery', 'updates']
-
-export const STOREFRONT_SECTION_LABELS: Record<BeforeMenuSection | AfterMenuSection, string> = {
+export const STOREFRONT_SECTION_LABELS: Record<StorefrontSection, string> = {
+  about: 'About, hours & location',
   mosaic: 'Media mosaic',
   announcements: 'Announcements',
   bundles: 'Bundles',
   featured: 'Featured products',
   categories: 'Category tiles',
-  about: 'About, hours & location',
+  menu: 'Menu',
   gallery: 'Gallery',
   updates: 'Updates',
 }
@@ -148,10 +157,7 @@ export function defaultStorefrontConfig(): StorefrontConfig {
     },
     mosaic: { featuredItemId: null, tiles: [] },
     featured: { itemIds: [], excludedItemIds: [], autoFill: true, bundleIds: [], excludedBundleIds: [] },
-    sections: {
-      beforeMenu: BEFORE_MENU_SECTIONS.map((key) => ({ key, visible: true })),
-      afterMenu: AFTER_MENU_SECTIONS.map((key) => ({ key, visible: true })),
-    },
+    sections: STOREFRONT_SECTIONS.map((key) => ({ key, visible: true })),
     announcements: [],
     presentation: 'auto',
   }
@@ -229,13 +235,32 @@ function sectionList<K extends string>(value: unknown, keys: readonly K[]): Sect
   return out
 }
 
+/**
+ * One ordered list. Older configs stored two lists with the menu fixed between them;
+ * those are read in that order so a saved page does not jump.
+ */
+function storefrontSections(raw: unknown): SectionSetting<StorefrontSection>[] {
+  const legacy = isRecord(raw) ? raw : null
+  const value = Array.isArray(raw)
+    ? raw
+    : legacy
+      ? [
+          ...(Array.isArray(legacy.beforeMenu) ? legacy.beforeMenu : []),
+          { key: 'menu', visible: true },
+          ...(Array.isArray(legacy.afterMenu) ? legacy.afterMenu : []),
+        ]
+      : undefined
+  return sectionList(value, STOREFRONT_SECTIONS).map((section) =>
+    section.key === 'menu' ? { key: 'menu', visible: true } : section,
+  )
+}
+
 export function normalizeStorefrontConfig(raw: unknown, refs?: StorefrontRefs): StorefrontConfig {
   const base = defaultStorefrontConfig()
   const input = isRecord(raw) ? raw : {}
   const brand = isRecord(input.brand) ? input.brand : {}
   const mosaic = isRecord(input.mosaic) ? input.mosaic : {}
   const featured = isRecord(input.featured) ? input.featured : {}
-  const sections = isRecord(input.sections) ? input.sections : {}
 
   const palette = STOREFRONT_PALETTES.find((p) => p.id === brand.paletteId)
   const custom = brand.paletteId === 'custom' && HEX.test(String(brand.primary)) && HEX.test(String(brand.accent))
@@ -312,10 +337,7 @@ export function normalizeStorefrontConfig(raw: unknown, refs?: StorefrontRefs): 
       bundleIds: ids(featured.bundleIds, STOREFRONT_LIMITS.featuredBundles, refs?.bundleIds),
       excludedBundleIds: ids(featured.excludedBundleIds, STOREFRONT_LIMITS.excluded, refs?.bundleIds),
     },
-    sections: {
-      beforeMenu: sectionList(sections.beforeMenu, BEFORE_MENU_SECTIONS),
-      afterMenu: sectionList(sections.afterMenu, AFTER_MENU_SECTIONS),
-    },
+    sections: storefrontSections(input.sections),
     announcements,
     presentation: oneOf(input.presentation, ['auto', 'grid', 'list'], base.presentation),
   }

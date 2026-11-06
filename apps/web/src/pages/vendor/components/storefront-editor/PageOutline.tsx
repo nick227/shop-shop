@@ -1,14 +1,14 @@
 /**
- * PageOutline - the storefront as a list of its parts, top to bottom. Each part opens its own settings;
- * optional parts can be shown, hidden and moved right here. The menu and the business header are fixed.
+ * PageOutline - the storefront as one list, top to bottom. Brand and ordering stay put.
+ * Every other block, including the menu, can be reordered here. Optional blocks can be hidden.
  */
-import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff, Lock } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import {
+  normalizeStorefrontConfig,
   STOREFRONT_SECTION_LABELS,
-  type AfterMenuSection,
-  type BeforeMenuSection,
   type SectionSetting,
   type StorefrontConfig,
+  type StorefrontSection,
 } from '@packages/shared/storefront'
 import type { StorefrontPartKey } from '@features/storefront/Storefront'
 import { cn } from '@shared/lib/cn'
@@ -50,65 +50,40 @@ export function PageOutline({ draft, summary, onOpen, onChange }: {
   readonly onOpen: (part: StorefrontPartKey) => void
   readonly onChange: (sections: StorefrontConfig['sections']) => void
 }) {
-  const { beforeMenu, afterMenu } = draft.sections
-  const setBefore = (next: SectionSetting<BeforeMenuSection>[]) => onChange({ beforeMenu: next, afterMenu })
-  const setAfter = (next: SectionSetting<AfterMenuSection>[]) => onChange({ beforeMenu, afterMenu: next })
+  const sections = normalizeStorefrontConfig(draft).sections
+  const change = (next: SectionSetting<StorefrontSection>[]) => onChange(next)
 
   return (
     <nav aria-label="Storefront parts" className="space-y-1">
       <FixedRow label="Brand & colors" detail={summary.header} onOpen={() => onOpen('header')} />
       <FixedRow label="Business details" detail={summary.ordering} onOpen={() => onOpen('ordering')} />
-      <Group label="Above the menu">
-        {beforeMenu.map((section, index) => (
+      <ol aria-label="Page sections" className="space-y-0.5 pt-3">
+        {sections.map((section, index) => (
           <SectionRow
             key={section.key}
             label={STOREFRONT_SECTION_LABELS[section.key]}
             detail={summary[section.key]}
             visible={section.visible}
             first={index === 0}
-            last={index === beforeMenu.length - 1}
+            last={index === sections.length - 1}
             onOpen={() => onOpen(section.key)}
-            onToggle={() => setBefore(beforeMenu.map((s, i) => (i === index ? { ...s, visible: !s.visible } : s)))}
-            onMove={(offset) => setBefore(moveInList(beforeMenu, index, offset))}
+            onToggle={
+              section.key === 'menu'
+                ? undefined
+                : () => change(sections.map((s, i) => (i === index ? { ...s, visible: !s.visible } : s)))
+            }
+            onMove={(offset) => change(moveInList(sections, index, offset))}
           />
         ))}
-      </Group>
-      <FixedRow label="Menu" detail={summary.menu} onOpen={() => onOpen('menu')} locked />
-      <Group label="Below the menu">
-        {afterMenu.map((section, index) => (
-          <SectionRow
-            key={section.key}
-            label={STOREFRONT_SECTION_LABELS[section.key]}
-            detail={summary[section.key]}
-            visible={section.visible}
-            first={index === 0}
-            last={index === afterMenu.length - 1}
-            onOpen={() => onOpen(section.key)}
-            onToggle={() => setAfter(afterMenu.map((s, i) => (i === index ? { ...s, visible: !s.visible } : s)))}
-            onMove={(offset) => setAfter(moveInList(afterMenu, index, offset))}
-          />
-        ))}
-      </Group>
+      </ol>
     </nav>
   )
 }
 
-function Group({ label, children }: { readonly label: string; readonly children: React.ReactNode }) {
-  return (
-    <div className="pt-3">
-      <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <ol className="space-y-0.5" aria-label={label}>
-        {children}
-      </ol>
-    </div>
-  )
-}
-
-function FixedRow({ label, detail, onOpen, locked = false }: {
+function FixedRow({ label, detail, onOpen }: {
   readonly label: string
   readonly detail?: string
   readonly onOpen: () => void
-  readonly locked?: boolean
 }) {
   return (
     <div className="pt-1">
@@ -121,7 +96,6 @@ function FixedRow({ label, detail, onOpen, locked = false }: {
           <span className="block text-sm font-medium">{label}</span>
           {detail ? <span className="block truncate text-xs text-muted-foreground">{detail}</span> : null}
         </span>
-        {locked ? <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label="Always shown" /> : null}
         <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
       </button>
     </div>
@@ -135,7 +109,7 @@ function SectionRow({ label, detail, visible, first, last, onOpen, onToggle, onM
   readonly first: boolean
   readonly last: boolean
   readonly onOpen: () => void
-  readonly onToggle: () => void
+  readonly onToggle?: () => void
   readonly onMove: (offset: -1 | 1) => void
 }) {
   const icon = 'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-30'
@@ -155,15 +129,17 @@ function SectionRow({ label, detail, visible, first, last, onOpen, onToggle, onM
           <ArrowDown className="h-3.5 w-3.5" />
         </button>
       </span>
-      <button
-        type="button"
-        className={icon}
-        onClick={onToggle}
-        aria-label={visible ? `Hide ${label}` : `Show ${label}`}
-        aria-pressed={!visible}
-      >
-        {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-      </button>
+      {onToggle ? (
+        <button
+          type="button"
+          className={icon}
+          onClick={onToggle}
+          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+          aria-pressed={!visible}
+        >
+          {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+      ) : null}
     </li>
   )
 }

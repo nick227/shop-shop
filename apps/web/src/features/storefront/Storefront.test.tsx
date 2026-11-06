@@ -211,27 +211,24 @@ describe('Storefront', () => {
     expect(screen.queryByText('Family Meal')).not.toBeInTheDocument()
   })
 
-  it('arranges optional sections as configured, always keeping business content after the menu', () => {
+  it('renders sections in the one configured order, menu included', () => {
     const base = defaultStorefrontConfig()
     const config: StorefrontConfig = {
       ...base,
-      sections: {
-        beforeMenu: [
-          { key: 'featured', visible: true },
-          { key: 'categories', visible: false },
-          { key: 'mosaic', visible: true },
-          { key: 'announcements', visible: true },
-          { key: 'bundles', visible: true },
-        ],
-        afterMenu: [
-          { key: 'about', visible: true },
-          { key: 'gallery', visible: false },
-          { key: 'updates', visible: true },
-        ],
-      },
+      sections: [
+        { key: 'featured', visible: true },
+        { key: 'about', visible: true },
+        { key: 'menu', visible: true },
+        { key: 'mosaic', visible: true },
+        { key: 'announcements', visible: true },
+        { key: 'bundles', visible: true },
+        { key: 'categories', visible: false },
+        { key: 'gallery', visible: false },
+        { key: 'updates', visible: true },
+      ],
     }
     const { container } = renderStorefront({ config })
-    expect(sectionOrder(container)).toEqual(['header', 'ordering', 'featured', 'mosaic', 'announcements', 'bundles', 'menu', 'about', 'updates'])
+    expect(sectionOrder(container)).toEqual(['header', 'ordering', 'featured', 'about', 'menu', 'mosaic', 'announcements', 'bundles', 'updates'])
     expect(screen.queryByRole('heading', { name: 'Menu', level: 2 })).not.toBeInTheDocument()
   })
 

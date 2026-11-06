@@ -43,11 +43,13 @@ const AUTOSAVE_MS = 700
 const DEVICE_WIDTH = { mobile: 390, desktop: 1200 } as const
 type Device = keyof typeof DEVICE_WIDTH
 
-/** The draft with one optional section shown or hidden. */
+/** The draft with one optional section shown or hidden. The menu stays shown. */
 function withSectionVisible(draft: StorefrontConfig, key: string, visible: boolean): StorefrontConfig {
-  const set = <T extends { key: string; visible: boolean }>(list: readonly T[]) =>
-    list.map((section) => (section.key === key ? { ...section, visible } : section))
-  return { ...draft, sections: { beforeMenu: set(draft.sections.beforeMenu), afterMenu: set(draft.sections.afterMenu) } }
+  const config = normalizeStorefrontConfig(draft)
+  return {
+    ...config,
+    sections: config.sections.map((section) => (section.key === key && section.key !== 'menu' ? { ...section, visible } : section)),
+  }
 }
 
 type SaveState = 'saved' | 'pending' | 'saving' | 'error'

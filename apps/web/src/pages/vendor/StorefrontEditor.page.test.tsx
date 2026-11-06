@@ -119,15 +119,23 @@ describe('StorefrontEditorPage', () => {
     expect(screen.getByRole('navigation', { name: 'Storefront parts' })).toBeInTheDocument()
   })
 
-  it('switches palettes and keeps the menu fixed between page sections', async () => {
+  it('reorders every block, including the menu, from one list', async () => {
     renderEditor()
-    await userEvent.click(await screen.findByRole('radio', { name: 'Harbor palette' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Harbor' }))
     const preview = screen.getByRole('region', { name: 'Preview' })
     expect(preview.querySelector<HTMLElement>('.sf-root')!.style.getPropertyValue('--sf-primary')).toBe('#0b4f6c')
+    await userEvent.click(screen.getByRole('button', { name: 'Back to all parts' }))
 
-    // The outline lists every part; optional ones hide in place and the preview follows.
     const outline = screen.getByRole('navigation', { name: 'Storefront parts' })
-    expect(within(outline).getByRole('button', { name: /Menu/ })).toBeInTheDocument()
+    const order = () =>
+      [...preview.querySelectorAll('[data-storefront-section]')].map((el) => el.getAttribute('data-storefront-section'))
+    const before = order()
+    expect(within(outline).queryByRole('button', { name: 'Hide Menu' })).not.toBeInTheDocument()
+    expect(before.indexOf('menu')).toBeGreaterThan(before.indexOf('categories'))
+    await userEvent.click(within(outline).getByRole('button', { name: 'Move Menu up' }))
+    expect(order().indexOf('menu')).toBe(before.indexOf('menu') - 1)
+
     await userEvent.click(within(outline).getByRole('button', { name: 'Hide Featured products' }))
     expect(within(outline).getByRole('button', { name: 'Show Featured products' })).toBeInTheDocument()
     expect(within(preview).getByText(/hidden from/)).toBeInTheDocument()

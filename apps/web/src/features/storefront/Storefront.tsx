@@ -15,9 +15,8 @@ import {
   FEATURED_DEFAULT_COUNT,
   resolveBundleIds,
   resolveFeaturedItemIds,
-  type AfterMenuSection,
-  type BeforeMenuSection,
   type StorefrontConfig,
+  type StorefrontSection,
 } from '@packages/shared/storefront'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
@@ -63,14 +62,14 @@ export interface StorefrontProps {
   /** Editor only: the part to outline, so the vendor sees what the open settings change. */
   readonly highlight?: StorefrontPartKey | null
   /** Editor only: show or hide an optional section from the preview itself. */
-  readonly onToggleSection?: (key: BeforeMenuSection | AfterMenuSection, visible: boolean) => void
+  readonly onToggleSection?: (key: Exclude<StorefrontSection, 'menu'>, visible: boolean) => void
   /** False for a directory profile: same page, without ordering, an empty menu, or a cart. */
   readonly commerce?: boolean
   readonly className?: string
 }
 
-/** Every part of the page, in the order it can appear. */
-export type StorefrontPartKey = 'header' | 'ordering' | BeforeMenuSection | 'menu' | 'about' | 'gallery' | 'updates'
+/** Every part of the page. Header and ordering stay put; `StorefrontSection` is the reorderable list. */
+export type StorefrontPartKey = 'header' | 'ordering' | StorefrontSection
 
 const PART_LABELS: Record<StorefrontPartKey, string> = {
   header: 'brand',
@@ -109,7 +108,7 @@ export function Storefront({
     </Part>
   )
   /** An optional section: shown, or (in the editor only) a slim bar to bring it back. */
-  const optional = <K extends BeforeMenuSection | AfterMenuSection>(section: { key: K; visible: boolean }, children: ReactNode) => {
+  const optional = (section: { key: Exclude<StorefrontSection, 'menu'>; visible: boolean }, children: ReactNode) => {
     if (section.visible) return part(section.key, children, onToggleSection ? () => onToggleSection(section.key, false) : undefined)
     if (!onToggleSection) return null
     return (
@@ -285,15 +284,26 @@ export function Storefront({
     return resolveBundleIds(config.featured, active.map((bundle) => bundle.id)).map((id) => byId.get(id)!)
   }, [bundles, config.featured])
 
-  const beforeMenu: Record<BeforeMenuSection, ReactNode> = {
+  const menu = groups.length > 0 ? (
+    <MenuSections
+      groups={shownGroups}
+      presentation={config.presentation}
+      jumpOffset={jumpOffset}
+      large={!searching && totalItems > LARGE_CATALOG_ITEMS}
+    />
+  ) : (
+    <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+      Nothing on the menu right now. Check back soon.
+    </p>
+  )
+  const page: Record<StorefrontSection, ReactNode> = {
+    about: <AboutSection store={store} hours={data.hours} showMap={mode === 'live'} />,
     mosaic: <MediaMosaic products={carousel} tiles={tiles} storeName={store.name} />,
     announcements: <Announcements panels={config.announcements} itemsById={itemsById} />,
     bundles: <BundlesRow bundles={shownBundles} />,
     featured: <FeaturedRow items={featuredRow} />,
     categories: groups.length >= CATEGORY_TILES_MIN_SECTIONS ? <CategoryTiles groups={groups} onJump={jump} /> : null,
-  }
-  const afterMenu: Record<AfterMenuSection, ReactNode> = {
-    about: <AboutSection store={store} hours={data.hours} showMap={mode === 'live'} />,
+    menu,
     gallery: <GallerySection media={data.media} storeName={store.name} />,
     updates: updates ? <UpdatesSection>{updates}</UpdatesSection> : null,
   }
@@ -325,29 +335,13 @@ export function Storefront({
                   ? `Nothing on the menu matches “${query.trim()}”.`
                   : `${resultCount} ${resultCount === 1 ? 'item matches' : 'items match'} “${query.trim()}”`}
               </p>
-            ) : (
-              config.sections.beforeMenu.map((section) => optional(section, beforeMenu[section.key]))
-            )}
-
-            {commerce ? part(
-              'menu',
-              groups.length > 0 ? (
-                <MenuSections
-                  groups={shownGroups}
-                  presentation={config.presentation}
-                  jumpOffset={jumpOffset}
-                  large={!searching && totalItems > LARGE_CATALOG_ITEMS}
-                />
-              ) : (
-                <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                  Nothing on the menu right now. Check back soon.
-                </p>
-              ),
             ) : null}
 
-            {searching
-              ? null
-              : config.sections.afterMenu.map((section) => optional(section, afterMenu[section.key]))}
+            {config.sections.map((section) => {
+              if (section.key === 'menu') return commerce ? part('menu', menu) : null
+              if (searching) return null
+              return optional({ key: section.key, visible: section.visible }, page[section.key])
+            })}
           </div>
 
           {commerce && mode === 'live' ? <CartBar storeId={store.id} /> : null}

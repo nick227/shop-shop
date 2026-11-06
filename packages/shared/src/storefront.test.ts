@@ -30,22 +30,43 @@ describe('normalizeStorefrontConfig', () => {
     expect(normalizeStorefrontConfig({ brand: { paletteId: 'custom', primary: 'red', accent: '#00aa00' } }).brand.paletteId).toBe('market')
   })
 
-  it('keeps section order, drops unknown and repeated keys, and appends sections it did not mention', () => {
+  it('keeps one section list, including the menu, and still reads the older two lists', () => {
     const config = normalizeStorefrontConfig({
       sections: {
         beforeMenu: [{ key: 'featured', visible: false }, { key: 'featured' }, { key: 'about' }, { key: 'bundles' }],
         afterMenu: [{ key: 'gallery' }],
       },
     })
-    expect(config.sections.beforeMenu.map((s) => `${s.key}:${s.visible}`)).toEqual([
+    expect(config.sections.map((s) => `${s.key}:${s.visible}`)).toEqual([
       'featured:false',
+      'about:true',
       'bundles:true',
+      'menu:true',
+      'gallery:true',
       'mosaic:true',
       'announcements:true',
       'categories:true',
+      'updates:true',
     ])
-    // Business content cannot move above the menu.
-    expect(config.sections.afterMenu.map((s) => s.key)).toEqual(['gallery', 'about', 'updates'])
+    const reordered = normalizeStorefrontConfig({
+      sections: [
+        { key: 'gallery', visible: true },
+        { key: 'menu', visible: false },
+        { key: 'about', visible: true },
+      ],
+    })
+    expect(reordered.sections.map((s) => s.key)).toEqual([
+      'gallery',
+      'menu',
+      'about',
+      'mosaic',
+      'announcements',
+      'bundles',
+      'featured',
+      'categories',
+      'updates',
+    ])
+    expect(reordered.sections.find((s) => s.key === 'menu')?.visible).toBe(true)
   })
 
   it('drops references the store does not have, and repeats', () => {
