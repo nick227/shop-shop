@@ -34,7 +34,7 @@ export default function AdminNeighborhoodPreviewPage() {
   if (!area) return <p className="p-6 text-sm">{query.isLoading ? 'Loading preview…' : 'Neighborhood not found'}</p>
   return (
     <div className="discover p-4">
-      <section className="discover-hero" aria-label={area.name}>
+      <section className="admin-place-preview" aria-label={area.name}>
         <div className="hero-copy">
           <p className="tile-kicker">{area.published ? 'Published preview' : 'Draft preview'}</p>
           <h1 className="discover-display">{area.name}</h1>

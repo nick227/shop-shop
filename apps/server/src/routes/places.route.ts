@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { haversineMiles, prisma } from '@packages/db'
 import { neighborhoodGuide } from '../directory/neighborhood-guide.js'
+import { placeTagInclude, placeTagView } from './neighborhood-tags.js'
 
 export async function placeRoutes(app: FastifyInstance) {
   app.get('/places/neighborhoods', async (req) => {
@@ -93,6 +94,7 @@ export async function placeRoutes(app: FastifyInstance) {
         parent: { select: { id: true, name: true, state: true, slug: true } },
         postalLinks: { select: { postalCode: true }, orderBy: { postalCode: 'asc' } },
         media: { orderBy: { sortIndex: 'asc' }, select: { url: true, kind: true } },
+        tags: placeTagInclude,
       },
     })
     if (!place || (place.kind === 'NEIGHBORHOOD' && !place.parent)) {
@@ -147,6 +149,8 @@ export async function placeRoutes(app: FastifyInstance) {
       postalCodes: place.postalLinks.map((link) => link.postalCode),
       images: place.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
       videos: place.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),
+      // Hidden rows are sent too: they tell the client which automatic suggestions an admin turned off.
+      tags: place.tags.map(placeTagView),
       nearby: nearby.map((area) => ({
         id: area.id,
         name: area.name,

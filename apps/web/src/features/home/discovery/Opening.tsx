@@ -159,7 +159,6 @@ export function LocationHero({
   mapView = false,
   kind,
   identity,
-  showEditorial,
   tags = [],
   tagsPending = false,
 }: {
@@ -178,7 +177,6 @@ export function LocationHero({
   readonly mapView?: boolean
   readonly kind: PlaceKind
   readonly identity: { readonly kicker: string; readonly title: string; readonly lede: string }
-  readonly showEditorial: boolean
   readonly tags?: readonly HeroTag[]
   readonly tagsPending?: boolean
 }) {
@@ -191,7 +189,6 @@ export function LocationHero({
   const heroClass = [
     'discover-hero',
     mapView ? 'is-map' : '',
-    showEditorial ? '' : 'is-results',
     kind === 'neighborhood' ? 'is-neighborhood' : '',
   ].filter(Boolean).join(' ')
   const mapToggle = applyDiscoveryPatch(pathname, search, { view: mapView ? null : 'map' })

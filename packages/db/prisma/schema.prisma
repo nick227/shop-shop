@@ -425,6 +425,7 @@ model Place {
   media        MediaAsset[]
   listings     BusinessListing[]
   curatedListings ListingNeighborhood[]
+  tags         PlaceTag[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -517,6 +518,38 @@ model BusinessListing {
 }
 
 /// Editorial neighborhood placement. Distinct from BusinessListing.placeId.
+enum NeighborhoodTagKind {
+  EDITORIAL
+  DISCOVERY
+}
+
+/// Shared tag vocabulary. A tag's query mapping (categoryId, searchQuery) is explicit and is never inferred from its label.
+model NeighborhoodTag {
+  id          String              @id @db.Char(36)
+  slug        String              @unique @db.VarChar(160)
+  label       String              @db.VarChar(60)
+  kind        NeighborhoodTagKind
+  categoryId  String?             @db.VarChar(32)
+  searchQuery String?             @db.VarChar(80)
+  places      PlaceTag[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+/// A tag pinned to one place. `label` renames it for that place only; hidden rows also suppress the matching automatic suggestion.
+model PlaceTag {
+  placeId   String          @db.Char(36)
+  tagId     String          @db.Char(36)
+  label     String?         @db.VarChar(60)
+  sortIndex Int             @default(0)
+  visible   Boolean         @default(true)
+  place     Place           @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  tag       NeighborhoodTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, tagId])
+  @@index([tagId])
+}
+
 model ListingNeighborhood {
   listingId String          @db.Char(36)
   placeId   String          @db.Char(36)

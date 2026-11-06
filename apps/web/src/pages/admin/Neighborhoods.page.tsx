@@ -6,6 +6,7 @@ import { Button } from '@shared/ui/primitives'
 import { AdminTable } from '@layouts/AdminLayout'
 import { MapPin } from 'lucide-react'
 import { emptyNeighborhood, NeighborhoodForm, type CityOption, type NeighborhoodFormValue } from './NeighborhoodForm'
+import type { NeighborhoodTag } from '@features/home/discovery/heroTags'
 
 type NeighborhoodRow = {
   readonly id: string
@@ -18,6 +19,7 @@ type NeighborhoodRow = {
   readonly postalCodes: readonly string[]
   readonly imageUrls: readonly string[]
   readonly videoUrls: readonly string[]
+  readonly tags?: readonly NeighborhoodTag[]
   readonly ready: boolean
 }
 
@@ -66,6 +68,13 @@ export default function AdminNeighborhoodsPage() {
         imageUrls: imageList(value.imageUrls),
         videoUrls: imageList(value.videoUrls),
         published: value.published,
+        tags: value.tags.map((tag) => ({
+          label: tag.label.trim(),
+          kind: tag.kind,
+          categoryId: tag.categoryId || null,
+          searchQuery: tag.searchQuery.trim() || null,
+          visible: tag.visible,
+        })),
       }
       const response = await fetch(`${apiBase()}/api/admin/neighborhoods${editingId ? `/${editingId}` : ''}`, {
         method: editingId ? 'PATCH' : 'POST',
@@ -123,6 +132,13 @@ export default function AdminNeighborhoodsPage() {
       imageUrls: row.imageUrls.join('\n'),
       videoUrls: row.videoUrls.join('\n'),
       published: row.published,
+      tags: (row.tags ?? []).map((tag) => ({
+        label: tag.label,
+        kind: tag.kind,
+        categoryId: tag.categoryId ?? '',
+        searchQuery: tag.searchQuery ?? '',
+        visible: tag.visible,
+      })),
     })
   }
 

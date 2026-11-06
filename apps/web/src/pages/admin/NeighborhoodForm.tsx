@@ -1,4 +1,5 @@
 import { Button } from '@shared/ui/primitives'
+import { SUGGESTED_TAGS, tagFilterKey } from '@features/home/discovery/heroTags'
 
 export type CityOption = {
   readonly id: string
@@ -16,12 +17,30 @@ export type NeighborhoodFormValue = {
   imageUrls: string
   videoUrls: string
   published: boolean
+  tags: NeighborhoodTagDraft[]
 }
+
+export type NeighborhoodTagDraft = {
+  label: string
+  kind: 'EDITORIAL' | 'DISCOVERY'
+  categoryId: string
+  searchQuery: string
+  visible: boolean
+}
+
+const TAG_CATEGORIES = [
+  { id: 'food', label: 'Food' },
+  { id: 'grocery', label: 'Grocery' },
+  { id: 'convenience', label: 'Convenience' },
+  { id: 'retail', label: 'Retail' },
+  { id: 'arts', label: 'Arts' },
+  { id: 'outdoors', label: 'Outdoors' },
+] as const
 
 const fieldClass = 'w-full rounded-md border border-border bg-background px-3 py-2 text-sm'
 
 export function emptyNeighborhood(parentId: string): NeighborhoodFormValue {
-  return { name: '', parentId, postalCodes: [], headline: '', about: '', imageUrls: '', videoUrls: '', published: false }
+  return { name: '', parentId, postalCodes: [], headline: '', about: '', imageUrls: '', videoUrls: '', published: false, tags: [] }
 }
 
 export function NeighborhoodForm({
@@ -106,6 +125,7 @@ export function NeighborhoodForm({
         <span className="font-medium">Video URLs</span>
         <textarea className={fieldClass} rows={2} placeholder="One video URL per line." value={value.videoUrls} onChange={(event) => onChange({ ...value, videoUrls: event.target.value })} />
       </label>
+      <TagEditor tags={value.tags} onChange={(tags) => onChange({ ...value, tags })} />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={value.published} onChange={(event) => onChange({ ...value, published: event.target.checked })} />
         Published
@@ -116,5 +136,74 @@ export function NeighborhoodForm({
         <Button type="submit" size="small" disabled={saving || value.postalCodes.length === 0}>{saving ? 'Saving…' : 'Save neighborhood'}</Button>
       </div>
     </form>
+  )
+}
+
+/**
+ * Pinned tags show first in the hero, in this order. Discovery tags need a category or search,
+ * and show a live count. Editorial tags without a query are shown as plain labels.
+ * Suggestions are added automatically when they have results; hide one to turn it off here.
+ */
+function TagEditor({ tags, onChange }: { readonly tags: readonly NeighborhoodTagDraft[]; readonly onChange: (tags: NeighborhoodTagDraft[]) => void }) {
+  const update = (index: number, patch: Partial<NeighborhoodTagDraft>) => onChange(tags.map((tag, at) => (at === index ? { ...tag, ...patch } : tag)))
+  const move = (index: number, by: number) => {
+    const next = [...tags]
+    const [tag] = next.splice(index, 1)
+    if (tag) next.splice(index + by, 0, tag)
+    onChange(next)
+  }
+  const pinned = new Set(tags.map((tag) => tagFilterKey(tag.categoryId, tag.searchQuery)))
+  const unpinned = SUGGESTED_TAGS.filter((tag) => !pinned.has(tagFilterKey(tag.categoryId, tag.searchQuery)))
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium">Hero tags</legend>
+      <p className="text-xs text-muted-foreground">
+        Up to six show in the hero: these first, then suggestions with the most results. Discovery tags need a category or search, and are hidden when they have no results.
+      </p>
+      {tags.map((tag, index) => {
+        const needsQuery = tag.kind === 'DISCOVERY' && !tag.categoryId && !tag.searchQuery.trim()
+        return (
+          <div key={index} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
+            <input className={`${fieldClass} !w-40`} aria-label="Tag label" maxLength={60} value={tag.label} onChange={(event) => update(index, { label: event.target.value })} required />
+            <select className={`${fieldClass} !w-32`} aria-label="Tag kind" value={tag.kind} onChange={(event) => update(index, { kind: event.target.value as NeighborhoodTagDraft['kind'] })}>
+              <option value="DISCOVERY">Discovery</option>
+              <option value="EDITORIAL">Editorial</option>
+            </select>
+            <select className={`${fieldClass} !w-36`} aria-label="Tag category" value={tag.categoryId} onChange={(event) => update(index, { categoryId: event.target.value })}>
+              <option value="">No category</option>
+              {TAG_CATEGORIES.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
+            </select>
+            <input className={`${fieldClass} !w-36`} aria-label="Tag search" placeholder="Search (optional)" maxLength={80} value={tag.searchQuery} onChange={(event) => update(index, { searchQuery: event.target.value })} />
+            <label className="flex items-center gap-1 text-sm">
+              <input type="checkbox" checked={tag.visible} onChange={(event) => update(index, { visible: event.target.checked })} />
+              Visible
+            </label>
+            <div className="ml-auto flex gap-1">
+              <Button type="button" variant="outline" size="small" disabled={index === 0} onClick={() => move(index, -1)} aria-label={`Move ${tag.label || 'tag'} up`}>↑</Button>
+              <Button type="button" variant="outline" size="small" disabled={index === tags.length - 1} onClick={() => move(index, 1)} aria-label={`Move ${tag.label || 'tag'} down`}>↓</Button>
+              <Button type="button" variant="outline" size="small" onClick={() => onChange(tags.filter((_, at) => at !== index))}>Remove</Button>
+            </div>
+            {needsQuery ? <p className="w-full text-xs text-destructive">Choose a category or enter a search, or make it editorial.</p> : null}
+          </div>
+        )
+      })}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="small" disabled={tags.length >= 12} onClick={() => onChange([...tags, { label: '', kind: 'EDITORIAL', categoryId: '', searchQuery: '', visible: true }])}>
+          Add tag
+        </Button>
+        {unpinned.length > 0 ? <span className="text-xs text-muted-foreground">Pin a suggestion:</span> : null}
+        {unpinned.map((tag) => (
+          <button
+            key={tag.label}
+            type="button"
+            className="rounded-full border border-border px-2 py-0.5 text-xs"
+            disabled={tags.length >= 12}
+            onClick={() => onChange([...tags, { label: tag.label, kind: 'DISCOVERY', categoryId: tag.categoryId, searchQuery: tag.searchQuery ?? '', visible: true }])}
+          >
+            + {tag.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
   )
 }

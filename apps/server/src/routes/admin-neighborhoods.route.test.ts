@@ -27,6 +27,7 @@ describe('neighborhood profiles', () => {
     })
     const ids = created.map((place) => place.id)
     if (ids.length > 0) await prisma.place.deleteMany({ where: { id: { in: ids } } })
+    await prisma.neighborhoodTag.deleteMany({ where: { places: { none: {} } } })
     await prisma.mediaAsset.deleteMany({ where: { placeId: WEST_CAMPUS_PLACE_ID } })
     await prisma.place.update({
       where: { id: WEST_CAMPUS_PLACE_ID },
@@ -123,6 +124,41 @@ describe('neighborhood profiles', () => {
 
     const missingProfile = await app.inject({ method: 'GET', url: '/api/places/not-a-neighborhood' })
     expect(missingProfile.statusCode).toBe(404)
+  })
+
+  it('stores tags with explicit query mappings, per-place labels, order, and visibility', async () => {
+    const created = await auth('POST', '/api/admin/neighborhoods', {
+      name: `${TEST_NAMESPACE} Tagged`,
+      parentId: austinId,
+      postalCodes: ['78704'],
+      headline: 'Tagged',
+      about: 'Tagged place.',
+      published: true,
+      tags: [
+        { label: 'Historic', kind: 'EDITORIAL' },
+        { label: 'Coffee shops', kind: 'DISCOVERY', categoryId: 'food', searchQuery: 'coffee' },
+        { label: 'Groceries', kind: 'DISCOVERY', categoryId: 'grocery', visible: false },
+        { label: 'Coffee again', kind: 'DISCOVERY', categoryId: 'food', searchQuery: 'Coffee' },
+      ],
+    })
+    expect(created.statusCode).toBe(201)
+    const { slug } = JSON.parse(created.body) as { slug: string }
+
+    const badTag = await auth('POST', '/api/admin/neighborhoods', {
+      name: `${TEST_NAMESPACE} Bad Tag`,
+      parentId: austinId,
+      postalCodes: ['78704'],
+      tags: [{ label: 'Anything', kind: 'DISCOVERY' }],
+    })
+    expect(badTag.statusCode).toBe(400)
+
+    const profile = await app.inject({ method: 'GET', url: `/api/places/${slug}` })
+    const body = JSON.parse(profile.body) as { tags: Array<{ label: string; kind: string; categoryId: string | null; searchQuery: string | null; visible: boolean }> }
+    expect(body.tags).toEqual([
+      expect.objectContaining({ label: 'Historic', kind: 'EDITORIAL', categoryId: null, searchQuery: null, visible: true }),
+      expect.objectContaining({ label: 'Coffee shops', kind: 'DISCOVERY', categoryId: 'food', searchQuery: 'coffee', visible: true }),
+      expect.objectContaining({ label: 'Groceries', kind: 'DISCOVERY', categoryId: 'grocery', visible: false }),
+    ])
   })
 
   it('rejects an unknown zip', async () => {

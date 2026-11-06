@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@packages/db'
 import { requireAdmin } from '../middleware/rbac.js'
 import { createNeighborhood, parseNeighborhoodBody, updateNeighborhood } from './neighborhood-profile.js'
+import { placeTagInclude, placeTagView } from './neighborhood-tags.js'
 
 export async function adminNeighborhoodRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAdmin())
@@ -43,6 +44,7 @@ export async function adminNeighborhoodRoutes(app: FastifyInstance) {
         parent: { select: { id: true, name: true, state: true, slug: true } },
         postalLinks: { select: { postalCode: true }, orderBy: { postalCode: 'asc' } },
         media: { orderBy: { sortIndex: 'asc' }, select: { url: true, kind: true } },
+        tags: placeTagInclude,
       },
     })
     return {
@@ -59,6 +61,7 @@ export async function adminNeighborhoodRoutes(app: FastifyInstance) {
         postalCodes: row.postalLinks.map((link) => link.postalCode),
         imageUrls: row.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
         videoUrls: row.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),
+        tags: row.tags.map(placeTagView),
         ready: Boolean(row.headline && row.about),
       })),
     }

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { prisma } from '@packages/db'
+import { syncPlaceTags, TagInput } from './neighborhood-tags.js'
 
 const ProfileBody = z.object({
   name: z.string().trim().min(1).max(120),
@@ -11,6 +12,8 @@ const ProfileBody = z.object({
   imageUrls: z.array(z.string().trim().url()).max(8).optional(),
   videoUrls: z.array(z.string().trim().url()).max(4).optional(),
   published: z.boolean().optional(),
+  /** Omitted leaves the place's tags as they are. */
+  tags: z.array(TagInput).max(12).optional(),
 })
 
 export type NeighborhoodInput = z.infer<typeof ProfileBody>
@@ -70,6 +73,7 @@ function view(id: string, slug: string, input: NeighborhoodInput, city: CityRow,
     postalCodes: codes,
     imageUrls: input.imageUrls ?? [],
     videoUrls: input.videoUrls ?? [],
+    tags: (input.tags ?? []).map((tag, sortIndex) => ({ ...tag, sortIndex, visible: tag.visible ?? true })),
   }
 }
 
@@ -110,6 +114,7 @@ export async function createNeighborhood(input: NeighborhoodInput) {
       await tx.placePostalCode.createMany({ data: loaded.codes.map((postalCode) => ({ placeId: id, postalCode })) })
       const media = mediaRows(id, imageUrls, videoUrls)
       if (media.length > 0) await tx.mediaAsset.createMany({ data: media })
+      if (input.tags) await syncPlaceTags(tx, id, input.tags)
     })
   } catch (error) {
     if (uniqueSlug(error)) return { error: 'A neighborhood with this name already exists in that city' as const, status: 409 as const }
@@ -150,6 +155,7 @@ export async function updateNeighborhood(id: string, input: NeighborhoodInput) {
       await tx.mediaAsset.deleteMany({ where: { placeId: id } })
       const media = mediaRows(id, imageUrls, videoUrls)
       if (media.length > 0) await tx.mediaAsset.createMany({ data: media })
+      if (input.tags) await syncPlaceTags(tx, id, input.tags)
     })
   } catch (error) {
     if (uniqueSlug(error)) return { error: 'A neighborhood with this name already exists in that city' as const, status: 409 as const }

@@ -1,9 +1,13 @@
 import { StrictMode } from 'react'
 import { saveVisit, readVisit } from '@features/discovery-navigation/context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+
+function crumbs() {
+  return within(screen.getByRole('navigation', { name: 'Discovery breadcrumb' })).getAllByRole('listitem').map((item) => item.textContent)
+}
 
 function Probe() {
   const location = useLocation()
@@ -201,6 +205,8 @@ describe('DiscoveryPage 7-surface composition', () => {
     const heroRegion = screen.getByRole('region', { name: 'Shops near you' })
     expect(heroRegion).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /find shops/i })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /delivery zip/i })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Set location' }))
     expect(screen.getByRole('textbox', { name: /delivery zip/i })).toBeInTheDocument()
     expect(screen.queryByText('Around your neighborhood')).not.toBeInTheDocument()
 
@@ -258,7 +264,8 @@ describe('DiscoveryPage 7-surface composition', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Shops near Austin, TX' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /change zip/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change location' })).toBeInTheDocument()
+    expect(crumbs()).toEqual(['Austin', '78704'])
     expect(screen.getByRole('region', { name: 'Nearby Neighborhoods' })).toBeInTheDocument()
     expect(screen.getByText('Your usual South Austin picks.')).toBeInTheDocument()
     expect(screen.getAllByText('Ordered before').length).toBeGreaterThan(0)
@@ -288,7 +295,9 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(tags.textContent).not.toContain('Shops')
     expect(tags.textContent).not.toContain('Arts')
 
+    const heroClass = container.querySelector('.discover-hero')?.className
     await user.click(food)
+    expect(container.querySelector('.discover-hero')?.className).toBe(heroClass)
     expect(screen.getByTestId('probe').textContent).toBe('/explore?radius=10&zip=78704&category=food')
     expect(screen.getByRole('heading', { name: 'Shops near Austin, TX' })).toBeInTheDocument()
     expect(container.querySelector('.discover-hero.is-results')).not.toBeInTheDocument()
@@ -296,5 +305,23 @@ describe('DiscoveryPage 7-surface composition', () => {
     const active = screen.getByRole('link', { name: 'Food, 1 place, clear filter' })
     expect(active).toHaveAttribute('aria-current', 'true')
     expect(active.getAttribute('href')).not.toContain('category=')
+    // The toolbar and the breadcrumb show the same filter as the hero tag.
+    expect(within(screen.getByRole('toolbar', { name: 'Category' })).getByRole('button', { name: 'Food', pressed: true })).toBeInTheDocument()
+    expect(crumbs()).toEqual(['Austin', '78704', 'Food'])
+
+    await user.click(screen.getByRole('link', { name: 'Coffee, 1 place' }))
+    expect(screen.getByTestId('probe').textContent).toContain('q=coffee')
+    expect(screen.getByRole('link', { name: 'Coffee, 1 place, clear filter' })).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('link', { name: 'Food, 1 place' })).not.toHaveAttribute('aria-current')
+    expect(within(screen.getByRole('toolbar', { name: 'Category' })).getByRole('button', { name: 'Food', pressed: true })).toBeInTheDocument()
+    expect(crumbs()).toEqual(['Austin', '78704', 'Food', '“coffee”'])
+
+    // Clearing the search from the breadcrumb keeps the category, and the hero tag follows.
+    await user.click(screen.getByRole('link', { name: 'Clear search “coffee”' }))
+    expect(screen.getByRole('link', { name: 'Food, 1 place, clear filter' })).toHaveAttribute('aria-current', 'true')
+    // The toolbar's category toggle clears it, and the hero tag follows again.
+    await user.click(within(screen.getByRole('toolbar', { name: 'Category' })).getByRole('button', { name: 'Food', pressed: true }))
+    expect(screen.getByRole('link', { name: 'Food, 1 place' })).not.toHaveAttribute('aria-current')
+    expect(container.querySelector('.discover-hero')?.className).toBe(heroClass)
   })
 })

@@ -277,7 +277,6 @@ export function DiscoveryPage() {
         mapView={context.view === 'map'}
         kind={kind}
         identity={heroCopy}
-        showEditorial
         error={data.location ? undefined : data.notice?.message}
         pending={data.waitingForZip}
         story={composed.stories[0]}
