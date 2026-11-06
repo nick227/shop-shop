@@ -33,7 +33,7 @@ import { MenuPanel } from './components/storefront-editor/MenuPanel'
 import { PANEL_TITLES, PART_PANEL, PageOutline, type OutlineSummary, type PanelKey } from './components/storefront-editor/PageOutline'
 import { AnnouncementsPanel } from './components/storefront-editor/AnnouncementsPanel'
 import { BusinessPanel } from './components/storefront-editor/BusinessPanel'
-import { StoreGoLiveChecklist, useStoreReadiness } from './components/store-form/StoreGoLiveChecklist'
+import { StoreGoLiveChecklist, publishBlockReason, useStoreReadiness } from './components/store-form/StoreGoLiveChecklist'
 import type { PanelProps } from './components/storefront-editor/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import type { StorefrontData, StorefrontHours } from '@features/storefront/api'
@@ -85,6 +85,7 @@ export default function StorefrontEditorPage() {
   const storeEnabled = Boolean(store && 'isPublished' in store && store.isPublished)
   const needsPublish = hasChanges || !state.data?.publishedAt || !storeEnabled
   const blocked = readiness.data?.canPublish === false
+  const blockReason = publishBlockReason(readiness.data)
 
   const onPublish = async () => {
     try {
@@ -133,9 +134,22 @@ export default function StorefrontEditorPage() {
           ) : null}
           {/* Publishing is the one primary action; with nothing new it simply isn't offered. */}
           {needsPublish ? (
-            <Button variant="primary" onClick={() => void onPublish()} disabled={publish.isPending || blocked} isLoading={publish.isPending}>
-              Publish
-            </Button>
+            <>
+              {blockReason ? (
+                <p id="publish-block-reason" className="max-w-sm text-right text-xs text-muted-foreground" role="status">
+                  {blockReason}
+                </p>
+              ) : null}
+              <Button
+                variant="primary"
+                onClick={() => void onPublish()}
+                disabled={publish.isPending || blocked}
+                isLoading={publish.isPending}
+                aria-describedby={blockReason ? 'publish-block-reason' : undefined}
+              >
+                Publish
+              </Button>
+            </>
           ) : null}
         </>
       }

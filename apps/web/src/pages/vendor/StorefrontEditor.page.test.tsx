@@ -30,6 +30,7 @@ const editorState = (draft: StorefrontConfig, published: StorefrontConfig | null
 
 let saved: StorefrontConfig = defaultStorefrontConfig()
 const calls: string[] = []
+let readinessBody: { canPublish: boolean; missingRequirements: string[] } = { canPublish: true, missingRequirements: [] }
 const authGet = vi.fn(async (url: string) => {
   if (url.endsWith('/storefront/editor')) return ok({ data: editorState(saved) })
   if (url.includes('/storefront')) {
@@ -67,7 +68,7 @@ const authPost = vi.fn(async (url: string) => {
 })
 vi.mock('@shared/lib/auth/authFetch', () => ({
   authGet: (url: string) => authGet(url),
-  authFetch: async () => ok({ canPublish: true, missingRequirements: [] }),
+  authFetch: async () => ok(readinessBody),
   authPut: (url: string, body: { config: StorefrontConfig }) => authPut(url, body),
   authPost: (url: string) => authPost(url),
   authPatch: vi.fn(),
@@ -88,10 +89,18 @@ function renderEditor() {
 beforeEach(() => {
   saved = defaultStorefrontConfig()
   calls.length = 0
+  readinessBody = { canPublish: true, missingRequirements: [] }
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 
 describe('StorefrontEditorPage', () => {
+  it('says why Publish is disabled when the store is not ready', async () => {
+    readinessBody = { canPublish: false, missingRequirements: ['store photo or media', 'coordinates (Location)'] }
+    renderEditor()
+    expect(await screen.findByText("Can't publish yet. Still needed: store photo or media; coordinates (Location).")).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled()
+  })
+
   it('shows a change in the preview at once, saves it as a draft, and publishes on request', async () => {
     renderEditor()
     await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))

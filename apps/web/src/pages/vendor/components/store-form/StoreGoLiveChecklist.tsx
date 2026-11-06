@@ -17,13 +17,25 @@ export function useStoreReadiness(storeId?: string) {
   })
 }
 
+export function missingPublishRequirements(data: Readiness | undefined): string[] {
+  if (!data || data.canPublish) return []
+  if (data.missingRequirements?.length) return data.missingRequirements
+  return data.checks
+    ?.filter((check) => check.required && !check.passed)
+    .map((check) => (check.message === 'Run address geocoding before publishing.' ? 'Coordinates (Location)' : check.message || check.label)) ?? []
+}
+
+export function publishBlockReason(data: Readiness | undefined): string | null {
+  if (!data || data.canPublish) return null
+  const missing = missingPublishRequirements(data)
+  if (!missing.length) return 'This store is not ready to publish.'
+  return `Can't publish yet. Still needed: ${missing.join('; ')}.`
+}
+
 export function StoreGoLiveChecklist({ storeId, enabled }: { storeId?: string; enabled: boolean }) {
   const { data, isPending, isError, refetch } = useStoreReadiness(storeId)
 
-  const missingRequirements = data?.missingRequirements?.length
-    ? data.missingRequirements
-    : data?.checks?.filter((check) => check.required && !check.passed)
-        .map((check) => check.message === 'Run address geocoding before publishing.' ? 'Coordinates (Location)' : check.message || check.label) ?? []
+  const missingRequirements = missingPublishRequirements(data)
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground" role="status" aria-live="polite">
