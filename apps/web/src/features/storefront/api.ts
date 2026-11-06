@@ -119,7 +119,13 @@ export function useStorefrontEditor(storeId: string) {
       if (!response.ok) throw await failure(response, 'The storefront could not be published')
       return ((await response.json()) as { data: StorefrontEditorState }).data
     },
-    onSuccess: settle,
+    onSuccess: (next) => {
+      settle(next)
+      void queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
+      void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+      void queryClient.invalidateQueries({ queryKey: ['store', storeId] })
+      void queryClient.invalidateQueries({ queryKey: ['store-readiness', storeId] })
+    },
   })
 
   const discard = useMutation({

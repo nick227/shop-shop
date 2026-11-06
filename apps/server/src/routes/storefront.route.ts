@@ -22,6 +22,7 @@ import {
 } from '@packages/shared/storefront'
 import { requireVendorWorkspace } from '../middleware/vendorAccess.js'
 import { HoursStatusService } from '../services/hoursStatus.service.js'
+import { getStoreReadiness } from '../services/store-readiness.service.js'
 
 /** Order activity counted toward "popular". */
 const POPULAR_WINDOW_DAYS = 60
@@ -247,15 +248,25 @@ export async function storefrontRoutes(app: FastifyInstance) {
   app.post('/stores/:storeId/storefront/publish', { preHandler: [requireVendorWorkspace] }, async (req, reply) => {
     const { storeId } = req.params as Params
     if (!await requireManage(req, reply, storeId)) return reply
+    const readiness = await getStoreReadiness(storeId)
+    if (!readiness) return reply.code(404).send({ error: 'Store not found' })
+    if (!readiness.canPublish) {
+      return reply.code(400).send({
+        error: `Store is not ready to publish. Required: ${readiness.missingRequirements.join(', ') || 'complete store setup'}.`,
+      })
+    }
     const existing = await prisma.storefrontConfig.findUnique({ where: { storeId } })
     // Check references again: an item or photo may have been deleted since the draft was saved.
     const published = normalizeStorefrontConfig(existing?.draftJson, await storeRefs(storeId))
     const now = new Date()
-    const row = await prisma.storefrontConfig.upsert({
-      where: { storeId },
-      create: { storeId, draftJson: published as object, publishedJson: published as object, publishedAt: now, publishedById: req.user!.id },
-      update: { draftJson: published as object, publishedJson: published as object, publishedAt: now, publishedById: req.user!.id },
-    })
+    const [row] = await prisma.$transaction([
+      prisma.storefrontConfig.upsert({
+        where: { storeId },
+        create: { storeId, draftJson: published as object, publishedJson: published as object, publishedAt: now, publishedById: req.user!.id },
+        update: { draftJson: published as object, publishedJson: published as object, publishedAt: now, publishedById: req.user!.id },
+      }),
+      prisma.store.update({ where: { id: storeId }, data: { isPublished: true } }),
+    ])
     return reply.send({ data: editorState(row) })
   })
 

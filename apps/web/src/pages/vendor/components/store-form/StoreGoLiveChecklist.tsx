@@ -7,14 +7,18 @@ interface Readiness {
   checks?: { required: boolean; passed: boolean; label: string; message?: string }[]
 }
 
-export function StoreGoLiveChecklist({ storeId, enabled }: { storeId?: string; enabled: boolean }) {
+export function useStoreReadiness(storeId?: string) {
   const request = useVendorTeamRequest()
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['store-readiness', storeId, enabled],
+  return useQuery({
+    queryKey: ['store-readiness', storeId],
     queryFn: () => request<Readiness>(`/stores/${storeId}/readiness`),
     enabled: Boolean(storeId),
     staleTime: 0,
   })
+}
+
+export function StoreGoLiveChecklist({ storeId, enabled }: { storeId?: string; enabled: boolean }) {
+  const { data, isPending, isError, refetch } = useStoreReadiness(storeId)
 
   const missingRequirements = data?.missingRequirements?.length
     ? data.missingRequirements

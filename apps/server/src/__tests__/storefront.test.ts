@@ -19,6 +19,29 @@ describe('storefront', () => {
 
   const get = (query = '', token?: string, store = storeId) =>
     app.inject({ method: 'GET', url: `/stores/${store}/storefront${query}`, headers: token ? authHeaders(token) : {} })
+  const makeReady = async (id: string) => {
+    await prisma.store.update({
+      where: { id },
+      data: {
+        description: 'Ready to open',
+        phone: '555-0100',
+        addressStreet: '100 Test St',
+        addressCity: 'Austin',
+        addressState: 'TX',
+        addressZip: '78701',
+        latitude: '30.26720000',
+        longitude: '-97.74310000',
+        geocodedAt: new Date(),
+        geocodeSource: 'test',
+        pickupEnabled: true,
+        deliveryEnabled: false,
+      },
+    })
+    if ((await prisma.mediaAsset.count({ where: { storeId: id } })) === 0) {
+      await prisma.mediaAsset.create({ data: { storeId: id, kind: 'IMAGE', url: `https://example.test/${id}.jpg` } })
+    }
+  }
+
   const send = (method: 'PUT' | 'POST', path: string, token: string, payload?: unknown) =>
     app.inject({
       method,
@@ -76,6 +99,7 @@ describe('storefront', () => {
   })
 
   it('publishes the draft, then discards later changes back to it', async () => {
+    await makeReady(storeId)
     const published = await send('POST', '/publish', owner.token)
     expect(published.statusCode).toBe(200)
     expect(published.json().data.hasUnpublishedChanges).toBe(false)
@@ -85,6 +109,20 @@ describe('storefront', () => {
     const discarded = await send('POST', '/discard', owner.token)
     expect(discarded.json().data.draft.brand.tagline).toBe('Hot tortas daily')
     expect(discarded.json().data.hasUnpublishedChanges).toBe(false)
+  })
+
+  it('refuses to publish until the store can go live, then enables it', async () => {
+    const id = (await createTestStore(owner.id, { isPublished: false })).id
+    const post = () => app.inject({ method: 'POST', url: `/stores/${id}/storefront/publish`, headers: authHeaders(owner.token) })
+    const blocked = await post()
+    expect(blocked.statusCode).toBe(400)
+    expect(blocked.json().error).toMatch(/not ready to publish/)
+    expect((await prisma.store.findUnique({ where: { id }, select: { isPublished: true } }))?.isPublished).toBe(false)
+
+    await createTestItem(id, { title: 'Taco' })
+    await makeReady(id)
+    expect((await post()).statusCode).toBe(200)
+    expect((await prisma.store.findUnique({ where: { id }, select: { isPublished: true } }))?.isPublished).toBe(true)
   })
 
   it('lets only the store’s managers change the storefront', async () => {

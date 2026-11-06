@@ -67,6 +67,7 @@ const authPost = vi.fn(async (url: string) => {
 })
 vi.mock('@shared/lib/auth/authFetch', () => ({
   authGet: (url: string) => authGet(url),
+  authFetch: async () => ok({ canPublish: true, missingRequirements: [] }),
   authPut: (url: string, body: { config: StorefrontConfig }) => authPut(url, body),
   authPost: (url: string) => authPost(url),
   authPatch: vi.fn(),
@@ -102,11 +103,11 @@ describe('StorefrontEditorPage', () => {
 
     await waitFor(() => expect(calls).toContain('PUT /api/stores/s1/storefront/draft'), { timeout: 3000 })
     expect(saved.brand.tagline).toBe('Breakfast all day')
-    expect(screen.getByRole('status')).toHaveTextContent('Unpublished changes')
+    expect(screen.getByText('Unpublished changes')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(calls).toContain('POST /api/stores/s1/storefront/publish'))
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Live'))
+    await waitFor(() => expect(screen.getByText('Live')).toBeInTheDocument())
   })
 
   it('opens a part’s settings from the preview and goes back to the outline', async () => {

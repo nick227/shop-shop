@@ -33,6 +33,7 @@ import { MenuPanel } from './components/storefront-editor/MenuPanel'
 import { PANEL_TITLES, PART_PANEL, PageOutline, type OutlineSummary, type PanelKey } from './components/storefront-editor/PageOutline'
 import { AnnouncementsPanel } from './components/storefront-editor/AnnouncementsPanel'
 import { BusinessPanel } from './components/storefront-editor/BusinessPanel'
+import { StoreGoLiveChecklist, useStoreReadiness } from './components/store-form/StoreGoLiveChecklist'
 import type { PanelProps } from './components/storefront-editor/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import type { StorefrontData, StorefrontHours } from '@features/storefront/api'
@@ -78,12 +79,16 @@ export default function StorefrontEditorPage() {
   const normalized = useMemo(() => (draft ? normalizeStorefrontConfig(draft) : null), [draft])
   const published = state.data?.published ?? null
   const hasChanges = normalized ? !sameStorefrontConfig(normalized, published ?? defaultStorefrontConfig()) : false
+  const readiness = useStoreReadiness(storeId)
+  const storeEnabled = Boolean(store && 'isPublished' in store && store.isPublished)
+  const needsPublish = hasChanges || !state.data?.publishedAt || !storeEnabled
+  const blocked = readiness.data?.canPublish === false
 
   const onPublish = async () => {
     try {
       if (saveState !== 'saved') await save()
       await publish.mutateAsync()
-      toast.success('Your storefront is live')
+      toast.success('Your store is live')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The storefront could not be published')
     }
@@ -125,8 +130,8 @@ export default function StorefrontEditorPage() {
             </Button>
           ) : null}
           {/* Publishing is the one primary action; with nothing new it simply isn't offered. */}
-          {hasChanges || !state.data?.publishedAt ? (
-            <Button variant="primary" onClick={() => void onPublish()} disabled={publish.isPending} isLoading={publish.isPending}>
+          {needsPublish ? (
+            <Button variant="primary" onClick={() => void onPublish()} disabled={publish.isPending || blocked} isLoading={publish.isPending}>
               Publish
             </Button>
           ) : null}
@@ -223,6 +228,7 @@ function EditorRail({ panel, onClose, onOpenPart, panelProps, store, hours, sect
 }) {
   return (
     <aside aria-label="Storefront settings" className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto lg:pr-1 lg:[scrollbar-width:thin]">
+      <StoreGoLiveChecklist storeId={store.id} enabled />
       {panel === null ? (
         <>
           <p className="px-2 pb-1 text-sm text-muted-foreground">Choose a part to edit, or click it in the preview.</p>
