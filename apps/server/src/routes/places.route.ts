@@ -82,19 +82,33 @@ export async function placeRoutes(app: FastifyInstance) {
   app.get('/places/:slug', async (req, reply) => {
     const { slug } = req.params as { slug: string }
     const place = await prisma.place.findFirst({
-      where: { slug, kind: 'NEIGHBORHOOD', published: true },
+      where: {
+        slug,
+        OR: [
+          { kind: 'CITY' },
+          { kind: 'NEIGHBORHOOD', published: true },
+        ],
+      },
       include: {
-        parent: { select: { id: true, name: true, state: true } },
+        parent: { select: { id: true, name: true, state: true, slug: true } },
         postalLinks: { select: { postalCode: true }, orderBy: { postalCode: 'asc' } },
         media: { orderBy: { sortIndex: 'asc' }, select: { url: true, kind: true } },
       },
     })
-    if (!place?.parent) return reply.code(404).send({ error: 'Neighborhood not found' })
+    if (!place || (place.kind === 'NEIGHBORHOOD' && !place.parent)) {
+      return reply.code(404).send({ error: 'Place not found' })
+    }
     const origin = place.latitude != null && place.longitude != null
       ? { latitude: Number(place.latitude), longitude: Number(place.longitude) }
       : null
+    const parentId = place.kind === 'CITY' ? place.id : place.parent?.id
     const candidates = await prisma.place.findMany({
-      where: { kind: 'NEIGHBORHOOD', published: true, parentId: place.parent.id, id: { not: place.id } },
+      where: {
+        kind: 'NEIGHBORHOOD',
+        published: true,
+        parentId,
+        ...(place.kind === 'NEIGHBORHOOD' ? { id: { not: place.id } } : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -117,7 +131,10 @@ export async function placeRoutes(app: FastifyInstance) {
           : null,
       }))
       .sort((left, right) => (left.distance ?? 999) - (right.distance ?? 999) || left.name.localeCompare(right.name))
-      .slice(0, 6)
+      .slice(0, place.kind === 'CITY' ? 8 : 6)
+    const city = place.kind === 'CITY'
+      ? { name: place.name, state: place.state, slug: place.slug }
+      : { name: place.parent?.name ?? '', state: place.parent?.state ?? null, slug: place.parent?.slug ?? '' }
     return {
       id: place.id,
       name: place.name,
@@ -126,7 +143,7 @@ export async function placeRoutes(app: FastifyInstance) {
       about: place.about,
       latitude: place.latitude == null ? null : Number(place.latitude),
       longitude: place.longitude == null ? null : Number(place.longitude),
-      city: place.parent,
+      city,
       postalCodes: place.postalLinks.map((link) => link.postalCode),
       images: place.media.filter((media) => media.kind === 'IMAGE').map((media) => media.url),
       videos: place.media.filter((media) => media.kind === 'VIDEO').map((media) => media.url),

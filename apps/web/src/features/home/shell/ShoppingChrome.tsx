@@ -7,6 +7,7 @@ import { SearchInput } from '@shared/ui/primitives'
 import { useCartStore } from '@stores/cartStore'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { applyDiscoveryPatch, isDiscoveryPath, readDiscoveryContext } from '../discovery/discoveryContext'
+import { provisionalPlaceName } from '../discovery/discoveryMode'
 import { placeZip, rememberedPlace, rememberPlace } from './placeMemory'
 import { DrawerNav } from './ShopNav'
 
@@ -47,12 +48,14 @@ export function ShoppingChrome() {
 
   const count = cartCount(cart?.items)
   const placeLabel = discovery.neighborhood
-    ? discovery.neighborhood.replace(/^austin-tx-/, '').split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    : place?.zip
-      ? `${place.zip}${place.city ? ` ${place.city}` : ''}`
-      : zip || 'Set ZIP'
+    ? provisionalPlaceName(discovery.neighborhood, true)
+    : discovery.city
+      ? provisionalPlaceName(discovery.city, false)
+      : place?.zip
+        ? `${place.zip}${place.city ? ` ${place.city}` : ''}`
+        : zip || 'Set ZIP'
 
-  const locationTarget = discovery.neighborhood
+  const locationTarget = discovery.neighborhood || discovery.city
     ? { pathname: location.pathname, search: location.search }
     : applyDiscoveryPatch(location.pathname, placeSearch, { zip })
 

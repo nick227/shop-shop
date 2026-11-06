@@ -119,10 +119,15 @@ function typeLabel(store: DiscoveryStore): string {
 
 function inVertical(store: DiscoveryStore, browse: string): boolean {
   if (!browse) return true
+  if (browse === 'arts' || browse === 'outdoors') return false
   const group = STORE_TYPE_GROUPS[browse.toUpperCase()]
   if (!group) return true
   const type = merchantType(store)
   return Boolean(type && group.includes(type))
+}
+
+function textHit(text: string, query: string): boolean {
+  return !query || text.toLowerCase().includes(query)
 }
 
 function money(price: string | number): string {
@@ -169,24 +174,12 @@ export function composeDiscovery(input: {
   const rawStores = input.stores as readonly DiscoveryStore[]
   const nonArtifactStores = rawStores.filter((store) => !TEST_ARTIFACT_STORE.test(store.name.trim()))
   const candidateStores = nonArtifactStores.length > 0 ? nonArtifactStores : rawStores
-  const filteredStores = candidateStores.filter((store) => {
-    if (!inVertical(store, input.browse)) return false
-    if (!q) return true
-    return `${store.name} ${store.description ?? ''}`.toLowerCase().includes(q)
-  })
-  const stores = [...filteredStores].sort((a, b) => {
-    const aPhoto = ownStorePhoto(a) ? 1 : 0
-    const bPhoto = ownStorePhoto(b) ? 1 : 0
-    if (aPhoto !== bPhoto) return bPhoto - aPhoto
-    return (a.distance ?? 99) - (b.distance ?? 99)
-  })
-  const storeById = new Map(stores.map((store) => [store.id, store]))
+  const categoryStores = candidateStores.filter((store) => inVertical(store, input.browse))
+  const categoryById = new Map(categoryStores.map((store) => [store.id, store]))
   const products = input.products
     .filter((item) => {
-      const store = storeById.get(item.storeId)
-      if (!store) return false
-      if (!q) return true
-      return `${item.title} ${item.description ?? ''} ${store.name}`.toLowerCase().includes(q)
+      if (!categoryById.has(item.storeId)) return false
+      return textHit(`${item.title} ${item.description ?? ''}`, q)
     })
     .sort((a, b) => {
       const aPhoto = productPicture(a).image ? 1 : 0
@@ -194,6 +187,23 @@ export function composeDiscovery(input: {
       return bPhoto - aPhoto
     })
 
+  const neighborStories = input.stories.map(storyFromPost).filter((story): story is StoryTile => {
+    if (!story?.storeId || !categoryById.has(story.storeId)) return false
+    return textHit(`${story.title} ${story.body} ${story.storeName ?? ''}`, q)
+  })
+  const matchedStoreIds = new Set<string>([
+    ...products.map((item) => item.storeId),
+    ...neighborStories.flatMap((story) => (story.storeId ? [story.storeId] : [])),
+  ])
+  const stores = categoryStores
+    .filter((store) => textHit(`${store.name} ${store.description ?? ''}`, q) || matchedStoreIds.has(store.id))
+    .sort((a, b) => {
+      const aPhoto = ownStorePhoto(a) ? 1 : 0
+      const bPhoto = ownStorePhoto(b) ? 1 : 0
+      if (aPhoto !== bPhoto) return bPhoto - aPhoto
+      return (a.distance ?? 99) - (b.distance ?? 99)
+    })
+  const storeById = new Map(stores.map((store) => [store.id, store]))
   const storeTiles: StoreTile[] = stores.map((store) => {
     const own = ownStorePhoto(store)
     return {
@@ -222,10 +232,12 @@ export function composeDiscovery(input: {
         storeName: newest.name,
       }
     : undefined
-  const neighborStories = input.stories.map(storyFromPost).filter((story): story is StoryTile => Boolean(story))
   const seenStoryStores = new Set<string>()
   const stories: StoryTile[] = []
-  for (const candidate of [...neighborStories, opened]) {
+  const openedVisible = opened && textHit(`${opened.title} ${opened.body}`, q) && (!opened.storeId || storeById.has(opened.storeId))
+    ? opened
+    : undefined
+  for (const candidate of [...neighborStories, openedVisible]) {
     if (!candidate) continue
     const key = candidate.storeId ?? candidate.id
     if (seenStoryStores.has(key)) continue

@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Map, Rows3 } from 'lucide-react'
 import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
 import { applyDiscoveryPatch, readDiscoveryContext } from './discoveryContext'
+import { placeKind } from './discoveryMode'
 
 const CATEGORIES = [
   ...STORE_TYPE_CONFIG.filter((entry) => entry.slug),
@@ -9,10 +10,20 @@ const CATEGORIES = [
   { slug: 'outdoors', label: 'Outdoors' },
 ] as const
 
-export function DiscoveryToolbar({ placeLabel }: { readonly placeLabel: string }) {
+export function DiscoveryToolbar({
+  placeLabel,
+  citySlug,
+  cityName,
+}: {
+  readonly placeLabel: string
+  readonly citySlug?: string
+  readonly cityName?: string
+}) {
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
   const context = readDiscoveryContext(pathname, search)
+  const kind = placeKind(context, pathname)
+  const kicker = kind === 'neighborhood' ? 'Neighborhood' : kind === 'zip' ? 'ZIP' : kind === 'city' ? 'City' : 'Location'
 
   const go = (patch: Parameters<typeof applyDiscoveryPatch>[2]) => {
     navigate(applyDiscoveryPatch(pathname, search, patch))
@@ -21,10 +32,12 @@ export function DiscoveryToolbar({ placeLabel }: { readonly placeLabel: string }
   return (
     <div className="discovery-toolbar" role="search">
       <div className="discovery-toolbar-place">
-        <span className="tile-kicker">{context.neighborhood ? 'Neighborhood' : 'Location'}</span>
+        <span className="tile-kicker">{kicker}</span>
         <strong>{placeLabel}</strong>
         {context.neighborhood ? (
-          <button type="button" onClick={() => go({ neighborhood: null })}>All of Austin</button>
+          <button type="button" onClick={() => go({ neighborhood: null, city: citySlug || 'austin-tx', zip: null })}>
+            All of {cityName || 'Austin'}
+          </button>
         ) : (
           <button type="button" onClick={() => go({ listNeighborhoods: true, zip: null })}>Neighborhoods</button>
         )}

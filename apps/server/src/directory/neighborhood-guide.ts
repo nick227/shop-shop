@@ -5,6 +5,7 @@ type GuideListing = {
   readonly id: string
   readonly slug: string
   readonly name: string
+  readonly category: string
   readonly categoryLabel: string
   readonly addressStreet: string | null
   readonly website: string | null
@@ -81,6 +82,7 @@ export async function neighborhoodGuide(slug: string) {
       id: row.id,
       slug: row.slug,
       name: row.name,
+      category: row.category,
       categoryLabel: row.categoryLabel,
       addressStreet: row.addressStreet,
       website: row.website,

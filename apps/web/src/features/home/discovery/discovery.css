@@ -315,11 +315,15 @@ div.hero-story {
 }
 
 .discovery-toolbar {
+  position: sticky;
+  top: 3.75rem;
+  z-index: 20;
   display: grid;
   gap: 0.75rem;
   margin-bottom: 1rem;
-  padding-bottom: 0.85rem;
+  padding: 0.35rem 0 0.85rem;
   border-bottom: 1px solid var(--line);
+  background: var(--air);
 }
 
 .discovery-toolbar-place {
@@ -1783,6 +1787,15 @@ button.discovery-toolbar-query {
 
   .discover-hero .hero-map {
     grid-column: span 3;
+  }
+
+  .discover-hero.is-results .hero-identity-panel {
+    grid-column: span 7;
+  }
+
+  .discover-hero.is-results .hero-map {
+    grid-column: span 5;
+    height: min(28rem, 60vh);
   }
 
   .discover-hero.is-map .hero-editorial-panel {

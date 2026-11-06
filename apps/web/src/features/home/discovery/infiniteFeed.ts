@@ -25,7 +25,7 @@ function isAttractionListing(listing: DirectoryListing): boolean {
   )
 }
 
-function matchesDirectoryBrowse(listing: DirectoryListing, browse: string): boolean {
+export function matchesDirectoryBrowse(listing: DirectoryListing, browse: string): boolean {
   if (!browse) return true
   const slug = browse.toLowerCase()
   const label = listing.categoryLabel

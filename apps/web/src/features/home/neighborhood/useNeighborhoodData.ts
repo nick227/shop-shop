@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import type { RiverPost } from '@api/types'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
@@ -44,18 +44,22 @@ export function useNeighborhoodData() {
   const zipCode = (location?.zip || zip || '').replace(/\D/g, '').slice(0, 5)
   const located = discoveryLocated(Boolean(location))
   const waitingForZip = Boolean(zip) && !location && !urlLocationNotice
+  const awaitingPlace = Boolean(placeSlug) && !placeLocation && (placeQuery.isLoading || placeQuery.isFetching)
   const ready = located || (!zip && !waitingForZip && !placeSlug) || Boolean(placeLocation) || (Boolean(placeSlug) && placeQuery.isFetched)
+  const scope = location ? `${location.latitude}:${location.longitude}` : awaitingPlace ? 'pending' : 'all'
 
   const storeQuery = useQuery({
-    queryKey: ['home-stores', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
-    enabled: ready,
+    queryKey: ['home-stores', scope, location?.radiusMiles ?? 'all'],
+    enabled: ready && scope !== 'pending',
+    placeholderData: keepPreviousData,
     queryFn: () => loadStores(location),
   })
 
   const productQuery = useQuery({
-    queryKey: ['home-products', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
+    queryKey: ['home-products', scope, location?.radiusMiles ?? 'all'],
     queryFn: () => loadProducts(location),
-    enabled: ready,
+    enabled: ready && scope !== 'pending',
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -66,16 +70,21 @@ export function useNeighborhoodData() {
   })
 
   const storyQuery = useQuery<RiverPost[]>({
-    queryKey: ['home-stories', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
-    enabled: ready,
+    queryKey: ['home-stories', scope, location?.radiusMiles ?? 'all'],
+    enabled: ready && scope !== 'pending',
+    placeholderData: keepPreviousData,
     queryFn: () => loadStories(location),
   })
 
+  const shownPlace = place?.slug === placeSlug ? place : undefined
   return {
     location,
     notice: urlLocationNotice,
     waitingForZip,
-    activePlace: context.neighborhood ? place ?? null : null,
+    placePending: awaitingPlace,
+    activePlace: context.neighborhood ? shownPlace ?? null : null,
+    cityPlace: context.city && !context.neighborhood && !context.zip ? shownPlace ?? null : null,
+    nearby: context.neighborhood && shownPlace ? shownPlace.nearby ?? [] : [],
     stores: storeQuery.data ?? [],
     products: productQuery.data ?? [],
     stories: storyQuery.data ?? [],

@@ -92,9 +92,16 @@ export type DiscoveryPlace = {
   readonly about: string | null
   readonly latitude: number | null
   readonly longitude: number | null
-  readonly city: { readonly name: string; readonly state: string | null } | null
+  readonly city: { readonly name: string; readonly state: string | null; readonly slug: string } | null
   readonly images: readonly string[]
   readonly postalCodes: readonly string[]
+  readonly nearby: readonly {
+    readonly id: string
+    readonly name: string
+    readonly slug: string
+    readonly headline: string | null
+    readonly coverUrl: string | null
+  }[]
 }
 
 export async function loadDiscoveryPlace(slug: string): Promise<DiscoveryPlace | null> {

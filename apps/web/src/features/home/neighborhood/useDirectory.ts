@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { HOME_RADIUS_MILES } from '../shell/placeMemory'
 import { apiOrigin } from './loadDiscovery'
 import type { DirectoryListing } from './DirectoryList'
@@ -10,6 +10,7 @@ export function useDirectory(latitude?: number, longitude?: number, options?: { 
   const located = latitude != null && longitude != null
   return useQuery({
     queryKey: ['directory', latitude ?? 'all', longitude ?? 'all', q, group, limit],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
         limit: String(limit),

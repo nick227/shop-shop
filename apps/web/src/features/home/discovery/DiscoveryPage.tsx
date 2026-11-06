@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
@@ -10,7 +10,11 @@ import { verticalSlugForStore } from '../neighborhood/selectHome'
 import { recordVertical } from '../neighborhood/taste'
 import { HOME_RADIUS_MILES, placeZip, rememberedPlace, rememberZip } from '../shell/placeMemory'
 import { applyDiscoveryPatch, canonicalDiscoverySearch, directoryGroup, readDiscoveryContext } from './discoveryContext'
+import { discoveryBands, discoveryEmphasis, heroIdentity, neighborhoodBandCopy, placeKind, provisionalPlaceName, type DiscoveryBand } from './discoveryMode'
+import { matchesDirectoryBrowse } from './infiniteFeed'
+import { discoveryMapPoints } from './mapResults'
 import { DiscoveryToolbar } from './DiscoveryToolbar'
+import { useDiscoveryScroll } from './useDiscoveryScroll'
 import { CategorySection } from './CategoryCircles'
 import { DetailPanel } from './DetailPanel'
 import { ForYouSurface } from './ForYouSurface'
@@ -20,7 +24,8 @@ import { MemberShops } from '../neighborhood/MemberShops'
 import { PlaceCard, placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
 import type { NeighborhoodCard } from '../neighborhood/neighborhoodHero'
 import { useDirectory } from '../neighborhood/useDirectory'
-import { composeDiscovery, mapPoints, type DiscoveryItem, type DiscoveryTile } from './tiles'
+import { mergeCurated, useNeighborhoodGuide } from '../neighborhood/useNeighborhoodGuide'
+import { composeDiscovery, type DiscoveryItem, type DiscoveryTile } from './tiles'
 import './discovery.css'
 
 const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly postalCodes: readonly string[] })[] = [
@@ -64,13 +69,24 @@ const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly pos
 
 export function DiscoveryPage() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const context = readDiscoveryContext(pathname, params.toString())
   const data = useNeighborhoodData()
-  const directory = useDirectory(data.location?.latitude, data.location?.longitude, {
+  const kind = placeKind(context, pathname)
+  const emphasis = discoveryEmphasis(context, kind)
+  useDiscoveryScroll(`${context.neighborhood ?? ''}|${context.zip ?? ''}|${context.city ?? ''}|${pathname === '/neighborhoods'}`)
+  const held = useRef<{ lat?: number; lng?: number }>({})
+  if (data.location?.latitude != null && data.location.longitude != null) {
+    held.current = { lat: data.location.latitude, lng: data.location.longitude }
+  }
+  const directoryLat = data.location?.latitude ?? (data.placePending ? held.current.lat : undefined)
+  const directoryLng = data.location?.longitude ?? (data.placePending ? held.current.lng : undefined)
+  const directory = useDirectory(directoryLat, directoryLng, {
     q: context.q,
     group: directoryGroup(context.category),
   })
+  const guide = useNeighborhoodGuide(context.neighborhood)
   const account = useSignedInHome()
   const accountZip = defaultAddressZip(account.addresses, account.orders)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
@@ -95,19 +111,38 @@ export function DiscoveryPage() {
     setParams(next, { replace: true })
   }, [accountZip, context.hasExplicitPlace, context.zip, params, setParams])
 
-  const browse = context.category === 'arts' || context.category === 'outdoors' ? '' : context.category
+  const browse = context.category
   const query = context.q
   const shownZip = data.location?.zip || placeZip(params.toString()) || accountZip || ''
   const composed = useMemo(() => composeDiscovery({
     stores: data.stores,
     products: data.products as DiscoveryItem[],
     stories: data.stories,
-    browse: browse === 'arts' || browse === 'outdoors' ? '' : browse,
+    browse,
     query,
   }), [browse, data.products, data.stores, data.stories, query])
-  const points = useMemo(() => mapPoints(composed.places), [composed.places])
+  const listings = useMemo(
+    () => mergeCurated(directory.data ?? [], context.neighborhood ? guide.data ?? [] : []),
+    [context.neighborhood, directory.data, guide.data],
+  )
+  const visibleListings = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return listings.filter((listing) => {
+      if (!matchesDirectoryBrowse(listing, browse)) return false
+      if (!needle) return true
+      return `${listing.name} ${listing.categoryLabel} ${listing.addressStreet ?? ''}`.toLowerCase().includes(needle)
+    })
+  }, [browse, listings, query])
+  const points = useMemo(
+    () => discoveryMapPoints(composed.places, visibleListings, browse, query),
+    [browse, composed.places, query, visibleListings],
+  )
 
   const openStore = (id: string) => {
+    if (id.startsWith('directory:')) {
+      navigate(`/directory/${id.slice('directory:'.length)}`)
+      return
+    }
     const tile = composed.tiles.find((entry) => entry.kind === 'store' && entry.id === id)
       ?? (composed.hero?.id === id ? composed.hero : undefined)
     if (tile) setSelected({ tile })
@@ -146,20 +181,51 @@ export function DiscoveryPage() {
     })
   }, [data.stores, selected])
 
-  const marketTiles = composed.stories[0]
-    ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
-    : composed.tiles
-  const listings = directory.data ?? []
+  const marketTiles = emphasis === 'search'
+    ? composed.tiles
+    : composed.stories[0]
+      ? composed.tiles.filter((tile) => tile.id !== composed.stories[0]?.id)
+      : composed.tiles
   const hasLocation = Boolean(data.location)
   const visibleNeighborhoods = data.neighborhoods.length > 0 ? data.neighborhoods : FALLBACK_AUSTIN_NEIGHBORHOODS
-  const listedNeighborhoods = pathname === '/neighborhoods' ? visibleNeighborhoods : visibleNeighborhoods.slice(0, 4)
+  const nearbyCards = (data.nearby ?? []).map((area) => ({ ...area, about: null }))
+  const neighborhoodPool = kind === 'neighborhood' && nearbyCards.length > 0
+    ? nearbyCards.filter((area) => area.slug !== context.neighborhood)
+    : visibleNeighborhoods.filter((area) => area.slug !== context.neighborhood)
+  const listedNeighborhoods = pathname === '/neighborhoods' ? visibleNeighborhoods : neighborhoodPool.slice(0, 4)
   const focus = data.activePlace
-    ? {
-        ...data.activePlace,
-        coverUrl: data.activePlace.images[0] ?? null,
-      }
-    : undefined
-  const placeLabel = focus?.name ?? (data.location?.zip ? `${data.location.city ?? 'Austin'} ${data.location.zip}` : 'Austin')
+    ? { ...data.activePlace, coverUrl: data.activePlace.images[0] ?? null }
+    : context.neighborhood
+      ? {
+          id: context.neighborhood,
+          name: provisionalPlaceName(context.neighborhood, true),
+          slug: context.neighborhood,
+          headline: null,
+          about: null,
+          coverUrl: null,
+        }
+      : undefined
+  const cityName = data.activePlace?.city?.name ?? data.cityPlace?.name ?? data.location?.city ?? 'Austin'
+  const citySlug = data.activePlace?.city?.slug ?? data.cityPlace?.slug ?? context.city
+  const placeLabel = kind === 'neighborhood'
+    ? focus?.name ?? 'Neighborhood'
+    : kind === 'zip'
+      ? `${cityName} ${shownZip}`
+      : cityName
+  const areaNames = listedNeighborhoods.slice(0, 3).map((area) => area.name).join(', ')
+  const identity = heroIdentity({
+    kind,
+    emphasis,
+    city: cityName,
+    state: data.activePlace?.city?.state ?? data.cityPlace?.state ?? data.location?.state,
+    zip: shownZip,
+    focus,
+    shopCount: points.length,
+    areaNames,
+    category: context.category,
+    query,
+  })
+  const neighborhoodCopy = neighborhoodBandCopy(kind, shownZip, cityName)
 
   const views = useRecentViews()
   const personalStoreIds = new Set([
@@ -175,50 +241,41 @@ export function DiscoveryPage() {
   const featuredStoreIds = new Set(memberStores.slice(0, 4).map((store) => `store:${store.id}`))
   for (const id of personalStoreIds) featuredStoreIds.add(`store:${id}`)
   if (heroStoreId) featuredStoreIds.add(`store:${heroStoreId}`)
-  for (const listing of listings.filter((item) => item.featured).slice(0, Math.max(0, 4 - memberStores.length))) {
+  for (const listing of visibleListings.filter((item) => item.featured).slice(0, Math.max(0, 4 - memberStores.length))) {
     featuredStoreIds.add(`directory:${listing.id}`)
   }
   const feedStories = composed.stories.slice(1).filter((story) => !heroStoreId || story.storeId !== heroStoreId)
 
-  return (
-    <div className="discover">
-      <PublicMaintenanceBanner />
-      <DiscoveryToolbar placeLabel={placeLabel} />
-
-      {/* Surface 1: A Living Location Header */}
+  const sections: Record<DiscoveryBand, ReactNode> = {
+    hero: (
       <LocationHero
-        city={focus?.city?.name ?? data.location?.city}
-        state={focus?.city?.state ?? data.location?.state}
-        zip={context.neighborhood ? undefined : data.location?.zip || shownZip}
+        zip={kind === 'neighborhood' ? undefined : shownZip}
         focus={focus}
         mapView={context.view === 'map'}
+        kind={kind}
+        identity={identity}
+        showEditorial={emphasis !== 'search'}
         error={data.location ? undefined : data.notice?.message}
         pending={data.waitingForZip}
-        shopCount={composed.places.length}
         story={composed.stories[0]}
         nearest={composed.nearest}
         points={points}
         userLat={data.location?.latitude}
         userLng={data.location?.longitude}
         onSelectStore={openStore}
-        neighborhoods={visibleNeighborhoods}
+        neighborhoods={listedNeighborhoods}
       />
-
-      {/* Surface 2 (Visual Anchor): Explore Neighborhoods */}
-      <section
-        className="surface-band neighborhoods-anchor"
-        aria-label={hasLocation ? 'Nearby Neighborhoods' : 'Austin neighborhoods'}
-      >
+    ),
+    neighborhoods: (
+      <section className="surface-band neighborhoods-anchor" aria-label={neighborhoodCopy.label}>
         <div className="surface-head">
           <div className="surface-head-titles">
-            <p className="tile-kicker">Explore Austin</p>
-            <h2 className="surface-title">
-              {hasLocation ? 'Neighborhoods around this area' : 'Austin neighborhoods'}
-            </h2>
+            <p className="tile-kicker">{neighborhoodCopy.kicker}</p>
+            <h2 className="surface-title">{neighborhoodCopy.title}</h2>
           </div>
           {pathname === '/neighborhoods' ? null : (
             <Link
-              to={applyDiscoveryPatch(pathname, params.toString(), { listNeighborhoods: true, zip: null })}
+              to={applyDiscoveryPatch(pathname, params.toString(), { listNeighborhoods: true, zip: null, city: null })}
               className="browse-all-link"
             >
               Browse all neighborhoods
@@ -235,8 +292,8 @@ export function DiscoveryPage() {
           ))}
         </div>
       </section>
-
-      {/* Surfaces 3 & 4 Combined: Personal Area (For You + Your Collection) */}
+    ),
+    personal: (
       <ForYouSurface
         tiles={composed.tiles}
         storeTiles={composed.storeTiles}
@@ -250,26 +307,30 @@ export function DiscoveryPage() {
         hasLocation={hasLocation}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
-
-      {/* Surface 5: Featured Local Businesses */}
-      <MemberShops stores={memberStores} curatedListings={listings} />
-
-      {/* Surface 6: Browse by Category */}
-      <CategorySection />
-
-      {/* Surface 7: Infinite Discovery Feed */}
+    ),
+    shops: <MemberShops stores={memberStores} curatedListings={visibleListings} />,
+    categories: <CategorySection />,
+    feed: (
       <MarketFeed
         tiles={marketTiles}
         nearest={composed.nearest}
         storeTiles={composed.storeTiles}
         stories={feedStories}
-        listings={listings}
+        listings={visibleListings}
         browse={browse}
         query={query}
-        excludeIds={featuredStoreIds}
+        excludeIds={emphasis === 'search' ? new Set<string>() : featuredStoreIds}
         showCategories={false}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
+    ),
+  }
+
+  return (
+    <div className="discover" aria-busy={data.placePending || undefined}>
+      <PublicMaintenanceBanner />
+      <DiscoveryToolbar placeLabel={placeLabel} citySlug={citySlug} cityName={cityName} />
+      {discoveryBands(emphasis).map((band) => <Fragment key={band}>{sections[band]}</Fragment>)}
 
       {selected ? (
         <DetailPanel
