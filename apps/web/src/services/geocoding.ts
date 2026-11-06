@@ -20,6 +20,14 @@ function apiOriginForRequests(): string {
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005'
 
+/** The lookup service is down or misconfigured: the ZIP may be perfectly valid. */
+export class ZipLookupUnavailableError extends Error {
+  constructor(zip: string) {
+    super(`ZIP lookup unavailable for ${zip}`)
+    this.name = 'ZipLookupUnavailableError'
+  }
+}
+
 /**
  * Geocode a ZIP code to coordinates;
  */
@@ -37,6 +45,7 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
         console.warn(`[Geocoding] ZIP ${zipCode} not found:`, errorData.message)
         return undefined // ZIP not found;
       }
+      if (response.status === 502 || response.status === 503) throw new ZipLookupUnavailableError(zipCode)
       const errorText = await response.text().catch(() => 'Unknown error')
       console.error(`[Geocoding] API error (${response.status}):`, errorText)
       throw new Error(`Geocoding failed: ${response.status}`)
@@ -46,6 +55,7 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
     console.log(`[Geocoding] Success for ZIP ${zipCode}:`, result)
     return result;
   } catch (error: unknown) {
+    if (error instanceof ZipLookupUnavailableError) throw error
     console.error('[Geocoding] Fetch error:', error)
     return undefined;
   }
@@ -115,7 +125,7 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | u
 
 
 export async function reverseGeocode(latitude: number, longitude: number): Promise<{
-  line1?: string; city?: string; state?: string; postalCode?: string
+  line1?: string; city?: string; state?: string; postalCode?: string; country?: string
 }> {
   const query = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude) })
   const response = await fetch(`${apiOriginForRequests()}/geocode/reverse?${query}`, { signal: AbortSignal.timeout(10_000) })

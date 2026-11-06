@@ -12,7 +12,7 @@ import {
 } from './utils/urlLocationUtils'
 import { locationValidator } from '@shared/lib/utils/validation/unified'
 import { rememberZip } from '@features/home/shell/placeMemory'
-import { geocodeZip } from '../../../services/geocoding'
+import { geocodeZip, ZipLookupUnavailableError } from '../../../services/geocoding'
 import type { UrlLocationNoticePayload } from '@features/home/components'
 
 interface UseUrlLocationResult {
@@ -64,7 +64,20 @@ export function useUrlLocation(): UseUrlLocationResult {
     setUrlLocationNotice(undefined)
 
     void (async () => {
-      const geo = await geocodeZip(memoizedUrlParams.zip!)
+      let geo: Awaited<ReturnType<typeof geocodeZip>>
+      try {
+        geo = await geocodeZip(memoizedUrlParams.zip!)
+      } catch (error) {
+        if (cancelled) return
+        setUrlLocationNotice({
+          message: error instanceof ZipLookupUnavailableError
+            ? `We can’t look up ZIP ${memoizedUrlParams.zip} right now. Please try again in a moment.`
+            : `We couldn’t look up ZIP ${memoizedUrlParams.zip}. Please try again.`,
+          variant: 'error',
+        })
+        setLocation(undefined)
+        return
+      }
       if (cancelled) return
       if (geo) {
         const radiusRaw = memoizedUrlParams.radiusMiles

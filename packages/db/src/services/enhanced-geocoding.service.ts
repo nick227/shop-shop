@@ -62,6 +62,7 @@ export class EnhancedGeocodingService {
     query: GeocodingQuery,
     label: string,
     fetchApi: () => Promise<ApiResult | null>,
+    options: { readonly throwOnProviderError?: boolean } = {},
   ): Promise<GeocodingResult | null> {
     if (this.cachingEnabled()) {
       const cached = await this.cacheService.getCachedResult(query)
@@ -92,6 +93,7 @@ export class EnhancedGeocodingService {
       if (withResponse.response?.data !== undefined) {
         console.error('[Geocoding] API response body:', withResponse.response.data)
       }
+      if (options.throwOnProviderError) throw new GeocoderUnavailableError(msg)
       return null
     }
   }
@@ -103,6 +105,8 @@ export class EnhancedGeocodingService {
       { queryType: 'zip', queryValue: zipCode },
       `zip=${zipCode}`,
       () => this.apiAdapter.geocodeZipCode(zipCode),
+      // A failed provider call (bad key, outage) is not the same as a ZIP that does not exist.
+      { throwOnProviderError: true },
     )
   }
 
@@ -134,6 +138,14 @@ export class EnhancedGeocodingService {
 
   async populateCommonZips() {
     return this.cacheService.populateCommonZips()
+  }
+}
+
+/** The external geocoder failed, so the lookup says nothing about whether the place exists. */
+export class GeocoderUnavailableError extends Error {
+  constructor(detail: string) {
+    super(`Geocoder unavailable: ${detail}`)
+    this.name = 'GeocoderUnavailableError'
   }
 }
 

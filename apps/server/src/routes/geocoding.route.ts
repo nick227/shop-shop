@@ -199,6 +199,13 @@ export async function geocodingRoutes(app: FastifyInstance) {
         })
       }
       
+      if (error instanceof Error && error.name === 'GeocoderUnavailableError') {
+        req.log.error(error, 'ZIP lookup provider failed')
+        return reply.status(503).send({
+          error: 'Service Unavailable',
+          message: 'ZIP lookup is unavailable right now',
+        })
+      }
       req.log.error(error)
       return reply.status(500).send({
         error: 'Internal Server Error',
