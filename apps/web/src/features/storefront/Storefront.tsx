@@ -292,7 +292,7 @@ export function Storefront({
     featured: <FeaturedRow items={featuredRow} />,
     categories: groups.length >= CATEGORY_TILES_MIN_SECTIONS ? <CategoryTiles groups={groups} onJump={jump} /> : null,
   }
-  const afterMenu = {
+  const afterMenu: Record<AfterMenuSection, ReactNode> = {
     about: <AboutSection store={store} hours={data.hours} showMap={mode === 'live'} />,
     gallery: <GallerySection media={data.media} storeName={store.name} />,
     updates: updates ? <UpdatesSection>{updates}</UpdatesSection> : null,
