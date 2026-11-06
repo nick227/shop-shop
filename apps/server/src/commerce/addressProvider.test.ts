@@ -20,6 +20,23 @@ const respond = (features: unknown[]) => vi.fn(async (_url: string) => ({ ok: tr
 const HOME = { line1: '4500 Duval St', city: 'Austin', state: 'TX', postalCode: '78751' }
 
 describe('Mapbox address provider', () => {
+  it('reverse geocodes coordinates into editable address fields', async () => {
+    const fetcher = respond([feature()])
+    expect(await mapboxProvider('pk.test', fetcher).reverse!(30.31, -97.72)).toEqual({ line1: '4500 Duval Street', city: 'Austin', state: 'TX', postalCode: '78751' })
+    const url = new URL(fetcher.mock.calls[0][0])
+    expect(url.pathname).toContain('/reverse')
+    expect(url.searchParams.get('latitude')).toBe('30.31')
+    expect(url.searchParams.get('longitude')).toBe('-97.72')
+    expect(url.searchParams.get('permanent')).toBe('true')
+  })
+  it('preserves partial reverse lookup results', async () => {
+    const fetcher = respond([feature({ name: undefined, context: { place: { name: 'Austin' } } })])
+    expect(await mapboxProvider('pk.test', fetcher).reverse!(30.31, -97.72)).toEqual({ city: 'Austin' })
+  })
+  it('returns no address for an empty reverse lookup', async () => {
+    expect(await mapboxProvider('pk.test', respond([])).reverse!(30.31, -97.72)).toBeNull()
+  })
+
   it('suggests full US street addresses near the store', async () => {
     const fetcher = respond([feature()])
     const suggestions = await mapboxProvider('pk.test', fetcher).suggest('4500 duv', { lat: 30.31, lng: -97.72 })

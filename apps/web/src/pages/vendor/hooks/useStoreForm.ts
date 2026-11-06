@@ -111,6 +111,7 @@ export function useStoreForm(storeId?: string) {
       void queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
     },
     onError: async (error) => {
+      void queryClient.invalidateQueries({ queryKey: ['store-readiness', targetStoreId] })
       const appError = await handleApiError(error)
       toast.error(appError.message)
     },
@@ -129,9 +130,11 @@ export function useStoreForm(storeId?: string) {
       queryClient.invalidateQueries({ queryKey: ['store', targetStoreId] })
       queryClient.invalidateQueries({ queryKey: ['vendor-managed-stores'] })
       queryClient.invalidateQueries({ queryKey: ['vendor-stores'] })
+      void queryClient.invalidateQueries({ queryKey: ['store-readiness', targetStoreId] })
       toast.success('Saved')
     },
     onError: async (error) => {
+      void queryClient.invalidateQueries({ queryKey: ['store-readiness', targetStoreId] })
       const appError = await handleApiError(error)
       toast.error(appError.message)
     },

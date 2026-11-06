@@ -38,6 +38,7 @@ export interface AddressProvider {
   readonly name: 'mapbox' | 'positionstack' | 'postal'
   readonly suggests: boolean
   suggest(query: string, near?: { lat: number; lng: number }): Promise<AddressSuggestion[]>
+  reverse?(lat: number, lng: number): Promise<Partial<AddressQuery> | null>
   locate(address: AddressQuery): Promise<LocatedAddress | null>
 }
 
@@ -106,6 +107,15 @@ export function mapboxProvider(token: string, fetcher: FetchLike = fetch as unkn
   return {
     name: 'mapbox',
     suggests: true,
+    async reverse(lat, lng) {
+      const qs = new URLSearchParams({ access_token: token, latitude: String(lat), longitude: String(lng), permanent: 'true', types: 'address', limit: '1' })
+      const response = await fetcher(`${base.replace(/forward$/, 'reverse')}?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+      if (!response.ok) throw new Error('Address lookup failed')
+      const body = await response.json() as { features?: MapboxFeature[] }
+      const p = body.features?.[0]?.properties
+      if (!p) return null
+      return { line1: p.context?.address?.name ?? p.name, city: p.context?.place?.name, state: p.context?.region?.region_code, postalCode: p.context?.postcode?.name }
+    },
     async suggest(query, near) {
       if (query.trim().length < 3) return []
       const features = await request({
@@ -175,6 +185,14 @@ export function positionstackProvider(apiKey: string): AddressProvider {
   return {
     name: 'positionstack',
     suggests: false,
+    async reverse(lat, lng) {
+      const qs = new URLSearchParams({ access_key: apiKey, query: `${lat},${lng}`, limit: '1' })
+      const response = await fetch(`https://api.positionstack.com/v1/reverse?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+      if (!response.ok) throw new Error('Address lookup failed')
+      const body = await response.json() as { data?: { number?: string; street?: string; locality?: string; region_code?: string; postal_code?: string }[] }
+      const hit = body.data?.[0]
+      return hit ? { line1: hit.street ? [hit.number, hit.street].filter(Boolean).join(' ') : undefined, city: hit.locality, state: hit.region_code, postalCode: hit.postal_code } : null
+    },
     suggest: async () => [],
     async locate(address) {
       const hit = await service

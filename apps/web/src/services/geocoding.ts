@@ -113,3 +113,12 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | u
   }
 }
 
+
+export async function reverseGeocode(latitude: number, longitude: number): Promise<{
+  line1?: string; city?: string; state?: string; postalCode?: string
+}> {
+  const query = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude) })
+  const response = await fetch(`${apiOriginForRequests()}/geocode/reverse?${query}`, { signal: AbortSignal.timeout(10_000) })
+  if (!response.ok) throw new Error('Address lookup unavailable')
+  return response.json()
+}

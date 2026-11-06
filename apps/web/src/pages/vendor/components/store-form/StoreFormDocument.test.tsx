@@ -74,7 +74,7 @@ describe('StoreFormDocument', () => {
     expect(screen.queryByRole('heading', { name: 'Store' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Street *')).toBeInTheDocument()
     expect(screen.queryByLabelText('Add photo')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Latitude')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Latitude')).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Fulfillment' }))
     expect(screen.getByRole('heading', { name: 'Fulfillment' })).toBeInTheDocument()
@@ -110,3 +110,5 @@ describe('StoreFormDocument', () => {
     expect(screen.getByRole('link', { name: /\/kitchen\/northside-bakery-store-1/ })).toBeInTheDocument()
   })
 })
+
+vi.mock('./StoreGoLiveChecklist', () => ({ StoreGoLiveChecklist: () => <div>Go-live checklist</div> }))

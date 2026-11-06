@@ -1,15 +1,18 @@
+import { StoreGoLiveChecklist } from './StoreGoLiveChecklist'
+
 const OPTIONS = [
   { enabled: true, title: 'Enabled' },
   { enabled: false, title: 'Disabled' },
 ] as const
 
 interface StoreAvailabilityProps {
+  readonly storeId?: string
   readonly enabled: boolean
   readonly storeUrl: string
   readonly onChange: (enabled: boolean) => void
 }
 
-export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabilityProps) {
+export function StoreAvailability({ enabled, storeUrl, onChange, storeId }: StoreAvailabilityProps) {
   return (
     <div className="space-y-6">
       <fieldset className="space-y-2">
@@ -27,6 +30,7 @@ export function StoreAvailability({ enabled, storeUrl, onChange }: StoreAvailabi
             </label>
           ))}
         </div>
+        <StoreGoLiveChecklist storeId={storeId} enabled={enabled} />
       </fieldset>
 
       {storeUrl ? (

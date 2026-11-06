@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { createEnhancedGeocodingService, ensureGazetteer, backfillStorePlaces, lookupPostalCode, prisma } from '@packages/db'
+import { addressProvider } from '../commerce/addressProvider.js'
 import { env } from '../env.js'
 
 // Request schemas
@@ -56,6 +57,20 @@ async function postalZipResponse(zip: string): Promise<GeocodeResponse | null> {
 }
 
 export async function geocodingRoutes(app: FastifyInstance) {
+  app.get('/geocode/reverse', async (req, reply) => {
+    const parsed = z.object({ latitude: z.coerce.number().min(-90).max(90), longitude: z.coerce.number().min(-180).max(180) }).safeParse(req.query)
+    if (!parsed.success) return reply.code(400).send({ message: 'Invalid coordinates' })
+    const provider = addressProvider()
+    if (!provider.reverse) return reply.code(503).send({ message: 'Address lookup unavailable' })
+    try {
+      const address = await provider.reverse(parsed.data.latitude, parsed.data.longitude)
+      if (!address) return reply.code(404).send({ message: 'Address not found' })
+      return reply.send(address)
+    } catch {
+      return reply.code(502).send({ message: 'Address lookup failed' })
+    }
+  })
+
   try {
     await ensureGazetteer(prisma)
     await backfillStorePlaces(prisma)

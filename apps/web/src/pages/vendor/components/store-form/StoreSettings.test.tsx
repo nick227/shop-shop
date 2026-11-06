@@ -84,3 +84,5 @@ describe('StoreSettings', () => {
     expect(screen.queryByText('Delete store')).not.toBeInTheDocument()
   })
 })
+
+vi.mock('./StoreGoLiveChecklist', () => ({ StoreGoLiveChecklist: () => <div>Go-live checklist</div> }))

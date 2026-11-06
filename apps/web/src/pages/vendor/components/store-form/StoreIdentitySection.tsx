@@ -17,6 +17,7 @@ export function StoreIdentitySection({ formData, onChange, storeId }: StoreIdent
     <section className="space-y-8">
       <StoreAvailability
         enabled={formData.isPublished}
+        storeId={storeId}
         storeUrl={publicPath}
         onChange={(enabled) => onChange('isPublished', enabled)}
       />

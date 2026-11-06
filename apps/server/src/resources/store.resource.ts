@@ -10,6 +10,7 @@ import {
 import { StoreDomain, eventBus, DomainEvents, locationDomain } from '@packages/domain'
 import { prisma, getAffiliateByReferralCode, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION, readGeoScopeInput, storeWhereForScope } from '@packages/db'
 import { checkStoreActivationRequirements } from '@packages/db/services'
+import { recordStoreCoordinates } from '../services/store-coordinates.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 
 // ========================================
@@ -255,7 +256,7 @@ export const storeResource = defineResource({
       const { affiliateReferralCode, referredByAffiliateId: _ignored, ...rest } = data ?? {}
       const referral = await resolveStoreReferral(affiliateReferralCode, context.userId)
 
-      const prepared = await storeDomain.prepareForCreation(rest, context.userId)
+      const prepared = await storeDomain.prepareForCreation(recordStoreCoordinates(rest), context.userId)
       return referral
         ? { ...prepared, referredByAffiliateId: referral.affiliateId }
         : prepared
@@ -274,13 +275,13 @@ export const storeResource = defineResource({
 
       // Administrative restrictions are admin-only, so a merchant can never lift a suspension.
       // The merchant's own pause goes through PUT /stores/:id/ordering, which records who and why.
-      data = omitKeys(data, MERCHANT_PAUSE_FIELDS)
+      data = recordStoreCoordinates(omitKeys(data, MERCHANT_PAUSE_FIELDS))
       if (!canAdministerStores) data = omitKeys(data, ADMIN_STATUS_FIELDS)
 
       if (data.isPublished === true && store.isPublished !== true) {
         const readiness = await getStoreReadiness(id)
         if (!readiness?.canPublish) {
-          throw new Error('Store is not ready to publish')
+          throw new Error(`Store is not ready to publish. Required: ${readiness?.missingRequirements.join(', ') || 'complete store setup'}.`)
         }
       }
       
