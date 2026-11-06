@@ -8,12 +8,14 @@ import {
   updateDeliveryZone,
   deleteDeliveryZone,
   getStoreDeliveryZones,
+  getActiveStoreDeliveryZones,
   calculateDeliveryFee,
   bulkUpdateZonePriorities,
   prisma,
 } from '@packages/db'
 import { requireRole } from '../middleware/rbac.js'
 import { userHasStoreAccess } from '../middleware/storeAccess.js'
+import { isPublicStore } from '../services/store-visibility.service.js'
 import { VendorErrors } from './vendor/vendorHelpers.js'
 import { validateZonePolygon } from '../commerce/deliveryZones.js'
 import { deliveryEligibility, resolveDestination } from '../commerce/fulfillment.js'
@@ -57,6 +59,12 @@ const BulkUpdatePrioritiesSchema = z.object({
     })
   ),
 })
+
+/** What a shopper needs about a zone: where it covers and what delivery there costs. */
+export function publicDeliveryZone(zone: { id: string; name: string; polygonJson: unknown; baseFee: unknown; minOrder: unknown }) {
+  const money = (value: unknown) => (value === null || value === undefined ? null : String(value))
+  return { id: zone.id, name: zone.name, polygonJson: zone.polygonJson, baseFee: money(zone.baseFee), minOrder: money(zone.minOrder) }
+}
 
 export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   // POST /delivery-zones - Create delivery zone
@@ -169,26 +177,23 @@ export const deliveryZoneRoutes = async (app: FastifyInstance) => {
   })
 
   // GET /stores/:storeId/delivery-zones - Get all zones for a store
+  /**
+   * Store managers get every zone as stored, for editing. Everyone else gets the active zones of a
+   * public store in the shopper shape (coverage and fees, in the order checkout applies them); a
+   * private store answers exactly like a missing one.
+   */
   app.get('/stores/:storeId/delivery-zones', async (req, reply) => {
-    try {
-      const params = req.params as { storeId: string }
-      const store = await prisma.store.findUnique({ where: { id: params.storeId }, select: { id: true } })
-      if (!store) return reply.code(404).send({ error: 'Store not found' })
+    const params = req.params as { storeId: string }
+    const store = await prisma.store.findUnique({ where: { id: params.storeId }, select: { id: true, isPublished: true, status: true } })
+    if (!store) return reply.code(404).send({ error: 'Store not found' })
 
-      if (
-        req.user &&
-        (req.user.role === 'VENDOR' || req.user.role === 'STAFF') &&
-        !(await userHasStoreAccess(req.user.id, req.user.role, params.storeId, 'settings'))
-      ) {
-        return VendorErrors.forbidden(reply, 'You cannot access settings for this store')
-      }
-
-      const zones = await getStoreDeliveryZones(params.storeId)
-
-      return reply.code(200).send({ zones })
-    } catch (error) {
-      throw error
+    if (req.user && await userHasStoreAccess(req.user.id, req.user.role, params.storeId, 'settings')) {
+      return reply.code(200).send({ zones: await getStoreDeliveryZones(params.storeId) })
     }
+    if (!isPublicStore(store)) return reply.code(404).send({ error: 'Store not found' })
+
+    const zones = await getActiveStoreDeliveryZones(params.storeId)
+    return reply.code(200).send({ zones: zones.map(publicDeliveryZone) })
   })
 
   /**

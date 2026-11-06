@@ -13,7 +13,15 @@ import { checkStoreActivationRequirements } from '@packages/db/services'
 import { recordStoreCoordinates } from '../services/store-coordinates.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 import { rankDeliveryFirst, wantsDeliveryFirst, withFulfillment } from '../services/store-fulfillment.service.js'
-import { ownsStore, toPublicStore, type StoreViewer } from './store-public.dto.js'
+import { toPublicStore } from './store-public.dto.js'
+import {
+  canSeeFullStore,
+  canSeeOwnerList,
+  canSeePrivateStore,
+  isPublicStore,
+  storeNotFoundError,
+  type StoreViewer,
+} from '../services/store-visibility.service.js'
 
 // ========================================
 // Store Resource Definition
@@ -125,13 +133,6 @@ async function presentStorePage<T extends { id: string }>(stores: T[], page: num
   return { data: await attachStoreMedia(ordered.slice(start, start + limit)), total: ordered.length }
 }
 
-/** The owner, or anyone allowed to administer stores, sees the full record. Everyone else sees `toPublicStore`. */
-export async function canSeeFullStore(viewer: StoreViewer | undefined, ownerUserId: unknown): Promise<boolean> {
-  if (!viewer?.userId) return false
-  if (ownsStore(viewer, ownerUserId)) return true
-  return (await getAccountCapabilities(viewer.userId)).canAdministerStores
-}
-
 /**
  * `ownerUserId` lists a vendor's own stores, drafts included, only for that vendor or an admin.
  * For anyone else it is just another filter on the public marketplace.
@@ -144,7 +145,7 @@ async function buildStoreListFilters(filters: Record<string, unknown>, viewer?: 
   void place
   void delivery
   const prismaFilters: Record<string, unknown> = { ...rest }
-  const ownerView = Boolean(prismaFilters.ownerUserId) && await canSeeFullStore(viewer, prismaFilters.ownerUserId)
+  const ownerView = Boolean(prismaFilters.ownerUserId) && await canSeeOwnerList(viewer, prismaFilters.ownerUserId)
   if (!ownerView) {
     // The public marketplace decides publication and status; a caller can't widen it.
     delete prismaFilters.status
@@ -358,6 +359,21 @@ export const storeResource = defineResource({
       // Emit domain event
       await eventBus.emit(DomainEvents.STORE_CREATED, result)
     },
+    /**
+     * Replaces the default ownership check. Reads: a public store is open to everyone, signed in
+     * or not; a private one only to its owner, store admins, and its team, and anyone else gets the
+     * same 404 as a missing id. Updates and deletes keep the default rule (owner or ADMIN); the
+     * update hook then applies its own capability check.
+     */
+    authorizeAccess: async (existing, context, operation) => {
+      const store = existing as { id: string; ownerUserId?: unknown; isPublished?: unknown; status?: unknown }
+      if (operation === 'read') {
+        if (isPublicStore(store) || await canSeePrivateStore(context, store)) return
+        throw storeNotFoundError()
+      }
+      if (context?.userId && (context.userRole === 'ADMIN' || store.ownerUserId === context.userId)) return
+      throw new Error('Forbidden')
+    },
     beforeList: async (filters, context) => {
       return buildStoreListFilters(filters as Record<string, unknown>, context as StoreViewer | undefined)
     },
@@ -398,15 +414,14 @@ export const storeResource = defineResource({
         fulfillment,
         tags: storeTagRows.map((row) => row.tag),
       }
-      const ownerUserId = (result as { ownerUserId?: unknown }).ownerUserId
-      return (await canSeeFullStore(context as StoreViewer | undefined, ownerUserId)) ? full : toPublicStore(full)
+      return (await canSeeFullStore(context as StoreViewer | undefined, store)) ? full : toPublicStore(full)
     },
     afterList: async (result, context) => {
       const listed = await listStores(result, context)
       const filters = (context as unknown as { filters?: Record<string, unknown> })?.filters || {}
       const viewer = context as StoreViewer | undefined
       // Full rows only on a vendor's own list (or for an admin); every other list is public.
-      if (filters.ownerUserId && await canSeeFullStore(viewer, filters.ownerUserId)) return listed
+      if (filters.ownerUserId && await canSeeOwnerList(viewer, filters.ownerUserId)) return listed
       return { ...listed, data: listed.data.map((row) => toPublicStore(row as Record<string, unknown>)) }
     },
   },

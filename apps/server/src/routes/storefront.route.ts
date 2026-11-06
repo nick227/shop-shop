@@ -11,6 +11,7 @@
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { deliveryReadyStoreIds, storeFulfillment } from '../services/store-fulfillment.service.js'
+import { isPublicStore } from '../services/store-visibility.service.js'
 import { computeBundlePrice, hasStorePermission, prisma, storeOrderingBlock, STORE_ORDERING_MESSAGES } from '@packages/db'
 import {
   defaultStorefrontConfig,
@@ -164,7 +165,8 @@ export async function storefrontRoutes(app: FastifyInstance) {
 
     const userId = req.user?.id
     const isTeam = !!userId && await hasStorePermission(userId, storeId, 'VIEW_ITEMS')
-    if (!store.isPublished && !isTeam) return reply.code(404).send({ error: 'Store not found' })
+    // Drafts and suspended or disabled stores look exactly like a missing one to everyone outside the team.
+    if (!isPublicStore(store) && !isTeam) return reply.code(404).send({ error: 'Store not found' })
 
     const wantsDraft = view === 'draft' && await canManage(req, storeId)
     const row = store.storefront

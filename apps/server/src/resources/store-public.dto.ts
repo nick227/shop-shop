@@ -10,7 +10,7 @@ import { z } from 'zod'
  * Left out: payment-account and tax identifiers, onboarding and commission data, admin status and
  * notes, pause reasons, owner and affiliate links, geocoding metadata, and order-handling settings.
  *
- * The owner and store administrators still get the full record (`canSeeFullStore` in store.resource).
+ * Who gets the full record instead is decided in `services/store-visibility.service.ts`.
  */
 
 const decimal = z.union([z.string(), z.number()]).nullable()
@@ -158,13 +158,4 @@ export function toPublicStore(row: Row): PublicStore {
   const tags = publicTags(row.tags)
   if (tags) store.tags = tags
   return store
-}
-
-export interface StoreViewer {
-  readonly userId?: string
-  readonly userRole?: string
-}
-
-export function ownsStore(viewer: StoreViewer | undefined, ownerUserId: unknown): boolean {
-  return Boolean(viewer?.userId) && typeof ownerUserId === 'string' && ownerUserId === viewer?.userId
 }
