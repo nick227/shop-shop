@@ -1,3 +1,4 @@
+import { BusinessNavigation } from '@features/discovery-navigation/BusinessNavigation'
 /**
  * Storefront - one renderer for a store's public page, used by the live storefront and by the vendor's
  * editor preview so what the vendor sees is what shoppers get.
@@ -299,6 +300,7 @@ export function Storefront({
     <StorefrontProvider value={actions}>
       <div className={cn('sf-root', theme.className, className)} style={theme.style}>
         <div className="mx-auto w-full max-w-[92rem] space-y-8 px-[clamp(1rem,2.4vw,2.5rem)] pb-16 pt-6">
+          {mode === 'live' ? <BusinessNavigation business={store} /> : null}
           {part('header', <BusinessHeader store={store} tagline={config.brand.tagline} logoUrl={store.imageUrl ?? null} />)}
           {commerce ? part('ordering', <OrderingStrip ordering={data.ordering} hours={data.hours} />) : null}
 

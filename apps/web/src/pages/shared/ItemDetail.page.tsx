@@ -5,7 +5,8 @@
  *   /items/:itemId
  */
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { useItem } from '@shared/hooks/generated'
 import { useStore } from '@shared/hooks/generated'
 import { usePageTitle } from '@/hooks/usePageTitle'
