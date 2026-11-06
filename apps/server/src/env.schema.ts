@@ -19,6 +19,8 @@ export const envSchema = z
     ENABLE_COD_PAYMENTS: z.enum(['true', 'false']).optional(),
 
     GEOCODING_API_KEY: z.string().optional(),
+    /** Positionstack base URL; defaults to the APILayer host. Set only for a legacy api.positionstack.com key. */
+    GEOCODING_API_URL: z.string().url().optional(),
     MAPBOX_ACCESS_TOKEN: z.string().optional(),
     ALLOW_APPROXIMATE_DELIVERY: z.enum(['true', 'false']).optional(),
     TAX_PROVIDER: z.enum(['stripe', 'estimate']).optional(),

@@ -74,18 +74,9 @@ export class EnhancedGeocodingService {
 
     console.log(`[Geocoding] cache miss ${label}`)
 
+    let apiResult: ApiResult | null
     try {
-      const apiResult = await fetchApi()
-      if (!apiResult) {
-        console.warn(`[Geocoding] API returned null ${label}`)
-        return null
-      }
-
-      const result = apiToGeocodingResult(apiResult)
-      if (this.cachingEnabled()) {
-        await this.cacheService.cacheResult(query, result, this.cacheTtlHours())
-      }
-      return result
+      apiResult = await fetchApi()
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error)
       console.error(`[Geocoding] error ${label}:`, msg)
@@ -96,6 +87,21 @@ export class EnhancedGeocodingService {
       if (options.throwOnProviderError) throw new GeocoderUnavailableError(msg)
       return null
     }
+    if (!apiResult) {
+      console.warn(`[Geocoding] API returned null ${label}`)
+      return null
+    }
+
+    const result = apiToGeocodingResult(apiResult)
+    if (this.cachingEnabled()) {
+      // A cache problem must not turn a good answer into a failed lookup.
+      try {
+        await this.cacheService.cacheResult(query, result, this.cacheTtlHours())
+      } catch (error: unknown) {
+        console.error(`[Geocoding] cache write failed ${label}:`, error instanceof Error ? error.message : String(error))
+      }
+    }
+    return result
   }
 
   async geocodeZip(zipCode: string): Promise<GeocodingResult | null> {
@@ -148,6 +154,8 @@ export class GeocoderUnavailableError extends Error {
     this.name = 'GeocoderUnavailableError'
   }
 }
+
+export { cleanPostalCode, countryIso2, POSITIONSTACK_BASE_URL } from '../adapters/geocoding.adapter.js'
 
 export function createEnhancedGeocodingService(
   prisma: ExtendedPrismaClient,

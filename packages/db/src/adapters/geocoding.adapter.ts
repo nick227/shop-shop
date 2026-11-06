@@ -21,13 +21,34 @@ export interface GeocodingConfig {
   baseUrl?: string
 }
 
+/**
+ * Positionstack plans sold through APILayer answer here; keys from those plans are rejected by the
+ * legacy api.positionstack.com host. GEOCODING_API_URL overrides this for a legacy key.
+ */
+export const POSITIONSTACK_BASE_URL = 'https://api.apilayer.net/positionstack/v1'
+
+const ISO3_TO_ISO2: Record<string, string> = { USA: 'US', CAN: 'CA', MEX: 'MX', GBR: 'GB', AUS: 'AU', DEU: 'DE', FRA: 'FR' }
+
+/** Positionstack answers "USA"; the app and its CHAR(2) columns use ISO 3166-1 alpha-2 ("US"). */
+export function countryIso2(code: string | null | undefined): string | undefined {
+  const value = code?.trim().toUpperCase()
+  if (!value) return undefined
+  return value.length === 2 ? value : ISO3_TO_ISO2[value]
+}
+
+/** Positionstack sometimes splits a ZIP ("787 58"). */
+export function cleanPostalCode(code: string | null | undefined): string | undefined {
+  const value = code?.replace(/\s+/g, '')
+  return value || undefined
+}
+
 class GeocodingAdapter {
   private apiKey: string
   private baseUrl: string
 
   constructor(config: GeocodingConfig) {
     this.apiKey = config.apiKey
-    this.baseUrl = config.baseUrl || 'http://api.positionstack.com/v1'
+    this.baseUrl = (config.baseUrl || POSITIONSTACK_BASE_URL).replace(/\/$/, '')
   }
 
   /**
@@ -70,8 +91,8 @@ class GeocodingAdapter {
         formattedAddress: result.label || address,
         city: result.locality || result.region,
         state: result.region_code,
-        zip: result.postal_code,
-        country: result.country_code,
+        zip: cleanPostalCode(result.postal_code),
+        country: countryIso2(result.country_code),
       }
       
       console.log(`[Geocoding API] ✅ Success:`, geocoded)
@@ -131,8 +152,8 @@ class GeocodingAdapter {
         formattedAddress: result.label || `${zip}, ${country}`,
         city: result.locality || result.region,
         state: result.region_code,
-        zip: result.postal_code,
-        country: result.country_code,
+        zip: cleanPostalCode(result.postal_code),
+        country: countryIso2(result.country_code),
       }
       
       console.log(`[Geocoding API] ✅ Success:`, geocoded)
@@ -192,8 +213,8 @@ class GeocodingAdapter {
         formattedAddress: result.label || `${city}, ${state}, ${country}`,
         city: result.locality || result.region,
         state: result.region_code,
-        zip: result.postal_code,
-        country: result.country_code,
+        zip: cleanPostalCode(result.postal_code),
+        country: countryIso2(result.country_code),
       }
       
       console.log(`[Geocoding API] ✅ Success:`, geocoded)

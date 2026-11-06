@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { EnhancedGeocodingService, GeocodingConfig } from '../services/enhanced-geocoding.service'
+import { EnhancedGeocodingService, GeocoderUnavailableError, GeocodingConfig } from '../services/enhanced-geocoding.service'
 import { GeocodingCacheService } from '../services/geocoding-cache.service'
 
 // Mock the geocoding adapter
@@ -145,13 +145,19 @@ describe('EnhancedGeocodingService', () => {
       expect(mockCacheService.cacheResult).not.toHaveBeenCalled()
     })
 
-    it('should handle API errors gracefully', async () => {
+    it('still returns a good answer when the cache cannot store it', async () => {
+      mockCacheService.getCachedResult.mockResolvedValue(null)
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue({ latitude: 32.2572, longitude: -95.5393, confidence: 'high', formattedAddress: '75758, Chandler, TX, USA', city: 'Chandler', state: 'TX', zip: '75758', country: 'US' })
+      mockCacheService.cacheResult.mockRejectedValue(new Error('value too long for column country'))
+
+      await expect(service.geocodeZip('75758')).resolves.toMatchObject({ city: 'Chandler', zip: '75758' })
+    })
+
+    it('reports a provider failure as unavailable, not as a missing ZIP', async () => {
       mockCacheService.getCachedResult.mockResolvedValue(null)
       mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('API Error'))
 
-      const result = await service.geocodeZip('10018')
-
-      expect(result).toBeNull()
+      await expect(service.geocodeZip('10018')).rejects.toBeInstanceOf(GeocoderUnavailableError)
       expect(mockCacheService.cacheResult).not.toHaveBeenCalled()
     })
 

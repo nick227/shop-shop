@@ -8,7 +8,7 @@
  *
  * ADDRESS_PROVIDER=mapbox|positionstack|postal picks one explicitly; otherwise the best configured.
  */
-import { createEnhancedGeocodingService, lookupPostalCode, prisma } from '@packages/db'
+import { cleanPostalCode, countryIso2, createEnhancedGeocodingService, lookupPostalCode, POSITIONSTACK_BASE_URL, prisma } from '@packages/db'
 
 export type LocationPrecision = 'address' | 'street' | 'postal'
 
@@ -38,7 +38,7 @@ export interface AddressProvider {
   readonly name: 'mapbox' | 'positionstack' | 'postal'
   readonly suggests: boolean
   suggest(query: string, near?: { lat: number; lng: number }): Promise<AddressSuggestion[]>
-  reverse?(lat: number, lng: number): Promise<Partial<AddressQuery> | null>
+  reverse?(lat: number, lng: number): Promise<(Partial<AddressQuery> & { country?: string }) | null>
   locate(address: AddressQuery): Promise<LocatedAddress | null>
 }
 
@@ -73,6 +73,7 @@ interface MapboxFeature {
       readonly address?: { readonly name?: string }
       readonly postcode?: { readonly name?: string }
       readonly place?: { readonly name?: string }
+      readonly country?: { readonly country_code?: string }
       readonly region?: { readonly region_code?: string }
     }
   }
@@ -114,7 +115,7 @@ export function mapboxProvider(token: string, fetcher: FetchLike = fetch as unkn
       const body = await response.json() as { features?: MapboxFeature[] }
       const p = body.features?.[0]?.properties
       if (!p) return null
-      return { line1: p.context?.address?.name ?? p.name, city: p.context?.place?.name, state: p.context?.region?.region_code, postalCode: p.context?.postcode?.name }
+      return { line1: p.context?.address?.name ?? p.name, city: p.context?.place?.name, state: p.context?.region?.region_code, postalCode: p.context?.postcode?.name, country: p.context?.country?.country_code?.toUpperCase() }
     },
     async suggest(query, near) {
       if (query.trim().length < 3) return []
@@ -180,18 +181,18 @@ function isAmbiguous(top: MapboxFeature, others: readonly MapboxFeature[]): bool
   })
 }
 
-export function positionstackProvider(apiKey: string): AddressProvider {
-  const service = createEnhancedGeocodingService(prisma, { apiKey, enableCache: true, cacheTTLHours: 24 * 30 })
+export function positionstackProvider(apiKey: string, baseUrl: string = POSITIONSTACK_BASE_URL): AddressProvider {
+  const service = createEnhancedGeocodingService(prisma, { apiKey, baseUrl, enableCache: true, cacheTTLHours: 24 * 30 })
   return {
     name: 'positionstack',
     suggests: false,
     async reverse(lat, lng) {
       const qs = new URLSearchParams({ access_key: apiKey, query: `${lat},${lng}`, limit: '1' })
-      const response = await fetch(`https://api.positionstack.com/v1/reverse?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/reverse?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
       if (!response.ok) throw new Error('Address lookup failed')
-      const body = await response.json() as { data?: { number?: string; street?: string; locality?: string; region_code?: string; postal_code?: string }[] }
+      const body = await response.json() as { data?: { number?: string; street?: string; locality?: string; region_code?: string; postal_code?: string; country_code?: string }[] }
       const hit = body.data?.[0]
-      return hit ? { line1: hit.street ? [hit.number, hit.street].filter(Boolean).join(' ') : undefined, city: hit.locality, state: hit.region_code, postalCode: hit.postal_code } : null
+      return hit ? { line1: hit.street ? [hit.number, hit.street].filter(Boolean).join(' ') : undefined, city: hit.locality, state: hit.region_code, postalCode: cleanPostalCode(hit.postal_code), country: countryIso2(hit.country_code) } : null
     },
     suggest: async () => [],
     async locate(address) {
@@ -216,7 +217,7 @@ export function addressProvider(env: NodeJS.ProcessEnv = process.env): AddressPr
   const chosen = env.ADDRESS_PROVIDER?.toLowerCase()
   let provider: AddressProvider
   if ((chosen === 'mapbox' || !chosen) && configured(env.MAPBOX_ACCESS_TOKEN)) provider = mapboxProvider(env.MAPBOX_ACCESS_TOKEN!)
-  else if ((chosen === 'positionstack' || !chosen) && configured(env.GEOCODING_API_KEY)) provider = positionstackProvider(env.GEOCODING_API_KEY!)
+  else if ((chosen === 'positionstack' || !chosen) && configured(env.GEOCODING_API_KEY)) provider = positionstackProvider(env.GEOCODING_API_KEY!, env.GEOCODING_API_URL || POSITIONSTACK_BASE_URL)
   else provider = postalProvider()
   if (env === process.env) cached = provider
   return provider
