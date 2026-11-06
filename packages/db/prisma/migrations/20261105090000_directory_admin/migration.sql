@@ -10,7 +10,7 @@ CREATE TABLE `ListingNeighborhood` (
   INDEX `ListingNeighborhood_placeId_featured_idx` (`placeId`, `featured`),
   CONSTRAINT `ListingNeighborhood_listingId_fkey` FOREIGN KEY (`listingId`) REFERENCES `BusinessListing`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ListingNeighborhood_placeId_fkey` FOREIGN KEY (`placeId`) REFERENCES `Place`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
-);
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ALTER TABLE `MediaAsset` ADD COLUMN `listingId` CHAR(36) NULL;
 CREATE INDEX `MediaAsset_listingId_idx` ON `MediaAsset`(`listingId`);
