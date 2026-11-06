@@ -6,7 +6,10 @@ export declare const CreateStoreInputSchema: z.ZodObject<{
     companyName: z.ZodOptional<z.ZodString>;
     taxId: z.ZodOptional<z.ZodString>;
     phone: z.ZodString;
-    email: z.ZodString;
+    /** Storefront business email; optional, and shown to shoppers only once confirmed. */
+    email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    /** Write-only: true when the vendor confirms the stored email for display; false hides it. */
+    publicEmailConfirmed: z.ZodOptional<z.ZodBoolean>;
     website: z.ZodString;
     customDomain: z.ZodOptional<z.ZodString>;
     socialLinksJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
@@ -45,16 +48,16 @@ export declare const CreateStoreInputSchema: z.ZodObject<{
     imageUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
-    affiliateReferralCode?: string | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -78,22 +81,23 @@ export declare const CreateStoreInputSchema: z.ZodObject<{
     addressCountry?: string | undefined;
     geocodedAt?: string | undefined;
     geocodeSource?: string | undefined;
+    affiliateReferralCode?: string | undefined;
     stripeAccountId?: string | undefined;
     stripeOnboarded?: boolean | undefined;
     commissionRate?: string | undefined;
     imageUrl?: string | undefined;
 }, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
-    affiliateReferralCode?: string | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -117,6 +121,7 @@ export declare const CreateStoreInputSchema: z.ZodObject<{
     addressCountry?: string | undefined;
     geocodedAt?: string | undefined;
     geocodeSource?: string | undefined;
+    affiliateReferralCode?: string | undefined;
     stripeAccountId?: string | undefined;
     stripeOnboarded?: boolean | undefined;
     commissionRate?: string | undefined;
@@ -129,7 +134,10 @@ export declare const UpdateStoreInputSchema: z.ZodEffects<z.ZodObject<{
     companyName: z.ZodOptional<z.ZodString>;
     taxId: z.ZodOptional<z.ZodString>;
     phone: z.ZodString;
-    email: z.ZodString;
+    /** Storefront business email; optional, and shown to shoppers only once confirmed. */
+    email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    /** Write-only: true when the vendor confirms the stored email for display; false hides it. */
+    publicEmailConfirmed: z.ZodOptional<z.ZodBoolean>;
     website: z.ZodString;
     customDomain: z.ZodOptional<z.ZodString>;
     socialLinksJson: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
@@ -162,15 +170,16 @@ export declare const UpdateStoreInputSchema: z.ZodEffects<z.ZodObject<{
     imageUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -200,15 +209,16 @@ export declare const UpdateStoreInputSchema: z.ZodEffects<z.ZodObject<{
     imageUrl?: string | undefined;
 }, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -238,15 +248,16 @@ export declare const UpdateStoreInputSchema: z.ZodEffects<z.ZodObject<{
     imageUrl?: string | undefined;
 }>, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -276,15 +287,16 @@ export declare const UpdateStoreInputSchema: z.ZodEffects<z.ZodObject<{
     imageUrl?: string | undefined;
 }, {
     name: string;
-    description: string;
-    email: string;
-    phone: string;
     slug: string;
+    description: string;
+    phone: string;
     website: string;
-    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     companyName?: string | undefined;
     taxId?: string | undefined;
+    email?: string | null | undefined;
+    publicEmailConfirmed?: boolean | undefined;
     customDomain?: string | undefined;
+    status?: "ACTIVE" | "PAUSED" | "DISABLED" | undefined;
     socialLinksJson?: Record<string, string> | undefined;
     isPublished?: boolean | undefined;
     disabledAt?: string | null | undefined;
@@ -321,7 +333,9 @@ export declare const StoreResponseSchema: z.ZodObject<{
     companyName: z.ZodNullable<z.ZodString>;
     taxId: z.ZodNullable<z.ZodString>;
     phone: z.ZodString;
-    email: z.ZodString;
+    email: z.ZodNullable<z.ZodString>;
+    /** Full record only: when the vendor confirmed `email` for display. */
+    publicEmailConfirmedAt: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     website: z.ZodString;
     customDomain: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     socialLinksJson: z.ZodOptional<z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodString>>>;
@@ -399,18 +413,14 @@ export declare const StoreResponseSchema: z.ZodObject<{
     searchKeywords: z.ZodOptional<z.ZodNullable<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    description: string;
-    items: string;
-    status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-    email: string;
-    phone: string;
-    companyName: string | null;
-    carts: string;
-    orders: string;
-    FavoriteStore: string;
     slug: string;
+    description: string;
+    companyName: string | null;
     taxId: string | null;
+    phone: string;
+    email: string | null;
     website: string;
+    status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
     isPublished: boolean | null;
     disabledAt: string | null;
     disabledByUserId: string | null;
@@ -439,20 +449,20 @@ export declare const StoreResponseSchema: z.ZodObject<{
     referredByAffiliateId: string | null;
     referredByAffiliate: string | null;
     media: string;
+    items: string;
+    orders: string;
+    carts: string;
     posts: string;
     bundles: string;
     teamMembers: string;
     invitations: string;
     Promotion: string;
-    tags?: {
-        slug: string;
-        label: string;
-        category: string;
-    }[] | undefined;
+    FavoriteStore: string;
     customDomain?: string | null | undefined;
     socialLinksJson?: Record<string, string> | null | undefined;
     deliveryMinimum?: string | null | undefined;
     defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+    publicEmailConfirmedAt?: string | null | undefined;
     stripeChargesEnabled?: boolean | null | undefined;
     stripePayoutsEnabled?: boolean | null | undefined;
     acceptsOnlineCardPayments?: boolean | undefined;
@@ -460,24 +470,25 @@ export declare const StoreResponseSchema: z.ZodObject<{
         url: string;
         kind: string;
         sortIndex?: number | null | undefined;
+    }[] | undefined;
+    tags?: {
+        slug: string;
+        label: string;
+        category: string;
     }[] | undefined;
     storeType?: string | null | undefined;
     priceRange?: string | null | undefined;
     searchKeywords?: string | string[] | null | undefined;
 }, {
     name: string;
-    description: string;
-    items: string;
-    status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-    email: string;
-    phone: string;
-    companyName: string | null;
-    carts: string;
-    orders: string;
-    FavoriteStore: string;
     slug: string;
+    description: string;
+    companyName: string | null;
     taxId: string | null;
+    phone: string;
+    email: string | null;
     website: string;
+    status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
     isPublished: boolean | null;
     disabledAt: string | null;
     disabledByUserId: string | null;
@@ -506,20 +517,20 @@ export declare const StoreResponseSchema: z.ZodObject<{
     referredByAffiliateId: string | null;
     referredByAffiliate: string | null;
     media: string;
+    items: string;
+    orders: string;
+    carts: string;
     posts: string;
     bundles: string;
     teamMembers: string;
     invitations: string;
     Promotion: string;
-    tags?: {
-        slug: string;
-        label: string;
-        category: string;
-    }[] | undefined;
+    FavoriteStore: string;
     customDomain?: string | null | undefined;
     socialLinksJson?: Record<string, string> | null | undefined;
     deliveryMinimum?: string | null | undefined;
     defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+    publicEmailConfirmedAt?: string | null | undefined;
     stripeChargesEnabled?: boolean | null | undefined;
     stripePayoutsEnabled?: boolean | null | undefined;
     acceptsOnlineCardPayments?: boolean | undefined;
@@ -527,6 +538,11 @@ export declare const StoreResponseSchema: z.ZodObject<{
         url: string;
         kind: string;
         sortIndex?: number | null | undefined;
+    }[] | undefined;
+    tags?: {
+        slug: string;
+        label: string;
+        category: string;
     }[] | undefined;
     storeType?: string | null | undefined;
     priceRange?: string | null | undefined;
@@ -541,7 +557,9 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         companyName: z.ZodNullable<z.ZodString>;
         taxId: z.ZodNullable<z.ZodString>;
         phone: z.ZodString;
-        email: z.ZodString;
+        email: z.ZodNullable<z.ZodString>;
+        /** Full record only: when the vendor confirmed `email` for display. */
+        publicEmailConfirmedAt: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         website: z.ZodString;
         customDomain: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         socialLinksJson: z.ZodOptional<z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodString>>>;
@@ -619,18 +637,14 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         searchKeywords: z.ZodOptional<z.ZodNullable<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>>;
     }, "strip", z.ZodTypeAny, {
         name: string;
-        description: string;
-        items: string;
-        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-        email: string;
-        phone: string;
-        companyName: string | null;
-        carts: string;
-        orders: string;
-        FavoriteStore: string;
         slug: string;
+        description: string;
+        companyName: string | null;
         taxId: string | null;
+        phone: string;
+        email: string | null;
         website: string;
+        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
         isPublished: boolean | null;
         disabledAt: string | null;
         disabledByUserId: string | null;
@@ -659,20 +673,20 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         referredByAffiliateId: string | null;
         referredByAffiliate: string | null;
         media: string;
+        items: string;
+        orders: string;
+        carts: string;
         posts: string;
         bundles: string;
         teamMembers: string;
         invitations: string;
         Promotion: string;
-        tags?: {
-            slug: string;
-            label: string;
-            category: string;
-        }[] | undefined;
+        FavoriteStore: string;
         customDomain?: string | null | undefined;
         socialLinksJson?: Record<string, string> | null | undefined;
         deliveryMinimum?: string | null | undefined;
         defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+        publicEmailConfirmedAt?: string | null | undefined;
         stripeChargesEnabled?: boolean | null | undefined;
         stripePayoutsEnabled?: boolean | null | undefined;
         acceptsOnlineCardPayments?: boolean | undefined;
@@ -680,24 +694,25 @@ export declare const StoreListResponseSchema: z.ZodObject<{
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
+        }[] | undefined;
+        tags?: {
+            slug: string;
+            label: string;
+            category: string;
         }[] | undefined;
         storeType?: string | null | undefined;
         priceRange?: string | null | undefined;
         searchKeywords?: string | string[] | null | undefined;
     }, {
         name: string;
-        description: string;
-        items: string;
-        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-        email: string;
-        phone: string;
-        companyName: string | null;
-        carts: string;
-        orders: string;
-        FavoriteStore: string;
         slug: string;
+        description: string;
+        companyName: string | null;
         taxId: string | null;
+        phone: string;
+        email: string | null;
         website: string;
+        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
         isPublished: boolean | null;
         disabledAt: string | null;
         disabledByUserId: string | null;
@@ -726,20 +741,20 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         referredByAffiliateId: string | null;
         referredByAffiliate: string | null;
         media: string;
+        items: string;
+        orders: string;
+        carts: string;
         posts: string;
         bundles: string;
         teamMembers: string;
         invitations: string;
         Promotion: string;
-        tags?: {
-            slug: string;
-            label: string;
-            category: string;
-        }[] | undefined;
+        FavoriteStore: string;
         customDomain?: string | null | undefined;
         socialLinksJson?: Record<string, string> | null | undefined;
         deliveryMinimum?: string | null | undefined;
         defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+        publicEmailConfirmedAt?: string | null | undefined;
         stripeChargesEnabled?: boolean | null | undefined;
         stripePayoutsEnabled?: boolean | null | undefined;
         acceptsOnlineCardPayments?: boolean | undefined;
@@ -747,6 +762,11 @@ export declare const StoreListResponseSchema: z.ZodObject<{
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
+        }[] | undefined;
+        tags?: {
+            slug: string;
+            label: string;
+            category: string;
         }[] | undefined;
         storeType?: string | null | undefined;
         priceRange?: string | null | undefined;
@@ -758,18 +778,14 @@ export declare const StoreListResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     data: {
         name: string;
-        description: string;
-        items: string;
-        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-        email: string;
-        phone: string;
-        companyName: string | null;
-        carts: string;
-        orders: string;
-        FavoriteStore: string;
         slug: string;
+        description: string;
+        companyName: string | null;
         taxId: string | null;
+        phone: string;
+        email: string | null;
         website: string;
+        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
         isPublished: boolean | null;
         disabledAt: string | null;
         disabledByUserId: string | null;
@@ -798,20 +814,20 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         referredByAffiliateId: string | null;
         referredByAffiliate: string | null;
         media: string;
+        items: string;
+        orders: string;
+        carts: string;
         posts: string;
         bundles: string;
         teamMembers: string;
         invitations: string;
         Promotion: string;
-        tags?: {
-            slug: string;
-            label: string;
-            category: string;
-        }[] | undefined;
+        FavoriteStore: string;
         customDomain?: string | null | undefined;
         socialLinksJson?: Record<string, string> | null | undefined;
         deliveryMinimum?: string | null | undefined;
         defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+        publicEmailConfirmedAt?: string | null | undefined;
         stripeChargesEnabled?: boolean | null | undefined;
         stripePayoutsEnabled?: boolean | null | undefined;
         acceptsOnlineCardPayments?: boolean | undefined;
@@ -819,6 +835,11 @@ export declare const StoreListResponseSchema: z.ZodObject<{
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
+        }[] | undefined;
+        tags?: {
+            slug: string;
+            label: string;
+            category: string;
         }[] | undefined;
         storeType?: string | null | undefined;
         priceRange?: string | null | undefined;
@@ -830,18 +851,14 @@ export declare const StoreListResponseSchema: z.ZodObject<{
 }, {
     data: {
         name: string;
-        description: string;
-        items: string;
-        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
-        email: string;
-        phone: string;
-        companyName: string | null;
-        carts: string;
-        orders: string;
-        FavoriteStore: string;
         slug: string;
+        description: string;
+        companyName: string | null;
         taxId: string | null;
+        phone: string;
+        email: string | null;
         website: string;
+        status: "ACTIVE" | "PAUSED" | "DISABLED" | null;
         isPublished: boolean | null;
         disabledAt: string | null;
         disabledByUserId: string | null;
@@ -870,20 +887,20 @@ export declare const StoreListResponseSchema: z.ZodObject<{
         referredByAffiliateId: string | null;
         referredByAffiliate: string | null;
         media: string;
+        items: string;
+        orders: string;
+        carts: string;
         posts: string;
         bundles: string;
         teamMembers: string;
         invitations: string;
         Promotion: string;
-        tags?: {
-            slug: string;
-            label: string;
-            category: string;
-        }[] | undefined;
+        FavoriteStore: string;
         customDomain?: string | null | undefined;
         socialLinksJson?: Record<string, string> | null | undefined;
         deliveryMinimum?: string | null | undefined;
         defaultTaxCategory?: "PREPARED_FOOD" | "GROCERY" | "CANDY" | "SOFT_DRINK" | "BOTTLED_WATER" | "ALCOHOL" | "GENERAL" | null | undefined;
+        publicEmailConfirmedAt?: string | null | undefined;
         stripeChargesEnabled?: boolean | null | undefined;
         stripePayoutsEnabled?: boolean | null | undefined;
         acceptsOnlineCardPayments?: boolean | undefined;
@@ -891,6 +908,11 @@ export declare const StoreListResponseSchema: z.ZodObject<{
             url: string;
             kind: string;
             sortIndex?: number | null | undefined;
+        }[] | undefined;
+        tags?: {
+            slug: string;
+            label: string;
+            category: string;
         }[] | undefined;
         storeType?: string | null | undefined;
         priceRange?: string | null | undefined;

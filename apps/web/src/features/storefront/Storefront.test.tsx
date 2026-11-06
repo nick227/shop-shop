@@ -78,11 +78,11 @@ const data = (overrides: Partial<StorefrontData> = {}): StorefrontData => ({
   ...overrides,
 })
 
-function renderStorefront(props: { config?: StorefrontConfig; data?: StorefrontData; mode?: 'live' | 'preview' } = {}) {
+function renderStorefront(props: { config?: StorefrontConfig; data?: StorefrontData; mode?: 'live' | 'preview'; store?: StoreHeaderStore } = {}) {
   return render(
     <MemoryRouter>
       <Storefront
-        store={store}
+        store={props.store ?? store}
         data={props.data ?? data()}
         config={props.config}
         items={items}
@@ -175,6 +175,16 @@ describe('Storefront', () => {
     expect(ordering).toHaveTextContent('Pickup · not available right now')
     expect(ordering).toHaveTextContent('Delivery · not available right now')
     expect(ordering).toHaveTextContent('Back at 5pm')
+  })
+
+  it('never shows a business email the vendor has not confirmed, even in their own view', () => {
+    const withEmail = (publicEmailConfirmedAt: string | null) =>
+      ({ ...store, email: 'owner@account.test', publicEmailConfirmedAt }) as unknown as StoreHeaderStore
+    const { unmount } = renderStorefront({ store: withEmail(null) })
+    expect(screen.queryByText('owner@account.test')).not.toBeInTheDocument()
+    unmount()
+    renderStorefront({ store: withEmail('2026-11-01T00:00:00.000Z') })
+    expect(screen.getByRole('link', { name: 'owner@account.test' })).toHaveAttribute('href', 'mailto:owner@account.test')
   })
 
   it('shows the vendor’s visible sections in order and never a hidden section’s items', () => {

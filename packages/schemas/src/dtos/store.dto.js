@@ -9,7 +9,10 @@ export const CreateStoreInputSchema = z.object({
     companyName: z.string().optional(),
     taxId: z.string().optional(),
     phone: z.string(),
-    email: z.string(),
+    /** Storefront business email; optional, and shown to shoppers only once confirmed. */
+    email: z.string().nullable().optional(),
+    /** Write-only: true when the vendor confirms the stored email for display; false hides it. */
+    publicEmailConfirmed: z.boolean().optional(),
     website: z.string(),
     customDomain: z.string().optional(),
     socialLinksJson: z.record(z.string()).optional(),
@@ -54,7 +57,10 @@ export const UpdateStoreInputSchema = z.object({
     companyName: z.string().optional(),
     taxId: z.string().optional(),
     phone: z.string(),
-    email: z.string(),
+    /** Storefront business email; optional, and shown to shoppers only once confirmed. */
+    email: z.string().nullable().optional(),
+    /** Write-only: true when the vendor confirms the stored email for display; false hides it. */
+    publicEmailConfirmed: z.boolean().optional(),
     website: z.string(),
     customDomain: z.string().optional(),
     socialLinksJson: z.record(z.string()).optional(),
@@ -94,7 +100,9 @@ export const StoreResponseSchema = z.object({
     companyName: z.string().nullable(),
     taxId: z.string().nullable(),
     phone: z.string(),
-    email: z.string(),
+    email: z.string().nullable(),
+    /** Full record only: when the vendor confirmed `email` for display. */
+    publicEmailConfirmedAt: z.string().datetime().nullable().optional(),
     website: z.string(),
     customDomain: z.string().nullable().optional(),
     socialLinksJson: z.record(z.string()).nullable().optional(),

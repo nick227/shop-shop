@@ -2,6 +2,7 @@
  * Business content below the menu: about, hours and location; the photo gallery; and the store's updates.
  */
 import type { ReactNode } from 'react'
+import { publicStoreEmail } from '@features/stores/publicEmail'
 import { Mail, Phone } from 'lucide-react'
 import type { StoreSocialLinks } from '@api/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
@@ -35,7 +36,9 @@ export function AboutSection({ store, hours, showMap }: {
 }) {
   const address = storeAddress(store)
   const social = socialEntries(store.socialLinksJson)
-  const story = Boolean(store.description || store.phone || store.email || social.length > 0)
+  // An unconfirmed email stays off the storefront, the vendor's own preview included.
+  const email = publicStoreEmail(store as { email?: string | null; publicEmailConfirmedAt?: string | null })
+  const story = Boolean(store.description || store.phone || email || social.length > 0)
   if (!story && !address && !hours?.week) return null
 
   return (
@@ -47,7 +50,7 @@ export function AboutSection({ store, hours, showMap }: {
             {store.description ? (
               <p className="whitespace-pre-line text-base leading-relaxed text-muted-foreground">{store.description}</p>
             ) : null}
-            <ContactList phone={store.phone} email={store.email} />
+            <ContactList phone={store.phone} email={email} />
             {social.length > 0 ? <StoreHeaderSocialRow entries={social} /> : null}
           </div>
         ) : null}

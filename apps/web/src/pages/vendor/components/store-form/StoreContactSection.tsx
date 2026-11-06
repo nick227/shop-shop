@@ -4,6 +4,7 @@ import { FormRow } from '@shared/ui/templates'
 import { maskEmailInput, maskUsPhoneInput } from '@shared/lib/utils/fieldInputMasks'
 import { hasText, type StoreFieldProps } from './storeFieldProps'
 import { StoreSectionTitle } from './StoreSectionTitle'
+import { publicEmailFormState } from '@features/stores/publicEmail'
 import { STORE_LINKS, type StoreLinkField } from './storeLinks'
 
 export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
@@ -28,15 +29,7 @@ export function StoreContactSection({ formData, onChange }: StoreFieldProps) {
           </FormRow>
 
           <FormRow>
-            <Input
-              label="Email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={(e) => onChange('email', maskEmailInput(e.target.value))}
-              placeholder="contact@store.com"
-            />
+            <PublicEmailField formData={formData} onChange={onChange} />
             <Input
               label="Website"
               type="url"
@@ -118,6 +111,52 @@ function StoreLinks({ formData, onChange }: StoreFieldProps) {
           ))}
         </select>
       )}
+    </div>
+  )
+}
+
+/**
+ * The storefront business email. Optional, never filled from the account, and shown to shoppers
+ * only once confirmed: typing an address confirms it; an address saved before confirmation existed
+ * waits here until the vendor confirms, replaces, or removes it. Changes apply when the form saves.
+ */
+function PublicEmailField({ formData, onChange }: StoreFieldProps) {
+  const state = publicEmailFormState(formData)
+  return (
+    <div className="space-y-2">
+      <Input
+        label="Public business email"
+        helperText="Displayed to shoppers on your storefront."
+        type="email"
+        inputMode="email"
+        autoComplete="off"
+        value={formData.email}
+        onChange={(e) => onChange('email', maskEmailInput(e.target.value))}
+        placeholder="contact@store.com"
+      />
+      {state === 'awaiting-confirmation' ? (
+        <div role="status" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+          <p>This email is saved but not shown to shoppers. Confirm it to display it on your storefront, change it above, or remove it.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-md bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800 dark:bg-amber-100 dark:text-amber-950"
+              onClick={() => onChange('publicEmailConfirmed', true)}
+            >
+              Show on storefront
+            </button>
+            <button
+              type="button"
+              className="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-semibold hover:bg-amber-100 dark:border-amber-600 dark:hover:bg-amber-900"
+              onClick={() => onChange('email', '')}
+            >
+              Remove email
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {state === 'published' ? <p className="text-xs text-muted-foreground" data-email-state="published">Shown on your storefront.</p> : null}
+      {state === 'new' ? <p className="text-xs text-muted-foreground" data-email-state="new">Will show on your storefront when you save.</p> : null}
     </div>
   )
 }

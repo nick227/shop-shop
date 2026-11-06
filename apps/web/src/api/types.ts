@@ -71,7 +71,12 @@ export interface StoreFormData {
   companyName: string
   taxId: string
   phone: string
+  /** Storefront business email; optional, shown to shoppers only once confirmed. */
   email: string
+  /** The saved store has its email confirmed for display, or the vendor just confirmed it. */
+  publicEmailConfirmed: boolean
+  /** The email as last saved, to tell a confirmed or legacy address from a newly typed one. */
+  publicEmailSaved: string
   website: string
   youtubeChannel?: string
   imageUrl?: string

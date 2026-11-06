@@ -287,7 +287,11 @@ model Store {
   companyName  String?
   taxId        String?
   phone        String?
+  /// Storefront business email. Published only once the vendor has confirmed it (publicEmailConfirmedAt).
   email        String?
+  /// When the vendor confirmed `email` for display to shoppers. Null keeps it private, including
+  /// every email stored before this column existed.
+  publicEmailConfirmedAt DateTime?
   website      String?
   customDomain String? @db.VarChar(191)
 

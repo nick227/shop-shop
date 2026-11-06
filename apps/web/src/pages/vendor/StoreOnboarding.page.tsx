@@ -103,7 +103,8 @@ export default function VendorStoreOnboardingPage() {
         prepTimeMin: data.prepTime,
         isPublished: true,
         phone: '',
-        email: user?.email ?? '',
+        // No business email until the vendor adds one in store settings; never the sign-in email.
+        email: '',
         website: ''
       })
     },

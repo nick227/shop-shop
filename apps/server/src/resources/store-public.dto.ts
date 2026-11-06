@@ -1,12 +1,13 @@
 import { z } from 'zod'
+import { publishedEmail } from '../services/store-public-email.service.js'
 
 /**
  * What anyone, signed in or not, may see about a store from `GET /api/stores` and
  * `GET /api/stores/:id`. Built field by field from an allowlist, so a column added to `Store`
  * stays private until someone adds it here on purpose.
  *
- * Kept: discovery and storefront fields, the business's published contact details (phone, email,
- * website, social links), its location, media, tags, and the derived fulfillment state.
+ * Kept: discovery and storefront fields, the business's published contact details (phone, website,
+ * social links, and the business email only once the vendor confirmed it for display), its location, media, tags, and the derived fulfillment state.
  * Left out: payment-account and tax identifiers, onboarding and commission data, admin status and
  * notes, pause reasons, owner and affiliate links, geocoding metadata, and order-handling settings.
  *
@@ -130,7 +131,8 @@ export function toPublicStore(row: Row): PublicStore {
     isPublished: row.isPublished === true,
     createdAt: iso(row.createdAt),
     phone: text(row.phone),
-    email: text(row.email),
+    // Only an email the vendor confirmed for display; a legacy or unconfirmed one stays private.
+    email: publishedEmail(row),
     website: text(row.website),
     customDomain: text(row.customDomain),
     socialLinksJson: row.socialLinksJson ?? null,

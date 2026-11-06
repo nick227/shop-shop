@@ -45,6 +45,8 @@ async function createStore(ownerUserId: string, label: string, isPublished: bool
       description: 'A store with private fields filled in',
       phone: '555-0100',
       email: 'hello@shop.test',
+      // Confirmed for display; unconfirmed emails are covered in store-public-email.route.test.ts.
+      publicEmailConfirmedAt: new Date(),
       website: 'https://shop.test',
       addressStreet: '100 Test St',
       addressCity: 'Austin',

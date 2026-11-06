@@ -14,6 +14,7 @@ import { recordStoreCoordinates } from '../services/store-coordinates.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 import { rankDeliveryFirst, wantsDeliveryFirst, withFulfillment } from '../services/store-fulfillment.service.js'
 import { toPublicStore } from './store-public.dto.js'
+import { applyPublicEmailConsent } from '../services/store-public-email.service.js'
 import {
   canSeeFullStore,
   canSeeOwnerList,
@@ -289,7 +290,8 @@ export const storeResource = defineResource({
       const { affiliateReferralCode, referredByAffiliateId: _ignored, ...rest } = data ?? {}
       const referral = await resolveStoreReferral(affiliateReferralCode, context.userId)
 
-      const prepared = await storeDomain.prepareForCreation(recordStoreCoordinates(rest), context.userId)
+      // A typed email is published; a blank one stays unpublished. Never filled from the account.
+      const prepared = await storeDomain.prepareForCreation(recordStoreCoordinates(applyPublicEmailConsent(rest, null)), context.userId)
       return referral
         ? { ...prepared, referredByAffiliateId: referral.affiliateId }
         : prepared
@@ -298,7 +300,7 @@ export const storeResource = defineResource({
       // Enforce ownership: only store owner can update
       const store = await prisma.store.findUnique({
         where: { id },
-        select: { ownerUserId: true, isPublished: true },
+        select: { ownerUserId: true, isPublished: true, email: true, publicEmailConfirmedAt: true },
       })
       
       const canAdministerStores = (await getAccountCapabilities(context.userId)).canAdministerStores
@@ -308,7 +310,7 @@ export const storeResource = defineResource({
 
       // Administrative restrictions are admin-only, so a merchant can never lift a suspension.
       // The merchant's own pause goes through PUT /stores/:id/ordering, which records who and why.
-      data = recordStoreCoordinates(omitKeys(data, MERCHANT_PAUSE_FIELDS))
+      data = recordStoreCoordinates(omitKeys(applyPublicEmailConsent(data, store), MERCHANT_PAUSE_FIELDS))
       if (!canAdministerStores) data = omitKeys(data, ADMIN_STATUS_FIELDS)
 
       if (data.isPublished === true && store.isPublished !== true) {

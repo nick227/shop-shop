@@ -32,6 +32,9 @@ export function storePayloadFromFormData(formData: StoreFormData): CreateStoreIn
   if ('defaultTaxCategory' in payload) payload.defaultTaxCategory = payload.defaultTaxCategory || null
   // Admin restriction fields; the store form never changes them.
   for (const key of ['status', 'disabledAt', 'disabledByUserId', 'disabledReason']) delete payload[key]
+  // Consent is sent only when the vendor gave it; the server never infers it from a re-save.
+  if (payload.publicEmailConfirmed !== true) delete payload.publicEmailConfirmed
+  delete payload.publicEmailSaved
 
   for (const key of STORE_PAYLOAD_STRIP_IF_EMPTY) {
     const v = payload[key]
@@ -64,6 +67,8 @@ export function createInitialStoreFormData(): StoreFormData {
     taxId: '',
     phone: '',
     email: '',
+    publicEmailConfirmed: false,
+    publicEmailSaved: '',
     website: '',
     customDomain: '',
     socialYoutube: '',
@@ -108,6 +113,8 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     taxId: store.taxId ?? '',
     phone: maskUsPhoneInput(store.phone ?? ''),
     email: maskEmailInput(store.email ?? ''),
+    publicEmailConfirmed: Boolean((store as { publicEmailConfirmedAt?: string | null }).publicEmailConfirmedAt),
+    publicEmailSaved: maskEmailInput(store.email ?? ''),
     website: store.website ?? '',
     customDomain: (store as any).customDomain ?? '',
     socialYoutube:   (store as any).socialLinksJson?.youtube   ?? '',

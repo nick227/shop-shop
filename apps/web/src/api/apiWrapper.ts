@@ -654,6 +654,10 @@ export interface StoreListPageResult {
 // ============================================
 // Stores API
 // ============================================
+type StoresSdk = ReturnType<typeof apiClient.stores>
+type StoreCreateRequest = NonNullable<Parameters<StoresSdk['createStore']>[0]>['createStoreRequest']
+type StoreUpdateRequest = NonNullable<Parameters<StoresSdk['updateStore']>[0]>['updateStoreRequest']
+
 export const stores = {
   /**
    * List stores with pagination envelope (total, page, limit).
@@ -783,7 +787,9 @@ export const stores = {
   create: async (input: CreateStoreInput): Promise<Store> => {
     const result = await handleRequest(() =>
       apiClient.stores().createStore({
-        createStoreRequest: input,
+        // The generated SDK still types email as required; the body is sent as-is, so the optional
+        // email and the write-only publicEmailConfirmed flag reach the server unchanged.
+        createStoreRequest: input as unknown as StoreCreateRequest,
       })
     )
     return unwrapData<Store>(result)
@@ -796,7 +802,7 @@ export const stores = {
     const result = await handleRequest(() =>
       apiClient.stores().updateStore({
         id,
-        updateStoreRequest: input,
+        updateStoreRequest: input as unknown as StoreUpdateRequest,
       })
     )
     return unwrapData<Store>(result)

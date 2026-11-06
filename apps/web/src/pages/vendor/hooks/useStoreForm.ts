@@ -62,7 +62,8 @@ export function useStoreForm(storeId?: string) {
       const affiliateReferralCode = localStorage.getItem('affiliateReferralCode') || undefined
       const payload = {
         ...storePayloadFromFormData(data),
-        email: data.email?.trim() || user?.email || '',
+        // Only what the vendor typed; never the account's sign-in email.
+        email: data.email?.trim() ?? '',
         ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
       }
       return await storesApi.create(payload as any)
