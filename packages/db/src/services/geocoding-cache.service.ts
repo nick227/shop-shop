@@ -17,7 +17,7 @@ export interface GeocodingCacheEntry {
   country?: string
   formattedAddress?: string
   confidence: 'high' | 'medium' | 'low'
-  source: 'mapbox' | 'positionstack' | 'manual' | 'fallback'
+  source: 'mapbox' | 'positionstack' | 'mapsco' | 'manual' | 'fallback'
   createdAt: Date
   updatedAt: Date
   expiresAt?: Date
@@ -37,7 +37,7 @@ export interface GeocodingResult {
   country?: string
   formattedAddress?: string
   confidence: 'high' | 'medium' | 'low'
-  source: 'mapbox' | 'positionstack' | 'manual' | 'fallback'
+  source: 'mapbox' | 'positionstack' | 'mapsco' | 'manual' | 'fallback'
 }
 
 export class GeocodingCacheService {
@@ -78,7 +78,7 @@ export class GeocodingCacheService {
       country: cacheEntry.country || undefined,
       formattedAddress: cacheEntry.formattedAddress || undefined,
       confidence: cacheEntry.confidence as 'high' | 'medium' | 'low',
-      source: cacheEntry.source as 'mapbox' | 'positionstack' | 'manual' | 'fallback'
+      source: cacheEntry.source as 'mapbox' | 'positionstack' | 'mapsco' | 'manual' | 'fallback'
     }
   }
 

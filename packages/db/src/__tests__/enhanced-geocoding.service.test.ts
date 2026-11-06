@@ -43,6 +43,18 @@ vi.mock('../adapters/geocoding.adapter', () => ({
   createGeocodingAdapter: vi.fn(() => mockGeocodingAdapter)
 }))
 
+const mockFallbackAdapter = {
+  geocodeZipCode: vi.fn(),
+  geocodeCityState: vi.fn(),
+  geocodeAddress: vi.fn(),
+}
+
+vi.mock('../adapters/mapsco-geocoding.adapter', () => ({
+  MapsCoGeocodingAdapter: vi.fn(function MapsCoMock() {
+    return mockFallbackAdapter
+  }),
+}))
+
 // Mock the cache service creation (`new GeocodingCacheService()` must return the mock instance)
 vi.mock('../services/geocoding-cache.service', () => ({
   GeocodingCacheService: vi.fn(function GeocodingCacheServiceMock() {
@@ -120,7 +132,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'New York, NY 10018',
         confidence: 'high',
-        source: 'mapbox'
+        source: 'positionstack'
       })
 
       expect(mockGeocodingAdapter.geocodeZipCode).toHaveBeenCalledWith('10018')
@@ -129,7 +141,7 @@ describe('EnhancedGeocodingService', () => {
         expect.objectContaining({
           latitude: 40.7505,
           longitude: -73.9934,
-          source: 'mapbox'
+          source: 'positionstack'
         }),
         24 * 30
       )
@@ -191,7 +203,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'New York, NY 10018',
         confidence: 'high',
-        source: 'mapbox'
+        source: 'positionstack'
       })
 
       expect(mockCacheService.getCachedResult).not.toHaveBeenCalled()
@@ -248,7 +260,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: 'Seattle, WA',
         confidence: 'high',
-        source: 'mapbox'
+        source: 'positionstack'
       })
 
       expect(mockGeocodingAdapter.geocodeCityState).toHaveBeenCalledWith('Seattle', 'WA')
@@ -308,7 +320,7 @@ describe('EnhancedGeocodingService', () => {
         country: 'US',
         formattedAddress: '123 Broadway, New York, NY 10018',
         confidence: 'high',
-        source: 'mapbox'
+        source: 'positionstack'
       })
 
       expect(mockGeocodingAdapter.geocodeAddress).toHaveBeenCalledWith('123 Broadway, New York, NY 10018')
@@ -352,6 +364,51 @@ describe('EnhancedGeocodingService', () => {
       await service.populateCommonZips()
 
       expect(mockCacheService.populateCommonZips).toHaveBeenCalled()
+    })
+  })
+
+  describe('maps.co fallback', () => {
+    const chandler = { latitude: 32.25, longitude: -95.5, confidence: 'high' as const, formattedAddress: '75758, Chandler, TX', city: 'Chandler', state: 'TX', zip: '75758', country: 'US' }
+    let withFallback: EnhancedGeocodingService
+
+    beforeEach(() => {
+      mockCacheService.getCachedResult.mockResolvedValue(null)
+      mockCacheService.cacheResult.mockResolvedValue(undefined)
+      withFallback = new EnhancedGeocodingService(mockPrisma as any, { ...config, fallbackApiKey: 'maps-key' })
+    })
+
+    it('answers from maps.co when Positionstack fails, and labels the source', async () => {
+      mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('401'))
+      mockFallbackAdapter.geocodeZipCode.mockResolvedValue(chandler)
+      await expect(withFallback.geocodeZip('75758')).resolves.toMatchObject({ city: 'Chandler', source: 'mapsco' })
+      expect(mockCacheService.cacheResult).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ source: 'mapsco' }), expect.any(Number))
+    })
+
+    it('answers from maps.co when Positionstack finds nothing', async () => {
+      mockGeocodingAdapter.geocodeAddress.mockResolvedValue(null)
+      mockFallbackAdapter.geocodeAddress.mockResolvedValue(chandler)
+      await expect(withFallback.geocodeAddress('1 Main St, Chandler, TX')).resolves.toMatchObject({ source: 'mapsco' })
+    })
+
+    it('does not ask maps.co when Positionstack answers', async () => {
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue(chandler)
+      await expect(withFallback.geocodeZip('75758')).resolves.toMatchObject({ source: 'positionstack' })
+      expect(mockFallbackAdapter.geocodeZipCode).not.toHaveBeenCalled()
+    })
+
+    it('treats a ZIP neither provider finds as not found, and both failing as unavailable', async () => {
+      mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('401'))
+      mockFallbackAdapter.geocodeZipCode.mockResolvedValue(null)
+      await expect(withFallback.geocodeZip('00000')).resolves.toBeNull()
+
+      mockFallbackAdapter.geocodeZipCode.mockRejectedValue(new Error('429'))
+      await expect(withFallback.geocodeZip('00000')).rejects.toBeInstanceOf(GeocoderUnavailableError)
+    })
+
+    it('has no fallback without a key', async () => {
+      mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('401'))
+      await expect(service.geocodeZip('75758')).rejects.toBeInstanceOf(GeocoderUnavailableError)
+      expect(mockFallbackAdapter.geocodeZipCode).not.toHaveBeenCalled()
     })
   })
 })

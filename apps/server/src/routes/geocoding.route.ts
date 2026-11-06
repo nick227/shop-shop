@@ -116,6 +116,7 @@ export async function geocodingRoutes(app: FastifyInstance) {
   const geocoder = createEnhancedGeocodingService(prisma, {
     apiKey: env.GEOCODING_API_KEY,
     baseUrl: env.GEOCODING_API_URL,
+    fallbackApiKey: env.GEOCODE_API_KEY || undefined,
     enableCache: true,
     cacheTTLHours: 24 * 30 // 30 days
   })

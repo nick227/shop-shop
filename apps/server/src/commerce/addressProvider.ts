@@ -8,7 +8,7 @@
  *
  * ADDRESS_PROVIDER=mapbox|positionstack|postal picks one explicitly; otherwise the best configured.
  */
-import { cleanPostalCode, countryIso2, createEnhancedGeocodingService, lookupPostalCode, POSITIONSTACK_BASE_URL, prisma } from '@packages/db'
+import { cleanPostalCode, countryIso2, createEnhancedGeocodingService, lookupPostalCode, MapsCoGeocodingAdapter, POSITIONSTACK_BASE_URL, prisma } from '@packages/db'
 
 export type LocationPrecision = 'address' | 'street' | 'postal'
 
@@ -181,18 +181,31 @@ function isAmbiguous(top: MapboxFeature, others: readonly MapboxFeature[]): bool
   })
 }
 
-export function positionstackProvider(apiKey: string, baseUrl: string = POSITIONSTACK_BASE_URL): AddressProvider {
-  const service = createEnhancedGeocodingService(prisma, { apiKey, baseUrl, enableCache: true, cacheTTLHours: 24 * 30 })
+export function positionstackProvider(apiKey: string, baseUrl: string = POSITIONSTACK_BASE_URL, fallbackApiKey?: string): AddressProvider {
+  const service = createEnhancedGeocodingService(prisma, { apiKey, baseUrl, fallbackApiKey, enableCache: true, cacheTTLHours: 24 * 30 })
+  const fallback = fallbackApiKey ? new MapsCoGeocodingAdapter(fallbackApiKey) : undefined
   return {
     name: 'positionstack',
     suggests: false,
     async reverse(lat, lng) {
-      const qs = new URLSearchParams({ access_key: apiKey, query: `${lat},${lng}`, limit: '1' })
-      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/reverse?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
-      if (!response.ok) throw new Error('Address lookup failed')
-      const body = await response.json() as { data?: { number?: string; street?: string; locality?: string; region_code?: string; postal_code?: string; country_code?: string }[] }
-      const hit = body.data?.[0]
-      return hit ? { line1: hit.street ? [hit.number, hit.street].filter(Boolean).join(' ') : undefined, city: hit.locality, state: hit.region_code, postalCode: cleanPostalCode(hit.postal_code), country: countryIso2(hit.country_code) } : null
+      const primary = async () => {
+        const qs = new URLSearchParams({ access_key: apiKey, query: `${lat},${lng}`, limit: '1' })
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/reverse?${qs}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+        if (!response.ok) throw new Error('Address lookup failed')
+        const body = await response.json() as { data?: { number?: string; street?: string; locality?: string; region_code?: string; postal_code?: string; country_code?: string }[] }
+        const hit = body.data?.[0]
+        return hit ? { line1: hit.street ? [hit.number, hit.street].filter(Boolean).join(' ') : undefined, city: hit.locality, state: hit.region_code, postalCode: cleanPostalCode(hit.postal_code), country: countryIso2(hit.country_code) } : null
+      }
+      if (!fallback) return primary()
+      // Positionstack failing or finding nothing is not the last word when maps.co can answer.
+      const first = await primary().catch(() => undefined)
+      if (first) return first
+      try {
+        return (await fallback.reverse(lat, lng)) ?? first ?? null
+      } catch {
+        if (first === null) return null
+        throw new Error('Address lookup failed')
+      }
     },
     suggest: async () => [],
     async locate(address) {
@@ -217,7 +230,7 @@ export function addressProvider(env: NodeJS.ProcessEnv = process.env): AddressPr
   const chosen = env.ADDRESS_PROVIDER?.toLowerCase()
   let provider: AddressProvider
   if ((chosen === 'mapbox' || !chosen) && configured(env.MAPBOX_ACCESS_TOKEN)) provider = mapboxProvider(env.MAPBOX_ACCESS_TOKEN!)
-  else if ((chosen === 'positionstack' || !chosen) && configured(env.GEOCODING_API_KEY)) provider = positionstackProvider(env.GEOCODING_API_KEY!, env.GEOCODING_API_URL || POSITIONSTACK_BASE_URL)
+  else if ((chosen === 'positionstack' || !chosen) && configured(env.GEOCODING_API_KEY)) provider = positionstackProvider(env.GEOCODING_API_KEY!, env.GEOCODING_API_URL || POSITIONSTACK_BASE_URL, configured(env.GEOCODE_API_KEY) ? env.GEOCODE_API_KEY : undefined)
   else provider = postalProvider()
   if (env === process.env) cached = provider
   return provider
