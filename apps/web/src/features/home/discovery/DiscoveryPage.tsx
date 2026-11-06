@@ -1,5 +1,8 @@
+import { useDiscoveryVisit } from '@features/discovery-navigation/useDiscoveryVisit'
+import { readVisit, withDiscoveryOrigin } from '@features/discovery-navigation/context'
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
@@ -10,9 +13,7 @@ import { verticalSlugForStore } from '../neighborhood/selectHome'
 import { recordVertical } from '../neighborhood/taste'
 import { HOME_RADIUS_MILES, placeZip, rememberedPlace, rememberZip } from '../shell/placeMemory'
 import { applyDiscoveryPatch, canonicalDiscoverySearch, directoryGroup, readDiscoveryContext } from './discoveryContext'
-import { discoveryBands, discoveryEmphasis, heroIdentity, neighborhoodBandCopy, placeKind, provisionalPlaceName, type DiscoveryBand } from './discoveryMode'
-import { matchesDirectoryBrowse } from './infiniteFeed'
-import { discoveryMapPoints } from './mapResults'
+import { discoveryBands, discoveryEmphasis, heroIdentity, neighborhoodBandCopy, placeKind, provisionalPlaceName, resultsNote, type DiscoveryBand } from './discoveryMode'
 import { DiscoveryToolbar } from './DiscoveryToolbar'
 import { useDiscoveryScroll } from './useDiscoveryScroll'
 import { CategorySection } from './CategoryCircles'
@@ -24,8 +25,10 @@ import { MemberShops } from '../neighborhood/MemberShops'
 import { PlaceCard, placeCardFromNeighborhood } from '../neighborhood/PlaceCard'
 import type { NeighborhoodCard } from '../neighborhood/neighborhoodHero'
 import { useDirectory } from '../neighborhood/useDirectory'
-import { mergeCurated, useNeighborhoodGuide } from '../neighborhood/useNeighborhoodGuide'
-import { composeDiscovery, type DiscoveryItem, type DiscoveryTile } from './tiles'
+import { useNeighborhoodGuide } from '../neighborhood/useNeighborhoodGuide'
+import { discoveryResults } from './discoveryResults'
+import { useHeroTags } from './heroTags'
+import type { DiscoveryItem, DiscoveryTile } from './tiles'
 import './discovery.css'
 
 const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly postalCodes: readonly string[] })[] = [
@@ -68,7 +71,7 @@ const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly pos
 ]
 
 export function DiscoveryPage() {
-  const { pathname } = useLocation()
+  const { pathname, search, hash } = useLocation()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const context = readDiscoveryContext(pathname, params.toString())
@@ -85,11 +88,19 @@ export function DiscoveryPage() {
   const directory = useDirectory(directoryLat, directoryLng, {
     q: context.q,
     group: directoryGroup(context.category),
+    radius: data.location?.radiusMiles,
   })
   const guide = useNeighborhoodGuide(context.neighborhood)
   const account = useSignedInHome()
   const accountZip = defaultAddressZip(account.addresses, account.orders)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
+
+  const visitUrl = pathname + search + hash
+  const restoreSelection = useRef({ url: visitUrl, key: readVisit(visitUrl)?.selected })
+  if (restoreSelection.current.url !== visitUrl) {
+    restoreSelection.current = { url: visitUrl, key: readVisit(visitUrl)?.selected }
+  }
+  useDiscoveryVisit(selected ? `${selected.tile.kind}:${selected.tile.id}` : restoreSelection.current.key)
 
   useEffect(() => {
     const canonical = canonicalDiscoverySearch(params.toString())
@@ -107,40 +118,48 @@ export function DiscoveryPage() {
     if (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES)) return
     const next = new URLSearchParams(params)
     next.set('zip', zip)
-    next.set('radius', String(HOME_RADIUS_MILES))
+    if (!next.has('radius')) next.set('radius', String(HOME_RADIUS_MILES))
     setParams(next, { replace: true })
   }, [accountZip, context.hasExplicitPlace, context.zip, params, setParams])
 
   const browse = context.category
   const query = context.q
   const shownZip = data.location?.zip || placeZip(params.toString()) || accountZip || ''
-  const composed = useMemo(() => composeDiscovery({
+  const curated = useMemo(() => (context.neighborhood ? guide.data ?? [] : []), [context.neighborhood, guide.data])
+  const { composed, visibleListings, points } = useMemo(() => discoveryResults({
     stores: data.stores,
     products: data.products as DiscoveryItem[],
     stories: data.stories,
+    directory: directory.data ?? [],
+    curated,
     browse,
     query,
-  }), [browse, data.products, data.stores, data.stories, query])
-  const listings = useMemo(
-    () => mergeCurated(directory.data ?? [], context.neighborhood ? guide.data ?? [] : []),
-    [context.neighborhood, directory.data, guide.data],
-  )
-  const visibleListings = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    return listings.filter((listing) => {
-      if (!matchesDirectoryBrowse(listing, browse)) return false
-      if (!needle) return true
-      return `${listing.name} ${listing.categoryLabel} ${listing.addressStreet ?? ''}`.toLowerCase().includes(needle)
-    })
-  }, [browse, listings, query])
-  const points = useMemo(
-    () => discoveryMapPoints(composed.places, visibleListings, browse, query),
-    [browse, composed.places, query, visibleListings],
-  )
+  }), [browse, curated, data.products, data.stores, data.stories, directory.data, query])
+  const heroTags = useHeroTags({
+    enabled: !data.placePending,
+    placeTags: data.activePlace?.tags ?? data.cityPlace?.tags,
+    latitude: directoryLat,
+    longitude: directoryLng,
+    radius: data.location?.radiusMiles,
+    stores: data.stores,
+    products: data.products as DiscoveryItem[],
+    stories: data.stories,
+    curated,
+  })
+
+  useEffect(() => {
+    const key = restoreSelection.current.key
+    if (!key) return
+    const tile = [...composed.tiles, ...(composed.hero ? [composed.hero] : [])].find((entry) => `${entry.kind}:${entry.id}` === key)
+    if (tile) {
+      restoreSelection.current.key = undefined
+      setSelected({ tile })
+    }
+  }, [composed])
 
   const openStore = (id: string) => {
     if (id.startsWith('directory:')) {
-      navigate(`/directory/${id.slice('directory:'.length)}`)
+      navigate(withDiscoveryOrigin(`/directory/${id.slice('directory:'.length)}`, pathname, search, hash))
       return
     }
     const tile = composed.tiles.find((entry) => entry.kind === 'store' && entry.id === id)
@@ -207,17 +226,12 @@ export function DiscoveryPage() {
       : undefined
   const cityName = data.activePlace?.city?.name ?? data.cityPlace?.name ?? data.location?.city ?? 'Austin'
   const citySlug = data.activePlace?.city?.slug ?? data.cityPlace?.slug ?? context.city
-  const placeLabel = kind === 'neighborhood'
-    ? focus?.name ?? 'Neighborhood'
-    : kind === 'zip'
-      ? `${cityName} ${shownZip}`
-      : cityName
   const areaNames = listedNeighborhoods.slice(0, 3).map((area) => area.name).join(', ')
   const identity = heroIdentity({
     kind,
     emphasis,
     city: cityName,
-    state: data.activePlace?.city?.state ?? data.cityPlace?.state ?? data.location?.state,
+    state: data.activePlace?.city?.state ?? data.cityPlace?.city?.state ?? data.location?.state,
     zip: shownZip,
     focus,
     shopCount: points.length,
@@ -225,6 +239,15 @@ export function DiscoveryPage() {
     category: context.category,
     query,
   })
+  // An unknown or unpublished neighborhood has no location of its own; say so instead of
+  // presenting citywide results as if they were that neighborhood's.
+  const heroCopy = data.placeMissing && kind === 'neighborhood'
+    ? {
+        kicker: `${cityName}, ${data.location?.state ?? 'TX'}`,
+        title: identity.title,
+        lede: `This neighborhood isn’t in our guide yet. Showing places across ${cityName}.`,
+      }
+    : identity
   const neighborhoodCopy = neighborhoodBandCopy(kind, shownZip, cityName)
 
   const views = useRecentViews()
@@ -253,17 +276,20 @@ export function DiscoveryPage() {
         focus={focus}
         mapView={context.view === 'map'}
         kind={kind}
-        identity={identity}
-        showEditorial={emphasis !== 'search'}
+        identity={heroCopy}
+        showEditorial
         error={data.location ? undefined : data.notice?.message}
         pending={data.waitingForZip}
         story={composed.stories[0]}
         nearest={composed.nearest}
         points={points}
-        userLat={data.location?.latitude}
-        userLng={data.location?.longitude}
+        center={data.location}
+        radiusMiles={data.location?.radiusMiles}
+        showYou={data.location?.source === 'geolocation'}
         onSelectStore={openStore}
         neighborhoods={listedNeighborhoods}
+        tags={heroTags.tags}
+        tagsPending={data.placePending || !heroTags.settled}
       />
     ),
     neighborhoods: (
@@ -321,6 +347,8 @@ export function DiscoveryPage() {
         query={query}
         excludeIds={emphasis === 'search' ? new Set<string>() : featuredStoreIds}
         showCategories={false}
+        listKey={`${pathname}|${context.neighborhood ?? ''}|${context.zip ?? ''}|${context.city ?? ''}|${context.category}|${context.q}`}
+        note={resultsNote(points.length, context.category, context.q)}
         onOpen={(tile, anchor) => setSelected({ tile, anchor })}
       />
     ),
@@ -329,7 +357,7 @@ export function DiscoveryPage() {
   return (
     <div className="discover" aria-busy={data.placePending || undefined}>
       <PublicMaintenanceBanner />
-      <DiscoveryToolbar placeLabel={placeLabel} citySlug={citySlug} cityName={cityName} />
+      <DiscoveryToolbar citySlug={citySlug} cityName={cityName} zip={kind === 'zip' ? shownZip : undefined} neighborhoodName={focus?.name} />
       {discoveryBands(emphasis).map((band) => <Fragment key={band}>{sections[band]}</Fragment>)}
 
       {selected ? (

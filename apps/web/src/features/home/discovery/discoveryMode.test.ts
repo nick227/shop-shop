@@ -25,7 +25,8 @@ describe('discovery emphasis', () => {
     }
     expect(placeKind(context, '/neighborhoods/austin-tx-zilker')).toBe('neighborhood')
     expect(discoveryEmphasis(context, 'neighborhood')).toBe('search')
-    expect(discoveryBands('search')[1]).toBe('feed')
+    expect(discoveryBands('search')).toEqual(discoveryBands('neighborhood'))
+    expect(discoveryBands('search')[0]).toBe('hero')
     expect(heroIdentity({
       kind: 'neighborhood',
       emphasis: 'search',

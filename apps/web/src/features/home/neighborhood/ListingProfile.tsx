@@ -1,4 +1,6 @@
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { withDiscoveryOrigin } from '@features/discovery-navigation/context'
+import { Navigate, useParams, useLocation } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { useQuery } from '@tanstack/react-query'
 import { defaultStorefrontConfig, STOREFRONT_PALETTES, type StorefrontConfig } from '@packages/shared/storefront'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
@@ -21,6 +23,8 @@ type Listing = {
   readonly id?: string
   readonly name: string
   readonly categoryLabel: string
+  readonly primaryCategory?: string
+  readonly categories?: readonly { slug: string; label: string }[]
   readonly category?: string
   readonly phone: string | null
   readonly website: string | null
@@ -81,6 +85,7 @@ function directoryData(listing: Listing, images: readonly string[], videos: read
 
 export function ListingProfile() {
   const { slug } = useParams()
+  const location = useLocation()
   const query = useQuery({
     queryKey: ['directory-listing', slug],
     enabled: Boolean(slug),
@@ -95,12 +100,18 @@ export function ListingProfile() {
   if (query.isLoading) return <div className="discover"><PlaceSkeleton /></div>
   if (!query.data) return <p className="discover discover-lede">This place is not in the directory.</p>
   const listing = query.data
-  if (listing.store) return <Navigate to={`/kitchen/${listing.store.slug}`} replace />
+  if (listing.store) return <Navigate to={withDiscoveryOrigin(`/kitchen/${listing.store.slug}`, location.pathname, location.search)} replace />
   const images = listing.images ?? []
   const data = directoryData(listing, images, listing.videos ?? [])
   const store = {
     id: listing.id ?? slug ?? listing.name,
     name: listing.name,
+    category: listing.category,
+    categories: listing.categories,
+    primaryCategory: listing.primaryCategory,
+    categoryLabel: listing.categoryLabel,
+    city: listing.city,
+    neighborhood: listing.neighborhood,
     phone: listing.phone,
     website: listing.website,
     description: listing.description,

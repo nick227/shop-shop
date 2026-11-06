@@ -5,7 +5,7 @@ export type PlaceKind = 'city' | 'zip' | 'neighborhood' | 'open'
 export type DiscoveryEmphasis = 'city' | 'zip' | 'neighborhood' | 'search' | 'category'
 export type DiscoveryBand = 'hero' | 'neighborhoods' | 'personal' | 'shops' | 'categories' | 'feed'
 
-const CATEGORY_LABEL: Record<string, string> = {
+export const CATEGORY_LABEL: Record<string, string> = {
   food: 'Food',
   grocery: 'Grocery',
   convenience: 'Convenience',
@@ -29,11 +29,8 @@ export function discoveryEmphasis(context: DiscoveryContext, kind: PlaceKind): D
   return kind
 }
 
-export function discoveryBands(emphasis: DiscoveryEmphasis): readonly DiscoveryBand[] {
-  if (emphasis === 'search') return ['hero', 'feed', 'shops', 'neighborhoods']
-  if (emphasis === 'category') return ['hero', 'shops', 'feed', 'neighborhoods', 'categories']
-  if (emphasis === 'neighborhood') return ['hero', 'neighborhoods', 'shops', 'feed', 'personal', 'categories']
-  if (emphasis === 'zip') return ['hero', 'shops', 'personal', 'neighborhoods', 'feed', 'categories']
+/** One order for every context so a filter or place change does not rebuild the page. */
+export function discoveryBands(_emphasis?: DiscoveryEmphasis): readonly DiscoveryBand[] {
   return ['hero', 'neighborhoods', 'shops', 'personal', 'feed', 'categories']
 }
 
@@ -56,27 +53,11 @@ export function heroIdentity(input: {
 }): { readonly kicker: string; readonly title: string; readonly lede: string } {
   const city = input.city || 'Austin'
   const state = input.state || 'TX'
-  const where = input.kind === 'neighborhood' && input.focus
-    ? input.focus.name
-    : input.kind === 'zip' && input.zip
-      ? input.zip
-      : city
-  if (input.emphasis === 'search' || input.emphasis === 'category') {
-    const filter = [
-      CATEGORY_LABEL[input.category] ?? '',
-      input.query.trim() ? `“${input.query.trim()}”` : '',
-    ].filter(Boolean).join(' · ')
-    return {
-      kicker: input.kind === 'neighborhood' ? 'Neighborhood' : input.kind === 'zip' ? `ZIP ${input.zip ?? ''}`.trim() : 'City',
-      title: input.kind === 'neighborhood' && input.focus ? input.focus.name : input.kind === 'zip' ? homepageTitle(city, state, []) : city,
-      lede: `${input.shopCount} results${filter ? ` for ${filter}` : ''} in ${where}.`,
-    }
-  }
   if (input.kind === 'neighborhood' && input.focus) {
     return {
       kicker: [city, state].filter(Boolean).join(', ') || 'Neighborhood',
       title: input.focus.name,
-      lede: input.focus.headline || input.focus.about || `Places and shops in ${input.focus.name}.`,
+      lede: input.focus.headline || input.focus.about || 'Independent shops, kitchens, and local places nearby.',
     }
   }
   if (input.kind === 'zip' && input.zip) {
@@ -90,7 +71,7 @@ export function heroIdentity(input: {
   }
   if (input.kind === 'open') {
     return {
-      kicker: 'Austin Local Guide',
+      kicker: 'Local guide',
       title: 'Find shops',
       lede: 'Enter a ZIP code for neighborhood delivery, or explore Austin’s neighborhoods below.',
     }
@@ -99,25 +80,28 @@ export function heroIdentity(input: {
     kicker: 'City',
     title: city,
     lede: input.areaNames
-      ? `Neighborhoods, featured businesses, and local activity across ${city}. ${input.areaNames}.`
-      : `Neighborhoods, featured businesses, and local activity across ${city}.`,
+      ? `Independent shops and neighborhood guides: ${input.areaNames}.`
+      : 'Independent shops and neighborhood guides.',
   }
 }
 
-export function neighborhoodBandCopy(kind: PlaceKind, zip?: string, city?: string): { readonly kicker: string; readonly title: string; readonly label: string } {
+export function neighborhoodBandCopy(kind: PlaceKind, _zip?: string, city?: string): { readonly kicker: string; readonly title: string; readonly label: string } {
   if (kind === 'neighborhood') {
-    return { kicker: 'Nearby', title: 'Neighborhoods next to this one', label: 'Nearby neighborhoods' }
+    return { kicker: 'Nearby', title: 'Neighborhoods', label: 'Nearby neighborhoods' }
   }
   if (kind === 'zip') {
-    return {
-      kicker: zip ? `Around ${zip}` : 'Nearby',
-      title: 'Neighborhoods around this area',
-      label: 'Nearby Neighborhoods',
-    }
+    return { kicker: 'Nearby', title: 'Neighborhoods', label: 'Nearby Neighborhoods' }
   }
   return {
-    kicker: city ? `Explore ${city}` : 'Explore Austin',
-    title: kind === 'city' ? 'Popular neighborhoods' : 'Austin neighborhoods',
+    kicker: city ? city : 'Austin',
+    title: 'Neighborhoods',
     label: 'Austin neighborhoods',
   }
+}
+
+export function resultsNote(count: number, category: string, query: string): string | undefined {
+  if (!category && !query.trim()) return undefined
+  const filter = [CATEGORY_LABEL[category] ?? '', query.trim()].filter(Boolean).join(' · ')
+  const noun = count === 1 ? 'place' : 'places'
+  return filter ? `${count} ${noun} · ${filter}` : `${count} ${noun}`
 }

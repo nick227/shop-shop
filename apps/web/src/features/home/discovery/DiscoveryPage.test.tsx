@@ -1,7 +1,14 @@
+import { StrictMode } from 'react'
+import { saveVisit, readVisit } from '@features/discovery-navigation/context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+
+function Probe() {
+  const location = useLocation()
+  return <output data-testid="probe">{location.pathname + location.search}</output>
+}
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DiscoveryPage } from './DiscoveryPage'
 import { placeZip } from '../shell/placeMemory'
@@ -10,6 +17,8 @@ const mockState = vi.hoisted(() => ({
   hasLocation: false,
   signedIn: false,
 }))
+
+vi.mock('../neighborhood/recentViews', () => ({ useRecentViews: () => [], recordRecent: vi.fn() }))
 
 vi.mock('./NeighborhoodMap', () => ({
   NeighborhoodMap: () => <div data-testid="neighborhood-map" />,
@@ -85,9 +94,8 @@ vi.mock('../neighborhood/useNeighborhoodData', () => ({
   }),
 }))
 
-vi.mock('../neighborhood/useDirectory', () => ({
-  useDirectory: () => ({
-    data: [
+vi.mock('../neighborhood/useDirectory', () => {
+  const rows = () => [
       {
         id: 'dir-1',
         slug: 'morning-jos',
@@ -114,10 +122,15 @@ vi.mock('../neighborhood/useDirectory', () => ({
         longitude: -97.77,
         attribution: null,
       },
-    ],
-    isLoading: false,
-  }),
-}))
+    ]
+  return {
+    useDirectory: () => ({ data: rows(), isLoading: false }),
+    directoryQuery: (latitude?: number, longitude?: number, options?: { q?: string; group?: string }) => ({
+      queryKey: ['directory', latitude ?? 'all', longitude ?? 'all', options?.q ?? '', options?.group ?? ''],
+      queryFn: async () => rows(),
+    }),
+  }
+})
 
 vi.mock('../neighborhood/useSignedInHome', () => ({
   useSignedInHome: () =>
@@ -153,6 +166,21 @@ describe('DiscoveryPage 7-surface composition', () => {
     sessionStorage.clear()
     mockState.hasLocation = false
     mockState.signedIn = false
+  })
+
+  it('restores the selected detail panel under Strict Mode and remembers closing it', async () => {
+    saveVisit('/explore?category=food', { y: 0, selected: 'store:store-2' })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <StrictMode><QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/explore?category=food']}><DiscoveryPage /></MemoryRouter>
+      </QueryClientProvider></StrictMode>,
+    )
+    expect(await screen.findByRole('complementary', { name: 'Taco Heaven' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View store' }).getAttribute('href')).toContain('from=')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Close', exact: true }))
+    expect(screen.queryByRole('complementary', { name: 'Taco Heaven' })).toBeNull()
+    expect(readVisit('/explore?category=food')?.selected).toBeUndefined()
   })
 
   it('introduces features, categories, neighborhoods, and vendors when no ZIP is set (signed out)', async () => {
@@ -202,7 +230,7 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.getByText('Barton Springs Pool')).toBeInTheDocument()
     expect(container.querySelector('.feed-product-card')).toBeInTheDocument()
     expect(container.querySelector('.place-card.is-business')).toBeInTheDocument()
-    expect(container.querySelector('.directory-row')).toBeInTheDocument()
+    expect(container.querySelector('.feed-place-cell .place-card')).toBeInTheDocument()
 
     const saveButtons = screen.getAllByRole('button', { name: /save steak burrito to collection/i })
     await user.click(saveButtons[0]!)
@@ -235,5 +263,38 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.getByText('Your usual South Austin picks.')).toBeInTheDocument()
     expect(screen.getAllByText('Ordered before').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Saved').length).toBeGreaterThan(0)
+  })
+
+  it('turns hero tags into filters whose counts match the results they open', async () => {
+    mockState.hasLocation = true
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/explore?zip=78704&radius=10']}>
+          <Routes>
+            <Route path="/explore" element={<><DiscoveryPage /><Probe /></>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const tags = await screen.findByRole('list', { name: 'Discover here' })
+    const food = await screen.findByRole('link', { name: 'Food, 1 place' })
+    expect(food.getAttribute('href')).toContain('category=food')
+    expect(food.getAttribute('href')).toContain('zip=78704')
+    expect(screen.getByRole('link', { name: 'Outdoors, 1 place' })).toBeInTheDocument()
+    // No results for these filters here, so they are not offered.
+    expect(tags.textContent).not.toContain('Shops')
+    expect(tags.textContent).not.toContain('Arts')
+
+    await user.click(food)
+    expect(screen.getByTestId('probe').textContent).toBe('/explore?radius=10&zip=78704&category=food')
+    expect(screen.getByRole('heading', { name: 'Shops near Austin, TX' })).toBeInTheDocument()
+    expect(container.querySelector('.discover-hero.is-results')).not.toBeInTheDocument()
+    expect(screen.getByText('1 place · Food')).toBeInTheDocument()
+    const active = screen.getByRole('link', { name: 'Food, 1 place, clear filter' })
+    expect(active).toHaveAttribute('aria-current', 'true')
+    expect(active.getAttribute('href')).not.toContain('category=')
   })
 })

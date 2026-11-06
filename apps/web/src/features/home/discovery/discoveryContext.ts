@@ -56,7 +56,7 @@ export function readDiscoveryContext(pathname: string, search: string): Discover
     city,
     q,
     view,
-    hasExplicitPlace: Boolean(zip || neighborhood || city || pathname === '/neighborhoods'),
+    hasExplicitPlace: Boolean(zip || neighborhood || city || (params.has('lat') && params.has('lng')) || pathname === '/neighborhoods'),
   }
 }
 
@@ -104,13 +104,17 @@ export function applyDiscoveryPatch(
     path = '/explore'
   }
 
-  const params = new URLSearchParams()
+  const params = new URLSearchParams(search)
+  for (const key of ['zip', 'neighborhood', 'city', 'category', 'browse', 'group', 'q', 'view', 'from', 'item']) params.delete(key)
+  if (selectingNeighborhood || typeof patch.zip === 'string' || typeof patch.city === 'string' || patch.listNeighborhoods) {
+    for (const key of ['lat', 'lng', 'state', 'source']) params.delete(key)
+  }
   if (zip && !neighborhood) params.set('zip', zip)
   if (neighborhood && path === '/explore') params.set('neighborhood', neighborhood)
   if (city && !neighborhood && !zip) params.set('city', city)
   if (category) params.set('category', category)
   if (q) params.set('q', q)
   if (view === 'map') params.set('view', 'map')
-  if (params.has('zip')) params.set('radius', '25')
+  if (params.has('zip') && !params.has('radius')) params.set('radius', '25')
   return { pathname: path, search: params.toString() }
 }

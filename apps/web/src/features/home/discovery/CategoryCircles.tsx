@@ -41,10 +41,9 @@ export function CategorySection() {
     <section className="surface-band" aria-label="Categories">
       <div className="surface-head">
         <div>
-          <p className="tile-kicker">Browse Categories</p>
-          <h2 className="surface-title">Jump to a category</h2>
+          <p className="tile-kicker">Browse</p>
+          <h2 className="surface-title">Categories</h2>
         </div>
-        <p className="surface-note">Food, grocery, convenience, retail, arts, and outdoors.</p>
       </div>
       <CategoryCircles />
     </section>

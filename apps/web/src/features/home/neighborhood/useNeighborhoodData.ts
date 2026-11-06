@@ -32,7 +32,7 @@ export function useNeighborhoodData() {
     ? {
         latitude: place.latitude,
         longitude: place.longitude,
-        radiusMiles: HOME_RADIUS_MILES,
+        radiusMiles: Number.isFinite(Number(params.get('radius'))) && Number(params.get('radius')) > 0 ? Number(params.get('radius')) : HOME_RADIUS_MILES,
         source: context.neighborhood ? 'manual' : 'city',
         city: place.city?.name,
         state: place.city?.state ?? undefined,
@@ -82,6 +82,8 @@ export function useNeighborhoodData() {
     notice: urlLocationNotice,
     waitingForZip,
     placePending: awaitingPlace,
+    /** The URL names a place the API does not know (or has not published). */
+    placeMissing: Boolean(placeSlug) && placeQuery.isFetched && placeQuery.data === null,
     activePlace: context.neighborhood ? shownPlace ?? null : null,
     cityPlace: context.city && !context.neighborhood && !context.zip ? shownPlace ?? null : null,
     nearby: context.neighborhood && shownPlace ? shownPlace.nearby ?? [] : [],

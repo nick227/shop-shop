@@ -1,6 +1,7 @@
 import { apiClient } from '@api/client'
 import { items, stores } from '@api/apiWrapper'
 import type { ItemResponse, RiverPost, StoreWithDistance } from '@api/types'
+import type { NeighborhoodTag } from '../discovery/heroTags'
 import { mapFeedItemToRiverPost, type RiverFeedItemWire } from '@/features/river/mapFeedItemToRiverPost'
 import type { LocationData } from '@shared/types'
 import { HOME_RADIUS_MILES } from '../shell/placeMemory'
@@ -26,7 +27,7 @@ export async function loadStores(location?: LocationData) {
           isPublished: 'true',
           latitude: location.latitude,
           longitude: location.longitude,
-          radiusMiles: HOME_RADIUS_MILES,
+          radiusMiles: location.radiusMiles ?? HOME_RADIUS_MILES,
         }
       : {
           page: '1',
@@ -45,7 +46,7 @@ export async function loadProducts(location?: LocationData) {
           page: '1',
           latitude: location.latitude,
           longitude: location.longitude,
-          radiusMiles: HOME_RADIUS_MILES,
+          radiusMiles: location.radiusMiles ?? HOME_RADIUS_MILES,
         }
       : {
           limit: '48',
@@ -60,7 +61,7 @@ export async function loadStories(location: LocationData | undefined) {
     limit: 8,
     allowEmptyMedia: false,
     near: location
-      ? { lat: location.latitude, lng: location.longitude, radiusMiles: HOME_RADIUS_MILES }
+      ? { lat: location.latitude, lng: location.longitude, radiusMiles: location.radiusMiles ?? HOME_RADIUS_MILES }
       : undefined,
   })
   return (page.items ?? []).map((row) => mapFeedItemToRiverPost(row as RiverFeedItemWire))
@@ -95,6 +96,8 @@ export type DiscoveryPlace = {
   readonly city: { readonly name: string; readonly state: string | null; readonly slug: string } | null
   readonly images: readonly string[]
   readonly postalCodes: readonly string[]
+  /** Older API builds omit it. */
+  readonly tags?: readonly NeighborhoodTag[]
   readonly nearby: readonly {
     readonly id: string
     readonly name: string

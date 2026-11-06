@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { Heart, X } from 'lucide-react'
 import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'

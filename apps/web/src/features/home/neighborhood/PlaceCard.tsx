@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { realPhoto } from '../discovery/photo'
 import { creditForUrl } from '../discovery/editorialMedia'
@@ -18,6 +18,10 @@ export type PlaceCardData = {
 }
 
 export type PlaceCardVariant = 'auto' | 'neighborhood' | 'business' | 'attraction' | 'feature'
+
+function twoWords(label: string): string {
+  return label.trim().split(/\s+/).slice(0, 2).join(' ')
+}
 
 export function placeCardFromNeighborhood(area: NeighborhoodCard & {
   readonly city?: { readonly name: string; readonly state?: string | null } | null
@@ -128,7 +132,7 @@ export function PlaceCard({
       >
         {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
         <span className="place-card-copy">
-          <span className="place-card-kicker">{place.categoryLabel}</span>
+          <span className="place-card-kicker">{twoWords(place.categoryLabel)}</span>
           <strong>{place.name}</strong>
           {place.meta ? <span>{place.meta}</span> : null}
         </span>
@@ -143,7 +147,7 @@ export function PlaceCard({
     >
       {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
       <span className="place-card-copy">
-        <span className="place-card-kicker">{place.categoryLabel}</span>
+        <span className="place-card-kicker">{twoWords(place.categoryLabel)}</span>
         <strong>{place.name}</strong>
         {place.meta ? <span>{place.meta}</span> : null}
       </span>

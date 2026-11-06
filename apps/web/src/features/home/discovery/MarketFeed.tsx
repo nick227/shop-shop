@@ -1,9 +1,11 @@
+import { useLocation } from 'react-router-dom'
+import { readVisit, saveVisit } from '@features/discovery-navigation/context'
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { formatDistance } from '@shared/lib/utils/format'
 import type { DirectoryListing } from '../neighborhood/DirectoryList'
+import { PlaceCard, placeCardFromListing } from '../neighborhood/PlaceCard'
 import {
   isInCollection,
   toggleSavedCollection,
@@ -132,23 +134,11 @@ function StoryFeedCard({ tile, onOpen }: { readonly tile: StoryTile; readonly on
   )
 }
 
-function DirectoryFeedCard({ listing }: { readonly listing: DirectoryListing }) {
-  const miles = listing.distance == null ? null : `${listing.distance.toFixed(1)} mi`
-  const directions = listing.latitude != null && listing.longitude != null
-    ? `https://www.google.com/maps/dir/?api=1&destination=${listing.latitude},${listing.longitude}`
-    : null
+function DirectoryFeedCard({ listing, variant }: { readonly listing: DirectoryListing; readonly variant: 'business' | 'attraction' }) {
   return (
-    <article className="directory-row">
-      <Link className="directory-row-name" to={`/directory/${listing.slug}`}>
-        <strong>{listing.name}</strong>
-        <span>{[listing.categoryLabel, listing.addressStreet, miles].filter(Boolean).join(' · ')}</span>
-      </Link>
-      <span className="directory-row-actions">
-        {listing.phone ? <a href={`tel:${listing.phone}`}>Call</a> : null}
-        {directions ? <a href={directions} target="_blank" rel="noreferrer">Directions</a> : null}
-        {listing.website ? <a href={listing.website} target="_blank" rel="noreferrer">Website</a> : null}
-      </span>
-    </article>
+    <div className="feed-place-cell">
+      <PlaceCard place={placeCardFromListing(listing)} variant={variant} />
+    </div>
   )
 }
 
@@ -217,6 +207,8 @@ export function MarketFeed({
   excludeIds,
   onOpen,
   showCategories = true,
+  listKey,
+  note,
 }: {
   readonly tiles: readonly DiscoveryTile[]
   readonly nearest: readonly StoreTile[]
@@ -228,9 +220,21 @@ export function MarketFeed({
   readonly excludeIds?: ReadonlySet<string>
   readonly onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void
   readonly showCategories?: boolean
+  /** Place, category, and query. Map and other view changes do not reset the list. */
+  readonly listKey?: string
+  readonly note?: string
 }) {
   useSavedCollection()
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const location = useLocation()
+  const visitUrl = location.pathname + location.search + location.hash
+  const scope = listKey ?? visitUrl
+  const [page, setPage] = useState(() => ({ url: scope, count: readVisit(visitUrl)?.count ?? PAGE_SIZE }))
+  const visibleCount = page.url === scope ? page.count : readVisit(visitUrl)?.count ?? PAGE_SIZE
+  const setVisibleCount = (update: (previous: number) => number) => {
+    const count = update(visibleCount)
+    setPage({ url: visitUrl, count })
+    saveVisit(visitUrl, { count })
+  }
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const mixedEntries = useMemo(
@@ -246,10 +250,6 @@ export function MarketFeed({
       }),
     [browse, excludeIds, listings, nearest, query, storeTiles, stories, tiles],
   )
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [browse, query])
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -278,10 +278,10 @@ export function MarketFeed({
     <section className="market-feed surface-band" id="market" aria-label="Infinite Discovery Feed">
       <div className="surface-head">
         <div className="surface-head-titles">
-          <p className="tile-kicker">Local Marketplace &amp; Guide</p>
+          <p className="tile-kicker">Guide</p>
           <h2 className="surface-title">Discover</h2>
         </div>
-        <p className="surface-note">Products, neighborhood businesses, and local places.</p>
+        {note ? <p className="surface-note">{note}</p> : null}
       </div>
       {showCategories ? <CategoryCircles /> : null}
       <div className="discovery-mixed-grid">
@@ -312,9 +312,9 @@ export function MarketFeed({
             )
           }
           return (
-            <div key={row.key} className="feed-row-directory">
+            <div key={row.key} className={`feed-row-places cols-${row.items.length}`}>
               {row.items.map((entry) => (
-                <DirectoryFeedCard key={entry.key} listing={entry.listing} />
+                <DirectoryFeedCard key={entry.key} listing={entry.listing} variant={entry.kind === 'attraction' ? 'attraction' : 'business'} />
               ))}
             </div>
           )

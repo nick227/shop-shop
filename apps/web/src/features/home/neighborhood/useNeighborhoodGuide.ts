@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { DirectoryListing } from './DirectoryList'
 import { apiOrigin } from './loadDiscovery'
 
-type GuideListing = {
+export type GuideListing = {
   readonly id: string
   readonly slug: string
   readonly name: string

@@ -1,8 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Map, Rows3 } from 'lucide-react'
+import { Map, Rows3, X } from 'lucide-react'
 import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
+import { Breadcrumbs, type Crumb } from '@features/discovery-navigation/Breadcrumbs'
 import { applyDiscoveryPatch, readDiscoveryContext } from './discoveryContext'
-import { placeKind } from './discoveryMode'
+import { CATEGORY_LABEL, placeKind } from './discoveryMode'
 
 const CATEGORIES = [
   ...STORE_TYPE_CONFIG.filter((entry) => entry.slug),
@@ -10,20 +12,57 @@ const CATEGORIES = [
   { slug: 'outdoors', label: 'Outdoors' },
 ] as const
 
+/**
+ * Place › category › search, as a trail. Every level is a link back up, and the
+ * search term sits in the trail instead of on its own row, so filtering never
+ * changes the toolbar's height.
+ */
+function discoveryCrumbs(input: {
+  readonly pathname: string
+  readonly search: string
+  readonly cityName: string
+  readonly citySlug?: string
+  readonly zip?: string
+  readonly neighborhoodName?: string
+}): Crumb[] {
+  const { pathname, search } = input
+  const context = readDiscoveryContext(pathname, search)
+  const kind = placeKind(context, pathname)
+  const crumbs: Crumb[] = []
+  const city = applyDiscoveryPatch(pathname, search, { neighborhood: null, zip: null, city: input.citySlug || 'austin-tx', category: null, q: null })
+  if (kind === 'open') crumbs.push({ key: 'place', label: 'Explore', to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
+  else crumbs.push({ key: 'city', label: input.cityName, to: city })
+  if (kind === 'zip' && input.zip) crumbs.push({ key: 'zip', label: input.zip, to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
+  if (kind === 'neighborhood') crumbs.push({ key: 'neighborhood', label: input.neighborhoodName ?? 'Neighborhood', to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
+  if (context.category) crumbs.push({ key: 'category', label: CATEGORY_LABEL[context.category] ?? context.category, to: applyDiscoveryPatch(pathname, search, { q: null }) })
+  if (context.q.trim()) {
+    crumbs.push({
+      key: 'q',
+      label: `“${context.q.trim()}”`,
+      after: (
+        <Link to={applyDiscoveryPatch(pathname, search, { q: null })} className="crumb-clear" aria-label={`Clear search “${context.q.trim()}”`}>
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      ),
+    })
+  }
+  return crumbs
+}
+
 export function DiscoveryToolbar({
-  placeLabel,
   citySlug,
   cityName,
+  zip,
+  neighborhoodName,
 }: {
-  readonly placeLabel: string
   readonly citySlug?: string
   readonly cityName?: string
+  readonly zip?: string
+  readonly neighborhoodName?: string
 }) {
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
   const context = readDiscoveryContext(pathname, search)
-  const kind = placeKind(context, pathname)
-  const kicker = kind === 'neighborhood' ? 'Neighborhood' : kind === 'zip' ? 'ZIP' : kind === 'city' ? 'City' : 'Location'
 
   const go = (patch: Parameters<typeof applyDiscoveryPatch>[2]) => {
     navigate(applyDiscoveryPatch(pathname, search, patch))
@@ -32,21 +71,15 @@ export function DiscoveryToolbar({
   return (
     <div className="discovery-toolbar" role="search">
       <div className="discovery-toolbar-place">
-        <span className="tile-kicker">{kicker}</span>
-        <strong>{placeLabel}</strong>
-        {context.neighborhood ? (
-          <button type="button" onClick={() => go({ neighborhood: null, city: citySlug || 'austin-tx', zip: null })}>
-            All of {cityName || 'Austin'}
-          </button>
-        ) : (
+        <Breadcrumbs
+          label="Discovery breadcrumb"
+          className="discovery-crumbs"
+          crumbs={discoveryCrumbs({ pathname, search, cityName: cityName || 'Austin', citySlug, zip, neighborhoodName })}
+        />
+        {pathname === '/neighborhoods' ? null : (
           <button type="button" onClick={() => go({ listNeighborhoods: true, zip: null })}>Neighborhoods</button>
         )}
       </div>
-      {context.q ? (
-        <button type="button" className="discovery-toolbar-query" onClick={() => go({ q: null })}>
-          “{context.q}”
-        </button>
-      ) : null}
       <div className="discovery-toolbar-categories" role="toolbar" aria-label="Category">
         <button type="button" aria-pressed={context.category === ''} onClick={() => go({ category: null })}>All</button>
         {CATEGORIES.map((entry) => (

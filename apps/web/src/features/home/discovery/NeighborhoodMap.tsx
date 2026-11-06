@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { mapFrame } from './mapFrame'
 
 export interface MapPoint {
   readonly id: string
@@ -9,23 +10,27 @@ export interface MapPoint {
   readonly longitude: number
 }
 
-const DEFAULT_CENTER: L.LatLngTuple = [30.2672, -97.7431]
-
 export function NeighborhoodMap({
   points,
-  userLat,
-  userLng,
+  center,
+  radiusMiles,
+  showYou = false,
   onSelect,
 }: {
   readonly points: readonly MapPoint[]
-  readonly userLat?: number
-  readonly userLng?: number
+  /** The page's place: a neighborhood or ZIP centroid, or the shopper's position. */
+  readonly center?: { readonly latitude?: number; readonly longitude?: number }
+  readonly radiusMiles?: number
+  /** Only when `center` is the shopper's own position. A neighborhood centroid is not "you". */
+  readonly showYou?: boolean
   readonly onSelect: (id: string) => void
 }) {
   const nodeRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | undefined>(undefined)
   const selectRef = useRef(onSelect)
   useEffect(() => { selectRef.current = onSelect }, [onSelect])
+  const centerLat = center?.latitude
+  const centerLng = center?.longitude
 
   useEffect(() => {
     const node = nodeRef.current
@@ -39,20 +44,19 @@ export function NeighborhoodMap({
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker) layer.remove()
     })
-    const bounds: L.LatLngTuple[] = []
-    if (userLat != undefined && userLng != undefined) {
-      bounds.push([userLat, userLng])
-      L.marker([userLat, userLng], {
+    const frame = mapFrame({ points, center: { latitude: centerLat, longitude: centerLng }, radiusMiles })
+    if (showYou && frame.hasPlace) {
+      L.marker([frame.anchor.latitude, frame.anchor.longitude], {
         icon: L.divIcon({
           className: '',
           html: '<span class="map-you"></span>',
           iconSize: [16, 16],
           iconAnchor: [8, 8],
         }),
+        title: 'Your location',
       }).addTo(map)
     }
-    for (const point of points) {
-      bounds.push([point.latitude, point.longitude])
+    for (const point of frame.pins) {
       const marker = L.marker([point.latitude, point.longitude], {
         icon: L.divIcon({
           className: '',
@@ -65,11 +69,20 @@ export function NeighborhoodMap({
       marker.bindTooltip(point.name, { direction: 'top', offset: [0, -8] })
       marker.addTo(map)
     }
-    if (bounds.length === 0) map.setView(DEFAULT_CENTER, 12)
-    else if (bounds.length === 1) map.setView(bounds[0], 13)
-    else map.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 })
+    if (frame.view.kind === 'center') map.setView([frame.view.at.latitude, frame.view.at.longitude], frame.view.zoom)
+    else map.fitBounds(frame.view.bounds.map((point) => [point.latitude, point.longitude] as L.LatLngTuple), { padding: [28, 28], maxZoom: 14 })
     window.setTimeout(() => map.invalidateSize(), 60)
-  }, [points, userLat, userLng])
+  }, [points, centerLat, centerLng, radiusMiles, showYou])
 
-  return <div ref={nodeRef} className="discover-map" />
+  // The panel changes size between the hero, results, and expanded map views. Leaflet keeps its
+  // center and zoom through invalidateSize, so expanding does not lose the reader's place.
+  useEffect(() => {
+    const node = nodeRef.current
+    if (!node || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => mapRef.current?.invalidateSize())
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  return <div ref={nodeRef} className="discover-map" role="region" aria-label="Map of places in this area" />
 }

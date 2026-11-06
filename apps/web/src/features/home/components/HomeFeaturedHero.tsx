@@ -2,7 +2,7 @@
  * Full-width editorial hero spotlight for the featured marketplace kitchen.
  */
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { Flame } from 'lucide-react'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { getStoreImageUrl } from '@shared/lib/utils/storeAccessors'

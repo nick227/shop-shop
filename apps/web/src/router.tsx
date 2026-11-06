@@ -35,8 +35,6 @@ const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
 const ExplorePage = lazy(() => import('./pages/public/Explore.page'))
-const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
-const NeighborhoodsIndexPage = lazy(() => import('./pages/public/Neighborhoods.page'))
 const DirectoryListingPage = lazy(() => import('./pages/public/DirectoryListing.page'))
 
 // Affiliate pages;
@@ -228,19 +226,12 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
           handle: { title: 'Home' },
         },
         {
-          path: '/explore',
           element: lazyRoute(ExplorePage),
-          handle: { title: 'Explore' },
-        },
-        {
-          path: '/neighborhoods',
-          element: lazyRoute(NeighborhoodsIndexPage),
-          handle: { title: 'Neighborhoods' },
-        },
-        {
-          path: '/neighborhoods/:slug',
-          element: lazyRoute(NeighborhoodPage),
-          handle: { title: 'Neighborhood' },
+          children: [
+            { path: '/explore', handle: { title: 'Explore' } },
+            { path: '/neighborhoods', handle: { title: 'Neighborhoods' } },
+            { path: '/neighborhoods/:slug', handle: { title: 'Neighborhood' } },
+          ],
         },
         {
           path: '/directory/:slug',

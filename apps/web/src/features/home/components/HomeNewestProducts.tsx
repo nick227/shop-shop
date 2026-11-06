@@ -2,7 +2,7 @@
  * Grid of newest menu items across kitchens (only items with a real photo).
  */
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { Image } from '@shared/ui/primitives'
 import { useNewestProducts } from '@shared/hooks/hooks/store'
 import { getItemRouteSimple } from '@shared/lib/utils/navigation/routes'

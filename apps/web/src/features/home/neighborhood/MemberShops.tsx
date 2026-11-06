@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { ArrowUpRight } from 'lucide-react'
 import type { DirectoryListing } from './DirectoryList'
 import { PlaceCard, placeCardFromListing, placeCardFromStore, type PlaceCardData } from './PlaceCard'
@@ -48,8 +48,8 @@ export function MemberShops({
     <section className="surface-band featured-businesses-band" aria-label="Shops on Shop-Shop">
       <div className="surface-head">
         <div className="surface-head-titles">
-          <p className="tile-kicker">Featured Local Businesses</p>
-          <h2 className="surface-title">Shops on Shop-Shop</h2>
+          <p className="tile-kicker">Featured</p>
+          <h2 className="surface-title">Shops</h2>
         </div>
         <Link to="/explore" className="browse-all-link">
           View directory
