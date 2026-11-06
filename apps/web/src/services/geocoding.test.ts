@@ -16,8 +16,13 @@ describe('geocodeZip', () => {
     await expect(geocodeZip('00000')).resolves.toBeUndefined()
   })
 
-  it('does not report a lookup outage as a bad ZIP', async () => {
-    respond(503, { message: 'ZIP lookup is unavailable right now' })
-    await expect(geocodeZip('75758')).rejects.toBeInstanceOf(ZipLookupUnavailableError)
+  it.each([500, 502, 503])('does not report a %i as a bad ZIP', async (status) => {
+    respond(status, { message: 'unavailable' })
+    await expect(geocodeZip('78758')).rejects.toBeInstanceOf(ZipLookupUnavailableError)
+  })
+
+  it('does not report an unreachable API as a bad ZIP', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+    await expect(geocodeZip('78758')).rejects.toBeInstanceOf(ZipLookupUnavailableError)
   })
 })

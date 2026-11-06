@@ -23,6 +23,7 @@ function discoveryCrumbs(input: {
   readonly cityName: string
   readonly citySlug?: string
   readonly zip?: string
+  readonly zipUnresolved?: boolean
   readonly neighborhoodName?: string
 }): Crumb[] {
   const { pathname, search } = input
@@ -30,7 +31,7 @@ function discoveryCrumbs(input: {
   const kind = placeKind(context, pathname)
   const crumbs: Crumb[] = []
   const city = applyDiscoveryPatch(pathname, search, { neighborhood: null, zip: null, city: input.citySlug || 'austin-tx', category: null, q: null })
-  if (kind === 'open') crumbs.push({ key: 'place', label: 'Explore', to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
+  if (kind === 'open' || (kind === 'zip' && input.zipUnresolved)) crumbs.push({ key: 'place', label: 'Explore', to: applyDiscoveryPatch(pathname, search, { zip: null, category: null, q: null }) })
   else crumbs.push({ key: 'city', label: input.cityName, to: city })
   if (kind === 'zip' && input.zip) crumbs.push({ key: 'zip', label: input.zip, to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
   if (kind === 'neighborhood') crumbs.push({ key: 'neighborhood', label: input.neighborhoodName ?? 'Neighborhood', to: applyDiscoveryPatch(pathname, search, { category: null, q: null }) })
@@ -53,11 +54,13 @@ export function DiscoveryToolbar({
   citySlug,
   cityName,
   zip,
+  zipUnresolved,
   neighborhoodName,
 }: {
   readonly citySlug?: string
   readonly cityName?: string
   readonly zip?: string
+  readonly zipUnresolved?: boolean
   readonly neighborhoodName?: string
 }) {
   const navigate = useNavigate()
@@ -74,7 +77,7 @@ export function DiscoveryToolbar({
         <Breadcrumbs
           label="Discovery breadcrumb"
           className="discovery-crumbs"
-          crumbs={discoveryCrumbs({ pathname, search, cityName: cityName || 'Austin', citySlug, zip, neighborhoodName })}
+          crumbs={discoveryCrumbs({ pathname, search, cityName: cityName || 'Austin', citySlug, zip, zipUnresolved, neighborhoodName })}
         />
         {pathname === '/neighborhoods' ? null : (
           <button type="button" onClick={() => go({ listNeighborhoods: true, zip: null })}>Neighborhoods</button>

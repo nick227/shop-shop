@@ -11,7 +11,7 @@ import {
   type LocationData,
 } from './utils/urlLocationUtils'
 import { locationValidator } from '@shared/lib/utils/validation/unified'
-import { rememberZip } from '@features/home/shell/placeMemory'
+import { forgetZip, rememberZip } from '@features/home/shell/placeMemory'
 import { geocodeZip, ZipLookupUnavailableError } from '../../../services/geocoding'
 import type { UrlLocationNoticePayload } from '@features/home/components'
 
@@ -99,6 +99,7 @@ export function useUrlLocation(): UseUrlLocationResult {
         setLocation((prev) => (isSameLocation(prev, next) ? prev : next))
         setUrlLocationNotice(undefined)
       } else {
+        forgetZip(memoizedUrlParams.zip!)
         setUrlLocationNotice({
           message: `We couldn’t find ZIP ${memoizedUrlParams.zip}. Check the code and try again.`,
           variant: 'error',

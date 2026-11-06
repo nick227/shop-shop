@@ -241,13 +241,17 @@ export function DiscoveryPage() {
   })
   // An unknown or unpublished neighborhood has no location of its own; say so instead of
   // presenting citywide results as if they were that neighborhood's.
+  // A ZIP we could not locate is not in Austin (or anywhere yet); do not title it as a city.
+  const zipUnresolved = kind === 'zip' && !data.location && Boolean(data.notice)
   const heroCopy = data.placeMissing && kind === 'neighborhood'
     ? {
         kicker: `${cityName}, ${data.location?.state ?? 'TX'}`,
         title: identity.title,
         lede: `This neighborhood isn’t in our guide yet. Showing places across ${cityName}.`,
       }
-    : identity
+    : zipUnresolved
+      ? { kicker: 'ZIP code', title: `ZIP ${shownZip}`, lede: identity.lede }
+      : identity
   const neighborhoodCopy = neighborhoodBandCopy(kind, shownZip, cityName)
 
   const views = useRecentViews()
@@ -356,7 +360,7 @@ export function DiscoveryPage() {
   return (
     <div className="discover" aria-busy={data.placePending || undefined}>
       <PublicMaintenanceBanner />
-      <DiscoveryToolbar citySlug={citySlug} cityName={cityName} zip={kind === 'zip' ? shownZip : undefined} neighborhoodName={focus?.name} />
+      <DiscoveryToolbar citySlug={citySlug} cityName={cityName} zip={kind === 'zip' ? shownZip : undefined} zipUnresolved={zipUnresolved} neighborhoodName={focus?.name} />
       {discoveryBands(emphasis).map((band) => <Fragment key={band}>{sections[band]}</Fragment>)}
 
       {selected ? (

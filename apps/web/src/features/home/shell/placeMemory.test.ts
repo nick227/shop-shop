@@ -45,3 +45,14 @@ describe('placeMemory', () => {
   })
 })
 
+
+describe('forgetZip', () => {
+  it('drops the remembered ZIP only when it is the one that failed', async () => {
+    const { forgetZip, rememberZip, placeZip } = await import('./placeMemory')
+    rememberZip('75758')
+    forgetZip('78758')
+    expect(placeZip('')).toBe('75758')
+    forgetZip('75758')
+    expect(placeZip('')).toBe('')
+  })
+})

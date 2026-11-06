@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { ArrowUpRight, Bookmark, BookmarkCheck, Expand, MapPin, Minimize2, X } from 'lucide-react'
@@ -182,6 +182,8 @@ export function LocationHero({
 }) {
   const { pathname, search } = useLocation()
   const [editing, setEditing] = useState(false)
+  // A submitted ZIP changes the URL; close the box so the new place is what the shopper sees.
+  useEffect(() => { setEditing(false) }, [pathname, search])
   // Same layout in every context; only the content changes. The photo stays put when filters change.
   const feature = chooseFeature({ kind, focus, neighborhoods, story, nearest, search })
   const image = feature.image

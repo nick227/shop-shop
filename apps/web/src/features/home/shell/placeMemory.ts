@@ -38,6 +38,18 @@ export function rememberZip(zip: string): void {
   rememberPlace(`zip=${clean}&radius=${HOME_RADIUS_MILES}`)
 }
 
+/** Drop a remembered ZIP that turned out not to exist, so it does not become the shopper's default. */
+export function forgetZip(zip: string): void {
+  for (const storage of [typeof localStorage === 'undefined' ? undefined : localStorage, typeof sessionStorage === 'undefined' ? undefined : sessionStorage]) {
+    try {
+      const raw = storage?.getItem(KEY)
+      if (raw && new URLSearchParams(raw).get('zip') === zip) storage?.removeItem(KEY)
+    } catch {
+      // ignore storage errors
+    }
+  }
+}
+
 function readStoredPlace(storage: Storage | undefined): string | undefined {
   if (!storage) return undefined
   try {

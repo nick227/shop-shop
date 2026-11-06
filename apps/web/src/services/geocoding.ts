@@ -40,15 +40,17 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
     const response = await fetch(url)
     
     if (!response.ok) {
-      if (response.status === 404) {
+      // Only the API saying "no such ZIP" (404) or "not a ZIP" (400) means the code is wrong.
+      if (response.status === 404 || response.status === 400) {
         const errorData = await response.json().catch(() => ({})) as { message?: string }
         console.warn(`[Geocoding] ZIP ${zipCode} not found:`, errorData.message)
         return undefined // ZIP not found;
       }
-      if (response.status === 502 || response.status === 503) throw new ZipLookupUnavailableError(zipCode)
+      // Anything else (500 from a dev proxy with the API down, 502/503 from a failed geocoder)
+      // says nothing about the ZIP itself.
       const errorText = await response.text().catch(() => 'Unknown error')
       console.error(`[Geocoding] API error (${response.status}):`, errorText)
-      throw new Error(`Geocoding failed: ${response.status}`)
+      throw new ZipLookupUnavailableError(zipCode)
     }
     
     const result = await response.json() as GeocodeResult
@@ -56,8 +58,9 @@ export async function geocodeZip(zipCode: string): Promise<GeocodeResult | undef
     return result;
   } catch (error: unknown) {
     if (error instanceof ZipLookupUnavailableError) throw error
+    // Network failure or an unreadable response: the server could not be reached.
     console.error('[Geocoding] Fetch error:', error)
-    return undefined;
+    throw new ZipLookupUnavailableError(zipCode)
   }
 }
 
