@@ -22,12 +22,12 @@ export type PlaceCardVariant = 'auto' | 'neighborhood' | 'business' | 'attractio
 export function placeCardFromNeighborhood(area: NeighborhoodCard & {
   readonly city?: { readonly name: string; readonly state?: string | null } | null
   readonly postalCodes?: readonly string[]
-}): PlaceCardData {
+}, search = ''): PlaceCardData {
   const meta = [area.headline, area.city?.name, area.postalCodes?.join(', ')].filter(Boolean).join(' · ')
   const photo = realPhoto(area.coverUrl)
   return {
     id: area.id,
-    href: neighborhoodPath(area.slug),
+    href: neighborhoodPath(area.slug, search),
     name: area.name,
     categoryLabel: 'Neighborhood',
     meta: meta || null,

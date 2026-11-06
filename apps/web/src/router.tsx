@@ -18,6 +18,7 @@ import { CustomerLayout } from './layouts/CustomerLayout'
 import { AffiliateLayout } from './layouts/AffiliateLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { ProtectedRoute, lazyRoute } from './router/utils'
+import { canonicalDiscoverySearch } from '@features/home/discovery/discoveryContext'
 
 // Lazy load pages for code splitting;
 import { lazy } from 'react'
@@ -33,7 +34,6 @@ const PrivacyPage = lazy(() => import('./pages/public/Privacy.page'))
 const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicy.page'))
 const OrderHistoryPage = lazy(() => import('./pages/customer/Orders.page'))
 const OrderTrackingPage = lazy(() => import('./pages/customer/OrderTracking.page'))
-const RiverPage = lazy(() => import('./pages/public/River.page'))
 const ExplorePage = lazy(() => import('./pages/public/Explore.page'))
 const NeighborhoodPage = lazy(() => import('./pages/public/Neighborhood.page'))
 const NeighborhoodsIndexPage = lazy(() => import('./pages/public/Neighborhoods.page'))
@@ -116,15 +116,11 @@ function LegacyRiverToMenuRedirect() {
   return <Navigate to={`/menu/${storeId}`} replace />
 }
 
-/** Root URL forwards to the River landing (preserves query + hash for UTMs, etc.). */
+/** Root, legacy River, and search URLs open the one discovery layout. */
 function LandingRedirect() {
   const { search, hash } = useLocation()
-  return <Navigate to={`/river${search}${hash}`} replace />
-}
-
-function SearchRedirect() {
-  const { search, hash } = useLocation()
-  return <Navigate to={`/river${search}${hash}`} replace />
+  const next = canonicalDiscoverySearch(search)
+  return <Navigate to={{ pathname: '/explore', search: next ? `?${next}` : '', hash }} replace />
 }
 
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter(
@@ -180,7 +176,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         },
         {
           path: '/search',
-          element: <SearchRedirect />,
+          element: <LandingRedirect />,
           handle: { title: 'Home' },
         },
         {
@@ -228,7 +224,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
         },
         {
           path: '/river',
-          element: lazyRoute(RiverPage),
+          element: <LandingRedirect />,
           handle: { title: 'Home' },
         },
         {

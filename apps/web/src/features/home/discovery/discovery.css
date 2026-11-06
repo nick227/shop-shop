@@ -314,6 +314,78 @@ div.hero-story {
   color: var(--leaf) !important;
 }
 
+.discovery-toolbar {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.discovery-toolbar-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+
+.discovery-toolbar-place .tile-kicker,
+.discovery-toolbar-place strong {
+  margin: 0;
+}
+
+.discovery-toolbar-place button,
+.discovery-toolbar-categories button,
+.discovery-toolbar-query button {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.discovery-toolbar-place button:hover,
+.discovery-toolbar-categories button:hover,
+.discovery-toolbar-query button:hover,
+.discovery-toolbar-categories button[aria-pressed='true'] {
+  border-color: var(--leaf);
+  color: var(--leaf);
+}
+
+.discovery-toolbar-query,
+button.discovery-toolbar-query {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+}
+
+.discovery-toolbar-query input {
+  min-width: 0;
+  flex: 1;
+  min-height: 2.4rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.discovery-toolbar-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.discovery-toolbar-categories button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 /* ==========================================================================
    Surface 2: Explore Neighborhoods (4-Column Landscape Grid)
    ========================================================================== */
@@ -1711,6 +1783,15 @@ div.hero-story {
 
   .discover-hero .hero-map {
     grid-column: span 3;
+  }
+
+  .discover-hero.is-map .hero-editorial-panel {
+    display: none;
+  }
+
+  .discover-hero.is-map .hero-map {
+    grid-column: span 7;
+    height: min(36rem, 72vh);
   }
 
   .discover-hero > .hero-copy {

@@ -7,7 +7,7 @@ import { placeTarget } from './placeMemory'
 import { resetHomeTaste } from '../neighborhood/taste'
 
 function navDestination(to: string, search: string) {
-  if (to === '/river' || to === '/explore') return placeTarget(to, search)
+  if (to === '/explore') return placeTarget(to, search)
   return to
 }
 
@@ -60,7 +60,7 @@ export function RailNav() {
   const { search } = useLocation()
   return (
     <nav className="shop-rail" aria-label="Primary">
-      <Link to={placeTarget('/river', search)} className="shop-display mb-4 flex min-h-11 items-center px-3 text-lg font-bold">
+      <Link to={placeTarget('/explore', search)} className="shop-display mb-4 flex min-h-11 items-center px-3 text-lg font-bold">
         <span className="shop-rail-label">ShopShop</span>
         <span className="shop-rail-mark" style={{ color: 'var(--quiet)', padding: '9px', marginLeft: '-9px', border: '1px solid var(--quiet)', borderRadius: '999px' }}>SH</span>
       </Link>

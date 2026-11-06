@@ -1,5 +1,5 @@
-import { ExploreView } from '@features/home/discovery/ExploreView'
+import { DiscoveryPage } from '@features/home/discovery/DiscoveryPage'
 
 export default function ExplorePage() {
-  return <ExploreView />
+  return <DiscoveryPage />
 }

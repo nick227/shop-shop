@@ -192,10 +192,10 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.getAllByText('Taco Heaven').length).toBeGreaterThan(0)
 
     expect(screen.getByRole('region', { name: 'Categories' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Food' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Grocery' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Arts' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Outdoors' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Food' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Grocery' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Arts' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Outdoors' }).length).toBeGreaterThan(0)
 
     expect(screen.getByRole('region', { name: 'Infinite Discovery Feed' })).toBeInTheDocument()
     expect(screen.getByText('Morning Jo’s')).toBeInTheDocument()

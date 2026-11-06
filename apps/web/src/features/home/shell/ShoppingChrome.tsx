@@ -6,6 +6,7 @@ import { Menu, ShoppingBag, X } from 'lucide-react'
 import { SearchInput } from '@shared/ui/primitives'
 import { useCartStore } from '@stores/cartStore'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
+import { applyDiscoveryPatch, isDiscoveryPath, readDiscoveryContext } from '../discovery/discoveryContext'
 import { placeZip, rememberedPlace, rememberPlace } from './placeMemory'
 import { DrawerNav } from './ShopNav'
 
@@ -41,20 +42,23 @@ export function ShoppingChrome() {
   }, [location.search])
 
   const placeSearch = location.search.includes('zip=') ? location.search : rememberedPlace()
-  const zip = place?.zip || placeZip(location.search)
+  const discovery = readDiscoveryContext(location.pathname, location.search)
+  const zip = discovery.neighborhood || discovery.city ? '' : place?.zip || placeZip(location.search)
 
   const count = cartCount(cart?.items)
-  const placeLabel = place?.zip
-    ? `${place.zip}${place.city ? ` ${place.city}` : ''}`
-    : zip ?? 'Set ZIP'
+  const placeLabel = discovery.neighborhood
+    ? discovery.neighborhood.replace(/^austin-tx-/, '').split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : place?.zip
+      ? `${place.zip}${place.city ? ` ${place.city}` : ''}`
+      : zip || 'Set ZIP'
+
+  const locationTarget = discovery.neighborhood
+    ? { pathname: location.pathname, search: location.search }
+    : applyDiscoveryPatch(location.pathname, placeSearch, { zip })
 
   const submitSearch = () => {
-    const next = new URLSearchParams(location.search.includes('zip=') ? location.search : placeSearch)
-    const trimmed = query.trim()
-    if (trimmed) next.set('q', trimmed)
-    else next.delete('q')
-    next.delete('browse')
-    navigate({ pathname: '/river', search: next.toString() })
+    const source = isDiscoveryPath(location.pathname) ? location.search : placeSearch
+    navigate(applyDiscoveryPatch(location.pathname, source, { q: query.trim() || null }))
   }
 
   return (
@@ -70,13 +74,13 @@ export function ShoppingChrome() {
         </button>
         {zip ? (
           <Link
-            to={{ pathname: '/river', search: placeSearch }}
+            to={locationTarget}
             className="shop-mono max-w-24 truncate text-xs lg:hidden"
           >
             {zip}
           </Link>
         ) : (
-          <Link to="/river" className="shop-display text-lg font-bold lg:hidden">S</Link>
+          <Link to="/explore" className="shop-display text-lg font-bold lg:hidden">S</Link>
         )}
         <form
           className="min-w-0 flex-1"
@@ -93,7 +97,7 @@ export function ShoppingChrome() {
           />
         </form>
         <Link
-          to={{ pathname: '/river', search: placeSearch }}
+          to={locationTarget}
           className="shop-mono hidden min-h-11 items-center px-2 text-xs sm:inline-flex"
           style={{ color: 'var(--quiet)' }}
         >

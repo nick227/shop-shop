@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowUpRight, MapPin, Sparkles } from 'lucide-react'
 import { PlaceField } from '../neighborhood/PlaceField'
 import { homepageTitle, neighborhoodPath, type NeighborhoodCard } from '../neighborhood/neighborhoodHero'
@@ -22,6 +22,8 @@ export function LocationHero({
   userLng,
   onSelectStore,
   neighborhoods,
+  focus,
+  mapView = false,
 }: {
   readonly city?: string
   readonly state?: string
@@ -36,25 +38,42 @@ export function LocationHero({
   readonly userLat?: number
   readonly userLng?: number
   readonly onSelectStore: (id: string) => void
+  readonly focus?: NeighborhoodCard
+  readonly mapView?: boolean
 }) {
+  const { search } = useLocation()
   const [editing, setEditing] = useState(false)
   const resolved = Boolean(city && state && zip && !error && !pending)
   const featureStore = nearest.find((store) => store.image) ?? nearest[0]
   const featureArea = neighborhoods.find((area) => realPhoto(area.coverUrl))
   const featureCover = featureArea ? realPhoto(featureArea.coverUrl) : undefined
-  const storyImage = (story ? realPhoto(story.image) : undefined) ?? featureStore?.image ?? featureCover
+  const focusCover = focus ? realPhoto(focus.coverUrl) : undefined
+  const storyImage = focusCover ?? (story ? realPhoto(story.image) : undefined) ?? featureStore?.image ?? featureCover
   const featureImage = featureStore?.image ?? featureCover
 
-  const kicker = resolved && zip ? `${city ?? 'Austin'}, ${state ?? 'TX'} · ${zip}` : 'Austin Local Guide'
+  const kicker = focus
+    ? [city, state].filter(Boolean).join(', ') || 'Neighborhood'
+    : resolved && zip ? `${city ?? 'Austin'}, ${state ?? 'TX'} · ${zip}` : 'Austin Local Guide'
   const areaNames = neighborhoods.slice(0, 3).map((n) => n.name).join(', ')
   const lede = resolved
     ? `${shopCount > 0 ? `${shopCount} local storefronts` : 'Neighborhood kitchens & markets'} around ${areaNames || city}.`
     : 'Enter a ZIP code for neighborhood delivery, or explore Austin’s neighborhoods below.'
 
   return (
-    <section className="discover-hero" aria-label="Shops near you">
+    <section className={mapView ? 'discover-hero is-map' : 'discover-hero'} aria-label={focus ? focus.name : 'Shops near you'}>
       <div className="hero-editorial-panel">
-        {story ? (
+        {focus && focusCover ? (
+          <div className="hero-story has-photo">
+            <img src={focusCover} alt="" className="hero-cover" />
+            <div className="hero-story-copy">
+              <span className="hero-highlight-kicker">Neighborhood</span>
+              <div className="hero-story-main">
+                <strong>{focus.name}</strong>
+                {focus.headline ? <span>{focus.headline}</span> : null}
+              </div>
+            </div>
+          </div>
+        ) : story ? (
           <button
             type="button"
             className={`hero-story${storyImage ? ' has-photo' : ' is-typographic'}`}
@@ -97,7 +116,7 @@ export function LocationHero({
             </div>
           </button>
         ) : featureArea && featureCover ? (
-          <Link to={neighborhoodPath(featureArea.slug)} className="hero-story has-photo">
+          <Link to={neighborhoodPath(featureArea.slug, search)} className="hero-story has-photo">
             <img src={featureCover} alt="" className="hero-cover" />
             <div className="hero-story-copy">
               <span className="hero-highlight-kicker">Neighborhood Spotlight</span>
@@ -131,7 +150,7 @@ export function LocationHero({
                 <MapPin className="h-3.5 w-3.5" />
                 <span>{kicker}</span>
               </p>
-              {resolved ? (
+              {resolved || focus ? (
                 <button
                   type="button"
                   className="location-change-btn"
@@ -143,7 +162,7 @@ export function LocationHero({
               ) : null}
             </div>
             <h1 className="discover-display">
-              {resolved && city && state ? homepageTitle(city, state, neighborhoods) : 'Find shops'}
+              {focus ? focus.name : resolved && city && state ? homepageTitle(city, state, neighborhoods) : 'Find shops'}
             </h1>
             {error ? (
               <p className="discover-lede is-error" role="alert">
@@ -152,11 +171,11 @@ export function LocationHero({
             ) : pending ? (
               <p className="discover-lede">Looking up {zip}…</p>
             ) : (
-              <p className="discover-lede">{lede}</p>
+              <p className="discover-lede">{focus?.headline || focus?.about || lede}</p>
             )}
           </div>
 
-          {!resolved || editing ? (
+          {(!resolved && !focus) || editing ? (
             <div className="hero-location-controls">
               <div className="hero-zip-field">
                 <PlaceField tone="hero" />

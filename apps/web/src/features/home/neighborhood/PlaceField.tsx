@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Input } from '@shared/ui/primitives'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
 import { locationValidator } from '@shared/lib/utils/validation/unified'
-import { HOME_RADIUS_MILES, placeZip, rememberPlace } from '../shell/placeMemory'
+import { applyDiscoveryPatch } from '../discovery/discoveryContext'
+import { placeZip, rememberPlace } from '../shell/placeMemory'
 
 export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [params] = useSearchParams()
   const { location } = useUrlLocation()
   const sharedZip = location?.zip || placeZip(params.toString())
@@ -17,11 +19,6 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
     if (sharedZip) setZip(sharedZip)
   }, [sharedZip])
 
-  const commit = (next: URLSearchParams) => {
-    rememberPlace(next.toString())
-    navigate({ search: next.toString() }, { replace: true })
-  }
-
   const submitZip = () => {
     const trimmed = zip.trim()
     const check = locationValidator.validateZipCode(trimmed)
@@ -30,14 +27,9 @@ export function PlaceField({ tone }: { readonly tone: 'hero' | 'bar' }) {
       return
     }
     setError(undefined)
-    const next = new URLSearchParams(params)
-    next.set('zip', trimmed)
-    next.delete('lat')
-    next.delete('lng')
-    next.delete('city')
-    next.delete('state')
-    next.set('radius', String(HOME_RADIUS_MILES))
-    commit(next)
+    const destination = applyDiscoveryPatch(pathname, params.toString(), { zip: trimmed, neighborhood: null, city: null })
+    rememberPlace(destination.search)
+    navigate(destination, { replace: true })
   }
 
   const compact = tone === 'bar'

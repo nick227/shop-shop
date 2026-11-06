@@ -34,6 +34,7 @@ describe('homepage neighborhood intro', () => {
       categoryLabel: 'Neighborhood',
       meta: 'Park and food trailers · 78704',
       imageUrl: null,
+      credit: null,
     })
 
     expect(placeCardFromStore({ id: 's1', name: 'Bouldin Market', typeLabel: 'Grocery', distance: 0.7 })).toEqual({

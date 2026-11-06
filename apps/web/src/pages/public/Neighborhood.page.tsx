@@ -1,5 +1,5 @@
-import { NeighborhoodProfile } from '@features/home/neighborhood/NeighborhoodProfile'
+import { DiscoveryPage } from '@features/home/discovery/DiscoveryPage'
 
 export default function NeighborhoodPage() {
-  return <NeighborhoodProfile />
+  return <DiscoveryPage />
 }

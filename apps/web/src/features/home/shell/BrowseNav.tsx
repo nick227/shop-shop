@@ -1,20 +1,17 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { STORE_TYPE_CONFIG } from '@features/search/config/storeTypes'
 import { cn } from '@shared/lib/cn'
-import { placeTarget } from './placeMemory'
+import { applyDiscoveryPatch, readDiscoveryContext } from '../discovery/discoveryContext'
 
 export function useBrowseChoice() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const onHome = pathname === '/' || pathname === '/river'
-  const active = onHome ? (params.get('browse') ?? '') : undefined
+  const context = readDiscoveryContext(pathname, params.toString())
+  const active = context.category
 
   const choose = (slug: string) => {
-    const next = new URLSearchParams(onHome ? params : placeTarget('/river', params.toString()).search)
-    if (slug) next.set('browse', slug)
-    else next.delete('browse')
-    navigate({ pathname: '/river', search: next.toString() })
+    navigate(applyDiscoveryPatch(pathname, params.toString(), { category: slug || null }))
   }
 
   return { active, choose }

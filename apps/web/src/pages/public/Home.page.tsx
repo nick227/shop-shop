@@ -1,6 +1,5 @@
-import { NeighborhoodHome } from '@features/home/neighborhood/NeighborhoodHome'
+import { DiscoveryPage } from '@features/home/discovery/DiscoveryPage'
 
-/** Same living-neighborhood home as `/river`. */
 export default function HomePage() {
-  return <NeighborhoodHome />
+  return <DiscoveryPage />
 }

@@ -84,6 +84,26 @@ export async function loadNeighborhoodsByZip(zip: string): Promise<NeighborhoodC
   return combined
 }
 
+export type DiscoveryPlace = {
+  readonly id: string
+  readonly name: string
+  readonly slug: string
+  readonly headline: string | null
+  readonly about: string | null
+  readonly latitude: number | null
+  readonly longitude: number | null
+  readonly city: { readonly name: string; readonly state: string | null } | null
+  readonly images: readonly string[]
+  readonly postalCodes: readonly string[]
+}
+
+export async function loadDiscoveryPlace(slug: string): Promise<DiscoveryPlace | null> {
+  const response = await fetch(`${apiOrigin()}/api/places/${slug}`)
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error('Could not load this place')
+  return response.json() as Promise<DiscoveryPlace>
+}
+
 export async function loadPublishedNeighborhoods(q = ''): Promise<PublishedNeighborhoodRow[]> {
   const params = q ? `?q=${encodeURIComponent(q)}` : ''
   const response = await fetch(`${apiOrigin()}/api/places/neighborhoods${params}`)

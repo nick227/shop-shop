@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import type { RiverPost } from '@api/types'
 import { useUrlLocation } from '@shared/hooks/hooks/useUrlLocation'
+import type { LocationData } from '@shared/types'
+import { readDiscoveryContext } from '../discovery/discoveryContext'
+import { HOME_RADIUS_MILES } from '../shell/placeMemory'
 import { discoveryLocated } from './discoveryLocated'
 import { type NeighborhoodCard } from './neighborhoodHero'
 import {
+  loadDiscoveryPlace,
   loadNeighborhoodsByZip,
   loadProducts,
   loadPublishedNeighborhoods,
@@ -13,13 +17,34 @@ import {
 } from './loadDiscovery'
 
 export function useNeighborhoodData() {
+  const { pathname } = useLocation()
   const [params] = useSearchParams()
-  const { location, urlLocationNotice } = useUrlLocation()
-  const zip = params.get('zip')
+  const context = readDiscoveryContext(pathname, params.toString())
+  const { location: urlLocation, urlLocationNotice } = useUrlLocation()
+  const placeSlug = context.neighborhood ?? (context.zip ? undefined : context.city)
+  const placeQuery = useQuery({
+    queryKey: ['discovery-place', placeSlug],
+    enabled: Boolean(placeSlug),
+    queryFn: () => loadDiscoveryPlace(placeSlug ?? ''),
+  })
+  const place = placeQuery.data ?? undefined
+  const placeLocation: LocationData | undefined = place?.latitude != null && place.longitude != null
+    ? {
+        latitude: place.latitude,
+        longitude: place.longitude,
+        radiusMiles: HOME_RADIUS_MILES,
+        source: context.neighborhood ? 'manual' : 'city',
+        city: place.city?.name,
+        state: place.city?.state ?? undefined,
+        displayName: place.name,
+      }
+    : undefined
+  const location = context.neighborhood || (context.city && !context.zip) ? placeLocation : urlLocation
+  const zip = context.zip
   const zipCode = (location?.zip || zip || '').replace(/\D/g, '').slice(0, 5)
   const located = discoveryLocated(Boolean(location))
   const waitingForZip = Boolean(zip) && !location && !urlLocationNotice
-  const ready = located || (!zip && !waitingForZip)
+  const ready = located || (!zip && !waitingForZip && !placeSlug) || Boolean(placeLocation) || (Boolean(placeSlug) && placeQuery.isFetched)
 
   const storeQuery = useQuery({
     queryKey: ['home-stores', location?.latitude ?? 'all', location?.longitude ?? 'all', location?.radiusMiles ?? 'all'],
@@ -50,6 +75,7 @@ export function useNeighborhoodData() {
     location,
     notice: urlLocationNotice,
     waitingForZip,
+    activePlace: context.neighborhood ? place ?? null : null,
     stores: storeQuery.data ?? [],
     products: productQuery.data ?? [],
     stories: storyQuery.data ?? [],

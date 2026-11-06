@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { PublicMaintenanceBanner } from '@features/home/components'
 import { getItemRouteSimple, getStoreRoute } from '@shared/lib/utils/navigation/routes'
 import { useNeighborhoodData } from '../neighborhood/useNeighborhoodData'
@@ -9,6 +9,8 @@ import { defaultAddressZip } from '../neighborhood/signedInSelect'
 import { verticalSlugForStore } from '../neighborhood/selectHome'
 import { recordVertical } from '../neighborhood/taste'
 import { HOME_RADIUS_MILES, placeZip, rememberedPlace, rememberZip } from '../shell/placeMemory'
+import { applyDiscoveryPatch, canonicalDiscoverySearch, directoryGroup, readDiscoveryContext } from './discoveryContext'
+import { DiscoveryToolbar } from './DiscoveryToolbar'
 import { CategorySection } from './CategoryCircles'
 import { DetailPanel } from './DetailPanel'
 import { ForYouSurface } from './ForYouSurface'
@@ -61,15 +63,29 @@ const FALLBACK_AUSTIN_NEIGHBORHOODS: readonly (NeighborhoodCard & { readonly pos
 ]
 
 export function DiscoveryPage() {
+  const { pathname } = useLocation()
   const [params, setParams] = useSearchParams()
+  const context = readDiscoveryContext(pathname, params.toString())
   const data = useNeighborhoodData()
-  const directory = useDirectory(data.location?.latitude, data.location?.longitude)
+  const directory = useDirectory(data.location?.latitude, data.location?.longitude, {
+    q: context.q,
+    group: directoryGroup(context.category),
+  })
   const account = useSignedInHome()
   const accountZip = defaultAddressZip(account.addresses, account.orders)
   const [selected, setSelected] = useState<{ tile: DiscoveryTile; anchor?: DOMRect } | undefined>()
 
   useEffect(() => {
-    const zip = params.get('zip') ?? new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
+    const canonical = canonicalDiscoverySearch(params.toString())
+    if (canonical !== params.toString()) {
+      setParams(new URLSearchParams(canonical), { replace: true })
+      return
+    }
+    if (context.hasExplicitPlace) {
+      if (context.zip) rememberZip(context.zip)
+      return
+    }
+    const zip = new URLSearchParams(rememberedPlace()).get('zip') ?? accountZip
     if (!zip) return
     rememberZip(zip)
     if (params.get('zip') === zip && params.get('radius') === String(HOME_RADIUS_MILES)) return
@@ -77,10 +93,10 @@ export function DiscoveryPage() {
     next.set('zip', zip)
     next.set('radius', String(HOME_RADIUS_MILES))
     setParams(next, { replace: true })
-  }, [accountZip, params, setParams])
+  }, [accountZip, context.hasExplicitPlace, context.zip, params, setParams])
 
-  const browse = params.get('browse') ?? ''
-  const query = params.get('q') ?? ''
+  const browse = context.category === 'arts' || context.category === 'outdoors' ? '' : context.category
+  const query = context.q
   const shownZip = data.location?.zip || placeZip(params.toString()) || accountZip || ''
   const composed = useMemo(() => composeDiscovery({
     stores: data.stores,
@@ -136,6 +152,14 @@ export function DiscoveryPage() {
   const listings = directory.data ?? []
   const hasLocation = Boolean(data.location)
   const visibleNeighborhoods = data.neighborhoods.length > 0 ? data.neighborhoods : FALLBACK_AUSTIN_NEIGHBORHOODS
+  const listedNeighborhoods = pathname === '/neighborhoods' ? visibleNeighborhoods : visibleNeighborhoods.slice(0, 4)
+  const focus = data.activePlace
+    ? {
+        ...data.activePlace,
+        coverUrl: data.activePlace.images[0] ?? null,
+      }
+    : undefined
+  const placeLabel = focus?.name ?? (data.location?.zip ? `${data.location.city ?? 'Austin'} ${data.location.zip}` : 'Austin')
 
   const views = useRecentViews()
   const personalStoreIds = new Set([
@@ -159,12 +183,15 @@ export function DiscoveryPage() {
   return (
     <div className="discover">
       <PublicMaintenanceBanner />
+      <DiscoveryToolbar placeLabel={placeLabel} />
 
       {/* Surface 1: A Living Location Header */}
       <LocationHero
-        city={data.location?.city}
-        state={data.location?.state}
-        zip={data.location?.zip || shownZip}
+        city={focus?.city?.name ?? data.location?.city}
+        state={focus?.city?.state ?? data.location?.state}
+        zip={context.neighborhood ? undefined : data.location?.zip || shownZip}
+        focus={focus}
+        mapView={context.view === 'map'}
         error={data.location ? undefined : data.notice?.message}
         pending={data.waitingForZip}
         shopCount={composed.places.length}
@@ -189,15 +216,20 @@ export function DiscoveryPage() {
               {hasLocation ? 'Neighborhoods around this area' : 'Austin neighborhoods'}
             </h2>
           </div>
-          <Link to="/neighborhoods" className="browse-all-link">
-            Browse all neighborhoods
-          </Link>
+          {pathname === '/neighborhoods' ? null : (
+            <Link
+              to={applyDiscoveryPatch(pathname, params.toString(), { listNeighborhoods: true, zip: null })}
+              className="browse-all-link"
+            >
+              Browse all neighborhoods
+            </Link>
+          )}
         </div>
         <div className="neighborhood-showcase-row">
-          {visibleNeighborhoods.slice(0, 4).map((area) => (
+          {listedNeighborhoods.map((area) => (
             <PlaceCard
               key={area.id}
-              place={placeCardFromNeighborhood(area)}
+              place={placeCardFromNeighborhood(area, params.toString())}
               variant="neighborhood"
             />
           ))}

@@ -14,6 +14,9 @@ export function homepageTitle(city: string, state: string, _neighborhoods: reado
   return shopsNearLabel(city, state)
 }
 
-export function neighborhoodPath(slug: string): string {
-  return `/neighborhoods/${slug}`
+export function neighborhoodPath(slug: string, search = ''): string {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
+  for (const key of ['zip', 'radius', 'neighborhood', 'browse', 'group', 'lat', 'lng', 'city', 'state']) params.delete(key)
+  const rest = params.toString()
+  return `/neighborhoods/${slug}${rest ? `?${rest}` : ''}`
 }
