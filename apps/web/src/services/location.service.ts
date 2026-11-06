@@ -396,8 +396,11 @@ export class LocationService {
   /**
    * Validate US coordinates
    */
+  /** The states and territories (Alaska, Hawaii, Puerto Rico, the Pacific islands), not just the lower 48. */
   private isUSCoordinates(lat: number, lon: number): boolean {
-    return lat >= 24.5 && lat <= 49 && lon >= -125 && lon <= -66
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) return false
+    if (lat < -15 || lat > 72) return false
+    return (lon >= -180 && lon <= -64) || (lon >= 130 && lon <= 180)
   }
 
   /**

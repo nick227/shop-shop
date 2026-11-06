@@ -4,7 +4,7 @@
  */
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { createEnhancedGeocodingService, ensureGazetteer, backfillStorePlaces, lookupPostalCode, prisma } from '@packages/db'
+import { createEnhancedGeocodingService, ensureGazetteer, backfillStorePlaces, lookupPostalCode, lookupZipReference, prisma, validUsCoordinate } from '@packages/db'
 import { addressProvider } from '../commerce/addressProvider.js'
 import { env } from '../env.js'
 
@@ -34,16 +34,16 @@ interface GeocodeResponse {
 }
 
 /**
- * Helper function to validate if coordinates are in the US
- * US bounds: roughly 24.5°N to 49°N, 66°W to 125°W
- * Includes continental US, Alaska, Hawaii, Puerto Rico, etc.
+ * Coordinates inside the US states and territories: the lower 48, Alaska (including the Aleutians
+ * across the antimeridian), Hawaii, Puerto Rico, and the Pacific islands. Rejects 0,0 and points abroad.
  */
 function isUSCoordinates(lat: number, lon: number): boolean {
-  return lat >= 24.5 && lat <= 49 && lon >= -125 && lon <= -66
+  return validUsCoordinate(lat, lon)
 }
 
+/** Served ZIPs, then the national reference. Used when no external geocoder is configured. */
 async function postalZipResponse(zip: string): Promise<GeocodeResponse | null> {
-  const hit = await lookupPostalCode(prisma, zip)
+  const hit = (await lookupPostalCode(prisma, zip)) ?? (await lookupZipReference(prisma, zip))?.result
   if (!hit) return null
   return {
     latitude: hit.latitude,

@@ -586,6 +586,50 @@ model BusinessImportEntry {
   @@index([listingId])
 }
 
+/// One imported version of a national reference dataset (for example GeoNames US postal codes).
+/// Rows are history: each import is recorded with its checksum, license, and required attribution.
+model ReferenceDataset {
+  id           String         @id @db.Char(36)
+  name         String         @db.VarChar(60)
+  source       String         @db.VarChar(20)
+  sourceUrl    String         @db.VarChar(255)
+  /// The publisher's version date (HTTP Last-Modified for GeoNames).
+  sourceDate   DateTime
+  checksum     String         @db.Char(64)
+  license      String         @db.VarChar(60)
+  attribution  String         @db.VarChar(255)
+  recordCount  Int
+  skippedCount Int
+  importedAt   DateTime       @default(now())
+  zips         ZipReference[]
+
+  @@unique([name, checksum])
+  @@index([name, importedAt])
+}
+
+/// National ZIP reference data. Separate from PostalCode, which lists only ZIPs in served cities:
+/// a row here never creates or implies a served city, and its point is a ZIP centroid, not an address.
+model ZipReference {
+  /// Five digits kept as text so leading zeros survive (00501, 02108).
+  zip        String           @id @db.Char(5)
+  city       String           @db.VarChar(120)
+  state      String           @db.Char(2)
+  county     String?          @db.VarChar(120)
+  latitude   Decimal          @db.Decimal(10, 8)
+  longitude  Decimal          @db.Decimal(11, 8)
+  /// GeoNames accuracy: 1 estimated from neighboring codes, 4 matched to a GeoNames place,
+  /// 6 centroid of addresses or shape. Null when the source gives none.
+  accuracy   Int?             @db.TinyInt
+  source     String           @db.VarChar(20)
+  sourceDate DateTime
+  datasetId  String           @db.Char(36)
+  dataset    ReferenceDataset @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  updatedAt  DateTime         @updatedAt
+
+  @@index([state])
+  @@index([datasetId])
+}
+
 model GeocodingCache {
   id String @id @default(uuid()) @db.Char(36)
 

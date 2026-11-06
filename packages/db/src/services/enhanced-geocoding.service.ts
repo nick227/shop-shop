@@ -11,6 +11,7 @@ import {
 } from '../adapters/geocoding.adapter.js'
 import { MapsCoGeocodingAdapter } from '../adapters/mapsco-geocoding.adapter.js'
 import { lookupPostalCode } from '../geo/place-directory.js'
+import { lookupZipReference } from '../geo/zip-reference.js'
 
 export interface GeocodingConfig {
   apiKey: string
@@ -131,16 +132,32 @@ export class EnhancedGeocodingService {
     return result
   }
 
+  /**
+   * ZIP → area centroid. Served ZIPs first, then the national reference, then external providers.
+   * A reference record with an estimated position is confirmed externally when possible, and
+   * still answers if the providers fail or find nothing.
+   */
   async geocodeZip(zipCode: string): Promise<GeocodingResult | null> {
     const postal = await lookupPostalCode(this.prisma, zipCode)
     if (postal) return postal
-    return this.geocodeWithCache(
-      { queryType: 'zip', queryValue: zipCode },
-      `zip=${zipCode}`,
-      (provider) => provider.geocodeZipCode(zipCode),
-      // A failed provider call (bad key, outage) is not the same as a ZIP that does not exist.
-      { throwOnProviderError: true },
-    )
+    const reference = await lookupZipReference(this.prisma, zipCode).catch((error: unknown) => {
+      console.error(`[Geocoding] ZIP reference lookup failed zip=${zipCode}:`, error instanceof Error ? error.message : String(error))
+      return null
+    })
+    if (reference && !reference.questionable) return reference.result
+    try {
+      const external = await this.geocodeWithCache(
+        { queryType: 'zip', queryValue: zipCode },
+        `zip=${zipCode}`,
+        (provider) => provider.geocodeZipCode(zipCode),
+        // A failed provider call (bad key, outage) is not the same as a ZIP that does not exist.
+        { throwOnProviderError: true },
+      )
+      return external ?? reference?.result ?? null
+    } catch (error) {
+      if (reference) return reference.result
+      throw error
+    }
   }
 
   async geocodeCity(city: string, state: string): Promise<GeocodingResult | null> {

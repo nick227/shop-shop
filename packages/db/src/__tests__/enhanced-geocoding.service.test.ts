@@ -55,6 +55,11 @@ vi.mock('../adapters/mapsco-geocoding.adapter', () => ({
   }),
 }))
 
+const mockLookupZipReference = vi.fn()
+vi.mock('../geo/zip-reference', () => ({
+  lookupZipReference: (...args: unknown[]) => mockLookupZipReference(...args),
+}))
+
 // Mock the cache service creation (`new GeocodingCacheService()` must return the mock instance)
 vi.mock('../services/geocoding-cache.service', () => ({
   GeocodingCacheService: vi.fn(function GeocodingCacheServiceMock() {
@@ -68,6 +73,8 @@ describe('EnhancedGeocodingService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockLookupZipReference.mockResolvedValue(null)
+    mockPrisma.postalCode.findUnique.mockResolvedValue(null)
     
     config = {
       apiKey: 'test-api-key',
@@ -409,6 +416,71 @@ describe('EnhancedGeocodingService', () => {
       mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('401'))
       await expect(service.geocodeZip('75758')).rejects.toBeInstanceOf(GeocoderUnavailableError)
       expect(mockFallbackAdapter.geocodeZipCode).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('local ZIP reference', () => {
+    const local = (zip: string, city: string, state: string, questionable = false) => ({
+      accuracy: questionable ? 1 : 4,
+      questionable,
+      result: { latitude: 40.8154, longitude: -73.0451, city, state, zip, country: 'US', formattedAddress: `${city}, ${state} ${zip}`, confidence: questionable ? 'low' : 'medium', source: 'geonames' },
+    })
+    const provider = { latitude: 42.4884, longitude: -71.5178, confidence: 'high' as const, formattedAddress: '01719, Boxborough, MA, USA', city: 'Boxborough', state: 'MA', zip: '01719', country: 'US' }
+    let withFallback: EnhancedGeocodingService
+
+    beforeEach(() => {
+      mockCacheService.getCachedResult.mockResolvedValue(null)
+      mockCacheService.cacheResult.mockResolvedValue(undefined)
+      withFallback = new EnhancedGeocodingService(mockPrisma as any, { ...config, fallbackApiKey: 'maps-key' })
+    })
+
+    it('answers served Austin ZIPs from the place directory before the national reference', async () => {
+      mockPrisma.postalCode.findUnique.mockResolvedValue({ code: '78758', latitude: '30.387', longitude: '-97.7055', city: { name: 'Austin', state: 'TX', country: 'US' } })
+      await expect(withFallback.geocodeZip('78758')).resolves.toMatchObject({ city: 'Austin', source: 'manual' })
+      expect(mockLookupZipReference).not.toHaveBeenCalled()
+      expect(mockGeocodingAdapter.geocodeZipCode).not.toHaveBeenCalled()
+    })
+
+    it('answers out-of-state and leading-zero ZIPs locally with no API call', async () => {
+      for (const [zip, city, state] of [['75758', 'Chandler', 'TX'], ['00501', 'Holtsville', 'NY']] as const) {
+        mockLookupZipReference.mockResolvedValueOnce(local(zip, city, state))
+        await expect(withFallback.geocodeZip(zip)).resolves.toMatchObject({ zip, city, state, source: 'geonames' })
+      }
+      expect(mockGeocodingAdapter.geocodeZipCode).not.toHaveBeenCalled()
+      expect(mockFallbackAdapter.geocodeZipCode).not.toHaveBeenCalled()
+    })
+
+    it('confirms a questionable record with the providers and prefers their answer', async () => {
+      mockLookupZipReference.mockResolvedValue(local('01719', 'Boxborough', 'MA', true))
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue(provider)
+      await expect(withFallback.geocodeZip('01719')).resolves.toMatchObject({ source: 'positionstack' })
+    })
+
+    it('falls back to the questionable local record when the providers fail or find nothing', async () => {
+      mockLookupZipReference.mockResolvedValue(local('01098', 'Worthington', 'MA', true))
+      mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('504'))
+      mockFallbackAdapter.geocodeZipCode.mockRejectedValue(new Error('429'))
+      await expect(withFallback.geocodeZip('01098')).resolves.toMatchObject({ city: 'Worthington', source: 'geonames', confidence: 'low' })
+
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue(null)
+      mockFallbackAdapter.geocodeZipCode.mockResolvedValue(null)
+      await expect(withFallback.geocodeZip('01098')).resolves.toMatchObject({ source: 'geonames' })
+    })
+
+    it('sends unknown ZIPs to the providers: not found when they answer empty, unavailable when they fail', async () => {
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue(null)
+      mockFallbackAdapter.geocodeZipCode.mockResolvedValue(null)
+      await expect(withFallback.geocodeZip('00000')).resolves.toBeNull()
+
+      mockGeocodingAdapter.geocodeZipCode.mockRejectedValue(new Error('504'))
+      mockFallbackAdapter.geocodeZipCode.mockRejectedValue(new Error('429'))
+      await expect(withFallback.geocodeZip('00000')).rejects.toBeInstanceOf(GeocoderUnavailableError)
+    })
+
+    it('keeps working through the providers if the reference table cannot be read', async () => {
+      mockLookupZipReference.mockRejectedValue(new Error('table missing'))
+      mockGeocodingAdapter.geocodeZipCode.mockResolvedValue(provider)
+      await expect(withFallback.geocodeZip('01719')).resolves.toMatchObject({ source: 'positionstack' })
     })
   })
 })
