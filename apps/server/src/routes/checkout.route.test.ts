@@ -36,6 +36,9 @@ import checkoutRoutes from './checkout.js'
 import { prisma, handlePaymentIntentSucceeded } from '@packages/db'
 import { createAuthenticatedUser, authHeaders, createTestStore, createTestItem, cleanupTestData } from '../__tests__/helpers.js'
 
+// Card checkout needs a configured Stripe key; the charge itself is stubbed or never reached here.
+process.env.STRIPE_SECRET_KEY = 'sk_test_checkoutRouteTests'
+
 describe('Checkout Routes E2E', () => {
   const app = Fastify({ logger: false })
 

@@ -53,7 +53,10 @@ export function postalProvider(): AddressProvider {
   return { name: 'postal', suggests: false, suggest: async () => [], locate: postalCenter }
 }
 
-type FetchLike = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>
+type FetchLike = (url: string, init?: { signal?: AbortSignal }) => Promise<{ ok: boolean; json: () => Promise<unknown> }>
+
+/** A lookup slower than this is treated as failed; checkout shouldn't hang on a geocoder. */
+const LOOKUP_TIMEOUT_MS = 4000
 
 interface MapboxFeature {
   readonly id?: string
@@ -64,6 +67,7 @@ interface MapboxFeature {
     readonly full_address?: string
     readonly name?: string
     readonly coordinates?: { readonly latitude?: number; readonly longitude?: number; readonly accuracy?: string }
+    readonly match_code?: { readonly confidence?: string; readonly address_number?: string; readonly street?: string; readonly postcode?: string }
     readonly context?: {
       readonly address?: { readonly name?: string }
       readonly postcode?: { readonly name?: string }
@@ -75,11 +79,17 @@ interface MapboxFeature {
 
 const PRECISE_ACCURACY = new Set(['rooftop', 'parcel', 'point', 'interpolated'])
 
+/** Mapbox's API, or (outside production only) a local stand-in for browser tests. */
+function mapboxBase(env: NodeJS.ProcessEnv = process.env): string {
+  const override = env.NODE_ENV === 'production' ? undefined : env.MAPBOX_API_BASE
+  return `${override ?? 'https://api.mapbox.com'}/search/geocode/v6/forward`
+}
+
 export function mapboxProvider(token: string, fetcher: FetchLike = fetch as unknown as FetchLike): AddressProvider {
-  const base = 'https://api.mapbox.com/search/geocode/v6/forward'
+  const base = mapboxBase()
   const request = async (params: Record<string, string>): Promise<MapboxFeature[]> => {
     const qs = new URLSearchParams({ access_token: token, country: 'us', types: 'address', ...params })
-    const response = await fetcher(`${base}?${qs.toString()}`)
+    const response = await fetcher(`${base}?${qs.toString()}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
     if (!response.ok) return []
     const body = (await response.json()) as { features?: MapboxFeature[] }
     return body.features ?? []
@@ -110,23 +120,54 @@ export function mapboxProvider(token: string, fetcher: FetchLike = fetch as unkn
       })
     },
     async locate(address) {
-      const features = await request({
-        q: `${address.line1}, ${address.city}, ${address.state} ${address.postalCode}`,
-        autocomplete: 'false',
-        limit: '1',
-      }).catch(() => [])
+      const features = await request({ ...structuredQuery(address), autocomplete: 'false', limit: '3' }).catch(() => null)
+      // The service failed or timed out: only the ZIP center is known, and that is never precise.
+      if (features === null) return postalCenter(address)
       const top = features[0]
-      const lng = top?.properties?.coordinates?.longitude ?? top?.geometry?.coordinates?.[0]
-      const lat = top?.properties?.coordinates?.latitude ?? top?.geometry?.coordinates?.[1]
-      if (lat === undefined || lng === undefined) return postalCenter(address)
+      const position = featurePosition(top)
+      if (!top || !position) return postalCenter(address)
       // A match in a different ZIP is not the address the shopper typed.
-      if (top?.properties?.context?.postcode?.name && top.properties.context.postcode.name !== address.postalCode.slice(0, 5)) {
+      if (top.properties?.context?.postcode?.name && top.properties.context.postcode.name !== address.postalCode.slice(0, 5)) {
         return postalCenter(address)
       }
-      const accuracy = top?.properties?.coordinates?.accuracy ?? ''
-      return { lat, lng, precision: top?.properties?.feature_type === 'address' && PRECISE_ACCURACY.has(accuracy) ? 'address' : 'street' }
+      return { ...position, precision: isPrecise(top) && !isAmbiguous(top, features.slice(1)) ? 'address' : 'street' }
     },
   }
+}
+
+/** Mapbox's structured search when the street line starts with a house number; free text otherwise. */
+function structuredQuery(address: AddressQuery): Record<string, string> {
+  const parts = /^\s*(\d+[A-Za-z]?(?:-\d+)?)\s+(.+)$/.exec(address.line1)
+  if (!parts) return { q: `${address.line1}, ${address.city}, ${address.state} ${address.postalCode}` }
+  return { address_number: parts[1], street: parts[2], place: address.city, region: address.state, postcode: address.postalCode.slice(0, 5) }
+}
+
+function featurePosition(feature: MapboxFeature | undefined): { lat: number; lng: number } | null {
+  const lng = feature?.properties?.coordinates?.longitude ?? feature?.geometry?.coordinates?.[0]
+  const lat = feature?.properties?.coordinates?.latitude ?? feature?.geometry?.coordinates?.[1]
+  return lat === undefined || lng === undefined ? null : { lat, lng }
+}
+
+/** A house-level point that Mapbox itself is confident is the address asked for. */
+function isPrecise(feature: MapboxFeature): boolean {
+  const p = feature.properties
+  if (p?.feature_type !== 'address' || !PRECISE_ACCURACY.has(p.coordinates?.accuracy ?? '')) return false
+  const match = p.match_code
+  // Without a match code (older responses) the accuracy alone decides; with one, it must be strong.
+  if (!match) return true
+  return (match.confidence === 'exact' || match.confidence === 'high') && match.address_number !== 'unmatched' && match.street !== 'unmatched'
+}
+
+/** Another equally strong match far from the first (same number on two similar streets): we can't tell which. */
+function isAmbiguous(top: MapboxFeature, others: readonly MapboxFeature[]): boolean {
+  const first = featurePosition(top)
+  if (!first) return true
+  return others.some((other) => {
+    const at = featurePosition(other)
+    if (!at || !isPrecise(other) || other.properties?.match_code?.confidence !== top.properties?.match_code?.confidence) return false
+    const metres = Math.hypot((at.lat - first.lat) * 111_000, (at.lng - first.lng) * 111_000 * Math.cos((first.lat * Math.PI) / 180))
+    return metres > 150
+  })
 }
 
 export function positionstackProvider(apiKey: string): AddressProvider {
@@ -146,6 +187,11 @@ export function positionstackProvider(apiKey: string): AddressProvider {
 }
 
 let cached: AddressProvider | null = null
+
+/** Tests swap in a provider (or null to go back to the configured one). */
+export function setAddressProviderForTesting(provider: AddressProvider | null) {
+  cached = provider
+}
 
 export function addressProvider(env: NodeJS.ProcessEnv = process.env): AddressProvider {
   if (cached && env === process.env) return cached

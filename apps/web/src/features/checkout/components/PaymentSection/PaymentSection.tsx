@@ -13,7 +13,12 @@ import {
 import { getStripePromise, getStripePublishableKey } from '@features/checkout/lib/stripeClient'
 
 export type CheckoutPaymentPayload =
-  | { readonly rail: 'CARD'; readonly paymentMethodId: string }
+  | {
+      readonly rail: 'CARD'
+      readonly paymentMethodId: string
+      /** Completes 3-D Secure when the bank asks for it; resolves to an error message or undefined. */
+      readonly finish: (clientSecret: string) => Promise<string | undefined>
+    }
   | { readonly rail: 'COD' }
 
 export interface PaymentSectionProps {
@@ -90,7 +95,12 @@ export function PaymentSection({
 
     if (result.paymentMethodId) {
       setShowConfirm(false)
-      onPaymentReady({ rail: 'CARD', paymentMethodId: result.paymentMethodId })
+      const fields = stripeFieldsRef.current
+      onPaymentReady({
+        rail: 'CARD',
+        paymentMethodId: result.paymentMethodId,
+        finish: (clientSecret) => fields?.finishPayment(clientSecret) ?? Promise.resolve('Payment form is not ready.'),
+      })
     }
   }
 

@@ -208,23 +208,30 @@ function AreasSection({ zones, colorOf, formData, onChange, busy, editing, onTog
   )
 }
 
-export function DeliveryAreaEditor({ storeId, formData, onChange }: StoreFieldProps & { readonly storeId?: string }) {
-  const zones = useDeliveryZones(storeId).data ?? []
-  const activeCount = zones.filter((zone) => zone.isActive).length
-  const [wantZones, setWantZones] = useState(false)
-  const [draft, setDraft] = useState<Draft | null>(null)
-  const [pin, setPin] = useState<DeliveryPreview | null>(null)
-  const { confirm, dialog } = useConfirm()
+/** The store's location and delivery terms as numbers (null where unset). */
+function storeDelivery(formData: StoreFieldProps['formData']) {
+  const located = hasCoordinate(formData.latitude) && hasCoordinate(formData.longitude)
+  return {
+    store: located ? ([Number(formData.latitude), Number(formData.longitude)] as LatLng) : null,
+    radius: amount(formData.deliveryDistance),
+    storeFee: amount(formData.deliveryCharge),
+    storeMinimum: amount(formData.deliveryMinimum),
+  }
+}
 
-  const store: LatLng | null =
-    hasCoordinate(formData.latitude) && hasCoordinate(formData.longitude) ? [Number(formData.latitude), Number(formData.longitude)] : null
-  const radius = amount(formData.deliveryDistance)
-  const storeFee = amount(formData.deliveryCharge)
-  const storeMinimum = amount(formData.deliveryMinimum)
-  const usingZones = activeCount > 0 || wantZones || draft !== null
-  const actions = useZoneActions(storeId ?? '', zones, radius, confirm)
-  const colorOf = (zone: ZoneDto) => ZONE_COLORS[Math.max(0, zones.indexOf(zone)) % ZONE_COLORS.length]
-
+/** The map with everything on it, and the drawing bar while an outline is being drawn. */
+function AreaMapPanel({ store, radius, usingZones, zones, storeMinimum, draft, onDraftChange, onEdit, pin }: {
+  readonly store: LatLng | null
+  readonly radius: number | null
+  readonly usingZones: boolean
+  readonly zones: readonly ZoneDto[]
+  readonly storeMinimum: number | null
+  readonly draft: Draft | null
+  readonly onDraftChange: (draft: Draft) => void
+  readonly onEdit: (zone: ZoneDto) => void
+  readonly pin: DeliveryPreview | null
+}) {
+  const colorAt = (index: number) => ZONE_COLORS[Math.max(0, index) % ZONE_COLORS.length]
   // Drawing happens on the map; bring it into view when it starts.
   const mapRef = useRef<HTMLDivElement>(null)
   const drawing = draft?.drawing ?? false
@@ -239,12 +246,57 @@ export function DeliveryAreaEditor({ storeId, formData, onChange }: StoreFieldPr
         .map((zone) => ({
           id: zone.id,
           ring: zoneRing(zone),
-          color: ZONE_COLORS[zones.indexOf(zone) % ZONE_COLORS.length],
+          color: colorAt(zones.indexOf(zone)),
           label: `${zone.name}: ${zoneTerms(Number(zone.baseFee), amount(zone.minOrder), storeMinimum)}${zone.isActive ? '' : ' (off)'}`,
           active: zone.isActive,
         })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [zones, draft?.id, storeMinimum],
   )
+  const draftIndex = draft?.id ? zones.findIndex((zone) => zone.id === draft.id) : zones.length
+  const showMap = store !== null || zones.length > 0
+  const square = store ? squareAround(store, Math.max(1, (radius ?? 2) * 1.4)) : null
+  const pinned = pin?.destination ? { at: [pin.destination.lat, pin.destination.lng] as LatLng, ok: pin.eligibility.available } : null
+
+  return (
+    <div ref={mapRef} className="relative isolate h-72 overflow-hidden rounded-md border border-border sm:h-96" data-testid="delivery-map">
+      {showMap ? (
+        <Suspense fallback={<div className="h-full w-full animate-pulse bg-muted" />}>
+          <DeliveryAreaMap
+            store={store}
+            radiusMiles={usingZones ? null : radius}
+            zones={usingZones ? mapZones : []}
+            draft={draft ? { ring: draft.ring, color: colorAt(draftIndex), drawing: draft.drawing } : null}
+            onDraftChange={(ring) => draft && onDraftChange({ ...draft, ring, error: undefined })}
+            onSelectZone={(id) => {
+              const zone = zones.find((z) => z.id === id)
+              if (zone) onEdit(zone)
+            }}
+            pin={pinned}
+          />
+        </Suspense>
+      ) : (
+        <div className="flex h-full items-center justify-center bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+          Add your store’s address on the Location tab to see your delivery area on a map.
+        </div>
+      )}
+      {draft?.drawing ? <DrawingBar draft={draft} square={square} onChange={onDraftChange} /> : null}
+    </div>
+  )
+}
+
+export function DeliveryAreaEditor({ storeId, formData, onChange }: StoreFieldProps & { readonly storeId?: string }) {
+  const zones = useDeliveryZones(storeId).data ?? []
+  const activeCount = zones.filter((zone) => zone.isActive).length
+  const [wantZones, setWantZones] = useState(false)
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [pin, setPin] = useState<DeliveryPreview | null>(null)
+  const { confirm, dialog } = useConfirm()
+
+  const { store, radius, storeFee, storeMinimum } = storeDelivery(formData)
+  const usingZones = activeCount > 0 || wantZones || draft !== null
+  const actions = useZoneActions(storeId ?? '', zones, radius, confirm)
+  const colorOf = (zone: ZoneDto) => ZONE_COLORS[Math.max(0, zones.indexOf(zone)) % ZONE_COLORS.length]
 
   const startDrawing = () => {
     setWantZones(true)
@@ -273,37 +325,22 @@ export function DeliveryAreaEditor({ storeId, formData, onChange }: StoreFieldPr
   const chooseZones = () => (zones.length > 0 ? setWantZones(true) : startDrawing())
 
   const summary = areaSummary({ usingZones, activeZones: activeCount, radius, fee: storeFee, minimum: storeMinimum })
-  const draftColor = draft?.id ? colorOf(zones.find((zone) => zone.id === draft.id)!) : ZONE_COLORS[zones.length % ZONE_COLORS.length]
 
   return (
     <div className="space-y-4">
       <AreaMethod usingZones={usingZones} canDraw={Boolean(storeId)} onDistance={() => void chooseRadius()} onZones={chooseZones} />
 
-      <div ref={mapRef} className="relative isolate h-72 overflow-hidden rounded-md border border-border sm:h-96" data-testid="delivery-map">
-        {store || zones.length > 0 ? (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-muted" />}>
-            <DeliveryAreaMap
-              store={store}
-              radiusMiles={usingZones ? null : radius}
-              zones={usingZones ? mapZones : []}
-              draft={draft ? { ring: draft.ring, color: draftColor, drawing: draft.drawing } : null}
-              onDraftChange={(ring) => draft && setDraft({ ...draft, ring, error: undefined })}
-              onSelectZone={(id) => {
-                const zone = zones.find((z) => z.id === id)
-                if (zone) editZone(zone)
-              }}
-              pin={pin?.destination ? { at: [pin.destination.lat, pin.destination.lng], ok: pin.eligibility.available } : null}
-            />
-          </Suspense>
-        ) : (
-          <div className="flex h-full items-center justify-center bg-muted/40 p-6 text-center text-sm text-muted-foreground">
-            Add your store’s address on the Location tab to see your delivery area on a map.
-          </div>
-        )}
-        {draft?.drawing ? (
-          <DrawingBar draft={draft} square={store ? squareAround(store, Math.max(1, (radius ?? 2) * 1.4)) : null} onChange={setDraft} />
-        ) : null}
-      </div>
+      <AreaMapPanel
+        store={store}
+        radius={radius}
+        usingZones={usingZones}
+        zones={zones}
+        storeMinimum={storeMinimum}
+        draft={draft}
+        onDraftChange={setDraft}
+        onEdit={editZone}
+        pin={pin}
+      />
       <p role={summary.warns ? 'alert' : undefined} className={`text-sm ${summary.warns ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
         {summary.text}
       </p>

@@ -6,6 +6,8 @@ import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 
 export type StripePaymentFieldsHandle = {
   readonly confirmPayment: () => Promise<{ readonly paymentMethodId?: string; readonly errorMessage?: string }>
+  /** Finishes a bank's 3-D Secure check; resolves to an error message, or undefined when paid. */
+  readonly finishPayment: (clientSecret: string) => Promise<string | undefined>
 }
 
 export const StripePaymentFields = forwardRef(function StripePaymentFields(
@@ -37,6 +39,14 @@ export const StripePaymentFields = forwardRef(function StripePaymentFields(
         }
 
         return { paymentMethodId: paymentMethod.id }
+      },
+
+      async finishPayment(clientSecret: string) {
+        if (!stripe) return 'Payment form is still loading. Try again in a moment.'
+        const { error, paymentIntent } = await stripe.handleNextAction({ clientSecret })
+        if (error) return error.message ?? 'Your bank didn’t confirm the payment. Try again or use another card.'
+        if (paymentIntent?.status === 'requires_payment_method') return 'Your bank declined the payment. Try another card.'
+        return undefined
       },
     }))
 

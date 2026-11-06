@@ -114,7 +114,7 @@ function FulfillmentStep(props: {
     )
   } else if (delivering) {
     where = props.chosen ? (
-      <ChosenAddress address={props.chosen} approximate={Boolean(data?.destination?.approximate)} onChange={props.onEditAddress} />
+      <ChosenAddress address={props.chosen} approximate={Boolean(data?.destination?.approximate) && data?.blocked?.code !== 'ADDRESS_NOT_VERIFIED'} onChange={props.onEditAddress} />
     ) : null
   }
   const deliveryOk = delivering && data && !data.blocked && data.fulfillment.delivery.available ? data.fulfillment.delivery : null
@@ -226,6 +226,15 @@ function usePlaceOrder({ cart, sessionKey, payable, deliveryType, addressId, dra
         ...(tip > 0 ? { tipAmount: tip } : {}),
         ...(affiliateReferralCode ? { affiliateReferralCode } : {}),
       })
+      // The bank wants 3-D Secure: finish it here. If it fails the order stays unpaid and this same
+      // checkout session pays it on the next try.
+      if (payload.rail === 'CARD' && completion.payment?.status === 'requires_action') {
+        const problem = await payload.finish(completion.payment.clientSecret)
+        if (problem) {
+          setPaymentError(problem)
+          return
+        }
+      }
       clearPendingOrderForCheckout()
       clearCart()
       void queryClient.invalidateQueries({ queryKey: ['cart'] })

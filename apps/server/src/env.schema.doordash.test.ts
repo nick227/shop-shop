@@ -7,7 +7,9 @@ function baseEnv(overrides: Record<string, string> = {}): Record<string, string>
     JWT_SECRET: 'a'.repeat(32),
     JWT_REFRESH_SECRET: 'b'.repeat(32),
     NODE_ENV: 'test',
-    STRIPE_SECRET_KEY: 'sk_test_placeholder_for_schema_tests',
+    STRIPE_SECRET_KEY: 'sk_test_placeholderForSchemaTests',
+    STRIPE_WEBHOOK_SECRET: 'whsec_schemaTests',
+    MAPBOX_ACCESS_TOKEN: 'pk.schemaTests',
     ...overrides,
   }
 }

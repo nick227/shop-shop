@@ -15,6 +15,9 @@ import {
 } from '../__tests__/helpers.js'
 import { prisma } from '@packages/db'
 
+// Card checkout needs a configured Stripe key; the charge itself is stubbed or never reached here.
+process.env.STRIPE_SECRET_KEY = 'sk_test_checkoutRouteTests'
+
 describe('Checkout complete blocks card when store cannot accept online payments', () => {
   const app = Fastify({ logger: false })
   app.setErrorHandler(globalErrorHandler)

@@ -45,6 +45,51 @@ describe('Mapbox address provider', () => {
   })
 })
 
+describe('Mapbox lookups: confident, ambiguous and failed', () => {
+  const confident = (lat: number, lng: number, confidence = 'exact') =>
+    feature({ coordinates: { latitude: lat, longitude: lng, accuracy: 'rooftop' }, match_code: { confidence, address_number: 'matched', street: 'matched', postcode: 'matched' } })
+
+  it('asks with structured fields when the street starts with a house number', async () => {
+    const fetcher = respond([confident(30.3121, -97.7263)])
+    expect(await mapboxProvider('pk.test', fetcher).locate(HOME)).toEqual({ lat: 30.3121, lng: -97.7263, precision: 'address' })
+    const url = new URL(fetcher.mock.calls[0][0])
+    expect(Object.fromEntries(['address_number', 'street', 'place', 'region', 'postcode'].map((k) => [k, url.searchParams.get(k)]))).toEqual({
+      address_number: '4500', street: 'Duval St', place: 'Austin', region: 'TX', postcode: '78751',
+    })
+    expect(url.searchParams.get('q')).toBeNull()
+  })
+
+  it('is not precise when Mapbox is unsure or the house number did not match', async () => {
+    expect((await mapboxProvider('pk.test', respond([confident(30.31, -97.72, 'low')])).locate(HOME))?.precision).toBe('street')
+    const noNumber = feature({ coordinates: { latitude: 30.31, longitude: -97.72, accuracy: 'rooftop' }, match_code: { confidence: 'high', address_number: 'unmatched', street: 'matched' } })
+    expect((await mapboxProvider('pk.test', respond([noNumber])).locate(HOME))?.precision).toBe('street')
+  })
+
+  it('treats two equally strong matches far apart as ambiguous, but not two points on one parcel', async () => {
+    const far = await mapboxProvider('pk.test', respond([confident(30.3121, -97.7263), confident(30.2671, -97.7431)])).locate(HOME)
+    expect(far?.precision).toBe('street')
+    const near = await mapboxProvider('pk.test', respond([confident(30.3121, -97.7263), confident(30.3122, -97.7264)])).locate(HOME)
+    expect(near?.precision).toBe('address')
+    const weakerSecond = await mapboxProvider('pk.test', respond([confident(30.3121, -97.7263), confident(30.2671, -97.7431, 'medium')])).locate(HOME)
+    expect(weakerSecond?.precision).toBe('address')
+  })
+
+  it('falls back to the ZIP center, never a precise position, when the service fails', async () => {
+    const httpError = vi.fn(async () => ({ ok: false, json: async () => ({}) }))
+    const down = vi.fn(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const slow = vi.fn(async (_url: string, init?: { signal?: AbortSignal }) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+      throw new DOMException('The operation was aborted', 'TimeoutError')
+    })
+    for (const fetcher of [httpError, down, slow, respond([])]) {
+      const located = await mapboxProvider('pk.test', fetcher).locate(HOME)
+      expect(located === null || located.precision === 'postal').toBe(true)
+    }
+  })
+})
+
 describe('provider selection and policy', () => {
   it('uses Mapbox when configured, and only the ZIP center when nothing is', () => {
     expect(addressProvider({ MAPBOX_ACCESS_TOKEN: 'pk.abc' } as NodeJS.ProcessEnv).name).toBe('mapbox')

@@ -183,8 +183,10 @@ export async function deliveryEligibility(
     return unavailable('ADDRESS_NOT_VERIFIED', 'We couldn’t confirm this exact address for delivery. Check the street address, or choose pickup.')
   }
 
-  const distanceMiles =
-    storeLat !== null && storeLng !== null ? Math.round(haversineMiles({ latitude: storeLat, longitude: storeLng }, { latitude: destination.lat, longitude: destination.lng }) * 10) / 10 : null
+  // The limit is checked on the exact distance; only what's shown is rounded.
+  const exactMiles =
+    storeLat !== null && storeLng !== null ? haversineMiles({ latitude: storeLat, longitude: storeLng }, { latitude: destination.lat, longitude: destination.lng }) : null
+  const distanceMiles = exactMiles === null ? null : Math.round(exactMiles * 10) / 10
 
   let fee: number
   let minimum = storeMinimum
@@ -197,7 +199,7 @@ export async function deliveryEligibility(
     zoneName = zone.name
   } else {
     // Without zones, a store delivers within its radius (checked above to exist, never "anywhere").
-    if (radius !== null && distanceMiles !== null && distanceMiles > radius) {
+    if (radius !== null && exactMiles !== null && exactMiles > radius) {
       return unavailable('OUTSIDE_DELIVERY_AREA', `This address is ${distanceMiles} miles away; the store delivers within ${radius} miles.`)
     }
     fee = num(store.deliveryCharge) ?? DEFAULT_DELIVERY_FEE

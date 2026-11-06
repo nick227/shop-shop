@@ -84,7 +84,10 @@ type CreateCheckoutSessionRequest = Omit<components['schemas']['CreateCheckoutSe
 }
 type CreateCheckoutSessionResponse = components['schemas']['CreateCheckoutSessionResponse']
 type CompleteCheckoutRequest = components['schemas']['CompleteCheckoutRequest']
-type CompleteCheckoutResponse = components['schemas']['CompleteCheckoutResponse']
+/** Card orders also say where payment stands; `requires_action` means the browser must finish 3-D Secure. */
+type CompleteCheckoutResponse = components['schemas']['CompleteCheckoutResponse'] & {
+  readonly payment?: { readonly status: string; readonly clientSecret: string }
+}
 type CheckoutStatusResponse = components['schemas']['CheckoutStatusResponse']
 type CheckoutPath = keyof paths
 // Using unified ApiError from api-contracts

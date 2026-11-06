@@ -385,9 +385,14 @@ export function Unavailable({ quote, storePath, onPickup, onChangeAddress }: {
             Add {shortBy ? formatCurrency(shortBy) : 'more'} from the store
           </Link>
         ) : null}
-        {(blocked.code === 'OUTSIDE_DELIVERY_AREA' || blocked.code === 'ADDRESS_NOT_FOUND') && onChangeAddress ? (
+        {blocked.code === 'OUTSIDE_DELIVERY_AREA' && onChangeAddress ? (
           <button type="button" onClick={onChangeAddress} className="font-semibold text-primary hover:underline">
             Use a different address
+          </button>
+        ) : null}
+        {(blocked.code === 'ADDRESS_NOT_FOUND' || blocked.code === 'ADDRESS_NOT_VERIFIED') && onChangeAddress ? (
+          <button type="button" onClick={onChangeAddress} className="font-semibold text-primary hover:underline">
+            Edit address
           </button>
         ) : null}
         {quote.fulfillment.pickup.available && onPickup && quote.deliveryType === 'DELIVERY' ? (

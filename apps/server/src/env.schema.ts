@@ -19,6 +19,10 @@ export const envSchema = z
     ENABLE_COD_PAYMENTS: z.enum(['true', 'false']).optional(),
 
     GEOCODING_API_KEY: z.string().optional(),
+    MAPBOX_ACCESS_TOKEN: z.string().optional(),
+    ALLOW_APPROXIMATE_DELIVERY: z.enum(['true', 'false']).optional(),
+    TAX_PROVIDER: z.enum(['stripe', 'estimate']).optional(),
+    ALLOW_ESTIMATED_TAX: z.enum(['true', 'false']).optional(),
 
     WEB_PORT: z.string().transform(Number).default(process.env.WEB_PORT ?? '5177'),
     CORS_ORIGINS: z.string().default(process.env.CORS_ORIGINS ?? 'http://localhost:5177,http://localhost:3005'),
@@ -43,6 +47,7 @@ export const envSchema = z
     if (data.NODE_ENV !== 'production') {
       return
     }
+    for (const issue of launchConfigIssues(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, ...issue })
     const mode = data.DOORDASH_WEBHOOK_AUTH_MODE
     if (mode !== 'basic' && mode !== 'hmac') {
       ctx.addIssue({
@@ -74,6 +79,42 @@ export const envSchema = z
   })
 
 export type ServerEnv = z.infer<typeof envSchema>
+
+const real = (value: string | undefined) => Boolean(value && !/^your[_-]/i.test(value))
+
+/**
+ * What production must have before it takes money or promises delivery: real Stripe keys (never a
+ * `your_…` placeholder), a webhook secret so payments are confirmed, a precise geocoder unless
+ * approximate delivery is knowingly chosen, and no silent tax estimate.
+ */
+export function launchConfigIssues(data: {
+  STRIPE_SECRET_KEY?: string
+  STRIPE_WEBHOOK_SECRET?: string
+  MAPBOX_ACCESS_TOKEN?: string
+  GEOCODING_API_KEY?: string
+  ALLOW_APPROXIMATE_DELIVERY?: string
+  TAX_PROVIDER?: string
+  ALLOW_ESTIMATED_TAX?: string
+}): { message: string; path: string[] }[] {
+  const issues: { message: string; path: string[] }[] = []
+  if (data.STRIPE_SECRET_KEY?.length && !/^(sk|rk)_(test|live)_[A-Za-z0-9]+$/.test(data.STRIPE_SECRET_KEY)) {
+    issues.push({ message: 'STRIPE_SECRET_KEY must be a real Stripe secret key (sk_live_… or sk_test_…), not a placeholder', path: ['STRIPE_SECRET_KEY'] })
+  }
+  if (!/^whsec_[A-Za-z0-9]+$/.test(data.STRIPE_WEBHOOK_SECRET ?? '')) {
+    issues.push({ message: 'STRIPE_WEBHOOK_SECRET (whsec_…) is required in production; without it card orders are never marked paid', path: ['STRIPE_WEBHOOK_SECRET'] })
+  }
+  if (!real(data.MAPBOX_ACCESS_TOKEN) && !real(data.GEOCODING_API_KEY) && data.ALLOW_APPROXIMATE_DELIVERY === undefined) {
+    issues.push({
+      message:
+        'Set MAPBOX_ACCESS_TOKEN for precise delivery addresses. Without one, set ALLOW_APPROXIMATE_DELIVERY=false (no delivery) or =true (ZIP-center delivery) deliberately.',
+      path: ['MAPBOX_ACCESS_TOKEN'],
+    })
+  }
+  if (data.TAX_PROVIDER === 'estimate' && data.ALLOW_ESTIMATED_TAX !== 'true') {
+    issues.push({ message: 'TAX_PROVIDER=estimate in production needs ALLOW_ESTIMATED_TAX=true; use Stripe Tax for real orders', path: ['TAX_PROVIDER'] })
+  }
+  return issues
+}
 
 export function parseEnv(source: Record<string, string | undefined>): z.SafeParseReturnType<
   Record<string, string | undefined>,
