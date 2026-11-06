@@ -14,13 +14,6 @@ function hasText(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function readMinimumOrder(feesJson: unknown): number | null {
-  if (!feesJson || typeof feesJson !== 'object' || Array.isArray(feesJson)) return null
-  const record = feesJson as Record<string, unknown>
-  const minimumOrder = Number(record.minimumOrder ?? record.minimumOrderAmount ?? record.minOrder)
-  return Number.isFinite(minimumOrder) && minimumOrder >= 0 ? minimumOrder : null
-}
-
 export async function getStoreReadiness(storeId: string) {
   const store = await prisma.store.findUnique({
     where: { id: storeId },
@@ -41,7 +34,6 @@ export async function getStoreReadiness(storeId: string) {
       deliveryEnabled: true,
       deliveryDistance: true,
       deliveryCharge: true,
-      feesJson: true,
     },
   })
 
@@ -54,12 +46,11 @@ export async function getStoreReadiness(storeId: string) {
     checkStoreActivationRequirements(storeId),
   ])
 
-  const minimumOrder = readMinimumOrder(store.feesJson)
   const hasIdentity = hasText(store.name) && hasText(store.description) && (hasText(store.phone) || hasText(store.email))
   const hasAddress = hasText(store.addressStreet) && hasText(store.addressCity) && hasText(store.addressState) && hasText(store.addressZip)
   const hasCoordinates = store.latitude !== null && store.longitude !== null && store.geocodedAt !== null
   const hasDeliveryCoverage = !store.deliveryEnabled || store.deliveryDistance !== null || activeDeliveryZones > 0
-  const hasDeliveryDefaults = !store.deliveryEnabled || (store.deliveryCharge !== null && minimumOrder !== null)
+  const hasDeliveryDefaults = !store.deliveryEnabled || store.deliveryCharge !== null
   const hasFulfillment = (store.pickupEnabled || store.deliveryEnabled) && hasDeliveryCoverage && hasDeliveryDefaults
   const hasProducts = activeProducts > 0
 
@@ -67,7 +58,7 @@ export async function getStoreReadiness(storeId: string) {
     { key: 'identity', label: 'Store identity', passed: hasIdentity, required: true, message: hasIdentity ? undefined : 'Add a name, description, and phone or email.' },
     { key: 'address', label: 'Structured address', passed: hasAddress, required: true, message: hasAddress ? undefined : 'Add street, city, state, and ZIP.' },
     { key: 'geocoding', label: 'Geocoding', passed: hasCoordinates, required: true, message: hasCoordinates ? undefined : 'Save coordinates in Location.', details: { geocodeSource: store.geocodeSource } },
-    { key: 'fulfillment', label: 'Fulfillment', passed: hasFulfillment, required: true, message: hasFulfillment ? undefined : 'Enable pickup or delivery. Delivery also needs a radius or active zone, delivery fee, and minimum order.', details: { pickupEnabled: store.pickupEnabled, deliveryEnabled: store.deliveryEnabled, deliveryDistance: store.deliveryDistance, deliveryCharge: store.deliveryCharge, minimumOrder, activeDeliveryZones } },
+    { key: 'fulfillment', label: 'Fulfillment', passed: hasFulfillment, required: true, message: hasFulfillment ? undefined : 'Enable pickup or delivery. Delivery also needs a radius or active zone and a delivery fee.', details: { pickupEnabled: store.pickupEnabled, deliveryEnabled: store.deliveryEnabled, deliveryDistance: store.deliveryDistance, deliveryCharge: store.deliveryCharge, activeDeliveryZones } },
     { key: 'products', label: 'Products/menu', passed: hasProducts, required: true, message: hasProducts ? undefined : 'Add at least one active product.', details: { activeProducts } },
     { key: 'deliveryZones', label: 'Delivery zones', passed: !store.deliveryEnabled || store.deliveryDistance !== null || activeDeliveryZones > 0, required: Boolean(store.deliveryEnabled), message: !store.deliveryEnabled || store.deliveryDistance !== null || activeDeliveryZones > 0 ? undefined : 'Add a delivery radius or at least one active delivery zone.', details: { activeDeliveryZones } },
     { key: 'activationRequirements', label: 'Marketplace activation', passed: activationRequirements.canAppearInMarketplace, required: true, message: activationRequirements.canAppearInMarketplace ? undefined : 'Backend marketplace visibility requirements are not complete.', details: { ...activationRequirements, mediaCount } },
@@ -86,7 +77,6 @@ export async function getStoreReadiness(storeId: string) {
   if (!store.pickupEnabled && !store.deliveryEnabled) missingRequirements.push('pickup or delivery')
   if (!hasDeliveryCoverage) missingRequirements.push('delivery radius or active delivery zone')
   if (store.deliveryEnabled && store.deliveryCharge === null) missingRequirements.push('delivery fee')
-  if (store.deliveryEnabled && minimumOrder === null) missingRequirements.push('minimum order amount')
   if (!hasProducts) missingRequirements.push('at least one active menu item that is not sold out')
   if (!activationRequirements.hasMedia) missingRequirements.push('store photo or media')
   if (!activationRequirements.isNotDisabled) missingRequirements.push('active store status (contact support)')

@@ -8,13 +8,18 @@ vi.mock('@packages/db/services', () => ({ checkStoreActivationRequirements: mock
 import { getStoreReadiness } from './store-readiness.service'
 
 beforeEach(() => {
-  mocks.store.mockResolvedValue({ name: 'Bakery', description: 'Bread', phone: '555', email: '', addressStreet: '1 Main', addressCity: 'Austin', addressState: 'TX', addressZip: '78701', latitude: 30, longitude: -97, geocodedAt: new Date(), pickupEnabled: true, deliveryEnabled: false, deliveryDistance: null, deliveryCharge: null, feesJson: null })
+  mocks.store.mockResolvedValue({ name: 'Bakery', description: 'Bread', phone: '555', email: '', addressStreet: '1 Main', addressCity: 'Austin', addressState: 'TX', addressZip: '78701', latitude: 30, longitude: -97, geocodedAt: new Date(), pickupEnabled: true, deliveryEnabled: false, deliveryDistance: null, deliveryCharge: null })
   mocks.items.mockResolvedValue(1)
   mocks.zones.mockResolvedValue(0)
   mocks.media.mockResolvedValue(1)
   mocks.activation.mockResolvedValue({ hasRequiredFields: true, hasMedia: true, hasActiveProducts: true, isNotDisabled: true, canAppearInMarketplace: true })
 })
 describe('store readiness checklist', () => {
+  it('allows delivery with no minimum order', async () => {
+    const store = await mocks.store()
+    mocks.store.mockResolvedValue({ ...store, deliveryEnabled: true, deliveryDistance: 5, deliveryCharge: 0 })
+    expect(await getStoreReadiness('s')).toMatchObject({ canPublish: true, missingRequirements: [] })
+  })
   it('has no missing requirements for a publishable store', async () => {
     expect(await getStoreReadiness('s')).toMatchObject({ canPublish: true, missingRequirements: [] })
   })
@@ -27,6 +32,6 @@ describe('store readiness checklist', () => {
     const store = await mocks.store()
     mocks.store.mockResolvedValue({ ...store, phone: '', email: 'shop@example.com', deliveryEnabled: true })
     mocks.activation.mockResolvedValue({ hasRequiredFields: false, hasMedia: true, hasActiveProducts: true, isNotDisabled: true, canAppearInMarketplace: false })
-    expect(await getStoreReadiness('s')).toMatchObject({ canPublish: false, missingRequirements: ['phone number', 'delivery radius or active delivery zone', 'delivery fee', 'minimum order amount'] })
+    expect(await getStoreReadiness('s')).toMatchObject({ canPublish: false, missingRequirements: ['phone number', 'delivery radius or active delivery zone', 'delivery fee'] })
   })
 })

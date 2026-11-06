@@ -27,8 +27,8 @@ const SOCIAL_FIELD_MAP: Record<string, keyof StoreFormData> = {
 export function storePayloadFromFormData(formData: StoreFormData): CreateStoreInput {
   const cleaned = cleanStoreFormData(formData)
   const payload = { ...cleaned } as Record<string, unknown>
-  // Empty means "none": send null so a cleared minimum or category is actually cleared.
-  if ('deliveryMinimum' in payload) payload.deliveryMinimum = payload.deliveryMinimum === '' || payload.deliveryMinimum == null ? null : String(payload.deliveryMinimum)
+  // A blank minimum is $0. A blank tax category means none.
+  if ('deliveryMinimum' in payload) payload.deliveryMinimum = payload.deliveryMinimum === '' || payload.deliveryMinimum == null ? '0' : String(payload.deliveryMinimum)
   if ('defaultTaxCategory' in payload) payload.defaultTaxCategory = payload.defaultTaxCategory || null
   // Admin restriction fields; the store form never changes them.
   for (const key of ['status', 'disabledAt', 'disabledByUserId', 'disabledReason']) delete payload[key]
@@ -90,7 +90,7 @@ export function createInitialStoreFormData(): StoreFormData {
     prepTimeMin: 0,
     deliveryDistance: '0',
     deliveryCharge: '0',
-    deliveryMinimum: '',
+    deliveryMinimum: '0',
     defaultTaxCategory: '',
     latitude: '0',
     longitude: '0',
@@ -136,7 +136,7 @@ export function transformStoreToFormData(store: StoreResponse): StoreFormData {
     prepTimeMin: store.prepTimeMin ?? 0,
     deliveryDistance: store.deliveryDistance ?? '0',
     deliveryCharge: store.deliveryCharge ?? '0',
-    deliveryMinimum: (store as any).deliveryMinimum ?? '',
+    deliveryMinimum: (store as any).deliveryMinimum ?? '0',
     defaultTaxCategory: (store as any).defaultTaxCategory ?? '',
     latitude: store.latitude ?? '0',
     longitude: store.longitude ?? '0',
