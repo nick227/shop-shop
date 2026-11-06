@@ -1,16 +1,19 @@
 import { forwardRef } from 'react'
 import { cn } from '@shared/lib/cn'
 
-type CardProps = React.HTMLAttributes<HTMLElement>
+type CardProps = React.HTMLAttributes<HTMLElement> & {
+  /** Use `div` when the card contains buttons or other controls. */
+  readonly as?: 'div' | 'button'
+}
 
-const Card = forwardRef<HTMLElement, CardProps>(({ className, onClick, ...props }, ref) => {
+const Card = forwardRef<HTMLElement, CardProps>(({ className, onClick, as, ...props }, ref) => {
   const baseClassName = cn(
     'rounded-xl bg-card text-card-foreground',
     onClick ? 'clickable cursor-pointer' : undefined,
     className,
   )
 
-  if (onClick) {
+  if (onClick && as !== 'div') {
     return (
       <button
         ref={ref as React.Ref<HTMLButtonElement>}
@@ -26,6 +29,7 @@ const Card = forwardRef<HTMLElement, CardProps>(({ className, onClick, ...props 
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       className={baseClassName}
+      onClick={onClick}
       {...(props as React.HTMLAttributes<HTMLDivElement>)}
     />
   )

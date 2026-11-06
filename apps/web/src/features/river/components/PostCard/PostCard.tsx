@@ -63,8 +63,9 @@ export function PostCard({
 
   return (
     <Card
+      as="div"
       className={cn(
-        'w-full overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200',
+        'w-full overflow-hidden text-left cursor-pointer hover:shadow-md transition-shadow duration-200',
         isStore && 'rounded-xl border-border shadow-sm sm:rounded-2xl',
       )}
       onClick={handleCardClick}

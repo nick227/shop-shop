@@ -51,5 +51,19 @@ describe('Card', () => {
     const card = container.firstChild;
     expect(card?.nodeName).toBe('BUTTON')
   })
+
+  it('should render as div when as="div" even with onClick', async () => {
+    const handleClick = vi.fn()
+    const user = userEvent.setup()
+    const { container } = render(
+      <Card as="div" onClick={handleClick}>
+        <button type="button">Like</button>
+      </Card>,
+    )
+    const card = container.firstChild
+    expect(card?.nodeName).toBe('DIV')
+    await user.click(screen.getByText('Like'))
+    expect(handleClick).toHaveBeenCalledTimes(1)
+  })
 })
 
