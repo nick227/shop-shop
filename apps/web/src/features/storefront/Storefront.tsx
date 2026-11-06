@@ -35,6 +35,7 @@ import { AboutSection, GallerySection, UpdatesSection } from './components/Busin
 import { ItemSheet } from './components/ItemSheet'
 import { CartBar } from './components/CartBar'
 import { itemImage } from './components/ProductTile'
+import { uniqueMenuProducts } from './uniqueMenuProducts'
 import './storefront.css'
 
 const CAROUSEL_COUNT = 5
@@ -131,7 +132,8 @@ export function Storefront({
   const [searchParams, setSearchParams] = useSearchParams()
   const [previewItemId, setPreviewItemId] = useState<string | null>(null)
 
-  const itemsById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items])
+  const menuItems = useMemo(() => uniqueMenuProducts(items), [items])
+  const itemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems])
   const openItemId = mode === 'live' ? searchParams.get('item') : previewItemId
   const openItemData = openItemId ? itemsById.get(openItemId) ?? null : null
 
@@ -186,13 +188,13 @@ export function Storefront({
   // The vendor's sections; items of a hidden section (returned only to the store's team) stay off the page.
   const groups = useMemo(() => {
     const visible = new Set(sections.filter((section) => section.isVisible).map((section) => section.id))
-    const shown = items.filter((item) => !item.sectionId || visible.has(item.sectionId))
+    const shown = menuItems.filter((item) => !item.sectionId || visible.has(item.sectionId))
     return groupItemsBySection(
       shown,
       sections.filter((section) => section.isVisible),
       { unsectionedName: visible.size > 0 ? 'More' : 'Menu' },
     )
-  }, [items, sections])
+  }, [menuItems, sections])
 
   const orderable = useCallback((id: string) => {
     const item = itemsById.get(id)

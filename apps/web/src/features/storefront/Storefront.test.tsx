@@ -78,14 +78,14 @@ const data = (overrides: Partial<StorefrontData> = {}): StorefrontData => ({
   ...overrides,
 })
 
-function renderStorefront(props: { config?: StorefrontConfig; data?: StorefrontData; mode?: 'live' | 'preview'; store?: StoreHeaderStore } = {}) {
+function renderStorefront(props: { config?: StorefrontConfig; data?: StorefrontData; mode?: 'live' | 'preview'; store?: StoreHeaderStore; items?: ItemResponse[] } = {}) {
   return render(
     <MemoryRouter>
       <Storefront
         store={props.store ?? store}
         data={props.data ?? data()}
         config={props.config}
-        items={items}
+        items={props.items ?? items}
         sections={sections}
         bundles={[]}
         mode={props.mode ?? 'live'}
@@ -185,6 +185,23 @@ describe('Storefront', () => {
     unmount()
     renderStorefront({ store: withEmail('2026-11-01T00:00:00.000Z') })
     expect(screen.getByRole('link', { name: 'owner@account.test' })).toHaveAttribute('href', 'mailto:owner@account.test')
+  })
+
+  it('shows each product once when the same item was saved more than once', () => {
+    const copies = [
+      item('plain', 'Punch in Head', null, { price: '2.00', mediaAssets: [] }),
+      item('again', 'Punch in Head', null, { price: '2.00', mediaAssets: [] }),
+      item('kept', 'Punch in Head', 'breakfast', { price: '2.00' }),
+      item('priced', 'Punch in Head', 'drinks', { price: '9.00', mediaAssets: [] }),
+    ]
+    const { unmount } = renderStorefront({ items: copies })
+    expect(within(screen.getByRole('region', { name: 'Breakfast' })).getAllByRole('heading', { level: 3, name: 'Punch in Head' })).toHaveLength(1)
+    expect(within(screen.getByRole('region', { name: 'Drinks' })).getAllByRole('heading', { level: 3, name: 'Punch in Head' })).toHaveLength(1)
+    expect(screen.queryByRole('region', { name: 'More' })).not.toBeInTheDocument()
+    unmount()
+    renderStorefront({ items: copies, mode: 'preview' })
+    expect(within(screen.getByRole('region', { name: 'Breakfast' })).getAllByRole('heading', { level: 3, name: 'Punch in Head' })).toHaveLength(1)
+    expect(within(screen.getByRole('region', { name: 'Drinks' })).getAllByRole('heading', { level: 3, name: 'Punch in Head' })).toHaveLength(1)
   })
 
   it('shows the vendor’s visible sections in order and never a hidden section’s items', () => {
