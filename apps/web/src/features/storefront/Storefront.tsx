@@ -15,6 +15,7 @@ import {
   FEATURED_DEFAULT_COUNT,
   resolveBundleIds,
   resolveFeaturedItemIds,
+  STOREFRONT_SECTIONS,
   type StorefrontConfig,
   type StorefrontSection,
 } from '@packages/shared/storefront'
@@ -337,7 +338,9 @@ export function Storefront({
               </p>
             ) : null}
 
-            {config.sections.map((section) => {
+            {STOREFRONT_SECTIONS.map((key) => {
+              const section = config.sections.find((item) => item.key === key)
+              if (!section) return null
               if (section.key === 'menu') return commerce ? part('menu', menu) : null
               if (searching) return null
               return optional({ key: section.key, visible: section.visible }, page[section.key])

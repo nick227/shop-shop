@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ItemResponse } from '@api/types'
-import { defaultStorefrontConfig, type StorefrontConfig } from '@packages/shared/storefront'
+import { defaultStorefrontConfig, STOREFRONT_SECTIONS, type StorefrontConfig } from '@packages/shared/storefront'
 import type { MenuSection } from '@shared/lib/menu/menuSections'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import { Storefront } from './Storefront'
@@ -211,7 +211,7 @@ describe('Storefront', () => {
     expect(screen.queryByText('Family Meal')).not.toBeInTheDocument()
   })
 
-  it('renders sections in the one configured order, menu included', () => {
+  it('renders sections in STOREFRONT_SECTIONS order, hiding the ones turned off', () => {
     const base = defaultStorefrontConfig()
     const config: StorefrontConfig = {
       ...base,
@@ -227,8 +227,9 @@ describe('Storefront', () => {
         { key: 'updates', visible: true },
       ],
     }
+    const hidden = new Set(['categories', 'gallery'])
     const { container } = renderStorefront({ config })
-    expect(sectionOrder(container)).toEqual(['header', 'ordering', 'featured', 'about', 'menu', 'mosaic', 'announcements', 'bundles', 'updates'])
+    expect(sectionOrder(container)).toEqual(['header', 'ordering', ...STOREFRONT_SECTIONS.filter((key) => !hidden.has(key))])
     expect(screen.queryByRole('heading', { name: 'Menu', level: 2 })).not.toBeInTheDocument()
   })
 

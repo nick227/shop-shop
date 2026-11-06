@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defaultStorefrontConfig, type StorefrontConfig } from '@packages/shared/storefront'
+import { defaultStorefrontConfig, STOREFRONT_SECTIONS, type StorefrontConfig } from '@packages/shared/storefront'
 import StorefrontEditorPage from './StorefrontEditor.page'
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
@@ -119,7 +119,7 @@ describe('StorefrontEditorPage', () => {
     expect(screen.getByRole('navigation', { name: 'Storefront parts' })).toBeInTheDocument()
   })
 
-  it('reorders every block, including the menu, from one list', async () => {
+  it('shows the preview in STOREFRONT_SECTIONS order', async () => {
     renderEditor()
     await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Harbor' }))
@@ -130,11 +130,9 @@ describe('StorefrontEditorPage', () => {
     const outline = screen.getByRole('navigation', { name: 'Storefront parts' })
     const order = () =>
       [...preview.querySelectorAll('[data-storefront-section]')].map((el) => el.getAttribute('data-storefront-section'))
-    const before = order()
+    expect(order()).toEqual(['header', 'ordering', ...STOREFRONT_SECTIONS])
     expect(within(outline).queryByRole('button', { name: 'Hide Menu' })).not.toBeInTheDocument()
-    expect(before.indexOf('menu')).toBeGreaterThan(before.indexOf('categories'))
-    await userEvent.click(within(outline).getByRole('button', { name: 'Move Menu up' }))
-    expect(order().indexOf('menu')).toBe(before.indexOf('menu') - 1)
+    expect(within(outline).queryByRole('button', { name: /Move / })).not.toBeInTheDocument()
 
     await userEvent.click(within(outline).getByRole('button', { name: 'Hide Featured products' }))
     expect(within(outline).getByRole('button', { name: 'Show Featured products' })).toBeInTheDocument()

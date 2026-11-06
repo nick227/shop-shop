@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   STOREFRONT_LIMITS,
   STOREFRONT_PALETTES,
+  STOREFRONT_SECTIONS,
   contrastRatio,
   defaultStorefrontConfig,
   normalizeStorefrontConfig,
@@ -30,42 +31,28 @@ describe('normalizeStorefrontConfig', () => {
     expect(normalizeStorefrontConfig({ brand: { paletteId: 'custom', primary: 'red', accent: '#00aa00' } }).brand.paletteId).toBe('market')
   })
 
-  it('keeps one section list, including the menu, and still reads the older two lists', () => {
+  it('orders sections from STOREFRONT_SECTIONS and keeps saved visibility', () => {
     const config = normalizeStorefrontConfig({
       sections: {
         beforeMenu: [{ key: 'featured', visible: false }, { key: 'featured' }, { key: 'about' }, { key: 'bundles' }],
-        afterMenu: [{ key: 'gallery' }],
+        afterMenu: [{ key: 'gallery', visible: false }],
       },
     })
-    expect(config.sections.map((s) => `${s.key}:${s.visible}`)).toEqual([
-      'featured:false',
-      'about:true',
-      'bundles:true',
-      'menu:true',
-      'gallery:true',
-      'mosaic:true',
-      'announcements:true',
-      'categories:true',
-      'updates:true',
-    ])
+    expect(config.sections.map((s) => s.key)).toEqual([...STOREFRONT_SECTIONS])
+    expect(config.sections.find((s) => s.key === 'featured')?.visible).toBe(false)
+    expect(config.sections.find((s) => s.key === 'gallery')?.visible).toBe(false)
+    expect(config.sections.find((s) => s.key === 'about')?.visible).toBe(true)
+    expect(config.sections.find((s) => s.key === 'menu')?.visible).toBe(true)
+
     const reordered = normalizeStorefrontConfig({
       sections: [
         { key: 'gallery', visible: true },
         { key: 'menu', visible: false },
-        { key: 'about', visible: true },
+        { key: 'about', visible: false },
       ],
     })
-    expect(reordered.sections.map((s) => s.key)).toEqual([
-      'gallery',
-      'menu',
-      'about',
-      'mosaic',
-      'announcements',
-      'bundles',
-      'featured',
-      'categories',
-      'updates',
-    ])
+    expect(reordered.sections.map((s) => s.key)).toEqual([...STOREFRONT_SECTIONS])
+    expect(reordered.sections.find((s) => s.key === 'about')?.visible).toBe(false)
     expect(reordered.sections.find((s) => s.key === 'menu')?.visible).toBe(true)
   })
 

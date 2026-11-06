@@ -70,7 +70,7 @@ BusinessNavigation     back link and city › neighborhood › category › name
 BusinessHeader         logo or initials, name, tagline, rating, address, Call, Directions, Website, Share
 OrderingStrip          taking orders, open/closed, pickup, delivery
 MenuBar                only when more than one section or more than 6 items
-sections               one list from `STOREFRONT_SECTIONS`, menu included, in the saved order
+sections               one list from `STOREFRONT_SECTIONS`, menu included. Saved configs can hide a block, not reorder it.
 CartBar                live commerce only
 ItemSheet              ?item= on the live page
 ```

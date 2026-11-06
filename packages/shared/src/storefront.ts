@@ -17,17 +17,17 @@ export type StorefrontFont = 'modern' | 'editorial' | 'bold'
 export type StorefrontPresentation = 'auto' | 'grid' | 'list'
 
 /**
- * Every block of the page that can be reordered, including the menu.
- * `STOREFRONT_SECTIONS` is their default order. A saved config may list them differently.
+ * Every block of the page, including the menu, in the only order the editor and the public page use.
+ * A saved config can hide a block. It cannot change this order.
  */
 export const STOREFRONT_SECTIONS = [
   'about',
-  'mosaic',
   'announcements',
   'bundles',
   'featured',
   'categories',
   'menu',
+  'mosaic',
   'gallery',
   'updates',
 ] as const
@@ -218,41 +218,26 @@ function safeUrl(value: unknown): string | null {
   }
 }
 
-function sectionList<K extends string>(value: unknown, keys: readonly K[]): SectionSetting<K>[] {
-  const seen = new Set<K>()
-  const out: SectionSetting<K>[] = []
-  if (Array.isArray(value)) {
-    for (const raw of value) {
-      if (!isRecord(raw)) continue
-      const key = raw.key as K
-      if (!keys.includes(key) || seen.has(key)) continue
-      seen.add(key)
-      out.push({ key, visible: raw.visible !== false })
-    }
-  }
-  // Sections added to the platform later appear, shown, at the end.
-  for (const key of keys) if (!seen.has(key)) out.push({ key, visible: true })
-  return out
-}
-
-/**
- * One ordered list. Older configs stored two lists with the menu fixed between them;
- * those are read in that order so a saved page does not jump.
- */
+/** Saved visibility only. Order always comes from `STOREFRONT_SECTIONS`. */
 function storefrontSections(raw: unknown): SectionSetting<StorefrontSection>[] {
   const legacy = isRecord(raw) ? raw : null
-  const value = Array.isArray(raw)
+  const saved = Array.isArray(raw)
     ? raw
     : legacy
       ? [
           ...(Array.isArray(legacy.beforeMenu) ? legacy.beforeMenu : []),
-          { key: 'menu', visible: true },
           ...(Array.isArray(legacy.afterMenu) ? legacy.afterMenu : []),
         ]
-      : undefined
-  return sectionList(value, STOREFRONT_SECTIONS).map((section) =>
-    section.key === 'menu' ? { key: 'menu', visible: true } : section,
-  )
+      : []
+  const visible = new Map<string, boolean>()
+  for (const item of saved) {
+    if (!isRecord(item) || typeof item.key !== 'string' || visible.has(item.key)) continue
+    visible.set(item.key, item.visible !== false)
+  }
+  return STOREFRONT_SECTIONS.map((key) => ({
+    key,
+    visible: key === 'menu' ? true : visible.get(key) ?? true,
+  }))
 }
 
 export function normalizeStorefrontConfig(raw: unknown, refs?: StorefrontRefs): StorefrontConfig {

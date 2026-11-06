@@ -1,8 +1,8 @@
 /**
  * PageOutline - the storefront as one list, top to bottom. Brand and ordering stay put.
- * Every other block, including the menu, can be reordered here. Optional blocks can be hidden.
+ * The remaining blocks follow `STOREFRONT_SECTIONS`. Optional blocks can be hidden.
  */
-import { ArrowDown, ArrowUp, ChevronRight, Eye, EyeOff } from 'lucide-react'
+import { ChevronRight, Eye, EyeOff } from 'lucide-react'
 import {
   normalizeStorefrontConfig,
   STOREFRONT_SECTION_LABELS,
@@ -12,7 +12,6 @@ import {
 } from '@packages/shared/storefront'
 import type { StorefrontPartKey } from '@features/storefront/Storefront'
 import { cn } from '@shared/lib/cn'
-import { moveInList } from './controls'
 
 export type PanelKey = 'brand' | 'mosaic' | 'announcements' | 'featured' | 'bundles' | 'menu' | 'business'
 
@@ -64,15 +63,12 @@ export function PageOutline({ draft, summary, onOpen, onChange }: {
             label={STOREFRONT_SECTION_LABELS[section.key]}
             detail={summary[section.key]}
             visible={section.visible}
-            first={index === 0}
-            last={index === sections.length - 1}
             onOpen={() => onOpen(section.key)}
             onToggle={
               section.key === 'menu'
                 ? undefined
                 : () => change(sections.map((s, i) => (i === index ? { ...s, visible: !s.visible } : s)))
             }
-            onMove={(offset) => change(moveInList(sections, index, offset))}
           />
         ))}
       </ol>
@@ -102,15 +98,12 @@ function FixedRow({ label, detail, onOpen }: {
   )
 }
 
-function SectionRow({ label, detail, visible, first, last, onOpen, onToggle, onMove }: {
+function SectionRow({ label, detail, visible, onOpen, onToggle }: {
   readonly label: string
   readonly detail?: string
   readonly visible: boolean
-  readonly first: boolean
-  readonly last: boolean
   readonly onOpen: () => void
   readonly onToggle?: () => void
-  readonly onMove: (offset: -1 | 1) => void
 }) {
   const icon = 'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-30'
   return (
@@ -121,14 +114,6 @@ function SectionRow({ label, detail, visible, first, last, onOpen, onToggle, onM
           <span className="block truncate text-xs text-muted-foreground">{visible ? detail ?? 'Shown' : 'Hidden'}</span>
         </span>
       </button>
-      <span className="flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-        <button type="button" className={icon} disabled={first} onClick={() => onMove(-1)} aria-label={`Move ${label} up`}>
-          <ArrowUp className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" className={icon} disabled={last} onClick={() => onMove(1)} aria-label={`Move ${label} down`}>
-          <ArrowDown className="h-3.5 w-3.5" />
-        </button>
-      </span>
       {onToggle ? (
         <button
           type="button"
