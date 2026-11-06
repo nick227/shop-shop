@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import Fastify, { FastifyInstance } from 'fastify'
 import { registerAllResources } from '../routes/loader.js'
 import { ALL_RESOURCES } from '../resources/index.js'
-import { authenticate } from '../middleware/auth.js'
+import { authenticate, optionalAuthenticate } from '../middleware/auth.js'
 import { requireRole } from '../middleware/rbac.js'
 import {
   createAuthenticatedUser,
@@ -75,6 +75,8 @@ describe('Enrolled vendors - store functionality', () => {
     // Register middleware
     app.decorate('authenticate', authenticate)
     app.decorate('requireRole', requireRole)
+    // As in index.ts: a token, when present, identifies the caller on public routes.
+    app.addHook('preHandler', optionalAuthenticate)
     
     // Register all resource routes
     await registerAllResources(app, ALL_RESOURCES)
@@ -402,17 +404,15 @@ describe('Enrolled vendors - store functionality', () => {
       expect(Array.isArray(body.data)).toBe(true)
     })
 
-    it('should include stripe fields (nullable) in response', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/stores/${publicStore.id}`,
-      })
+    it('keeps payment-account fields out of the public response and in the owner’s', async () => {
+      const anonymous = JSON.parse((await app.inject({ method: 'GET', url: `/stores/${publicStore.id}` })).body)
+      expect(anonymous).not.toHaveProperty('stripeAccountId')
+      expect(anonymous).not.toHaveProperty('stripeOnboarded')
+      expect(anonymous).not.toHaveProperty('taxId')
 
-      const store = JSON.parse(response.body)
-      // Stripe fields are included but initially null
-      // This is expected - fields exist in schema but are optional
-      expect(store).toHaveProperty('stripeAccountId')
-      expect(store.stripeAccountId).toBeNull()
+      const owner = await app.inject({ method: 'GET', url: `/stores/${publicStore.id}`, headers: authHeaders(regularUser.token) })
+      expect(owner.statusCode).toBe(200)
+      expect(JSON.parse(owner.body)).toHaveProperty('stripeAccountId', null)
     })
   })
 

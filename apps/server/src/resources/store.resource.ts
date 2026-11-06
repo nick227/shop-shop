@@ -13,6 +13,7 @@ import { checkStoreActivationRequirements } from '@packages/db/services'
 import { recordStoreCoordinates } from '../services/store-coordinates.js'
 import { getStoreReadiness } from '../services/store-readiness.service.js'
 import { rankDeliveryFirst, wantsDeliveryFirst, withFulfillment } from '../services/store-fulfillment.service.js'
+import { ownsStore, toPublicStore, type StoreViewer } from './store-public.dto.js'
 
 // ========================================
 // Store Resource Definition
@@ -124,7 +125,18 @@ async function presentStorePage<T extends { id: string }>(stores: T[], page: num
   return { data: await attachStoreMedia(ordered.slice(start, start + limit)), total: ordered.length }
 }
 
-async function buildStoreListFilters(filters: Record<string, unknown>): Promise<Record<string, unknown>> {
+/** The owner, or anyone allowed to administer stores, sees the full record. Everyone else sees `toPublicStore`. */
+export async function canSeeFullStore(viewer: StoreViewer | undefined, ownerUserId: unknown): Promise<boolean> {
+  if (!viewer?.userId) return false
+  if (ownsStore(viewer, ownerUserId)) return true
+  return (await getAccountCapabilities(viewer.userId)).canAdministerStores
+}
+
+/**
+ * `ownerUserId` lists a vendor's own stores, drafts included, only for that vendor or an admin.
+ * For anyone else it is just another filter on the public marketplace.
+ */
+async function buildStoreListFilters(filters: Record<string, unknown>, viewer?: StoreViewer): Promise<Record<string, unknown>> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   // `delivery` ranks results in afterList; it never narrows them.
   const { latitude, longitude, radiusMiles, city, state, zip, scope, place, q, browse, delivery, ...rest } = filters
@@ -132,18 +144,24 @@ async function buildStoreListFilters(filters: Record<string, unknown>): Promise<
   void place
   void delivery
   const prismaFilters: Record<string, unknown> = { ...rest }
+  const ownerView = Boolean(prismaFilters.ownerUserId) && await canSeeFullStore(viewer, prismaFilters.ownerUserId)
+  if (!ownerView) {
+    // The public marketplace decides publication and status; a caller can't widen it.
+    delete prismaFilters.status
+    delete prismaFilters.isPublished
+  }
 
-  if (!prismaFilters.ownerUserId && !prismaFilters.status) {
+  if (!ownerView && !prismaFilters.status) {
     prismaFilters.status = 'ACTIVE'
   }
-  if (!prismaFilters.ownerUserId && prismaFilters.isPublished === undefined) {
+  if (!ownerView && prismaFilters.isPublished === undefined) {
     prismaFilters.isPublished = true
   }
   if (typeof prismaFilters.isPublished === 'string') {
     prismaFilters.isPublished = prismaFilters.isPublished === 'true'
   }
 
-  if (!prismaFilters.ownerUserId) {
+  if (!ownerView) {
     addAndFilter(prismaFilters, PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION as Record<string, unknown>)
   }
 
@@ -162,7 +180,7 @@ async function buildStoreListFilters(filters: Record<string, unknown>): Promise<
     addAndFilter(prismaFilters, textSearchFilter(BROWSE_KEYWORDS[browse] ?? [browse]))
   }
 
-  if (!prismaFilters.ownerUserId) {
+  if (!ownerView) {
     const storeList = await prisma.store.findMany({
       where: prismaFilters,
       select: { id: true },
@@ -340,10 +358,10 @@ export const storeResource = defineResource({
       // Emit domain event
       await eventBus.emit(DomainEvents.STORE_CREATED, result)
     },
-    beforeList: async (filters) => {
-      return buildStoreListFilters(filters as Record<string, unknown>)
+    beforeList: async (filters, context) => {
+      return buildStoreListFilters(filters as Record<string, unknown>, context as StoreViewer | undefined)
     },
-    afterRead: async (result) => {
+    afterRead: async (result, context) => {
       // Include media assets and public tags for single store read
       const store = result as {
         id: string
@@ -373,15 +391,29 @@ export const storeResource = defineResource({
           store.stripeChargesEnabled,
       )
       const [{ fulfillment }] = await withFulfillment([result as { id: string }])
-      return {
+      const full = {
         ...(result as Record<string, unknown>),
         mediaAssets,
         acceptsOnlineCardPayments,
         fulfillment,
         tags: storeTagRows.map((row) => row.tag),
       }
+      const ownerUserId = (result as { ownerUserId?: unknown }).ownerUserId
+      return (await canSeeFullStore(context as StoreViewer | undefined, ownerUserId)) ? full : toPublicStore(full)
     },
     afterList: async (result, context) => {
+      const listed = await listStores(result, context)
+      const filters = (context as unknown as { filters?: Record<string, unknown> })?.filters || {}
+      const viewer = context as StoreViewer | undefined
+      // Full rows only on a vendor's own list (or for an admin); every other list is public.
+      if (filters.ownerUserId && await canSeeFullStore(viewer, filters.ownerUserId)) return listed
+      return { ...listed, data: listed.data.map((row) => toPublicStore(row as Record<string, unknown>)) }
+    },
+  },
+})
+
+/** The store list before it is shaped for the viewer: location scope, delivery ranking, paging, media. */
+async function listStores(result: unknown, context: unknown): Promise<{ data: unknown[]; total: number }> {
       const listResult = result as { data: Array<{
         id: string
         latitude?: number | null
@@ -397,7 +429,7 @@ export const storeResource = defineResource({
       const city = typeof filters.city === 'string' ? filters.city.trim() : ''
       const state = typeof filters.state === 'string' ? filters.state.trim() : ''
       const deliveryFirst = wantsDeliveryFirst(filters.delivery)
-      const hookContext = context as unknown as {
+      const hookContext = context as unknown as StoreViewer & {
         page?: number
         limit?: number
         orderBy?: Record<string, unknown>
@@ -406,7 +438,7 @@ export const storeResource = defineResource({
       const page = Math.max(Number(hookContext.page) || 1, 1)
       const limit = Math.max(Number(hookContext.limit) || 20, 1)
       const loadAll = async (extra?: Record<string, unknown>) => {
-        const where = await buildStoreListFilters(filters)
+        const where = await buildStoreListFilters(filters, hookContext)
         addAndFilter(where, extra)
         return prisma.store.findMany({ where, orderBy: hookContext.orderBy || { createdAt: 'desc' } })
       }
@@ -437,6 +469,4 @@ export const storeResource = defineResource({
 
       const storesWithDistance = filterStoresForCoordinateSearch(await loadAll(), latitude, longitude, radiusMiles)
       return presentStorePage(storesWithDistance, page, limit, deliveryFirst)
-    },
-  },
-})
+}
