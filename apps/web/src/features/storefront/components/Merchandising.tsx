@@ -1,6 +1,7 @@
 /**
  * Merchandising rows above the menu: bundles, featured products, announcements and category tiles.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { ReactNode } from 'react'
 import { Megaphone, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -57,7 +58,7 @@ function BundleTile({ bundle }: { readonly bundle: StorefrontBundle }) {
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
-      {bundle.imageUrl ? <img src={bundle.imageUrl} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" /> : null}
+      {bundle.imageUrl ? <img src={resolveBrowserAssetUrl(bundle.imageUrl)} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" /> : null}
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold leading-snug text-foreground">{bundle.name}</h3>
@@ -127,10 +128,10 @@ export function Announcements({ panels, itemsById }: {
             style={{ background: 'var(--sf-accent)', color: 'var(--sf-on-accent)' }}
           >
             {panel.kind === 'image' && panel.mediaUrl ? (
-              <img src={panel.mediaUrl} alt="" className="aspect-[16/7] w-full object-cover" />
+              <img src={resolveBrowserAssetUrl(panel.mediaUrl)} alt="" className="aspect-[16/7] w-full object-cover" />
             ) : null}
             {panel.kind === 'video' && panel.mediaUrl ? (
-              <video src={panel.mediaUrl} className="aspect-[16/7] w-full object-cover" muted loop playsInline autoPlay controls>
+              <video src={resolveBrowserAssetUrl(panel.mediaUrl)} className="aspect-[16/7] w-full object-cover" muted loop playsInline autoPlay controls>
                 <track kind="captions" />
               </video>
             ) : null}
@@ -173,7 +174,7 @@ export function CategoryTiles({ groups, onJump }: {
                 onClick={() => onJump(group.id)}
                 className="flex h-16 w-full items-center gap-3 rounded-xl border border-border bg-card p-2 pr-3 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                {pictured ? <img src={pictured} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : null}
+                {pictured ? <img src={resolveBrowserAssetUrl(pictured)} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : null}
                 <span className={pictured ? 'min-w-0' : 'min-w-0 pl-2'}>
                   <span className="block truncate text-sm font-semibold leading-tight">{group.name}</span>
                   <span className="text-xs text-muted-foreground">

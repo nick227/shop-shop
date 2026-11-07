@@ -3,6 +3,7 @@
  * StoreHeroCard - Full-screen hero card for store discovery
  * Single-focus UX: Bold, immersive design
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Button, Image } from '@shared/ui/primitives'
 import { parseStore } from '@api/types/helpers'
 import { formatDistance } from '@shared/lib/format'
@@ -28,7 +29,7 @@ export function StoreHeroCard({ store, onViewMenu }: StoreHeroCardProps) {
       {/* Hero image section */}
       <div className="">
 	        <Image
-	          src={imageUrl ?? '/placeholder-store-hero-' + store.id + '.jpg'}
+	          src={resolveBrowserAssetUrl(imageUrl ?? '/placeholder-store-hero-' + store.id + '.jpg')}
 	          alt={'' + store.name + ' hero image'}
 	          fallbackSeed={'hero-' + store.id + ''}
 	          containerClassName="w-full rounded-lg"

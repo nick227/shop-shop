@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState } from 'react'
 import type { MediaItem } from '@api/types'
 import { getYouTubeEmbedUrl } from '@shared/hooks/hooks/useMediaDetection'
@@ -46,7 +47,7 @@ function MediaCell({
   return (
     <div className={`overflow-hidden relative rounded-lg bg-muted ${className}`}>
       <Image
-        src={item.url ?? ''}
+        src={resolveBrowserAssetUrl(item.url ?? '')}
         alt={`Post ${postId} media ${index + 1}`}
         className="object-cover w-full h-full"
         fallbackSeed={item.url}
@@ -133,7 +134,7 @@ export const PostMedia = ({ media, postId, variant = 'default' }: PostMediaProps
           >
             {item.thumbnailUrl || item.thumbnail ? (
               <img
-                src={item.thumbnailUrl || item.thumbnail}
+                src={resolveBrowserAssetUrl(item.thumbnailUrl || item.thumbnail)}
                 alt={`Thumbnail ${index + 1}`}
                 className="object-cover w-full h-full"
               />

@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState } from 'react'
 import { Button, Card } from '@shared/ui/primitives'
 import { MediaPreview } from '../MediaPreview/MediaPreview'
@@ -20,7 +21,7 @@ function ComposerAvatar({ src, name, large }: { src?: string; name: string; larg
   if (src) {
     return (
       <img
-        src={src}
+        src={resolveBrowserAssetUrl(src)}
         alt={name}
         className={cn('rounded-full object-cover flex-shrink-0 ring-1 ring-border', frame)}
       />

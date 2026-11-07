@@ -2,6 +2,7 @@
  * Bundle Item Selector Component
  * Allows selection of items for a bundle with quantities
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@shared/ui/primitives'
 import { Input } from '@shared/ui/primitives'
@@ -204,7 +205,7 @@ export function BundleItemSelector({
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
                       {getItemImageUrl(item) ? (
-                        <img src={getItemImageUrl(item)} alt={item.title} className="w-full h-full object-cover" />
+                        <img src={resolveBrowserAssetUrl(getItemImageUrl(item))} alt={item.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-muted text-xl">
                           📦
@@ -323,7 +324,7 @@ export function BundleItemSelector({
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
                       {getItemImageUrl(item) ? (
-                        <img src={getItemImageUrl(item)} alt={item.title} className="w-full h-full object-cover" />
+                        <img src={resolveBrowserAssetUrl(getItemImageUrl(item))} alt={item.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-muted text-xl">
                           📦

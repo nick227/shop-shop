@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { RiverComment } from '@api/types'
 import { Button } from '@shared/ui/primitives'
 import { formatRelativeTime } from '@shared/lib/utils/format'
@@ -14,7 +15,7 @@ function CommentAvatar({ src, name }: { src?: string; name: string }) {
   if (src) {
     return (
       <img
-        src={src}
+        src={resolveBrowserAssetUrl(src)}
         alt={name}
         className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border"
       />

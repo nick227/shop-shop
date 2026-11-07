@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React, { useState } from 'react'
 
 interface CustomerMediaGalleryProps {
@@ -29,13 +30,13 @@ export const CustomerMediaGallery: React.FC<CustomerMediaGalleryProps> = ({
       <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
         {selectedMedia.kind === 'IMAGE' ? (
           <img
-            src={selectedMedia.url}
+            src={resolveBrowserAssetUrl(selectedMedia.url)}
             alt={selectedMedia.altText || ''}
             className="w-full h-full object-cover"
           />
         ) : (
           <video
-            src={selectedMedia.url}
+            src={resolveBrowserAssetUrl(selectedMedia.url)}
             className="w-full h-full object-cover"
             controls
             playsInline
@@ -61,14 +62,14 @@ export const CustomerMediaGallery: React.FC<CustomerMediaGalleryProps> = ({
             >
               {item.kind === 'IMAGE' ? (
                 <img
-                  src={item.url}
+                  src={resolveBrowserAssetUrl(item.url)}
                   alt={item.altText || ''}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                   <video
-                    src={item.url}
+                    src={resolveBrowserAssetUrl(item.url)}
                     className="w-full h-full object-cover"
                     muted
                     onMouseEnter={(e) => e.currentTarget.play()}

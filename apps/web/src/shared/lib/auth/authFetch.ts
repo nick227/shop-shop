@@ -7,6 +7,7 @@
  */
 
 import { useAuthStore } from '@stores/authStore'
+import { getApiBaseUrl } from '@shared/lib/apiBaseUrl'
 
 interface AuthFetchOptions extends RequestInit {
   // No additional options needed for now
@@ -16,22 +17,7 @@ interface AuthFetchResponse<T = unknown> extends Response {
   json(): Promise<T>
 }
 
-/**
- * Get base API URL consistently
- */
-export function getApiBaseUrl(): string {
-  const url = import.meta.env.VITE_API_URL
-  if (!url && import.meta.env.PROD) {
-    throw new Error('VITE_API_URL is required in production builds')
-  }
-  const origin =
-    url !== undefined && url !== ''
-      ? String(url)
-      : import.meta.env.DEV
-        ? ''
-        : 'http://localhost:3005'
-  return origin.replace(/\/$/, '').replace(/\/api(?:\/v1)?$/i, '')
-}
+export { getApiBaseUrl }
 
 /**
  * Build consistent API paths

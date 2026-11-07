@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useLocation } from 'react-router-dom'
 import { fulfillmentBadge } from '@features/stores/fulfillmentStatus'
 import { FulfillmentBadge } from './FulfillmentBadge'
@@ -35,7 +36,7 @@ function ProductFeedCard({ tile, onOpen }: { readonly tile: ProductTile; readonl
       >
         {tile.image ? (
           <div className="product-media-box">
-            <img src={tile.image} alt="" className="product-square-img" />
+            <img src={resolveBrowserAssetUrl(tile.image)} alt="" className="product-square-img" />
             <span className="product-price-tag">{tile.price}</span>
           </div>
         ) : (
@@ -85,7 +86,7 @@ function StoreFeedCard({ tile, onOpen }: { readonly tile: StoreTile; readonly on
       >
         {tile.image ? (
           <div className="business-media-box">
-            <img src={tile.image} alt="" className="feed-business-img" />
+            <img src={resolveBrowserAssetUrl(tile.image)} alt="" className="feed-business-img" />
           </div>
         ) : (
           <span className="store-mark" aria-hidden="true">{tile.name.slice(0, 1)}</span>
@@ -129,7 +130,7 @@ function StoryFeedCard({ tile, onOpen }: { readonly tile: StoryTile; readonly on
     >
       {tile.image ? (
         <div className="story-media-box">
-          <img src={tile.image} alt="" className="feed-story-img" />
+          <img src={resolveBrowserAssetUrl(tile.image)} alt="" className="feed-story-img" />
         </div>
       ) : null}
       <div className="feed-story-body">

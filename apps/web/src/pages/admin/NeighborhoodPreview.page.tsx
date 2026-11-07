@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@stores/authStore'
@@ -41,7 +42,7 @@ export default function AdminNeighborhoodPreviewPage() {
           <p className="discover-where">{area.city ? `${area.city.name}${area.city.state ? `, ${area.city.state}` : ''}` : 'Austin'}</p>
           {area.headline ? <p className="discover-lede">{area.headline}</p> : <p className="discover-lede">No headline yet.</p>}
           {area.about ? <p className="discover-lede">{area.about}</p> : <p className="discover-lede">No description yet. Drafts without a headline and description stay unpublished.</p>}
-          {area.imageUrls.length > 0 ? <div className="place-gallery">{area.imageUrls.map((url) => <img key={url} src={url} alt="" />)}</div> : null}
+          {area.imageUrls.length > 0 ? <div className="place-gallery">{area.imageUrls.map((url) => <img key={url} src={resolveBrowserAssetUrl(url)} alt="" />)}</div> : null}
           {area.postalCodes.length > 0 ? <p className="discover-lede">ZIP codes: {area.postalCodes.join(', ')}. A ZIP can cover more than one neighborhood.</p> : null}
           {area.published ? <Link to={`/neighborhoods/${area.slug}`}>Open the public page</Link> : null}
         </div>

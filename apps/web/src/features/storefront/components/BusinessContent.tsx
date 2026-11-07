@@ -2,6 +2,7 @@
  * Business content below the menu: about (story + hours), compact photos, updates.
  * Address lives in the identity strip under the hero — not repeated here.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { ReactNode } from 'react'
 import { publicStoreEmail } from '@features/stores/publicEmail'
 import { Mail, Phone } from 'lucide-react'
@@ -75,7 +76,7 @@ export function GallerySection({ media, storeName, excludeUrl }: {
         {photos.map((photo) => (
           <li key={photo.id}>
             <img
-              src={photo.url}
+              src={resolveBrowserAssetUrl(photo.url)}
               alt={photo.altText ?? `${storeName} photo`}
               loading="lazy"
               className="sf-gallery-thumb"

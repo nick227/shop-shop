@@ -4,17 +4,8 @@
  */
 import type { StoreWithDistance } from '@api/types'
 import { getImageUrl } from './image'
+import { resolveBrowserAssetUrl } from './resolveBrowserAssetUrl'
 
-function normalizeRemoteUrl(url: string): string {
-  // Fix the common "https:/" (missing slash) issue coming from some sources.
-  if (url.startsWith('https:/') && !url.startsWith('https://')) {
-    return url.replace(/^https:\//, 'https://')
-  }
-  if (url.startsWith('http:/') && !url.startsWith('http://')) {
-    return url.replace(/^http:\//, 'http://')
-  }
-  return url
-}
 
 
 /**
@@ -48,11 +39,11 @@ export function getStoreImageUrl(
   // Check for mediaAssets first (from backend with media relations)
   if (store.mediaAssets && store.mediaAssets.length > 0) {
     const firstImage = store.mediaAssets.find(asset => asset.kind === 'IMAGE' || !asset.kind)
-    if (firstImage?.url) return normalizeRemoteUrl(firstImage.url)
+    if (firstImage?.url) return resolveBrowserAssetUrl(firstImage.url)
   }
   
   // Fallback to imageUrl property (if it exists)
-  if (store.imageUrl) return normalizeRemoteUrl(store.imageUrl)
+  if (store.imageUrl) return resolveBrowserAssetUrl(store.imageUrl)
   
   // Final fallback: inline SVG (static /placeholder-*.jpg paths are not shipped)
   return getImageUrl(undefined, store.id, 'store')

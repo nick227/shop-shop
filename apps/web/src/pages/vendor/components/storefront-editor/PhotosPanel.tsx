@@ -2,6 +2,7 @@
  * Store photos for the hero and the compact gallery strip.
  * The first photo leads the hero; the rest fill the gallery thumbs.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Film, ImageIcon } from 'lucide-react'
 import { PanelSection, UploadButton } from './controls'
 import type { PanelProps } from './types'
@@ -20,7 +21,7 @@ export function PhotosPanel({ storeId, media, onMediaChanged }: PanelProps) {
           <ul className="grid grid-cols-4 gap-1.5">
             {photos.map((m, index) => (
               <li key={m.id} className="relative aspect-square overflow-hidden rounded-md bg-muted ring-1 ring-border">
-                <img src={m.url} alt="" className="h-full w-full object-cover" />
+                <img src={resolveBrowserAssetUrl(m.url)} alt="" className="h-full w-full object-cover" />
                 {index === 0 ? (
                   <span className="absolute inset-x-0 bottom-0 bg-background/85 px-1 py-0.5 text-[0.65rem] font-semibold">
                     Hero

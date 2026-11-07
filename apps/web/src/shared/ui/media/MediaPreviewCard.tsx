@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React, { useState } from 'react'
 
 interface MediaPreviewCardProps {
@@ -54,7 +55,7 @@ export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({
         {media.kind === 'IMAGE' ? (
           !imageError ? (
             <img
-              src={media.url}
+              src={resolveBrowserAssetUrl(media.url)}
               alt={media.altText || ''}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
@@ -70,7 +71,7 @@ export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center relative">
             <video
-              src={media.url}
+              src={resolveBrowserAssetUrl(media.url)}
               className="w-full h-full object-cover"
               muted
               onMouseEnter={(e) => e.currentTarget.play()}

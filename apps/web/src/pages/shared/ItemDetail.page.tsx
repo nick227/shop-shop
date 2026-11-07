@@ -4,6 +4,7 @@
  * Canonical route:
  *   /items/:itemId
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
@@ -120,7 +121,7 @@ export default function ItemDetailPage() {
         Back
       </button>
 
-      <img className="media-frame" src={photoSrc} alt="" />
+      <img className="media-frame" src={resolveBrowserAssetUrl(photoSrc)} alt="" />
 
       {photos.length > 1 ? (
         <div className="shelf-row">
@@ -132,7 +133,7 @@ export default function ItemDetailPage() {
               className="product-tile"
               aria-label={`Photo ${index + 1}`}
             >
-              <img src={photo.url} alt="" style={{ outline: index === photoIndex ? '1px solid var(--ink)' : undefined }} />
+              <img src={resolveBrowserAssetUrl(photo.url)} alt="" style={{ outline: index === photoIndex ? '1px solid var(--ink)' : undefined }} />
             </button>
           ))}
         </div>

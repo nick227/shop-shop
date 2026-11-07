@@ -13,6 +13,7 @@
  * - Performance optimized with proper memoization
  */
 
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React, { memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Home, Menu, X } from 'lucide-react'
@@ -197,7 +198,7 @@ const UnifiedHeaderComponent = memo<UnifiedHeaderProps>(({
       <>
         {config.logo.image && (
           <img
-            src={config.logo.image}
+            src={resolveBrowserAssetUrl(config.logo.image)}
             alt={config.logo.text || 'Logo'}
             className="h-8 w-8 object-contain"
           />

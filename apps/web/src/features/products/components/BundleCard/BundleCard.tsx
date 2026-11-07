@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState } from 'react'
 import { Card, Badge, Button, Image } from '@shared/ui/primitives'
 import { useAddBundleToCart } from '@shared/hooks/hooks/useAddBundleToCart'
@@ -48,7 +49,7 @@ export function BundleCard({ bundle, store }: BundleCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden border-border bg-card transition-colors hover:border-primary/40">
       <Image
-        src={bundle.imageUrl || ''}
+        src={resolveBrowserAssetUrl(bundle.imageUrl || '')}
         alt={bundle.name}
         fallbackSeed={bundle.id}
         aspectRatio="4/3"

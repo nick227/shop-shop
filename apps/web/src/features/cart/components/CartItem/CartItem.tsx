@@ -1,6 +1,7 @@
 /**
  * CartItem - Display cart line item with quantity controls
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Button, Image } from '@shared/ui/primitives'
 import type { CartItemData } from '@api/types'
 import { formatCurrency } from '@shared/lib/format'
@@ -37,7 +38,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove, isUpdating }: CartI
   return (
     <div className="flex gap-4 p-4 border-b last:border-0">
       <Image
-        src={imageUrl || '/placeholder-item-' + item.itemId + '.jpg'}
+        src={resolveBrowserAssetUrl(imageUrl || '/placeholder-item-' + item.itemId + '.jpg')}
         alt={item.titleSnapshot || 'Item'}
         fallbackSeed={item.itemId}
         aspectRatio="1/1"

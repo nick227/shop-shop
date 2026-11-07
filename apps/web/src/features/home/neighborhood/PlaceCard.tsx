@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState } from 'react'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
@@ -114,7 +115,7 @@ export function PlaceCard({
         to={place.href}
         className={`place-card is-neighborhood tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-quiet'}`}
       >
-        {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+        {photo ? <img src={resolveBrowserAssetUrl(photoUrl ?? '')} alt="" onError={() => setFailed(true)} /> : null}
         <span className="place-card-copy">
           <strong>{place.name}</strong>
           {place.meta ? <span>{place.meta}</span> : null}
@@ -130,7 +131,7 @@ export function PlaceCard({
         to={place.href}
         className={`place-card is-attraction tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-guide'}`}
       >
-        {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+        {photo ? <img src={resolveBrowserAssetUrl(photoUrl ?? '')} alt="" onError={() => setFailed(true)} /> : null}
         <span className="place-card-copy">
           <span className="place-card-kicker">{twoWords(place.categoryLabel)}</span>
           <strong>{place.name}</strong>
@@ -145,7 +146,7 @@ export function PlaceCard({
       to={place.href}
       className={`place-card is-business tone-${tone}${feature ? ' is-feature' : ''}${photo ? ' has-photo' : ' is-quiet'}`}
     >
-      {photo ? <img src={photoUrl ?? ''} alt="" onError={() => setFailed(true)} /> : null}
+      {photo ? <img src={resolveBrowserAssetUrl(photoUrl ?? '')} alt="" onError={() => setFailed(true)} /> : null}
       <span className="place-card-copy">
         <span className="place-card-kicker">{twoWords(place.categoryLabel)}</span>
         <strong>{place.name}</strong>

@@ -2,6 +2,7 @@
  * CartItemRow - Individual cart item with actions
  * Modern implementation with Tailwind
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Badge } from '@shared/ui/primitives'
 import { Button } from '@shared/ui/primitives'
 import { Plus, Minus, Trash2 } from 'lucide-react'
@@ -79,7 +80,7 @@ export function CartItemRow({ cartItem, storeId }: CartItemRowProps) {
       {/* Image */}
       <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
         <img
-          src={imageUrl || 'https://via.placeholder.com/80?text=' + encodeURIComponent(cartItem.titleSnapshot || 'Item') + ''}
+          src={resolveBrowserAssetUrl(imageUrl || 'https://via.placeholder.com/80?text=' + encodeURIComponent(cartItem.titleSnapshot || 'Item') + '')}
           alt={cartItem.titleSnapshot}
           className="w-full h-full object-cover"
         />

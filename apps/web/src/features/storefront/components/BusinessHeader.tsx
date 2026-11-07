@@ -2,6 +2,7 @@
  * Store identity: name, address, actions.
  * `tone="hero"` floats over the cover photo (home-hero style). `tone="plain"` is the fallback strip.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState } from 'react'
 import { Globe, MapPin, Navigation, Phone, Share2, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -74,7 +75,7 @@ export function BusinessHeader({ store, tagline, logoUrl, tone = 'plain' }: {
     <header className={cn('sf-header', onPhoto && 'is-hero')}>
       {logoUrl && !logoFailed ? (
         <img
-          src={logoUrl}
+          src={resolveBrowserAssetUrl(logoUrl)}
           onError={() => setLogoFailed(true)}
           alt={`${store.name} logo`}
           className="sf-header-mark h-11 w-11 rounded-xl object-cover ring-1 ring-white/25 sm:h-12 sm:w-12"

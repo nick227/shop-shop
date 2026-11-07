@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useEffect, useState } from 'react'
 import { FulfillmentBadge } from './FulfillmentBadge'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
@@ -73,7 +74,7 @@ export function DetailPanel({
       <aside className={entered ? 'detail-panel is-open' : 'detail-panel'} aria-label={title}>
         <button type="button" className="detail-close" aria-label="Close" onClick={onClose}><X className="h-5 w-5" /></button>
         <div className="detail-photo">
-          {image ? <img src={image} alt="" /> : <div className="brand-fall"><span>{title}</span></div>}
+          {image ? <img src={resolveBrowserAssetUrl(image)} alt="" /> : <div className="brand-fall"><span>{title}</span></div>}
         </div>
         <div className="detail-copy">
           {tile.kind === 'story' ? <p className="tile-kicker">{tile.kicker}</p> : null}
@@ -152,7 +153,7 @@ export function DetailPanel({
         </div>
       </aside>
       {showFly && image && fly ? (
-        <img src={image} alt="" className="detail-flyer" style={{ top: fly.top, left: fly.left, width: fly.width, height: fly.height }} />
+        <img src={resolveBrowserAssetUrl(image)} alt="" className="detail-flyer" style={{ top: fly.top, left: fly.left, width: fly.width, height: fly.height }} />
       ) : null}
     </>
   )

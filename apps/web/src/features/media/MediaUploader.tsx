@@ -1,6 +1,7 @@
 /**
  * MediaUploader - Upload and manage media files for stores and items
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useState, useRef } from 'react'
 import { Button } from '@shared/ui/primitives'
 import { useMediaUpload, useMediaList, useMediaDelete } from '@shared/hooks/hooks/vendor'
@@ -180,7 +181,7 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
                       if (media.kind === 'IMAGE') {
                         return (
                           <img
-                            src={media.url}
+                            src={resolveBrowserAssetUrl(media.url)}
                             alt={media.altText ?? 'Media'}
                             className="w-full h-full object-cover"
                           />
@@ -188,7 +189,7 @@ export function MediaUploader({ storeId, itemId, maxFiles = 10 }: MediaUploaderP
                       }
                       return (
                         <video
-                          src={media.url}
+                          src={resolveBrowserAssetUrl(media.url)}
                           className="w-full h-full object-cover"
                           controls
                         >

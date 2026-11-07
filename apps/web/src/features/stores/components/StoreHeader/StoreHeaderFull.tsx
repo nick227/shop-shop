@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type React from 'react'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import type { MediaApiResponse, StoreSocialLinks } from '@api/types'
@@ -29,13 +30,13 @@ function renderHeroMedia(
   storeName: string,
 ): React.ReactNode {
   if (!heroMedia) {
-    return <img src={storeImageUrl} alt={storeName} className="object-cover w-full h-full" />
+    return <img src={resolveBrowserAssetUrl(storeImageUrl)} alt={storeName} className="object-cover w-full h-full" />
   }
   if (heroMedia.kind === 'IMAGE') {
-    return <img src={heroMedia.url} alt={heroMedia.altText ?? storeName} className="object-cover w-full h-full" />
+    return <img src={resolveBrowserAssetUrl(heroMedia.url)} alt={heroMedia.altText ?? storeName} className="object-cover w-full h-full" />
   }
   return (
-    <video src={heroMedia.url} className="object-cover w-full h-full" controls playsInline>
+    <video src={resolveBrowserAssetUrl(heroMedia.url)} className="object-cover w-full h-full" controls playsInline>
       <track kind="captions" />
     </video>
   )

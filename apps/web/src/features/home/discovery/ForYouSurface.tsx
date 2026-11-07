@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { MouseEvent } from 'react'
 import { Heart } from 'lucide-react'
 import { getStoreRoute } from '@shared/lib/utils/navigation/routes'
@@ -173,7 +174,7 @@ export function ForYouSurface({
                 className={entry.image ? 'shelf-card' : 'shelf-card is-quiet'}
                 onClick={(event) => handleOpen(entry, event)}
               >
-                {entry.image ? <img src={entry.image} alt="" className="shelf-thumb" /> : null}
+                {entry.image ? <img src={resolveBrowserAssetUrl(entry.image)} alt="" className="shelf-thumb" /> : null}
                 <span className="shelf-copy">
                   <span className="surface-pill reason-pill">{entry.reason}</span>
                   <strong>{entry.title}</strong>

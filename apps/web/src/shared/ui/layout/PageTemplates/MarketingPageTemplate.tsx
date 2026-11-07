@@ -13,6 +13,7 @@
  * - Performance optimized with proper memoization
  */
 
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React, { memo } from 'react'
 import { MarketingLayout } from '@layouts/UnifiedLayout'
 import { PageHeader } from '@components/layout/PageHeader'
@@ -98,7 +99,7 @@ const MarketingPageTemplateComponent = memo<MarketingPageTemplateProps>(({
         {hero.background === 'image' && hero.image && (
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${hero.image})` }}
+            style={{ backgroundImage: `url(${resolveBrowserAssetUrl(hero.image)})` }}
           />
         )}
         

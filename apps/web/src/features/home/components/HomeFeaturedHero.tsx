@@ -1,6 +1,7 @@
 /**
  * Full-width editorial hero spotlight for the featured marketplace kitchen.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React from 'react'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { Flame } from 'lucide-react'
@@ -37,7 +38,7 @@ function HomeFeaturedHeroComponent({ store, isLoading }: HomeFeaturedHeroProps) 
     <section className="relative overflow-hidden rounded-2xl border border-border shadow-lg">
       <div className="relative aspect-[3/2] min-h-[260px] w-full sm:aspect-[16/7]">
         <img
-          src={img}
+          src={resolveBrowserAssetUrl(img)}
           alt={store.name}
           className="absolute inset-0 h-full w-full object-cover"
           loading="eager"

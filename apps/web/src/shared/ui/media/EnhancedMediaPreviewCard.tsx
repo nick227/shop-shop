@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React, { useState } from 'react'
 import { Play, Pause, Volume2, VolumeX, Trash2, Eye, Edit2 } from 'lucide-react'
 
@@ -84,7 +85,7 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
           !imageError ? (
             <>
               <img
-                src={media.url}
+                src={resolveBrowserAssetUrl(media.url)}
                 alt={media.altText || ''}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={() => setImageError(true)}
@@ -110,7 +111,7 @@ export const EnhancedMediaPreviewCard: React.FC<EnhancedMediaPreviewCardProps> =
         ) : (
           <div className="w-full h-full bg-gray-900 relative">
             <video
-              src={media.url}
+              src={resolveBrowserAssetUrl(media.url)}
               className="w-full h-full object-cover"
               muted={isMuted}
               loop

@@ -2,6 +2,7 @@
  * StoreItemsPage - the store's menu: every item, grouped by the store's own sections (empty and hidden
  * ones included, so the vendor can fill them), with each item's sales for the chosen period on the row.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { vendorPaths } from '@shared/lib/utils/navigation/vendorPaths'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -329,7 +330,7 @@ function MenuItemRow({ item, sales, salesLoaded, onEdit, onDelete, isDeleting }:
     <li className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/30">
       <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-3 text-left">
         {thumb ? (
-          <img src={thumb} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+          <img src={resolveBrowserAssetUrl(thumb)} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-muted">
             <Package className="h-5 w-5 text-muted-foreground" />

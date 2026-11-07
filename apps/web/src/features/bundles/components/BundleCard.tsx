@@ -2,6 +2,7 @@
  * Bundle Card Component
  * Displays bundle information with pricing and actions
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@shared/ui/primitives/ui/Card/Card'
 import { Button, Badge } from '@shared/ui/primitives'
 import { BundlePricing } from './BundlePricing'
@@ -39,7 +40,7 @@ export function BundleCard({
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
             {bundle.media && bundle.media.length > 0 ? (
               <img 
-                src={bundle.media[0]?.url} 
+                src={resolveBrowserAssetUrl(bundle.media[0]?.url)} 
                 alt={bundle.name}
                 className="w-full h-full object-cover"
               />

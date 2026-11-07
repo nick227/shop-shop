@@ -2,6 +2,7 @@
  * Brand: tagline, color palette (curated pairings or a checked custom pair), light or dark, heading font.
  * The business name and logo are the store's own details and are edited in settings.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, Check } from 'lucide-react'
 import {
@@ -34,7 +35,7 @@ export function BrandPanel({ storeId, draft, update, storeName, logoUrl }: Panel
       <PanelSection title="Name & tagline">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-10 w-10 rounded-lg object-cover ring-1 ring-border" />
+            <img src={resolveBrowserAssetUrl(logoUrl)} alt="" className="h-10 w-10 rounded-lg object-cover ring-1 ring-border" />
           ) : (
             <div className="h-10 w-10 rounded-lg bg-muted" aria-hidden />
           )}

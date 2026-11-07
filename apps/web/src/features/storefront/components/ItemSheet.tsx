@@ -2,6 +2,7 @@
  * ItemSheet - an item's details over the storefront: photos, description, quantity and add to cart.
  * A bottom sheet on phones, a centered panel on wider screens; the menu stays where the shopper left it.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { useEffect, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import type { ItemResponse } from '@api/types'
@@ -43,7 +44,7 @@ export function ItemSheet({ item, onClose }: { readonly item: ItemResponse | nul
             {photos.length > 0 ? (
               <div className="sf-row" style={{ gridAutoColumns: '100%' }}>
                 {photos.map((url) => (
-                  <img key={url} src={url} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <img key={url} src={resolveBrowserAssetUrl(url)} alt="" className="aspect-[4/3] w-full object-cover" />
                 ))}
               </div>
             ) : null}

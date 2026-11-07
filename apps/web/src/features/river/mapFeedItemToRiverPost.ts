@@ -1,6 +1,6 @@
 import type { RiverPost } from '@api/types'
 import type { MediaItem } from '@api/backend-types'
-import { resolveRiverAssetUrl } from '@/features/river/resolveRiverAssetUrl'
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 
 /** Wire shape from GET /api/v1/river/feed (matches RiverFeedItem JSON) and GET /api/v1/river/posts. */
 export interface RiverFeedItemWire {
@@ -49,9 +49,9 @@ function mapFeedMediaToMediaItems(
   for (const m of media) {
     if (!m.url) continue
     const t: MediaItem['type'] = m.type === 'video' ? 'video' : 'image'
-    const url = resolveRiverAssetUrl(m.url) ?? m.url
+    const url = resolveBrowserAssetUrl(m.url) ?? m.url
     const thumbRaw = m.thumbnailUrl || m.thumbnail
-    const thumbnail = resolveRiverAssetUrl(thumbRaw) ?? thumbRaw
+    const thumbnail = resolveBrowserAssetUrl(thumbRaw) ?? thumbRaw
     out.push({
       type: t,
       url,
@@ -69,7 +69,7 @@ export function mapFeedItemToRiverPost(item: RiverFeedItemWire): RiverPost {
   const storeId = item.actor?.storeId ?? item.storeId ?? item.links?.storeId ?? ''
   const storeName = item.actor?.displayName ?? item.storeName ?? ''
   const storeImageRaw = item.actor?.avatarUrl ?? item.storeImage ?? ''
-  const storeImage = resolveRiverAssetUrl(storeImageRaw) ?? storeImageRaw
+  const storeImage = resolveBrowserAssetUrl(storeImageRaw) ?? storeImageRaw
   const content = item.body ?? item.content ?? undefined
   const media = mapFeedMediaToMediaItems(item.media)
   

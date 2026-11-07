@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { cn } from '@shared/lib/cn'
 
 function initials(name: string): string {
@@ -16,7 +17,7 @@ interface StoreAvatarProps {
 export function StoreAvatar({ name, imageUrl, size = 'md', className }: StoreAvatarProps) {
   const box = size === 'sm' ? 'h-7 w-7 text-[11px]' : 'h-9 w-9 text-xs'
   if (imageUrl) {
-    return <img src={imageUrl} alt="" className={cn('shrink-0 rounded-lg object-cover', box, className)} />
+    return <img src={resolveBrowserAssetUrl(imageUrl)} alt="" className={cn('shrink-0 rounded-lg object-cover', box, className)} />
   }
   return (
     <span

@@ -2,6 +2,7 @@
  * Image utility functions;
  */
 import { generateColorFromSeed } from './colorGenerator'
+import { resolveBrowserAssetUrl } from './resolveBrowserAssetUrl'
 
 type PlaceholderType = 'item' | 'store' | 'product'
 
@@ -16,9 +17,9 @@ export function resolvePrimaryImageUrl(
 ): string | undefined {
   if (mediaAssets && mediaAssets.length > 0) {
     const firstImage = mediaAssets.find((asset) => asset.kind === 'IMAGE' || !asset.kind)
-    if (firstImage?.url) return firstImage.url
+    if (firstImage?.url) return resolveBrowserAssetUrl(firstImage.url)
   }
-  if (imageUrl) return imageUrl
+  if (imageUrl) return resolveBrowserAssetUrl(imageUrl)
   return undefined
 }
 

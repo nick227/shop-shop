@@ -2,6 +2,7 @@
  * BundleCard - Lightweight bundle display for customers
  * Reuses ItemCard styling and add-to-cart pattern
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Card, Badge, Button, Image } from '@shared/ui/primitives'
@@ -51,7 +52,7 @@ export function BundleCard({
   return (
     <Card className="item-card">
             <Image
-        src={bundle.media?.[0]?.url ?? '/placeholder-bundle-' + bundle.id + '.jpg'}    
+        src={resolveBrowserAssetUrl(bundle.media?.[0]?.url ?? '/placeholder-bundle-' + bundle.id + '.jpg')}    
         alt={bundle.name}
         fallbackSeed={bundle.id}
         aspectRatio="4/3"

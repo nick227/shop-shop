@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { MediaItem } from '@api/types'
 import { truncateUrl } from '@shared/lib/utils/media'
 
@@ -30,7 +31,7 @@ export const MediaPreview = ({
           {item.type === 'youtube' && (
             <div className="relative aspect-video">
               <img
-                src={item.thumbnail ?? FALLBACK_IMAGE}
+                src={resolveBrowserAssetUrl(item.thumbnail ?? FALLBACK_IMAGE)}
                 alt="YouTube video"
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -54,7 +55,7 @@ export const MediaPreview = ({
           {item.type === 'image' && (
             <div className="relative aspect-square">
               <img
-                src={item.url}
+                src={resolveBrowserAssetUrl(item.url)}
                 alt="Preview"
                 className="w-full h-full object-cover"
                 onError={(e) => {

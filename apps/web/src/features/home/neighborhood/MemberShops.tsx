@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import { DiscoveryLink as Link } from '@features/discovery-navigation/DiscoveryLink'
 import { ArrowUpRight } from 'lucide-react'
 import type { DirectoryListing } from './DirectoryList'
@@ -66,7 +67,7 @@ export function MemberShops({
         >
           {leadImage ? (
             <div className="featured-lead-media">
-              <img src={leadImage} alt="" />
+              <img src={resolveBrowserAssetUrl(leadImage)} alt="" />
             </div>
           ) : null}
           <div className="featured-lead-body">

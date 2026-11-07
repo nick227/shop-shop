@@ -2,6 +2,7 @@
  * Storefront hero — cover photo with identity floated over it (home-hero style), map beside at 3/1.
  * Phone stacks. No photo → typographic panel. No map → photo (or type) fills the band.
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { ReactNode } from 'react'
 import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
@@ -31,7 +32,7 @@ export function StorefrontHero({ store, imageUrl, showMap, identity }: {
       aria-label={imageUrl ? `${store.name} photo and location` : `${store.name}`}
     >
       <div className={featureClass}>
-        {imageUrl ? <img src={imageUrl} alt="" className="sf-hero-cover" /> : null}
+        {imageUrl ? <img src={resolveBrowserAssetUrl(imageUrl)} alt="" className="sf-hero-cover" /> : null}
         <div className="sf-hero-body">{identity}</div>
       </div>
       {map ? (

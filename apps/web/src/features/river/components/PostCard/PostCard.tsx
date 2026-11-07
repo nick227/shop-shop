@@ -1,3 +1,4 @@
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { RiverPost } from '@api/types'
 import { Card } from '@shared/ui/primitives'
 import { PostMedia } from '../PostMedia'
@@ -22,7 +23,7 @@ function StoreAvatar({ src, name, large }: { src?: string; name: string; large?:
   if (src) {
     return (
       <img
-        src={src}
+        src={resolveBrowserAssetUrl(src)}
         alt={name}
         className={cn('object-cover rounded-full ring-1 ring-border', frame)}
       />

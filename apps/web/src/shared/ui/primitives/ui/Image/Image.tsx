@@ -3,6 +3,7 @@
  * Global image component with skeleton loading, fallback handling, and lazy loading
  * Performance: Native lazy loading, memoized colors, optimized rendering
  */
+import { resolveBrowserAssetUrl } from '@shared/lib/utils/resolveBrowserAssetUrl'
 import type { ImgHTMLAttributes } from 'react'
 import { useMemo, memo } from 'react'
 import { useImageLoader } from '@shared/hooks/useImageLoader'
@@ -62,7 +63,7 @@ function ImageComponent({
     <div className={'relative overflow-hidden ' + containerClassName + ''} style={containerStyle}>
       {loading && <div className="absolute inset-0 bg-muted animate-pulse" />}
       <img
-        src={src}
+        src={resolveBrowserAssetUrl(src)}
         alt={alt}
         className={imageClassNames}
         loading={loadingProp} // Native lazy loading
