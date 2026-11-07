@@ -14,7 +14,7 @@ export function PhotosPanel({ storeId, media, onMediaChanged }: PanelProps) {
     <div className="space-y-5">
       <PanelSection
         title="Store photos"
-        description="The first photo is the hero cover beside the map. The rest show as a compact gallery under the page."
+        description="The first photo is the hero cover (name and address float over it, map beside). Extra photos fill the compact gallery below the menu."
       >
         {photos.length > 0 ? (
           <ul className="grid grid-cols-4 gap-1.5">

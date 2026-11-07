@@ -420,10 +420,28 @@
   }
 }
 
-/* Editor outline over the floated hero identity */
+/* Editor chrome: fill the cover so Edit sits on the photo, identity stays bottom-aligned */
 .sf-hero-body .sf-part {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: 100%;
   outline-offset: 4px;
   border-radius: 0.75rem;
+}
+.sf-hero-body .sf-part > div:first-child {
+  width: 100%;
+}
+.sf-hero-body .sf-part-edit {
+  top: 0.55rem;
+  right: 0.55rem;
+}
+.sf-hero-body .sf-part[data-highlighted],
+.sf-hero-body .sf-part:hover,
+.sf-hero-body .sf-part:focus-within {
+  outline-color: rgba(248, 245, 238, 0.7);
 }
 
 @media (prefers-reduced-motion: reduce) {

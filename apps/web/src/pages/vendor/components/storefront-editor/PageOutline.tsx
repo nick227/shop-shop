@@ -1,6 +1,6 @@
 /**
- * PageOutline - the storefront as one list, top to bottom. Brand and ordering stay put.
- * The remaining blocks follow `STOREFRONT_SECTIONS`. Optional blocks can be hidden.
+ * PageOutline - the storefront as one list, top to bottom.
+ * Fixed: hero brand, hero photos, ordering. Then `STOREFRONT_SECTIONS` (featured → menu → rest).
  */
 import { ChevronRight, Eye, EyeOff } from 'lucide-react'
 import {
@@ -53,8 +53,9 @@ export function PageOutline({ draft, summary, onOpen, onChange }: {
 
   return (
     <nav aria-label="Storefront parts" className="space-y-1">
-      <FixedRow label="Brand & colors" detail={summary.header} onOpen={() => onOpen('header')} />
-      <FixedRow label="Business details" detail={summary.ordering} onOpen={() => onOpen('ordering')} />
+      <FixedRow label="Hero & brand" detail={summary.header} onOpen={() => onOpen('header')} />
+      <FixedRow label="Hero photos" detail={summary.gallery} onOpen={() => onOpen('gallery')} />
+      <FixedRow label="Ordering details" detail={summary.ordering} onOpen={() => onOpen('ordering')} />
       <ol aria-label="Page sections" className="space-y-0.5 pt-3">
         {sections.map((section, index) => (
           <SectionRow

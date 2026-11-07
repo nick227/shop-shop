@@ -49,3 +49,7 @@ cart
 ```
 
 Rules: address lives on the hero cover. About keeps story and hours, not a second location card. Empty blocks stay unmounted. Search still hides everything except the menu.
+
+## Vendor editor
+
+Same `Storefront` renderer in `mode="preview"`. Outline fixed rows: Hero & brand, Hero photos, Ordering details — then `STOREFRONT_SECTIONS`. Preview shows the map beside the cover when the store has coordinates. Photos panel: first upload is the hero cover.

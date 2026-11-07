@@ -103,12 +103,13 @@ describe('StorefrontEditorPage', () => {
 
   it('shows a change in the preview at once, saves it as a draft, and publishes on request', async () => {
     renderEditor()
-    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Hero & brand/ }))
     const tagline = await screen.findByRole('textbox', { name: 'Tagline' })
     await userEvent.type(tagline, 'Breakfast all day')
 
     const preview = screen.getByRole('region', { name: 'Preview' })
     expect(within(preview).getByText('Breakfast all day')).toBeInTheDocument()
+    expect(preview.querySelector('.sf-hero-body')).toContainElement(within(preview).getByText('Breakfast all day'))
 
     await waitFor(() => expect(calls).toContain('PUT /api/stores/s1/storefront/draft'), { timeout: 3000 })
     expect(saved.brand.tagline).toBe('Breakfast all day')
@@ -128,20 +129,27 @@ describe('StorefrontEditorPage', () => {
     expect(screen.getByRole('navigation', { name: 'Storefront parts' })).toBeInTheDocument()
   })
 
-  it('shows the preview in STOREFRONT_SECTIONS order', async () => {
+  it('shows the preview in STOREFRONT_SECTIONS order with the new hero outline', async () => {
     renderEditor()
-    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Hero & brand/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Harbor' }))
     const preview = screen.getByRole('region', { name: 'Preview' })
     expect(preview.querySelector<HTMLElement>('.sf-root')!.style.getPropertyValue('--sf-primary')).toBe('#0b4f6c')
+    expect(preview.querySelector('.sf-hero')).toBeTruthy()
+    expect(preview.querySelector('.sf-hero-body')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Back to all parts' }))
 
     const outline = screen.getByRole('navigation', { name: 'Storefront parts' })
+    expect(within(outline).getByRole('button', { name: /Hero & brand/ })).toBeInTheDocument()
+    expect(within(outline).getByRole('button', { name: /Hero photos/ })).toBeInTheDocument()
+    expect(within(outline).getByRole('button', { name: /Ordering details/ })).toBeInTheDocument()
     const order = () =>
       [...preview.querySelectorAll('[data-storefront-section]')].map((el) => el.getAttribute('data-storefront-section'))
     expect(order()).toEqual(['header', 'ordering', ...STOREFRONT_SECTIONS])
+    expect(order().indexOf('featured')).toBeLessThan(order().indexOf('menu'))
     expect(within(outline).queryByRole('button', { name: 'Hide Menu' })).not.toBeInTheDocument()
     expect(within(outline).queryByRole('button', { name: /Move / })).not.toBeInTheDocument()
+    expect(within(outline).queryByText(/Media mosaic/)).not.toBeInTheDocument()
 
     await userEvent.click(within(outline).getByRole('button', { name: 'Hide Featured products' }))
     expect(within(outline).getByRole('button', { name: 'Show Featured products' })).toBeInTheDocument()
@@ -150,9 +158,16 @@ describe('StorefrontEditorPage', () => {
 
   it('discards unpublished changes back to the live storefront', async () => {
     renderEditor()
-    await userEvent.click(await screen.findByRole('button', { name: /Brand & colors/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Hero & brand/ }))
     await userEvent.type(await screen.findByRole('textbox', { name: 'Tagline' }), 'Draft idea')
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(calls).toContain('POST /api/stores/s1/storefront/discard'))
+  })
+
+  it('opens the photos panel for the hero cover', async () => {
+    renderEditor()
+    await userEvent.click(await screen.findByRole('button', { name: /Hero photos/ }))
+    expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument()
+    expect(screen.getByText(/first photo is the hero cover/i)).toBeInTheDocument()
   })
 })

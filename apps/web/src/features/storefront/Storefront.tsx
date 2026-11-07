@@ -42,7 +42,7 @@ export function Storefront({ blocks, className, ...input }: StorefrontProps) {
         <StorefrontHero
           store={store}
           imageUrl={page.heroImage}
-          showMap={mode === 'live'}
+          showMap
           identity={
             <StorefrontPart part="header">
               <BusinessHeader

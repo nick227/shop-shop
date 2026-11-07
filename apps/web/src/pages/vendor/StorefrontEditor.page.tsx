@@ -171,6 +171,17 @@ export default function StorefrontEditorPage() {
           />
 
           <section aria-label="Preview" className="min-w-0 space-y-2">
+            <PreviewToolbar
+              device={device}
+              onDevice={setDevice}
+              paletteId={normalized.brand.paletteId}
+              onPalette={(palette) =>
+                update((d) => ({
+                  ...d,
+                  brand: { ...d.brand, paletteId: palette.id, primary: palette.primary, accent: palette.accent },
+                }))
+              }
+            />
             <PreviewFrame device={device} focusPart={focusPart}>
               {(scrollRoot) => (
                 <Storefront
@@ -209,16 +220,17 @@ function outlineSummary(
   const palette = STOREFRONT_PALETTES.find((p) => p.id === config.brand.paletteId)?.name ?? 'Custom colors'
   const pins = config.featured.itemIds.length
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  const photos = data.media.filter((m) => m.kind !== 'VIDEO').length
   return {
-    header: [palette, config.brand.tagline || 'No tagline'].join(' · '),
-    ordering: 'Hours, contact, location',
+    header: [palette, config.brand.tagline || 'Name & address on the cover'].join(' · '),
+    ordering: 'Taking orders, hours, pickup & delivery',
     announcements: config.announcements.length > 0 ? plural(config.announcements.length, 'panel') : 'None yet',
     bundles: data.bundles.length > 0 ? plural(data.bundles.length, 'bundle') : 'None yet',
     featured: pins > 0 ? `${plural(pins, 'pin')}${config.featured.autoFill ? ' + popular' : ''}` : 'Popular items',
     categories: 'Shown for big menus',
     menu: `${plural(sections.filter((section) => section.isVisible).length, 'section')} · ${plural(itemCount, 'item')}`,
-    about: 'Description, hours, contact · address is under the hero',
-    gallery: plural(data.media.filter((m) => m.kind !== 'VIDEO').length, 'photo'),
+    about: 'Description, hours, contact',
+    gallery: photos > 0 ? `${plural(photos, 'photo')} · first is the hero` : 'Upload a cover photo',
     updates: 'Your River posts',
   }
 }
