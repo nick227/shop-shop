@@ -57,6 +57,19 @@ async function postalZipResponse(zip: string): Promise<GeocodeResponse | null> {
 }
 
 export async function geocodingRoutes(app: FastifyInstance) {
+  app.get('/geocode/locate', async (req, reply) => {
+    const parsed = z.object({ line1: z.string().trim().min(1), city: z.string().trim().min(1), state: z.string().trim().min(1), postalCode: z.string().regex(/^\d{5}(-\d{4})?$/) }).safeParse(req.query)
+    if (!parsed.success) return reply.code(400).send({ message: 'Complete address required' })
+    try {
+      const position = await addressProvider().locate(parsed.data)
+      // A ZIP centroid is not the store's location.
+      if (!position || position.precision === 'postal') return reply.code(404).send({ message: 'Street address not found' })
+      return reply.send(position)
+    } catch {
+      return reply.code(502).send({ message: 'Address lookup failed' })
+    }
+  })
+
   app.get('/geocode/reverse', async (req, reply) => {
     const parsed = z.object({ latitude: z.coerce.number().min(-90).max(90), longitude: z.coerce.number().min(-180).max(180) }).safeParse(req.query)
     if (!parsed.success) return reply.code(400).send({ message: 'Invalid coordinates' })

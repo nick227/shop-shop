@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
 import { LocateFixed } from 'lucide-react'
-import { reverseGeocode } from '@services/geocoding'
+import { locateStoreAddress, reverseGeocode } from '@services/geocoding'
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/primitives'
 import { StoreHoursEditor } from '@features/auth/components/StoreHoursEditor'
 import { US_STATES } from '@shared/lib/constants/usStates'
 import { maskUsZipInput } from '@shared/lib/utils/fieldInputMasks'
 import { type StoreFieldProps } from './storeFieldProps'
+import { locationError } from './locationError'
 import { StoreSectionTitle } from './StoreSectionTitle'
 
 export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
@@ -14,14 +15,14 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
     Boolean(addressStateCode) && !US_STATES.some((s) => s.code === addressStateCode)
   const [locating, setLocating] = useState(false)
   const [locationMessage, setLocationMessage] = useState('')
+  const [locationDetails, setLocationDetails] = useState('')
   const currentForm = useRef(formData)
   currentForm.current = formData
 
+  const hasAddress = () => [currentForm.current.addressStreet, currentForm.current.addressCity, currentForm.current.addressState, currentForm.current.addressZip].every(value => value?.trim())
+
   const useCurrentLocation = async () => {
-    if (!navigator.geolocation || window.isSecureContext === false) {
-      setLocationMessage('Location unavailable. Use HTTPS or enter coordinates manually.')
-      return
-    }
+    setLocationDetails('')
     setLocating(true)
     setLocationMessage('Locating…')
     const startingForm = currentForm.current
@@ -33,8 +34,9 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
       })
     })
     try {
+      if (!navigator.geolocation || window.isSecureContext === false) throw new Error('Device location unavailable')
       const position = await getPosition(true).catch((error: GeolocationPositionError) => {
-        if (error.code === 1) throw error
+        if (error.code === 1 || hasAddress()) throw error
         setLocationMessage('Retrying location…')
         return getPosition(false)
       })
@@ -43,7 +45,7 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
       setLocationMessage('Finding address…')
       try {
         const address = await reverseGeocode(position.coords.latitude, position.coords.longitude)
-        const fields = { addressStreet: address.line1, addressCity: address.city, addressState: address.state, addressZip: address.postalCode }
+        const fields = { addressStreet: address.line1, addressCity: address.city, addressState: address.state, addressZip: address.postalCode, addressCountry: address.country }
         for (const [field, value] of Object.entries(fields)) {
           const key = field as keyof typeof fields
           // Preserve edits made while location detection was pending.
@@ -55,10 +57,28 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
         setLocationMessage('Coordinates found. Enter address manually and save.')
       }
     } catch (error) {
-      const code = (error as GeolocationPositionError).code
-      setLocationMessage(code === 1 ? 'Location blocked. Allow access in browser and device settings.'
-        : code === 3 ? 'Location timed out. Retry or enter coordinates manually.'
-        : 'Location unavailable. Check device location settings or enter coordinates manually.')
+      if (hasAddress()) {
+        setLocationMessage('Finding store address…')
+        const address = currentForm.current
+        try {
+          const position = await locateStoreAddress({ line1: address.addressStreet, city: address.addressCity, state: address.addressState, postalCode: address.addressZip })
+          if (['addressStreet', 'addressCity', 'addressState', 'addressZip'].some(key => currentForm.current[key as keyof typeof address] !== address[key as keyof typeof address])) {
+            setLocationMessage('Address changed. Find location again.')
+            return
+          }
+          onChange('latitude', String(position.lat))
+          onChange('longitude', String(position.lng))
+          setLocationMessage('Location set from store address. Review and save.')
+        } catch {
+          setLocationMessage('Location not found. Check store address or enter coordinates.')
+          const failure = await locationError(error)
+          setLocationDetails(failure.details)
+        }
+      } else {
+        setLocationMessage('Enter street, city, state and ZIP, then retry.')
+        const failure = await locationError(error)
+        setLocationDetails(failure.details)
+      }
     } finally {
       setLocating(false)
     }
@@ -70,10 +90,11 @@ export function StoreLocationSection({ formData, onChange }: StoreFieldProps) {
         <StoreSectionTitle>Coordinates</StoreSectionTitle>
         <Button type="button" variant="primary" onClick={() => void useCurrentLocation()} disabled={locating}>
           <LocateFixed className="h-4 w-4" aria-hidden="true" />
-          {locating ? 'Locating…' : 'Use my location'}
+          {locating ? 'Locating…' : 'Find location'}
         </Button>
-        <p className="text-xs text-muted-foreground">Use at your store. Fills coordinates and address.</p>
+        <p className="text-xs text-muted-foreground">Uses device location or store address.</p>
         {locationMessage && <p role="status" className="text-sm text-muted-foreground">{locationMessage}</p>}
+        {locationDetails && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Location details</summary><p className="mt-1">{locationDetails}</p></details>}
         <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
           <Input label="Latitude" type="number" value={formData.latitude} onChange={(e) => onChange('latitude', e.target.value)} placeholder="40.7128" step="any" min={-90} max={90} />
           <Input label="Longitude" type="number" value={formData.longitude} onChange={(e) => onChange('longitude', e.target.value)} placeholder="-74.0060" step="any" min={-180} max={180} />

@@ -135,3 +135,9 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
   if (!response.ok) throw new Error('Address lookup unavailable')
   return response.json()
 }
+
+export async function locateStoreAddress(address: { line1: string; city: string; state: string; postalCode: string }): Promise<{ lat: number; lng: number }> {
+  const response = await fetch(`${apiOriginForRequests()}/geocode/locate?${new URLSearchParams(address)}`, { signal: AbortSignal.timeout(10_000) })
+  if (!response.ok) throw new Error('Address lookup failed')
+  return response.json()
+}
