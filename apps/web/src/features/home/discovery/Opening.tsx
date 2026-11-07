@@ -76,6 +76,9 @@ function chooseFeature(input: {
   if (store?.image) {
     return { image: store.image, pictured: store.name, action: { kind: 'store', label: `Visit ${store.name}`, store } }
   }
+  // Keep a photograph on the hero even when nearby shops still lack media.
+  const storyOnly = input.story ? realPhoto(input.story.image) : undefined
+  if (storyOnly) return { image: storyOnly, pictured: input.story?.storeName ?? input.story?.title }
   return {}
 }
 

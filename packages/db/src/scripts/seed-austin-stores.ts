@@ -1,7 +1,7 @@
 /**
  * Austin Area Store Seeding Script
  * Seeds stores near Austin ZIP 78758 with items and river posts
- * Uses picsum.photos for placeholder images (stock hosts do not satisfy marketplace media).
+ * Uses local `/uploads/seed/*.jpg` photos (copied from apps/web/public/editorial).
  *
  * Marketplace visibility (`checkStoreActivationRequirements` in storeActivation.service.ts):
  * each store must have required profile fields, ≥1 real IMAGE (not picsum/placehold/stock),
@@ -471,16 +471,29 @@ const POST_TEMPLATES = [
 
 const PASSWORD = 'Test123456!'
 
-// Helper function to generate variety of image URLs
-function generateImageUrls(baseSeed: string, count: number, width: number, height: number): string[] {
+const SEED_PHOTOS = [
+  '/uploads/seed/tacos-pastor.jpg',
+  '/uploads/seed/tacos-migas.jpg',
+  '/uploads/seed/burrito.jpg',
+  '/uploads/seed/brisket.jpg',
+  '/uploads/seed/coffee-latte.jpg',
+  '/uploads/seed/iced-coffee.jpg',
+  '/uploads/seed/bakery-pastry.jpg',
+  '/uploads/seed/fresh-bread.jpg',
+  '/uploads/seed/wood-pizza.jpg',
+  '/uploads/seed/farmers-produce.jpg',
+  '/uploads/seed/fresh-peaches.jpg',
+  '/uploads/seed/guacamole.jpg',
+  '/uploads/seed/ramen-bowl.jpg',
+] as const
+
+/** Local licensed seed photos (copied from apps/web/public/editorial into uploads/seed). */
+function generateImageUrls(baseSeed: string, count: number, _width: number, _height: number): string[] {
   const urls: string[] = []
-  const variations = ['', '-alt', '-detail', '-wide', '-closeup', '-interior', '-exterior', '-menu', '-food', '-atmosphere']
-  
+  let hash = 0
+  for (const char of baseSeed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   for (let i = 0; i < count; i++) {
-    const variation = variations[i % variations.length]
-    const randomWidth = width + Math.floor(random() * 100) - 50
-    const randomHeight = height + Math.floor(random() * 100) - 50
-    urls.push(`https://picsum.photos/seed/${baseSeed}${variation}/${randomWidth}/${randomHeight}.jpg`)
+    urls.push(SEED_PHOTOS[(hash + i) % SEED_PHOTOS.length]!)
   }
   return urls
 }
@@ -619,7 +632,7 @@ async function createBundleForStore(
         create: [
           {
             kind: MediaKind.IMAGE,
-            url: `https://picsum.photos/seed/${bundleTemplate.name.replace(/\s+/g, '')}/600/400.jpg`,
+            url: generateImageUrls(bundleTemplate.name, 1, 600, 400)[0]!,
             altText: `${bundleTemplate.name} bundle image`,
             sortIndex: 0,
           },
@@ -910,7 +923,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
       const numPosts = Math.floor(random() * 4) + 2
       for (let p = 0; p < numPosts; p++) {
         const postTemplate = POST_TEMPLATES[Math.floor(random() * POST_TEMPLATES.length)]
-        const postImageUrl = `https://picsum.photos/seed/${storeName.replace(/\s+/g, '')}-post-${p}/${postTemplate.imgWidth}/${postTemplate.imgHeight}.jpg`
+        const postImageUrl = generateImageUrls(`${storeName}-post-${p}`, 1, postTemplate.imgWidth, postTemplate.imgHeight)[0]!
         
         const post = await prisma.post.create({
           data: {
@@ -961,7 +974,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
 📍 Location: Austin, TX (near ZIP 78758)`)
   console.log(`   All stores within ~5 miles of 30.3764, -97.7078`)
   console.log(`
-🖼️  Images: All using https://picsum.photos/`)
+🖼️  Images: Local /uploads/seed editorial photos`)
   console.log(`
 🔑 Test Credentials:`)
   console.log(`   Password for all vendors: ${PASSWORD}`)
