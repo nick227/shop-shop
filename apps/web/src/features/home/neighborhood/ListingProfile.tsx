@@ -60,13 +60,9 @@ function directoryConfig(listing: Listing, images: readonly string[]): Storefron
   return {
     ...base,
     brand: { ...base.brand, tagline: listing.categoryLabel, paletteId: palette.id, primary: palette.primary, accent: palette.accent },
-    mosaic: { featuredItemId: null, tiles: images.map((_, index) => ({ type: 'media' as const, mediaId: `photo-${index}` })) },
     sections: base.sections.map((section) => ({
       ...section,
-      visible:
-        section.key === 'about' ||
-        (section.key === 'mosaic' && images.length > 0) ||
-        (section.key === 'gallery' && images.length > 0),
+      visible: section.key === 'about' || (section.key === 'gallery' && images.length > 1),
     })),
   }
 }

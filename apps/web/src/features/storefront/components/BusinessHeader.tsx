@@ -1,10 +1,11 @@
 /**
- * BusinessHeader - who the business is and how to reach it, before anything else:
- * logo, name, tagline, address, and call / directions / website / share.
+ * Store identity: name, address, actions.
+ * `tone="hero"` floats over the cover photo (home-hero style). `tone="plain"` is the fallback strip.
  */
 import { useState } from 'react'
 import { Globe, MapPin, Navigation, Phone, Share2, Star } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@shared/lib/cn'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 
 export function storeAddress(store: StoreHeaderStore): string {
@@ -36,20 +37,18 @@ function initials(name: string): string {
     .join('')
 }
 
-const action =
-  'inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary'
-
-export function BusinessHeader({ store, tagline, logoUrl }: {
+export function BusinessHeader({ store, tagline, logoUrl, tone = 'plain' }: {
   readonly store: StoreHeaderStore
   readonly tagline: string
   readonly logoUrl: string | null
+  readonly tone?: 'hero' | 'plain'
 }) {
   const address = storeAddress(store)
   const directions = directionsUrl(store)
   const website = websiteUrl(store)
   const rating = typeof store.averageRating === 'number' ? store.averageRating : null
-  // A logo that fails to load falls back to initials rather than an empty box.
   const [logoFailed, setLogoFailed] = useState(false)
+  const onPhoto = tone === 'hero'
 
   const share = async () => {
     const url = window.location.href
@@ -64,68 +63,74 @@ export function BusinessHeader({ store, tagline, logoUrl }: {
     }
   }
 
+  const action = cn(
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors',
+    onPhoto
+      ? 'border border-white/35 bg-black/35 text-white backdrop-blur-sm hover:bg-white hover:text-foreground'
+      : 'border border-border bg-background text-foreground hover:border-primary/50 hover:text-primary',
+  )
+
   return (
-    <header className="sf-header">
+    <header className={cn('sf-header', onPhoto && 'is-hero')}>
       {logoUrl && !logoFailed ? (
         <img
           src={logoUrl}
           onError={() => setLogoFailed(true)}
           alt={`${store.name} logo`}
-          className="h-16 w-16 rounded-2xl object-cover ring-1 ring-border sm:h-20 sm:w-20"
+          className="sf-header-mark h-11 w-11 rounded-xl object-cover ring-1 ring-white/25 sm:h-12 sm:w-12"
         />
-      ) : (
+      ) : !onPhoto ? (
         <div
-          className="sf-heading flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-bold sm:h-20 sm:w-20"
+          className="sf-header-mark sf-heading flex h-11 w-11 items-center justify-center rounded-xl text-base font-bold sm:h-12 sm:w-12"
           style={{ background: 'var(--sf-primary)', color: 'var(--sf-on-primary)' }}
           aria-hidden
         >
           {initials(store.name)}
         </div>
-      )}
+      ) : null}
 
       <div className="min-w-0 space-y-1">
-        <h1 className="sf-heading text-3xl font-bold leading-tight text-foreground text-balance sm:text-4xl">{store.name}</h1>
-        {/* A tagline if the vendor wrote one; otherwise the start of their description, so a new store still reads as finished. */}
-        {tagline || store.description ? (
-          <p className="max-w-2xl text-base text-muted-foreground line-clamp-2">{tagline || store.description}</p>
+        <h1 className="sf-heading text-[1.65rem] font-bold leading-[1.1] text-balance sm:text-[2rem]">{store.name}</h1>
+        {address ? (
+          <p className="sf-header-address flex min-w-0 items-start gap-1.5 text-sm font-medium">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 opacity-80" aria-hidden />
+            <span className="min-w-0">{address}</span>
+          </p>
         ) : null}
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <p className="sf-header-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           {rating !== null ? (
-            <span className="inline-flex items-center gap-1 font-medium text-foreground">
-              <Star className="h-4 w-4 fill-current" style={{ color: 'var(--sf-accent)' }} aria-hidden />
+            <span className="inline-flex items-center gap-1 font-medium">
+              <Star className="h-3.5 w-3.5 fill-current" style={onPhoto ? undefined : { color: 'var(--sf-accent)' }} aria-hidden />
               {rating.toFixed(1)}
             </span>
           ) : null}
-          {address ? (
-            <span className="inline-flex min-w-0 items-center gap-1">
-              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="truncate">{address}</span>
-            </span>
+          {tagline || store.description ? (
+            <span className="min-w-0 line-clamp-1 opacity-90">{tagline || store.description}</span>
           ) : null}
         </p>
       </div>
 
-      <div className="sf-header-actions -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label={`Contact ${store.name}`}>
+      <div className="sf-header-actions -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]" role="group" aria-label={`Contact ${store.name}`}>
         {store.phone ? (
           <a href={`tel:${store.phone}`} className={action}>
-            <Phone className="h-4 w-4" aria-hidden />
+            <Phone className="h-3.5 w-3.5" aria-hidden />
             Call
           </a>
         ) : null}
         {directions ? (
           <a href={directions} target="_blank" rel="noopener noreferrer" className={action}>
-            <Navigation className="h-4 w-4" aria-hidden />
+            <Navigation className="h-3.5 w-3.5" aria-hidden />
             Directions
           </a>
         ) : null}
         {website ? (
           <a href={website} target="_blank" rel="noopener noreferrer" className={action}>
-            <Globe className="h-4 w-4" aria-hidden />
+            <Globe className="h-3.5 w-3.5" aria-hidden />
             Website
           </a>
         ) : null}
         <button type="button" onClick={() => void share()} className={action}>
-          <Share2 className="h-4 w-4" aria-hidden />
+          <Share2 className="h-3.5 w-3.5" aria-hidden />
           Share
         </button>
       </div>

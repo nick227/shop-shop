@@ -32,11 +32,11 @@ export function OrderingStrip({ ordering, hours }: {
   const open = useMemo(() => hoursStatus(hours?.week, hours?.timezone ?? null), [hours])
 
   return (
-    <section aria-label="Ordering" className="border-y border-border py-3">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+    <section aria-label="Ordering" className="sf-ordering">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <span
-            className={cn('h-2.5 w-2.5 rounded-full', ordering.acceptingOrders ? 'bg-emerald-500' : 'bg-muted-foreground')}
+            className={cn('h-2 w-2 rounded-full', ordering.acceptingOrders ? 'bg-emerald-500' : 'bg-muted-foreground')}
             aria-hidden
           />
           {ordering.acceptingOrders ? 'Taking orders' : 'Not taking orders right now'}
@@ -45,14 +45,14 @@ export function OrderingStrip({ ordering, hours }: {
         {open ? (
           <button
             type="button"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             aria-expanded={showWeek}
             aria-controls="sf-week-hours"
             onClick={() => setShowWeek((shown) => !shown)}
           >
-            <Clock className="h-4 w-4" aria-hidden />
+            <Clock className="h-3.5 w-3.5" aria-hidden />
             <span className={cn(open.isOpen && 'font-medium text-foreground')}>{open.label}</span>
-            <ChevronDown className={cn('h-4 w-4 transition-transform', showWeek && 'rotate-180')} aria-hidden />
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showWeek && 'rotate-180')} aria-hidden />
           </button>
         ) : null}
 
@@ -60,9 +60,9 @@ export function OrderingStrip({ ordering, hours }: {
       </div>
 
       {ordering.message && !ordering.acceptingOrders ? (
-        <p className="mt-3 text-sm text-muted-foreground">{ordering.message}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{ordering.message}</p>
       ) : ordering.acceptingOrders && fulfillmentExplanation(fulfillmentOf(ordering)) ? (
-        <p className="mt-3 text-sm text-muted-foreground">{fulfillmentExplanation(fulfillmentOf(ordering))}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{fulfillmentExplanation(fulfillmentOf(ordering))}</p>
       ) : null}
 
       {showWeek && hours?.week ? <WeeklyHours id="sf-week-hours" week={hours.week} /> : null}

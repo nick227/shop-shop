@@ -13,26 +13,25 @@ import {
 import type { StorefrontPartKey } from '@features/storefront/Storefront'
 import { cn } from '@shared/lib/cn'
 
-export type PanelKey = 'brand' | 'mosaic' | 'announcements' | 'featured' | 'bundles' | 'menu' | 'business'
+export type PanelKey = 'brand' | 'photos' | 'announcements' | 'featured' | 'bundles' | 'menu' | 'business'
 
 /** Which settings open for each part of the page. */
 export const PART_PANEL: Record<StorefrontPartKey, PanelKey> = {
   header: 'brand',
   ordering: 'business',
-  mosaic: 'mosaic',
   announcements: 'announcements',
   bundles: 'bundles',
   featured: 'featured',
   categories: 'menu',
   menu: 'menu',
   about: 'business',
-  gallery: 'mosaic',
+  gallery: 'photos',
   updates: 'business',
 }
 
 export const PANEL_TITLES: Record<PanelKey, string> = {
   brand: 'Brand & colors',
-  mosaic: 'Photos & mosaic',
+  photos: 'Photos',
   announcements: 'Announcements',
   featured: 'Featured products',
   bundles: 'Bundles',

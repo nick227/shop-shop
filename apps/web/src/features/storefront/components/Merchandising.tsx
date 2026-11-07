@@ -17,8 +17,8 @@ export type StorefrontBundle = BundleCardProps['bundle']
 
 export function RowSection({ title, children, id }: { readonly title: string; readonly children: ReactNode; readonly id: string }) {
   return (
-    <section aria-labelledby={id} className="space-y-3">
-      <h2 id={id} className="sf-heading text-xl font-bold text-foreground">
+    <section aria-labelledby={id} className="space-y-2.5">
+      <h2 id={id} className="sf-heading text-lg font-bold text-foreground">
         {title}
       </h2>
       {children}
@@ -101,7 +101,7 @@ export function FeaturedRow({ items }: { readonly items: readonly ItemResponse[]
   if (items.length === 0) return null
   return (
     <RowSection title="Featured" id="sf-featured">
-      <div className="sf-row">
+      <div className="sf-row sf-row-featured">
         {items.map((item) => (
           <ProductTile key={item.id} item={item} variant="card" />
         ))}

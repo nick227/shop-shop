@@ -1,20 +1,19 @@
 /**
  * Storefront — the only public business page. Live shop, vendor preview, and directory profile.
  *
- * This file is the page order. Change a slot here.
- * What a configured block renders: `blocks.tsx` (`storefrontBlocks`, or the `blocks` prop).
- * Which products fill those blocks: `resolveCatalog.ts`.
- * Shopper actions and search: `useStorefrontPage.ts`.
- * Edit / Hide chrome: `parts.tsx`.
+ * Page order (see DESIGN.md):
+ *   nav → hero (identity over photo | map) → ordering → featured → search → menu → rest → cart
  *
- * Fixed, top to bottom: navigation, header, ordering, menu bar, configured blocks, cart.
  * Configured blocks follow `STOREFRONT_SECTIONS`. A config can hide one. It cannot reorder them.
- * Search keeps the menu and unmounts every other configured block.
+ * The menu bar is injected immediately before the menu block. Search keeps the menu and
+ * unmounts every other configured block.
  */
+import { Fragment } from 'react'
 import { STOREFRONT_SECTIONS, type StorefrontSection } from '@packages/shared/storefront'
 import { BusinessNavigation } from '@features/discovery-navigation/BusinessNavigation'
 import { BusinessHeader } from './components/BusinessHeader'
 import { OrderingStrip } from './components/OrderingStrip'
+import { StorefrontHero } from './components/StorefrontHero'
 import { MenuBar } from './components/StorefrontMenu'
 import { CartBar } from './components/CartBar'
 import { StorefrontOptional, StorefrontPart } from './parts'
@@ -36,53 +35,61 @@ export function Storefront({ blocks, className, ...input }: StorefrontProps) {
 
   return (
     <StorefrontShell page={page} className={className}>
-      {/* Back into discovery. The preview has no public URL to return to. */}
       {mode === 'live' ? <BusinessNavigation business={store} /> : null}
 
-      {/* Identity. Always first, never a hideable block. */}
-      <StorefrontPart part="header">
-        <BusinessHeader store={store} tagline={page.config.brand.tagline} logoUrl={store.imageUrl ?? null} />
-      </StorefrontPart>
+      <div className="sf-top">
+        {/* Identity floats on the cover, same composition as the discovery home hero. */}
+        <StorefrontHero
+          store={store}
+          imageUrl={page.heroImage}
+          showMap={mode === 'live'}
+          identity={
+            <StorefrontPart part="header">
+              <BusinessHeader
+                tone="hero"
+                store={store}
+                tagline={page.config.brand.tagline}
+                logoUrl={store.imageUrl && store.imageUrl !== page.heroImage ? store.imageUrl : null}
+              />
+            </StorefrontPart>
+          }
+        />
 
-      {/* How to order. Directory profiles pass commerce={false}. */}
-      {page.commerce ? (
-        <StorefrontPart part="ordering">
-          <OrderingStrip ordering={data.ordering} hours={data.hours} />
-        </StorefrontPart>
-      ) : null}
-
-      <div className="space-y-8">
-        {/* Sticky wayfinding. A short menu uses the section headings instead. */}
-        {page.showMenuBar ? (
-          <MenuBar
-            groups={page.shownGroups}
-            query={page.query}
-            onQuery={page.setQuery}
-            activeId={page.activeId}
-            onJump={page.jump}
-            onHeight={page.setBarHeight}
-          />
+        {page.commerce ? (
+          <StorefrontPart part="ordering">
+            <OrderingStrip ordering={data.ordering} hours={data.hours} />
+          </StorefrontPart>
         ) : null}
+      </div>
 
-        {page.searching ? <MenuSearchStatus query={page.query} count={page.resultCount} /> : null}
-
-        {/* One entry per key in `storefrontBlocks`. Search keeps `menu` only. */}
+      <div className="sf-body">
         {STOREFRONT_SECTIONS.map((key) => (
-          <StorefrontBlockSlot key={key} part={key} page={page} blocks={blocks} />
+          <Fragment key={key}>
+            {key === 'menu' ? (
+              <>
+                {page.showMenuBar ? (
+                  <MenuBar
+                    groups={page.shownGroups}
+                    query={page.query}
+                    onQuery={page.setQuery}
+                    activeId={page.activeId}
+                    onJump={page.jump}
+                    onHeight={page.setBarHeight}
+                  />
+                ) : null}
+                {page.searching ? <MenuSearchStatus query={page.query} count={page.resultCount} /> : null}
+              </>
+            ) : null}
+            <StorefrontBlockSlot part={key} page={page} blocks={blocks} />
+          </Fragment>
         ))}
       </div>
 
-      {/* Live commerce only. The preview never writes a cart. */}
       {page.showCart ? <CartBar storeId={store.id} /> : null}
     </StorefrontShell>
   )
 }
 
-/**
- * Same rules for every configured block.
- * It must be in the config. Search unmounts everything except the menu.
- * Commerce off drops the menu. A hidden block is absent for shoppers and a Show bar in the editor.
- */
 function StorefrontBlockSlot({ part, page, blocks }: {
   readonly part: StorefrontSection
   readonly page: StorefrontPage

@@ -2,8 +2,9 @@
  * Storefront configuration: how a store's public page looks. Shared by the server (which validates and
  * stores it) and the web app (which renders it and edits it), so both read a config the same way.
  *
- * The config holds presentation only: brand, media mosaic, featured content, optional sections and
- * announcements. Inventory, availability, menu structure and business details stay live on the store.
+ * The config holds presentation only: brand, featured content, optional sections and announcements.
+ * Inventory, availability, menu structure and business details stay live on the store.
+ * `mosaic` remains on the config for older drafts; the page no longer renders it.
  *
  * `normalizeStorefrontConfig` accepts anything and returns a valid config: unknown keys are dropped,
  * missing ones take defaults, and lists are trimmed to their limits. With `refs`, references to items,
@@ -21,13 +22,12 @@ export type StorefrontPresentation = 'auto' | 'grid' | 'list'
  * A saved config can hide a block. It cannot change this order.
  */
 export const STOREFRONT_SECTIONS = [
-  'about',
-  'announcements',
-  'bundles',
   'featured',
-  'categories',
   'menu',
-  'mosaic',
+  'categories',
+  'bundles',
+  'announcements',
+  'about',
   'gallery',
   'updates',
 ] as const
@@ -131,14 +131,13 @@ export const STOREFRONT_FONTS: readonly { readonly id: StorefrontFont; readonly 
 ]
 
 export const STOREFRONT_SECTION_LABELS: Record<StorefrontSection, string> = {
-  about: 'About, hours & location',
-  mosaic: 'Media mosaic',
+  about: 'About & hours',
   announcements: 'Announcements',
   bundles: 'Bundles',
   featured: 'Featured products',
   categories: 'Category tiles',
   menu: 'Menu',
-  gallery: 'Gallery',
+  gallery: 'Photos',
   updates: 'Updates',
 }
 

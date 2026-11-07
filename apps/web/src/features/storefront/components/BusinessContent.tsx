@@ -1,5 +1,6 @@
 /**
- * Business content below the menu: about, hours and location; the photo gallery; and the store's updates.
+ * Business content below the menu: about (story + hours), compact photos, updates.
+ * Address lives in the identity strip under the hero — not repeated here.
  */
 import type { ReactNode } from 'react'
 import { publicStoreEmail } from '@features/stores/publicEmail'
@@ -7,10 +8,8 @@ import { Mail, Phone } from 'lucide-react'
 import type { StoreSocialLinks } from '@api/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import { StoreHeaderSocialRow } from '@features/stores/components/StoreHeader/StoreHeaderSocialRow'
-import { StorePreviewMap } from '@features/stores/components/StoreMap/StorePreviewMap'
 import type { StorefrontHours, StorefrontMedia } from '../api'
 import { WeeklyHours } from './OrderingStrip'
-import { directionsUrl, storeAddress } from './BusinessHeader'
 
 function socialEntries(links: StoreHeaderStore['socialLinksJson']): [keyof StoreSocialLinks, string][] {
   if (!links) return []
@@ -22,58 +21,56 @@ function socialEntries(links: StoreHeaderStore['socialLinksJson']): [keyof Store
 
 function Heading({ id, children }: { readonly id: string; readonly children: ReactNode }) {
   return (
-    <h2 id={id} className="sf-heading text-xl font-bold text-foreground">
+    <h2 id={id} className="sf-heading text-lg font-bold text-foreground">
       {children}
     </h2>
   )
 }
 
-export function AboutSection({ store, hours, showMap }: {
+export function AboutSection({ store, hours }: {
   readonly store: StoreHeaderStore
   readonly hours: StorefrontHours | null
-  /** Maps load tiles from the network; the editor preview leaves them out. */
-  readonly showMap: boolean
 }) {
-  const address = storeAddress(store)
   const social = socialEntries(store.socialLinksJson)
-  // An unconfirmed email stays off the storefront, the vendor's own preview included.
-  const email = publicStoreEmail(store as { email?: string | null; publicEmailConfirmedAt?: string | null })
+  const email = publicStoreEmail(store)
   const story = Boolean(store.description || store.phone || email || social.length > 0)
-  if (!story && !address && !hours?.week) return null
+  if (!story && !hours?.week) return null
 
   return (
-    <section aria-labelledby="sf-about" className="space-y-4">
-      <Heading id="sf-about">{story ? `About ${store.name}` : 'Location'}</Heading>
-      <div className={story ? 'sf-about' : 'sf-about is-location'}>
+    <section aria-labelledby="sf-about" className="space-y-3">
+      <Heading id="sf-about">{story ? `About ${store.name}` : 'Hours'}</Heading>
+      <div className={story && hours?.week ? 'sf-about' : 'sf-about is-single'}>
         {story ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {store.description ? (
-              <p className="whitespace-pre-line text-base leading-relaxed text-muted-foreground">{store.description}</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground sm:text-base">{store.description}</p>
             ) : null}
             <ContactList phone={store.phone} email={email} />
             {social.length > 0 ? <StoreHeaderSocialRow entries={social} /> : null}
           </div>
         ) : null}
-        <div className="space-y-4">
-          {hours?.week ? (
-            <div>
-              <h3 className="text-sm font-semibold">Hours</h3>
-              <WeeklyHours week={hours.week} className="mt-2" />
-            </div>
-          ) : null}
-          <LocationBlock store={store} showMap={showMap} titled={story} />
-        </div>
+        {hours?.week ? (
+          <div>
+            {story ? <h3 className="text-sm font-semibold">Hours</h3> : null}
+            <WeeklyHours week={hours.week} className={story ? 'mt-2' : undefined} />
+          </div>
+        ) : null}
       </div>
     </section>
   )
 }
 
-export function GallerySection({ media, storeName }: { readonly media: readonly StorefrontMedia[]; readonly storeName: string }) {
-  const photos = media.filter((m) => m.kind !== 'VIDEO')
+/** Small square thumbs. Skips the hero cover so the same photo is not shown twice. */
+export function GallerySection({ media, storeName, excludeUrl }: {
+  readonly media: readonly StorefrontMedia[]
+  readonly storeName: string
+  readonly excludeUrl?: string | null
+}) {
+  const photos = media.filter((m) => m.kind !== 'VIDEO' && m.url !== excludeUrl)
   if (photos.length === 0) return null
   return (
-    <section aria-labelledby="sf-gallery" className="space-y-4">
-      <Heading id="sf-gallery">Gallery</Heading>
+    <section aria-labelledby="sf-gallery" className="space-y-2.5">
+      <Heading id="sf-gallery">Photos</Heading>
       <ul className="sf-gallery">
         {photos.map((photo) => (
           <li key={photo.id}>
@@ -81,7 +78,7 @@ export function GallerySection({ media, storeName }: { readonly media: readonly 
               src={photo.url}
               alt={photo.altText ?? `${storeName} photo`}
               loading="lazy"
-              className="aspect-square w-full rounded-xl object-cover"
+              className="sf-gallery-thumb"
             />
           </li>
         ))}
@@ -92,7 +89,7 @@ export function GallerySection({ media, storeName }: { readonly media: readonly 
 
 export function UpdatesSection({ children }: { readonly children: ReactNode }) {
   return (
-    <section aria-labelledby="sf-updates" className="space-y-4">
+    <section aria-labelledby="sf-updates" className="space-y-3">
       <Heading id="sf-updates">Updates</Heading>
       {children}
     </section>
@@ -120,32 +117,5 @@ function ContactList({ phone, email }: { readonly phone?: string | null; readonl
         </li>
       ) : null}
     </ul>
-  )
-}
-
-function LocationBlock({ store, showMap, titled }: {
-  readonly store: StoreHeaderStore
-  readonly showMap: boolean
-  readonly titled: boolean
-}) {
-  const address = storeAddress(store)
-  if (!address) return null
-  const directions = directionsUrl(store)
-  const hasCoords = Boolean(store.latitude && store.longitude)
-  return (
-    <div className="space-y-2">
-      {titled ? <h3 className="text-sm font-semibold">Location</h3> : null}
-      <p className="text-sm text-muted-foreground">{address}</p>
-      {directions ? (
-        <a href={directions} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
-          Get directions
-        </a>
-      ) : null}
-      {showMap && hasCoords ? (
-        <div className="overflow-hidden rounded-xl border border-border">
-          <StorePreviewMap latitude={store.latitude!} longitude={store.longitude!} height="200px" zoom={15} />
-        </div>
-      ) : null}
-    </div>
   )
 }

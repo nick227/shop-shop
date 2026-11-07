@@ -11,6 +11,7 @@ import { useAddToCart } from '@shared/hooks/hooks/useAddToCart'
 import type { StorefrontActions } from './context'
 import { scrollToSection, useActiveSection } from './components/StorefrontMenu'
 import { storefrontAppearanceClass, storefrontThemeStyle } from './theme'
+import { storefrontHeroImage } from './components/StorefrontHero'
 import { resolveStorefrontCatalog, type StorefrontCatalog } from './resolveCatalog'
 import type { StorefrontProps } from './storefrontProps'
 
@@ -20,6 +21,7 @@ export interface StorefrontPage {
   readonly catalog: StorefrontCatalog
   readonly actions: StorefrontActions
   readonly theme: StorefrontActions['theme']
+  readonly heroImage: string | null
   readonly shownGroups: readonly MenuGroup<ItemResponse>[]
   readonly query: string
   readonly setQuery: (query: string) => void
@@ -42,9 +44,10 @@ export function useStorefrontPage(props: StorefrontProps): StorefrontPage {
   const commerce = props.commerce ?? true
   const config = props.config ?? data.config
   const catalog = useMemo(
-    () => resolveStorefrontCatalog({ items, sections, bundles, config, popularItemIds: data.popularItemIds, media: data.media }),
-    [items, sections, bundles, config, data.popularItemIds, data.media],
+    () => resolveStorefrontCatalog({ items, sections, bundles, config, popularItemIds: data.popularItemIds }),
+    [items, sections, bundles, config, data.popularItemIds],
   )
+  const heroImage = useMemo(() => storefrontHeroImage(store, data.media), [store, data.media])
 
   const sheet = useItemSheet(mode, catalog.itemsById)
   const addToCart = useAddToCart()
@@ -85,6 +88,7 @@ export function useStorefrontPage(props: StorefrontProps): StorefrontPage {
     catalog,
     actions,
     theme,
+    heroImage,
     ...menu,
     sheetItem: sheet.item,
     closeItem: sheet.closeItem,

@@ -10,14 +10,13 @@ import type { StorefrontPartKey } from './storefrontProps'
 const PART_LABELS: Record<StorefrontPartKey, string> = {
   header: 'brand',
   ordering: 'ordering details',
-  mosaic: 'mosaic',
   announcements: 'announcements',
   bundles: 'bundles',
   featured: 'featured products',
   categories: 'category tiles',
   menu: 'menu layout',
   about: 'business information',
-  gallery: 'gallery',
+  gallery: 'photos',
   updates: 'updates',
 }
 

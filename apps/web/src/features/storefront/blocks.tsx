@@ -6,7 +6,6 @@
 import type { ReactNode } from 'react'
 import type { StorefrontSection } from '@packages/shared/storefront'
 import { Announcements, BundlesRow, CategoryTiles, FeaturedRow } from './components/Merchandising'
-import { MediaMosaic } from './components/MediaMosaic'
 import { AboutSection, GallerySection, UpdatesSection } from './components/BusinessContent'
 import { LARGE_CATALOG_ITEMS, MenuSections } from './components/StorefrontMenu'
 import type { StorefrontPage } from './useStorefrontPage'
@@ -17,8 +16,7 @@ const CATEGORY_TILES_MIN_SECTIONS = 8
 export type StorefrontBlock = (page: StorefrontPage) => ReactNode
 
 export const storefrontBlocks: Record<StorefrontSection, StorefrontBlock> = {
-  about: (page) => <AboutSection store={page.props.store} hours={page.props.data.hours} showMap={page.props.mode === 'live'} />,
-  mosaic: (page) => <MediaMosaic products={page.catalog.carousel} tiles={page.catalog.tiles} storeName={page.props.store.name} />,
+  about: (page) => <AboutSection store={page.props.store} hours={page.props.data.hours} />,
   announcements: (page) => <Announcements panels={page.config.announcements} itemsById={page.catalog.itemsById} />,
   bundles: (page) => <BundlesRow bundles={page.catalog.bundles} />,
   featured: (page) => <FeaturedRow items={page.catalog.featuredRow} />,
@@ -39,6 +37,8 @@ export const storefrontBlocks: Record<StorefrontSection, StorefrontBlock> = {
         Nothing on the menu right now. Check back soon.
       </p>
     ),
-  gallery: (page) => <GallerySection media={page.props.data.media} storeName={page.props.store.name} />,
+  gallery: (page) => (
+    <GallerySection media={page.props.data.media} storeName={page.props.store.name} excludeUrl={page.heroImage} />
+  ),
   updates: (page) => (page.props.updates ? <UpdatesSection>{page.props.updates}</UpdatesSection> : null),
 }

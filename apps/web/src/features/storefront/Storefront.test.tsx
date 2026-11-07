@@ -104,9 +104,10 @@ beforeEach(() => {
 })
 
 describe('Storefront', () => {
-  it('leads with the business, its contact actions and how to order', () => {
+  it('leads with the business, its address, contact actions and how to order', () => {
     renderStorefront()
     expect(screen.getByRole('heading', { level: 1, name: 'Sample Kitchen' })).toBeInTheDocument()
+    expect(screen.getByText('1 Main St, Austin, TX')).toBeInTheDocument()
     const contact = screen.getByRole('group', { name: 'Contact Sample Kitchen' })
     expect(within(contact).getByRole('link', { name: /Call/ })).toHaveAttribute('href', 'tel:512-555-0100')
     expect(within(contact).getByRole('link', { name: /Directions/ })).toBeInTheDocument()
@@ -219,7 +220,6 @@ describe('Storefront', () => {
         { key: 'featured', visible: true },
         { key: 'about', visible: true },
         { key: 'menu', visible: true },
-        { key: 'mosaic', visible: true },
         { key: 'announcements', visible: true },
         { key: 'bundles', visible: true },
         { key: 'categories', visible: false },
@@ -229,7 +229,10 @@ describe('Storefront', () => {
     }
     const hidden = new Set(['categories', 'gallery'])
     const { container } = renderStorefront({ config })
-    expect(sectionOrder(container)).toEqual(['header', 'ordering', ...STOREFRONT_SECTIONS.filter((key) => !hidden.has(key))])
+    const order = sectionOrder(container)
+    expect(order).toEqual(['header', 'ordering', ...STOREFRONT_SECTIONS.filter((key) => !hidden.has(key))])
+    expect(order.indexOf('featured')).toBeLessThan(order.indexOf('menu'))
+    expect(order.indexOf('menu')).toBeLessThan(order.indexOf('about'))
     expect(screen.queryByRole('heading', { name: 'Menu', level: 2 })).not.toBeInTheDocument()
   })
 
@@ -238,13 +241,11 @@ describe('Storefront', () => {
     renderStorefront({
       config: { ...base, featured: { ...base.featured, itemIds: ['d1'], excludedItemIds: ['b1'] } },
     })
-    // Pinned and popular pictured items lead the mosaic carousel; the Featured row doesn't repeat them.
-    const carousel = screen.getByRole('region', { name: 'Featured products' })
-    expect(carousel).toHaveTextContent('Breakfast Burrito')
-    expect(carousel).not.toHaveTextContent('Breakfast Sandwich')
     const featured = screen.getByRole('region', { name: 'Featured' })
     const names = within(featured).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(names).toEqual(['Horchata'])
+    expect(names[0]).toBe('Horchata')
+    expect(names).toContain('Breakfast Burrito')
+    expect(names).not.toContain('Breakfast Sandwich')
   })
 
   it('opens an item in a sheet and adds the chosen quantity', async () => {
@@ -337,8 +338,9 @@ describe('Storefront for big catalogs', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'thing 19')
     expect(screen.getByRole('status')).toHaveTextContent('8 items match')
     expect(screen.getByText('Dept 7 thing 19')).toBeInTheDocument()
-    // While searching, results replace the merchandising above the menu.
-    expect(document.querySelector('[data-storefront-section="mosaic"]')).toBeNull()
+    // While searching, results replace the merchandising around the menu.
+    expect(document.querySelector('[data-storefront-section="featured"]')).toBeNull()
+    expect(document.querySelector('[data-storefront-section="gallery"]')).toBeNull()
   })
 })
 
@@ -346,9 +348,10 @@ describe('sectionLayout', () => {
   const pictured = (id: string) => item(id, id, null)
   const plain = (id: string) => item(id, id, null, { mediaAssets: [] })
 
-  it('gives a pictured pair large cards, a short pictured section a grid, and long or text-heavy ones rows', () => {
+  it('gives a pictured pair large cards, a short pictured set a grid, and longer ones compact rows', () => {
     expect(sectionLayout([pictured('a'), pictured('b')], 'auto')).toBe('feature')
     expect(sectionLayout(['a', 'b', 'c', 'd'].map(pictured), 'auto')).toBe('grid')
+    expect(sectionLayout(['a', 'b', 'c', 'd', 'e'].map(pictured), 'auto')).toBe('list')
     expect(sectionLayout([pictured('a'), plain('b'), plain('c')], 'auto')).toBe('list')
     expect(sectionLayout(Array.from({ length: 20 }, (_, i) => pictured(`i${i}`)), 'auto')).toBe('list')
   })

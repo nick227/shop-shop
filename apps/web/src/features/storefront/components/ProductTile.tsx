@@ -1,7 +1,7 @@
 /**
  * ProductTile - one item on the storefront, in the shape its surroundings call for:
  * `card` (photo on top), `row` (text left, photo right, like delivery apps) or `hero` (large photo with
- * the name over it, for the mosaic). The whole tile opens the item; the round button adds one to the cart.
+ * the name over it). The whole tile opens the item; the round button adds one to the cart.
  */
 import { Plus } from 'lucide-react'
 import type { ItemResponse } from '@api/types'
@@ -43,9 +43,9 @@ export function ProductTile({ item, variant = 'card', className }: {
       onClick={() => addItem(item)}
       disabled={!orderable}
       aria-label={orderable ? `Add ${item.title} to cart` : `${item.title} is sold out`}
-      className="relative z-10 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-md ring-1 ring-border transition hover:bg-primary hover:text-primary-foreground disabled:opacity-50 disabled:hover:bg-background disabled:hover:text-foreground"
+      className="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-sm ring-1 ring-border transition hover:bg-primary hover:text-primary-foreground disabled:opacity-50 disabled:hover:bg-background disabled:hover:text-foreground"
     >
-      <Plus className="h-5 w-5" aria-hidden />
+      <Plus className="h-4 w-4" aria-hidden />
     </button>
   )
   const soldOut = orderable ? null : (
@@ -71,31 +71,30 @@ export function ProductTile({ item, variant = 'card', className }: {
   }
 
   if (variant === 'row') {
-    // One compact shape for every row, pictured or not, so a section reads as an even list:
-    // text, then a small photo when there is one, then add.
+    // Compact delivery-app row: text, small thumb, add.
     return (
       <article
         className={cn(
-          'relative flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-primary/40',
-          image ? 'min-h-[4.75rem]' : 'min-h-[3.5rem]',
+          'relative flex items-center gap-2.5 rounded-md border border-border/80 bg-card px-2.5 py-1.5 transition-colors hover:border-primary/40',
+          image ? 'min-h-[3.25rem]' : 'min-h-[2.75rem]',
           className,
         )}
       >
         {open}
         <div className="pointer-events-none relative min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-foreground">{item.title}</h3>
-          {item.description ? <p className="truncate text-xs text-muted-foreground">{item.description}</p> : null}
+          <h3 className="truncate text-sm font-medium leading-tight text-foreground">{item.title}</h3>
+          {item.description ? <p className="truncate text-[0.7rem] leading-tight text-muted-foreground">{item.description}</p> : null}
           {image ? (
-            <p className="mt-0.5 flex items-center gap-2 text-sm font-semibold tabular-nums text-foreground">
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold tabular-nums text-foreground">
               {price}
               {soldOut}
             </p>
           ) : null}
         </div>
         {image ? (
-          <img src={image} alt="" loading="lazy" className="pointer-events-none relative h-14 w-14 shrink-0 rounded-md object-cover" />
+          <img src={image} alt="" loading="lazy" className="pointer-events-none relative h-11 w-11 shrink-0 rounded object-cover" />
         ) : (
-          <div className="pointer-events-none relative flex shrink-0 items-center gap-2">
+          <div className="pointer-events-none relative flex shrink-0 items-center gap-1.5">
             {soldOut}
             <span className="text-sm font-semibold tabular-nums text-foreground">{price}</span>
           </div>
@@ -106,7 +105,7 @@ export function ProductTile({ item, variant = 'card', className }: {
   }
 
   return (
-    <article className={cn('relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40', className)}>
+    <article className={cn('relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40', className)}>
       {open}
       <div className="pointer-events-none relative">
         <Image
@@ -116,12 +115,12 @@ export function ProductTile({ item, variant = 'card', className }: {
           aspectRatio="4/3"
           containerClassName="aspect-[4/3] w-full bg-muted"
         />
-        <div className="pointer-events-auto absolute bottom-2 right-2">{add}</div>
+        <div className="pointer-events-auto absolute bottom-1.5 right-1.5">{add}</div>
       </div>
-      <div className="pointer-events-none relative flex flex-1 flex-col gap-0.5 p-3">
-        <h3 className="font-semibold leading-snug text-foreground line-clamp-2">{item.title}</h3>
-        <div className="mt-auto flex items-center gap-2 pt-1">
-          <span className="text-sm font-semibold text-foreground">{price}</span>
+      <div className="pointer-events-none relative flex flex-1 flex-col gap-0.5 p-2">
+        <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2">{item.title}</h3>
+        <div className="mt-auto flex items-center gap-2 pt-0.5">
+          <span className="text-xs font-semibold text-foreground">{price}</span>
           {soldOut}
         </div>
       </div>

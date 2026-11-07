@@ -27,13 +27,13 @@ import { useMenuSections } from '@shared/hooks/hooks/useMenuSections'
 import { Storefront, type StorefrontPartKey } from '@features/storefront/Storefront'
 import { storefrontQueryKey, useStorefront, useStorefrontEditor } from '@features/storefront/api'
 import { BrandPanel } from './components/storefront-editor/BrandPanel'
-import { MosaicPanel } from './components/storefront-editor/MosaicPanel'
+import { PhotosPanel } from './components/storefront-editor/PhotosPanel'
 import { FeaturedPanel } from './components/storefront-editor/FeaturedPanel'
 import { MenuPanel } from './components/storefront-editor/MenuPanel'
 import { PANEL_TITLES, PART_PANEL, PageOutline, type OutlineSummary, type PanelKey } from './components/storefront-editor/PageOutline'
 import { AnnouncementsPanel } from './components/storefront-editor/AnnouncementsPanel'
 import { BusinessPanel } from './components/storefront-editor/BusinessPanel'
-import { StoreGoLiveChecklist, publishBlockReason, useStoreReadiness } from './components/store-form/StoreGoLiveChecklist'
+import { publishBlockReason, useStoreReadiness } from './components/store-form/StoreGoLiveChecklist'
 import type { PanelProps } from './components/storefront-editor/types'
 import type { StoreHeaderStore } from '@features/stores/components/StoreHeader/storeHeaderTypes'
 import type { StorefrontData, StorefrontHours } from '@features/storefront/api'
@@ -171,14 +171,6 @@ export default function StorefrontEditorPage() {
           />
 
           <section aria-label="Preview" className="min-w-0 space-y-2">
-            <PreviewToolbar
-              device={device}
-              onDevice={setDevice}
-              paletteId={normalized.brand.paletteId}
-              onPalette={(palette) =>
-                update((d) => ({ ...d, brand: { ...d.brand, paletteId: palette.id, primary: palette.primary, accent: palette.accent } }))
-              }
-            />
             <PreviewFrame device={device} focusPart={focusPart}>
               {(scrollRoot) => (
                 <Storefront
@@ -220,13 +212,12 @@ function outlineSummary(
   return {
     header: [palette, config.brand.tagline || 'No tagline'].join(' · '),
     ordering: 'Hours, contact, location',
-    mosaic: config.mosaic.tiles.length > 0 ? plural(config.mosaic.tiles.length, 'tile') : 'Automatic',
     announcements: config.announcements.length > 0 ? plural(config.announcements.length, 'panel') : 'None yet',
     bundles: data.bundles.length > 0 ? plural(data.bundles.length, 'bundle') : 'None yet',
     featured: pins > 0 ? `${plural(pins, 'pin')}${config.featured.autoFill ? ' + popular' : ''}` : 'Popular items',
     categories: 'Shown for big menus',
     menu: `${plural(sections.filter((section) => section.isVisible).length, 'section')} · ${plural(itemCount, 'item')}`,
-    about: 'Description, hours, map',
+    about: 'Description, hours, contact · address is under the hero',
     gallery: plural(data.media.filter((m) => m.kind !== 'VIDEO').length, 'photo'),
     updates: 'Your River posts',
   }
@@ -244,10 +235,8 @@ function EditorRail({ panel, onClose, onOpenPart, panelProps, store, hours, sect
 }) {
   return (
     <aside aria-label="Storefront settings" className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto lg:pr-1 lg:[scrollbar-width:thin]">
-      <StoreGoLiveChecklist storeId={store.id} enabled />
       {panel === null ? (
         <>
-          <p className="px-2 pb-1 text-sm text-muted-foreground">Choose a part to edit, or click it in the preview.</p>
           <PageOutline
             draft={panelProps.draft}
             summary={summary}
@@ -271,7 +260,7 @@ function EditorRail({ panel, onClose, onOpenPart, panelProps, store, hours, sect
           {panel === 'brand' ? (
             <BrandPanel {...panelProps} storeName={store.name} logoUrl={(store as { imageUrl?: string | null }).imageUrl ?? null} />
           ) : null}
-          {panel === 'mosaic' ? <MosaicPanel {...panelProps} /> : null}
+          {panel === 'photos' ? <PhotosPanel {...panelProps} /> : null}
           {panel === 'featured' ? <FeaturedPanel {...panelProps} focus="items" /> : null}
           {panel === 'bundles' ? <FeaturedPanel {...panelProps} focus="bundles" /> : null}
           {panel === 'menu' ? <MenuPanel {...panelProps} sections={sections} /> : null}
@@ -475,10 +464,9 @@ function PreviewFrame({ device, focusPart, children }: {
     <div
       ref={setFrame}
       className={cn(
-        'mx-auto h-[calc(100vh-11rem)] min-h-[34rem] overflow-y-auto overflow-x-hidden rounded-xl border border-border bg-background shadow-sm',
+        'h-[calc(100vh-11rem)] min-h-[34rem] overflow-y-auto overflow-x-hidden rounded-xl border border-border bg-background shadow-sm',
         device === 'mobile' && 'rounded-[2rem] border-[6px] border-foreground/80',
       )}
-      style={{ width: Math.round(width * scale) + (device === 'mobile' ? 12 : 2) }}
     >
       <div style={{ width, zoom: scale }}>{children(frame)}</div>
     </div>

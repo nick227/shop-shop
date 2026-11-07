@@ -9,6 +9,27 @@
   color: hsl(var(--foreground));
 }
 
+/* Page rhythm: tight top cluster, looser body after featured. */
+.sf-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.sf-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.sf-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.sf-ordering {
+  border-y: 1px solid hsl(var(--border));
+  padding-block: 0.65rem;
+}
+
 .shop-shell .sf-root {
   background: transparent;
 }
@@ -60,68 +81,142 @@
 .sf-row > * {
   scroll-snap-align: start;
 }
+/* Featured sits above the menu: denser cards so appetite scanning stays short. */
+.sf-row-featured {
+  grid-auto-columns: minmax(10.5rem, 42%);
+  gap: 0.55rem;
+}
 @container storefront (min-width: 40rem) {
   .sf-row {
     grid-auto-columns: minmax(15rem, 40%);
+  }
+  .sf-row-featured {
+    grid-auto-columns: minmax(11rem, 22%);
   }
 }
 @container storefront (min-width: 60rem) {
   .sf-row {
     grid-auto-columns: minmax(15rem, 28%);
   }
+  .sf-row-featured {
+    grid-auto-columns: minmax(11.5rem, 16%);
+  }
 }
 
-/* ── Media mosaic ───────────────────────────────────────────────────────── */
+/* ── Hero: cover + floated identity | map (discovery home treatment) ───── */
 
-.sf-mosaic {
+.sf-hero {
+  --sf-hero-ink: #f8f5ee;
+  --sf-hero-scrim: 8, 14, 10;
   display: grid;
-  gap: 0.5rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 1rem;
+  background: #13211a;
+  box-shadow: 0 18px 36px -28px rgba(20, 32, 24, 0.45);
 }
-/* Phones: the tiles are one swipeable strip under the carousel, so the menu stays close. */
-/* min-width: 0 lets the strip scroll inside its column instead of widening the page. */
-.sf-mosaic > * {
+.sf-hero > * {
   min-width: 0;
+  min-height: 0;
 }
-.sf-mosaic-tiles {
-  min-width: 0;
-  display: grid;
-  gap: 0.5rem;
-  grid-auto-flow: column;
-  grid-auto-columns: 44%;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+.sf-hero-feature {
+  position: relative;
+  display: flex;
+  min-height: 16.5rem;
+  color: var(--sf-hero-ink);
 }
-.sf-mosaic-tiles::-webkit-scrollbar {
-  display: none;
+.sf-hero-feature.is-typographic {
+  background:
+    radial-gradient(90% 120% at 0% 100%, rgba(66, 122, 88, 0.42) 0%, transparent 60%),
+    linear-gradient(150deg, #0f1a13 0%, #18291f 55%, #1f3a2a 100%);
 }
-.sf-mosaic-tiles > * {
-  scroll-snap-align: start;
-  min-height: 8.5rem;
+.sf-hero-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
+  object-position: center 42%;
 }
-.sf-mosaic-tiles[data-count='1'] {
-  grid-auto-columns: 100%;
+.sf-hero-body {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  padding: 2.4rem 1rem 1rem;
 }
-/* Wider: the carousel leads, and the tiles sit beside it as a grid. */
-@container storefront (min-width: 48rem) {
-  .sf-mosaic {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    align-items: stretch;
+.sf-hero-feature.is-typographic .sf-hero-body {
+  position: relative;
+  inset: auto;
+  flex: 1;
+}
+.sf-hero-feature.has-photo .sf-hero-body {
+  background:
+    linear-gradient(to top, rgba(var(--sf-hero-scrim), 0.9) 0%, rgba(var(--sf-hero-scrim), 0.55) 34%, rgba(var(--sf-hero-scrim), 0.08) 72%, rgba(var(--sf-hero-scrim), 0.2) 100%),
+    linear-gradient(to right, rgba(var(--sf-hero-scrim), 0.4) 0%, rgba(var(--sf-hero-scrim), 0) 62%);
+}
+.sf-hero-map {
+  position: relative;
+  min-height: 11rem;
+  background: hsl(var(--muted));
+}
+.sf-hero-map .leaflet-container {
+  height: 100% !important;
+  width: 100%;
+}
+.sf-hero-map-link {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  z-index: 400;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: hsl(var(--foreground));
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 8px 18px -14px rgba(15, 23, 18, 0.55);
+}
+.sf-hero-map-link:hover {
+  text-decoration: underline;
+}
+@container storefront (min-width: 40rem) {
+  .sf-hero:not(.is-single) {
+    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+    height: 18rem;
   }
-  .sf-mosaic-tiles {
-    grid-auto-flow: row;
-    grid-auto-columns: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
-    overflow: visible;
+  .sf-hero:not(.is-single) .sf-hero-feature,
+  .sf-hero:not(.is-single) .sf-hero-map {
+    min-height: 0;
+    height: 100%;
   }
-  .sf-mosaic-tiles[data-count='1'] {
-    grid-template-columns: 1fr;
+  .sf-hero.is-single .sf-hero-feature {
+    min-height: 18rem;
   }
-  .sf-mosaic-tiles[data-count='1'] > *,
-  .sf-mosaic-tiles[data-count='3'] > :first-child {
-    grid-column: 1 / -1;
+  .sf-hero.is-single .sf-hero-map {
+    min-height: 14rem;
+  }
+  .sf-hero-body {
+    padding: 2.6rem 1.15rem 1.1rem;
+  }
+}
+@container storefront (min-width: 56rem) {
+  .sf-hero:not(.is-single) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    height: 20rem;
+  }
+  .sf-hero.is-single .sf-hero-feature {
+    min-height: 20rem;
   }
 }
 
@@ -147,13 +242,13 @@
 
 .sf-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.45rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .sf-grid[data-size='feature'] {
   grid-template-columns: minmax(0, 1fr);
 }
-@container storefront (min-width: 40rem) {
+@container storefront (min-width: 36rem) {
   .sf-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -161,21 +256,27 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@container storefront (min-width: 60rem) {
+@container storefront (min-width: 52rem) {
   .sf-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@container storefront (min-width: 72rem) {
+  .sf-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
 .sf-list {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.3rem;
   /* minmax(0, …) so long names truncate inside the row instead of widening the page. */
   grid-template-columns: minmax(0, 1fr);
 }
 @container storefront (min-width: 44rem) {
   .sf-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 0.75rem;
   }
 }
 @container storefront (min-width: 64rem) {
@@ -184,17 +285,33 @@
   }
 }
 
+.sf-menu-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+.sf-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
 /* ── Menu bar: search above the section links on phones, beside them when wider ── */
 
 .sf-menubar {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  padding-block: 0.35rem;
+}
+.sf-menubar nav a {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8125rem;
 }
 @container storefront (min-width: 48rem) {
   .sf-menubar {
-    grid-template-columns: 17rem minmax(0, 1fr);
+    grid-template-columns: 15rem minmax(0, 1fr);
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 }
 
@@ -202,27 +319,40 @@
 
 .sf-about {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.25rem;
   grid-template-columns: 1fr;
 }
 @container storefront (min-width: 48rem) {
-  .sf-about {
+  .sf-about:not(.is-single) {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 
-  .sf-about.is-location {
-    grid-template-columns: minmax(0, 22rem);
+  .sf-about.is-single {
+    grid-template-columns: minmax(0, 36rem);
   }
 }
 
 .sf-gallery {
   display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.sf-gallery-thumb {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: 0.45rem;
+  object-fit: cover;
+  background: hsl(var(--muted));
+}
+@container storefront (min-width: 28rem) {
+  .sf-gallery {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 @container storefront (min-width: 40rem) {
   .sf-gallery {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.4rem;
   }
 }
 
@@ -230,19 +360,57 @@
 
 .sf-header {
   display: grid;
-  gap: 1rem;
+  gap: 0.55rem 0.85rem;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
+  align-items: end;
+  color: inherit;
+}
+.sf-header.is-hero {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+.sf-header.is-hero .sf-header-mark {
+  display: none;
+}
+.sf-header.is-hero h1,
+.sf-header.is-hero .sf-header-address,
+.sf-header.is-hero .sf-header-meta {
+  color: inherit;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+}
+.sf-header:not(.is-hero) h1 {
+  color: hsl(var(--foreground));
+}
+.sf-header:not(.is-hero) .sf-header-address {
+  color: hsl(var(--foreground));
+}
+.sf-header:not(.is-hero) .sf-header-meta {
+  color: hsl(var(--muted-foreground));
 }
 .sf-header-actions {
   grid-column: 1 / -1;
 }
-@container storefront (min-width: 48rem) {
-  .sf-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+@container storefront (min-width: 40rem) {
+  .sf-header.is-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
   }
-  /* On phones the contact row scrolls sideways edge to edge; wider, it sits beside the name. */
-  .sf-root .sf-header-actions {
+  .sf-header.is-hero .sf-header-actions {
+    grid-column: auto;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-bottom: 0.15rem;
+  }
+}
+@container storefront (min-width: 48rem) {
+  .sf-header:not(.is-hero) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .sf-root .sf-header:not(.is-hero) .sf-header-actions {
     grid-column: auto;
     margin-inline: 0;
     padding-inline: 0;
@@ -250,6 +418,12 @@
     flex-wrap: wrap;
     justify-content: flex-end;
   }
+}
+
+/* Editor outline over the floated hero identity */
+.sf-hero-body .sf-part {
+  outline-offset: 4px;
+  border-radius: 0.75rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

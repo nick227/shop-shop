@@ -30,15 +30,15 @@ const DIRECTORY_SECTIONS = 6
 type Layout = 'feature' | 'grid' | 'list'
 
 /**
- * How a section shows its items. With `auto`: one or two pictured items get large cards, a mostly
- * pictured section of up to a dozen gets a photo grid, anything longer or text-heavy gets compact rows.
+ * How a section shows its items. With `auto`: one or two pictured items get large cards, a short
+ * pictured set gets a dense photo grid, everything else gets compact rows so the menu stays scannable.
  */
 export function sectionLayout(items: readonly ItemResponse[], presentation: StorefrontPresentation): Layout {
   if (presentation === 'grid') return 'grid'
   if (presentation === 'list') return 'list'
   const pictured = items.filter((item) => itemImage(item)).length
   if (items.length <= 2 && pictured === items.length) return 'feature'
-  if (items.length <= 12 && pictured / Math.max(1, items.length) >= 0.6) return 'grid'
+  if (items.length <= 4 && pictured / Math.max(1, items.length) >= 0.75) return 'grid'
   return 'list'
 }
 
@@ -250,7 +250,7 @@ export function MenuSections({ groups, presentation, jumpOffset, large }: {
   readonly large: boolean
 }) {
   return (
-    <div className="space-y-10">
+    <div className="sf-menu-sections">
       {groups.map((group) => (
         <MenuSection key={group.id} group={group} presentation={presentation} jumpOffset={jumpOffset} large={large} />
       ))}
@@ -275,17 +275,17 @@ function MenuSection({ group, presentation, jumpOffset, large }: {
       id={sectionAnchor(group.id)}
       aria-labelledby={`${sectionAnchor(group.id)}-title`}
       tabIndex={-1}
-      className="sf-menu-section space-y-3 outline-none"
+      className="sf-menu-section outline-none"
       style={{ scrollMarginTop: jumpOffset }}
     >
       <header className="flex items-baseline justify-between gap-3">
         <div className="min-w-0 space-y-0.5">
-          <h2 id={`${sectionAnchor(group.id)}-title`} className="sf-heading text-xl font-bold text-foreground">
+          <h2 id={`${sectionAnchor(group.id)}-title`} className="sf-heading text-lg font-bold text-foreground">
             {group.name}
           </h2>
-          {group.description ? <p className="text-sm text-muted-foreground">{group.description}</p> : null}
+          {group.description ? <p className="text-xs text-muted-foreground sm:text-sm">{group.description}</p> : null}
         </div>
-        {large ? <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{group.items.length} items</span> : null}
+        {large ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{group.items.length}</span> : null}
       </header>
       {layout === 'list' ? (
         <div className="sf-list" data-dense={dense || undefined}>
