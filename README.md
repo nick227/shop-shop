@@ -130,6 +130,14 @@ The application will be available at:
 
 `pnpm db:seed` clears seed-owned tables, then loads tags, accounts, the Austin catalog, orders and River activity, and the geocoding cache. The Austin catalog is deterministic. Every account uses the password `Test123456!`.
 
+The seed refuses any non-local database unless `SEED_ALLOW_REMOTE_HOST` names that host and `SEED_PASSWORD` is set to at least 16 characters. Seeded accounts then use that password instead of the default. `enhanced-seed.ts` and the standalone `seed-austin-stores.ts` follow the same rule, while `prune-to-main-stores.ts`, `seed-store-locations.ts` and `backfill-seed-images.ts` need only `SEED_ALLOW_REMOTE_HOST`.
+
+Against a deployed database, also set `UPLOAD_BASE_URL` to the API's `/uploads` URL so photo links point at the API host. Seed photos live on the `server` volume under `seed/`; if the volume is new, copy them from `apps/web/public/editorial`:
+
+```bash
+tar -C apps/web/public/editorial -cf - --exclude=manifest.json . | railway ssh --service server -- sh -c 'mkdir -p /app/uploads/seed && tar -xf - -C /app/uploads/seed'
+```
+
 | Email | Role |
 | --- | --- |
 | `admin@seed.local` | Admin |

@@ -3,7 +3,11 @@
  * Keeps only: Sushi Zen, Burger Heaven, Tony's Pizza Palace
  * Deletes all other test stores
  */
+import 'dotenv/config'
 import { prisma } from '../client.js'
+import { assertRemoteConfirmed } from './seed-safety.js'
+
+assertRemoteConfirmed()
 
 const STORES_TO_KEEP = [
   'Sushi Zen',

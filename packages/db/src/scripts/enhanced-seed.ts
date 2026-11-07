@@ -3,8 +3,12 @@
  * Creates diverse stores and items with proper relationships and placehold.co images
  * Includes dietary information, allergens, and geographic diversity
  */
+import 'dotenv/config'
 import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'
 import { hash } from 'bcrypt'
+import { assertSeedTargetAllowed, seedPassword, seedPasswordForLog } from './seed-safety.js'
+
+assertSeedTargetAllowed()
 
 const prisma = new PrismaClient()
 
@@ -114,7 +118,7 @@ async function cleanDatabase() {
 async function createUsers() {
   console.log('👤 Creating users...')
   
-  const passwordHash = await hash('Test123456!', 10)
+  const passwordHash = await hash(seedPassword(), 10)
   
   const users = [
     {
@@ -383,12 +387,12 @@ async function main() {
     console.log(`   Items: 30 menu items with dietary info`)
     console.log(`   Posts: ${stores.length * 3} river posts`)
     console.log('\n🔑 Test Credentials:')
-    console.log(`   Customer: customer@test.com / Test123456!`)
-    console.log(`   Pizza Vendor: pizza@test.com / Test123456!`)
-    console.log(`   Burger Vendor: burger@test.com / Test123456!`)
-    console.log(`   Sushi Vendor: sushi@test.com / Test123456!`)
-    console.log(`   Coffee Vendor: coffee@test.com / Test123456!`)
-    console.log(`   Thai Vendor: thai@test.com / Test123456!`)
+    console.log(`   Customer: customer@test.com / ${seedPasswordForLog()}`)
+    console.log(`   Pizza Vendor: pizza@test.com / ${seedPasswordForLog()}`)
+    console.log(`   Burger Vendor: burger@test.com / ${seedPasswordForLog()}`)
+    console.log(`   Sushi Vendor: sushi@test.com / ${seedPasswordForLog()}`)
+    console.log(`   Coffee Vendor: coffee@test.com / ${seedPasswordForLog()}`)
+    console.log(`   Thai Vendor: thai@test.com / ${seedPasswordForLog()}`)
     console.log('\n🏪 Store URLs:')
     stores.forEach(store => {
       console.log(`   ${store.name}: http://localhost:5177/stores/${store.id}`)

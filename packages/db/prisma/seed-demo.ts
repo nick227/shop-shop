@@ -1,5 +1,6 @@
 import { type Prisma, type PrismaClient } from '../src/generated/client/index.js'
 import { hash } from 'bcrypt'
+import { seedPassword } from '../src/scripts/seed-safety.js'
 import { seedCanonicalTags } from '../src/scripts/seed-tags.js'
 
 const now = new Date()
@@ -54,7 +55,7 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<void> {
     },
   })
 
-  const passwordHash = await hash('Test123456!', 10)
+  const passwordHash = await hash(seedPassword(), 10)
 
   const affiliateUser = await prisma.user.findUnique({ where: { email: 'affiliate@seed.local' } })
   if (!affiliateUser) {

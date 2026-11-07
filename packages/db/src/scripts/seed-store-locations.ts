@@ -2,7 +2,11 @@
  * @deprecated Superseded by seed-austin-stores.ts which creates stores with
  * real coordinates already set. This script is no longer called by pnpm seed.
  */
+import 'dotenv/config'
 import { prisma } from '../client.js'
+import { assertRemoteConfirmed } from './seed-safety.js'
+
+assertRemoteConfirmed()
 
 const SAMPLE_LOCATIONS = [
   { city: 'New York', state: 'NY', zip: '10001', lat: 40.7505, lng: -73.9934 },

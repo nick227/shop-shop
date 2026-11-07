@@ -1,7 +1,7 @@
 import { hash } from 'bcrypt'
+import { seedPassword, seedPasswordForLog } from './seed-safety.js'
 import type { PrismaClient } from '../generated/client/index.js'
 
-const PASSWORD = 'Test123456!'
 
 const CUSTOMERS = [
   {
@@ -67,7 +67,7 @@ const CUSTOMERS = [
 ] as const
 
 export async function seedCustomers(prisma: PrismaClient): Promise<void> {
-  const passwordHash = await hash(PASSWORD, 10)
+  const passwordHash = await hash(seedPassword(), 10)
   const affiliate = await prisma.affiliate.findFirst({
     where: { user: { email: 'affiliate@seed.local' } },
     select: { id: true, referralCode: true },
@@ -128,5 +128,5 @@ export async function seedCustomers(prisma: PrismaClient): Promise<void> {
     }
   }
 
-  console.log(`Customers created: ${CUSTOMERS.length} (password ${PASSWORD})`)
+  console.log(`Customers created: ${CUSTOMERS.length} (password ${seedPasswordForLog()})`)
 }

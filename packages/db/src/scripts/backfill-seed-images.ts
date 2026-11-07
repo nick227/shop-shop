@@ -9,8 +9,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
 import { prisma } from '../client.js'
+import { assertRemoteConfirmed } from './seed-safety.js'
 
 config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../.env') })
+assertRemoteConfirmed()
 
 const STOCK =
   /picsum\.photos|placehold\.co|unsplash\.com|images\.unsplash|loremflickr|placeholder\.com|via\.placeholder/i
@@ -45,7 +47,7 @@ const FILES = [
 type SeedFile = (typeof FILES)[number]
 
 function publicUrl(file: SeedFile): string {
-  return `/uploads/seed/${file}`
+  return `${(process.env.UPLOAD_BASE_URL || '/uploads').replace(/\/$/u, '')}/seed/${file}`
 }
 
 function isStock(url: string | null | undefined): boolean {

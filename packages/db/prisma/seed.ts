@@ -10,6 +10,9 @@ import { seedCityCache } from '../seed-city-cache.js'
 import { ensureOfficialPlatformStore } from '../src/scripts/seed-official-platform-store.js'
 import { seedCustomers } from '../src/scripts/seed-customers.js'
 import { seedSiteActivity } from '../src/scripts/seed-activity.js'
+import { assertSeedTargetAllowed, seedPasswordForLog } from '../src/scripts/seed-safety.js'
+
+assertSeedTargetAllowed()
 
 const prisma = new PrismaClient()
 
@@ -45,7 +48,7 @@ async function main(): Promise<void> {
   await seedCityCache(prisma)
 
   console.log('\nSeed complete.\n')
-  console.log('Accounts (password: Test123456!)')
+  console.log(`Accounts (password: ${seedPasswordForLog()})`)
   console.log('  admin@seed.local (God-level admin)')
   console.log('  admin2@seed.local (Platform admin)')
   console.log('  staff@seed.local (Support staff)')

@@ -10,6 +10,7 @@
 import { fileURLToPath } from 'url'
 import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'
 import { hash } from 'bcrypt'
+import { assertSeedTargetAllowed, seedPassword, seedPasswordForLog } from './seed-safety.js'
 import { seedCanonicalTags } from './seed-tags.js'
 
 function createSeededRandom(seed: number): () => number {
@@ -469,22 +470,23 @@ const POST_TEMPLATES = [
   { content: 'Made with love, served with a smile 😊', imgWidth: 800, imgHeight: 600 },
 ]
 
-const PASSWORD = 'Test123456!'
 
+/** Absolute in production, where the web and API hosts differ; matches the local storage adapter. */
+const SEED_PHOTO_BASE = (process.env.UPLOAD_BASE_URL || '/uploads').replace(/\/$/u, '')
 const SEED_PHOTOS = [
-  '/uploads/seed/tacos-pastor.jpg',
-  '/uploads/seed/tacos-migas.jpg',
-  '/uploads/seed/burrito.jpg',
-  '/uploads/seed/brisket.jpg',
-  '/uploads/seed/coffee-latte.jpg',
-  '/uploads/seed/iced-coffee.jpg',
-  '/uploads/seed/bakery-pastry.jpg',
-  '/uploads/seed/fresh-bread.jpg',
-  '/uploads/seed/wood-pizza.jpg',
-  '/uploads/seed/farmers-produce.jpg',
-  '/uploads/seed/fresh-peaches.jpg',
-  '/uploads/seed/guacamole.jpg',
-  '/uploads/seed/ramen-bowl.jpg',
+  `${SEED_PHOTO_BASE}/seed/tacos-pastor.jpg`,
+  `${SEED_PHOTO_BASE}/seed/tacos-migas.jpg`,
+  `${SEED_PHOTO_BASE}/seed/burrito.jpg`,
+  `${SEED_PHOTO_BASE}/seed/brisket.jpg`,
+  `${SEED_PHOTO_BASE}/seed/coffee-latte.jpg`,
+  `${SEED_PHOTO_BASE}/seed/iced-coffee.jpg`,
+  `${SEED_PHOTO_BASE}/seed/bakery-pastry.jpg`,
+  `${SEED_PHOTO_BASE}/seed/fresh-bread.jpg`,
+  `${SEED_PHOTO_BASE}/seed/wood-pizza.jpg`,
+  `${SEED_PHOTO_BASE}/seed/farmers-produce.jpg`,
+  `${SEED_PHOTO_BASE}/seed/fresh-peaches.jpg`,
+  `${SEED_PHOTO_BASE}/seed/guacamole.jpg`,
+  `${SEED_PHOTO_BASE}/seed/ramen-bowl.jpg`,
 ] as const
 
 /** Local licensed seed photos (copied from apps/web/public/editorial into uploads/seed). */
@@ -734,7 +736,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
 
   await seedCanonicalTags(prisma)
 
-  const passwordHash = await hash(PASSWORD, 10)
+  const passwordHash = await hash(seedPassword(), 10)
   let vendorCount = 0
   let storeCount = 0
   let itemCount = 0
@@ -977,7 +979,7 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
 🖼️  Images: Local /uploads/seed editorial photos`)
   console.log(`
 🔑 Test Credentials:`)
-  console.log(`   Password for all vendors: ${PASSWORD}`)
+  console.log(`   Password for all vendors: ${seedPasswordForLog()}`)
   console.log(`   Email format: vendor-{store-slug}@test.com`)
   console.log(`
 ✨ Ready for testing!\n`)
@@ -987,6 +989,8 @@ export async function seedAustinStores(prisma: PrismaClient): Promise<void> {
 }
 
 if (process.argv[1] === fileURLToPath(new URL(import.meta.url))) {
+  await import('dotenv/config')
+  assertSeedTargetAllowed()
   const prisma = new PrismaClient()
   seedAustinStores(prisma)
     .catch((error) => { console.error('❌ Seeding failed:', error); process.exit(1) })

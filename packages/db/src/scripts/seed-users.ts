@@ -4,8 +4,8 @@
  */
 import { PrismaClient, Role, AffiliateStatus } from '../generated/client/index.js'
 import { hash } from 'bcrypt'
+import { seedPassword, seedPasswordForLog } from './seed-safety.js'
 
-const PASSWORD = 'Test123456!'
 
 interface UserSeed {
   email: string
@@ -105,7 +105,7 @@ const USERS_TO_CREATE: UserSeed[] = [
 export async function seedUsers(prisma: PrismaClient): Promise<void> {
   console.log('👥 Creating comprehensive user accounts...\n')
 
-  const passwordHash = await hash(PASSWORD, 10)
+  const passwordHash = await hash(seedPassword(), 10)
   let createdCount = 0
   let skippedCount = 0
   let affiliateCount = 0
@@ -163,7 +163,7 @@ export async function seedUsers(prisma: PrismaClient): Promise<void> {
   console.log(`   📝 Total: ${createdCount + skippedCount}`)
   
   console.log(`\n🔑 Test Credentials:`)
-  console.log(`   Password for all accounts: ${PASSWORD}`)
+  console.log(`   Password for all accounts: ${seedPasswordForLog()}`)
   console.log(`\n📧 User Accounts:`)
   USERS_TO_CREATE.forEach(user => {
     const status = user.role === Role.VENDOR_PENDING ? '(Pending)' : 
