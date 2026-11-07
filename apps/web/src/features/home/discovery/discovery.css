@@ -1363,6 +1363,8 @@ a.hero-tag:hover {
 }
 
 .feed-story-card.has-photo {
+  grid-template-rows: minmax(0, 1fr) auto;
+  max-height: 20vh;
   padding: 0;
   overflow: hidden;
   background: var(--paper);
@@ -1631,10 +1633,6 @@ a.hero-tag:hover {
 
 .feed-story-card.has-photo:hover .feed-story-img {
   transform: scale(1.03);
-}
-
-.feed-story-card.has-photo {
-  max-height: 20vh;
 }
 
 .story-media-box {
@@ -2244,12 +2242,14 @@ a.hero-tag:hover {
 
   .feed-story-card.has-photo {
     grid-template-columns: minmax(0, 1.15fr) minmax(12rem, 0.95fr);
+    grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     max-height: 20vh;
   }
 
   .feed-story-card.has-photo .story-media-box {
     height: 100%;
+    min-height: 0;
   }
 
   .feed-story-card.has-photo .feed-story-body {
