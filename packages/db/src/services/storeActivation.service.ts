@@ -5,6 +5,15 @@ import { prisma } from '../client.js'
 // Business logic for store visibility requirements
 // ========================================
 
+/** Random stock hosts do not count as a store photo for marketplace visibility. */
+const STOCK_PHOTO =
+  /picsum\.photos|placehold\.co|unsplash\.com|images\.unsplash|loremflickr|placeholder\.com|via\.placeholder/i
+
+export function isRealImageUrl(url: string | null | undefined): boolean {
+  const value = url?.trim()
+  return Boolean(value && !STOCK_PHOTO.test(value))
+}
+
 export interface StoreActivationRequirements {
   hasRequiredFields: boolean
   hasMedia: boolean
@@ -29,6 +38,7 @@ export const checkStoreActivationRequirements = async (storeId: string): Promise
       phone: true,
       status: true,
       disabledAt: true,
+      imageUrl: true,
     },
   })
 
@@ -45,11 +55,12 @@ export const checkStoreActivationRequirements = async (storeId: string): Promise
     store.phone
   )
 
-  // Check media requirements
-  const mediaCount = await prisma.mediaAsset.count({
-    where: { storeId }
+  // Real store photos only — stock placeholders do not enable the store.
+  const imageMedia = await prisma.mediaAsset.findMany({
+    where: { storeId, kind: 'IMAGE' },
+    select: { url: true },
   })
-  const hasMedia = mediaCount >= 1
+  const hasMedia = imageMedia.some((asset) => isRealImageUrl(asset.url)) || isRealImageUrl(store.imageUrl)
 
   const activeItemsCount = await prisma.item.count({
     where: { storeId, isActive: true, isSoldOut: false },
@@ -121,11 +132,12 @@ export const checkProductActivationRequirements = async (productId: string): Pro
     product.price.gt(0)
   )
 
-  // Check media requirements
-  const mediaCount = await prisma.mediaAsset.count({
-    where: { itemId: productId, kind: 'IMAGE' }
+  const imageMedia = await prisma.mediaAsset.findMany({
+    where: { itemId: productId, kind: 'IMAGE' },
+    select: { url: true },
   })
-  const hasMedia = mediaCount >= 1
+  const hasMedia =
+    imageMedia.some((asset) => isRealImageUrl(asset.url)) || isRealImageUrl(product.imageUrl)
 
   // Check if product is active
   const isActive = product.isActive
@@ -174,8 +186,11 @@ export const checkBundleActivationRequirements = async (
   if (!bundle) throw new Error('Bundle not found')
 
   const hasRequiredFields = !!(bundle.name)
-  const mediaCount = await prisma.mediaAsset.count({ where: { bundleId, kind: 'IMAGE' } })
-  const hasMedia = mediaCount >= 1
+  const imageMedia = await prisma.mediaAsset.findMany({
+    where: { bundleId, kind: 'IMAGE' },
+    select: { url: true },
+  })
+  const hasMedia = imageMedia.some((asset) => isRealImageUrl(asset.url))
   
   // Production safety rules: bundle must have at least 2 items, all from same store, all active
   const hasMinimumItems = bundle.items.length >= 2

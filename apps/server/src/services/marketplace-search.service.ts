@@ -9,6 +9,7 @@ import {
   prisma,
   PUBLIC_STORE_DISCOVERY_SLUG_EXCLUSION,
 } from '@packages/db'
+import { isRealImageUrl } from '@packages/db/services'
 
 // MVP DTOs
 export interface UnifiedSearchRequest {
@@ -271,8 +272,8 @@ export class MarketplaceSearchService {
       const results: StoreSearchResult[] = []
       for (const store of candidateStores) {
         if (results.length >= 50) break
-        const imageUrl = store.media?.[0]?.url || store.imageUrl || undefined
-        if (!imageUrl?.trim()) continue
+        const imageUrl = [store.media?.[0]?.url, store.imageUrl].find((url) => isRealImageUrl(url))
+        if (!imageUrl) continue
 
         let distance: number | undefined
         if (hasUserCoords && store.latitude && store.longitude) {

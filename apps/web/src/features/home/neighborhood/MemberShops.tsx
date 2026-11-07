@@ -17,30 +17,34 @@ export function MemberShops({
   }[]
   readonly curatedListings?: readonly DirectoryListing[]
 }) {
-  const storeCards: (PlaceCardData & { readonly summary?: string | null })[] = stores.slice(0, 6).map((store) => {
-    const base = placeCardFromStore(store)
-    const desc = store.store?.description?.trim() || null
-    const combinedMeta = [desc, base.meta].filter(Boolean).join(' · ') || 'Local storefront · Pickup & delivery'
-    return {
-      ...base,
-      meta: combinedMeta,
-      summary: desc,
-    }
-  })
+  const storeCards: (PlaceCardData & { readonly summary?: string | null })[] = stores
+    .filter((store) => Boolean(store.image))
+    .slice(0, 6)
+    .map((store) => {
+      const base = placeCardFromStore(store)
+      const desc = store.store?.description?.trim() || null
+      const combinedMeta = [desc, base.meta].filter(Boolean).join(' · ') || 'Local storefront · Pickup & delivery'
+      return {
+        ...base,
+        meta: combinedMeta,
+        summary: desc,
+      }
+    })
 
   const storeNames = new Set(stores.map((store) => store.name.toLowerCase()))
   const curatedCards: (PlaceCardData & { readonly summary?: string | null })[] = curatedListings
-    .filter((listing) => listing.featured && !storeNames.has(listing.name.toLowerCase()))
+    .filter((listing) => listing.featured && !storeNames.has(listing.name.toLowerCase()) && Boolean(listing.coverUrl))
     .slice(0, Math.max(0, 4 - storeCards.length))
     .map((listing) => ({
       ...placeCardFromListing(listing),
       summary: listing.addressStreet ?? null,
     }))
+    .filter((place) => Boolean(place.imageUrl))
 
   const places = [...storeCards, ...curatedCards].slice(0, 4)
   if (places.length === 0) return null
 
-  const lead = places.find((place) => place.imageUrl) ?? places[0]!
+  const lead = places[0]!
   const leadImage = lead.imageUrl || undefined
   const supporting = places.filter((place) => place.id !== lead.id)
 

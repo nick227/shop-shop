@@ -3,12 +3,17 @@ import type { DirectoryListing } from '../neighborhood/DirectoryList'
 import { mergeCurated, type GuideListing } from '../neighborhood/useNeighborhoodGuide'
 import { matchesDirectoryBrowse } from './infiniteFeed'
 import { discoveryMapPoints } from './mapResults'
+import { realPhoto } from './photo'
 import { composeDiscovery, type DiscoveryItem } from './tiles'
 
 export function listingMatchesQuery(listing: DirectoryListing, query: string): boolean {
   const needle = query.trim().toLowerCase()
   if (!needle) return true
   return `${listing.name} ${listing.categoryLabel} ${listing.addressStreet ?? ''}`.toLowerCase().includes(needle)
+}
+
+export function listingHasPhoto(listing: { readonly coverUrl?: string | null }): boolean {
+  return Boolean(realPhoto(listing.coverUrl))
 }
 
 /**
@@ -35,6 +40,7 @@ export function discoveryResults(input: {
     deliveryFirst: input.deliveryFirst,
   })
   const visibleListings = mergeCurated(input.directory, input.curated)
+    .filter((listing) => listingHasPhoto(listing))
     .filter((listing) => matchesDirectoryBrowse(listing, input.browse) && listingMatchesQuery(listing, input.query))
   const points = discoveryMapPoints(composed.places, visibleListings, input.browse, input.query)
   return { composed, visibleListings, points }

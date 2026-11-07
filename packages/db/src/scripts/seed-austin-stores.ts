@@ -1,11 +1,11 @@
 /**
  * Austin Area Store Seeding Script
  * Seeds stores near Austin ZIP 78758 with items and river posts
- * Uses placehold.co for placeholder images
+ * Uses picsum.photos for placeholder images (stock hosts do not satisfy marketplace media).
  *
  * Marketplace visibility (`checkStoreActivationRequirements` in storeActivation.service.ts):
- * each store must have required profile fields, ≥1 store media, ≥1 active non–sold-out item,
- * delivery or pickup enabled, and ACTIVE status with no disabledAt.
+ * each store must have required profile fields, ≥1 real IMAGE (not picsum/placehold/stock),
+ * ≥1 active non–sold-out item, delivery or pickup enabled, and ACTIVE status with no disabledAt.
  */
 import { fileURLToPath } from 'url'
 import { PrismaClient, Role, MediaKind } from '../generated/client/index.js'

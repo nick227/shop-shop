@@ -8,6 +8,7 @@ const shop = (id: string, distance: number, delivery: 'available' | 'temporarily
     id,
     name: `Shop ${id}`,
     description: 'Neighborhood shop',
+    imageUrl: `https://cdn.example.test/${id}.jpg`,
     latitude: 30.26,
     longitude: -97.74,
     distance,
@@ -20,7 +21,15 @@ const products = [
   { id: 'p-pickup', title: 'Taco', price: 3, storeId: 'pickup' },
   { id: 'p-delivers', title: 'Soup', price: 6, storeId: 'delivers' },
 ] as unknown as DiscoveryItem[]
-const listing = { id: 'park', name: 'Zilker Park', categoryLabel: 'Park', group: 'out', latitude: 30.26, longitude: -97.77 }
+const listing = {
+  id: 'park',
+  name: 'Zilker Park',
+  categoryLabel: 'Park',
+  group: 'out',
+  latitude: 30.26,
+  longitude: -97.77,
+  coverUrl: 'https://cdn.example.test/zilker.jpg',
+}
 
 const run = (deliveryFirst: boolean) =>
   discoveryResults({ stores, products, stories: [], directory: [listing] as never, curated: [], browse: '', query: '', deliveryFirst })

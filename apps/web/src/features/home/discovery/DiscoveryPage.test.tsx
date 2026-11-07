@@ -47,6 +47,7 @@ vi.mock('../neighborhood/useNeighborhoodData', () => ({
         name: 'Bouldin Market',
         storeType: 'GROCERY',
         description: 'Fresh local produce',
+        imageUrl: 'https://cdn.example.test/bouldin.jpg',
         distance: mockState.hasLocation ? 0.6 : undefined,
       },
       {
@@ -54,6 +55,7 @@ vi.mock('../neighborhood/useNeighborhoodData', () => ({
         name: 'Taco Heaven',
         storeType: 'RESTAURANT',
         description: 'Austin tacos',
+        imageUrl: 'https://cdn.example.test/taco-heaven.jpg',
         distance: mockState.hasLocation ? 0.4 : undefined,
       },
     ],
@@ -64,6 +66,7 @@ vi.mock('../neighborhood/useNeighborhoodData', () => ({
         price: '9.99',
         storeId: 'store-2',
         isActive: true,
+        imageUrl: 'https://cdn.example.test/burrito.jpg',
       },
     ],
     stories: [
@@ -112,6 +115,7 @@ vi.mock('../neighborhood/useDirectory', () => {
         latitude: 30.25,
         longitude: -97.75,
         attribution: null,
+        coverUrl: 'https://cdn.example.test/morning-jos.jpg',
       },
       {
         id: 'dir-2',
@@ -125,6 +129,7 @@ vi.mock('../neighborhood/useDirectory', () => {
         latitude: 30.26,
         longitude: -97.77,
         attribution: null,
+        coverUrl: 'https://cdn.example.test/barton-springs.jpg',
       },
     ]
   return {
@@ -220,8 +225,8 @@ describe('DiscoveryPage 7-surface composition', () => {
     expect(screen.queryByRole('region', { name: 'For You' })).not.toBeInTheDocument()
 
     expect(screen.getByRole('region', { name: 'Shops on Shop-Shop' })).toBeInTheDocument()
-    expect(container.querySelector('.featured-lead-card.is-typographic')).toBeInTheDocument()
-    expect(container.querySelector('.featured-lead-media')).not.toBeInTheDocument()
+    expect(container.querySelector('.featured-lead-card.has-photo')).toBeInTheDocument()
+    expect(container.querySelector('.featured-lead-media')).toBeInTheDocument()
     expect(screen.getAllByText('Bouldin Market').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Taco Heaven').length).toBeGreaterThan(0)
 

@@ -74,10 +74,10 @@ function ownStorePhoto(store: DiscoveryStore): string | undefined {
   return realPhoto(media) ?? realPhoto(store.imageUrl)
 }
 
-function pictured(own: string | undefined, text: string, seed: string): { readonly image?: string; readonly credit?: string } {
+function pictured(own: string | undefined, text: string, seed: string): { readonly image: string; readonly credit?: string } {
   if (own) return { image: own }
   const editorial = editorialFor(text, seed)
-  return editorial ? { image: editorial.url, credit: editorial.attribution } : {}
+  return { image: editorial.url, credit: editorial.attribution }
 }
 
 function productPicture(item: DiscoveryItem): { readonly image?: string; readonly credit?: string } {
@@ -85,20 +85,20 @@ function productPicture(item: DiscoveryItem): { readonly image?: string; readonl
   return pictured(realPhoto(item.imageUrl) ?? realPhoto(media), `${item.title} ${item.description ?? ''}`, item.id)
 }
 
-function variedDish(item: DiscoveryItem, used: Set<string>): { readonly image?: string; readonly credit?: string } {
+function variedDish(item: DiscoveryItem, used: Set<string>): { readonly image: string; readonly credit?: string } {
   const media = item.mediaAssets?.find((asset) => asset.url && asset.kind !== 'VIDEO')?.url
   const own = realPhoto(item.imageUrl) ?? realPhoto(media)
   if (own) return { image: own }
   const text = `${item.title} ${item.description ?? ''}`
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const editorial = editorialFor(text, `${item.id}:${attempt}`)
-    if (!editorial) return {}
     if (!used.has(editorial.url) || attempt === 3) {
       used.add(editorial.url)
       return { image: editorial.url, credit: editorial.attribution }
     }
   }
-  return {}
+  const fallback = editorialFor(text, item.id)
+  return { image: fallback.url, credit: fallback.attribution }
 }
 
 function merchantType(store: DiscoveryStore): string | undefined {
@@ -178,7 +178,9 @@ export function composeDiscovery(input: {
   const rawStores = input.stores as readonly DiscoveryStore[]
   const nonArtifactStores = rawStores.filter((store) => !TEST_ARTIFACT_STORE.test(store.name.trim()))
   const candidateStores = nonArtifactStores.length > 0 ? nonArtifactStores : rawStores
-  const categoryStores = candidateStores.filter((store) => inVertical(store, input.browse))
+  const categoryStores = candidateStores
+    .filter((store) => inVertical(store, input.browse))
+    .filter((store) => Boolean(ownStorePhoto(store)))
   const categoryById = new Map(categoryStores.map((store) => [store.id, store]))
   const deliveryOrder = (storeId: string) => (input.deliveryFirst ? deliveryRank(categoryById.get(storeId)?.fulfillment) : 0)
   const products = input.products
@@ -207,14 +209,11 @@ export function composeDiscovery(input: {
     .sort((a, b) => {
       const byDelivery = deliveryOrder(a.id) - deliveryOrder(b.id)
       if (byDelivery !== 0) return byDelivery
-      const aPhoto = ownStorePhoto(a) ? 1 : 0
-      const bPhoto = ownStorePhoto(b) ? 1 : 0
-      if (aPhoto !== bPhoto) return bPhoto - aPhoto
       return (a.distance ?? 99) - (b.distance ?? 99)
     })
   const storeById = new Map(stores.map((store) => [store.id, store]))
   const storeTiles: StoreTile[] = stores.map((store) => {
-    const own = ownStorePhoto(store)
+    const own = ownStorePhoto(store)!
     return {
       kind: 'store',
       id: store.id,
@@ -225,7 +224,7 @@ export function composeDiscovery(input: {
       store,
     }
   })
-  const hero = storeTiles.find((tile) => tile.image) ?? storeTiles[0]
+  const hero = storeTiles[0]
   const newest = [...stores].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .find((store) => store.description?.trim())
   const newestDescription = newest?.description?.trim()

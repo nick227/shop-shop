@@ -35,12 +35,13 @@ function pick(keys: readonly string[], seed: string): EditorialPhoto | undefined
   return key ? CATALOG[key] : undefined
 }
 
+const DEFAULT_KEYS = ['farmers-produce', 'wood-pizza', 'coffee-latte', 'brisket', 'tacos-pastor', 'bakery-pastry'] as const
+
 /** Licensed editorial photo for a name or description. Own merchant media should win before this. */
-export function editorialFor(text: string, seed: string): EditorialPhoto | undefined {
+export function editorialFor(text: string, seed: string): EditorialPhoto {
   const haystack = text.toLowerCase()
   const group = GROUPS.find((entry) => entry.test.test(haystack))
-  if (!group) return undefined
-  return pick(group.keys, seed)
+  return pick(group?.keys ?? DEFAULT_KEYS, seed)!
 }
 
 export function creditForUrl(url: string | null | undefined): string | undefined {

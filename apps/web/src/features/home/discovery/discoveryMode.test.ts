@@ -76,8 +76,8 @@ describe('discovery emphasis', () => {
 
 describe('unified discovery results', () => {
   const stores = [
-    { id: 'taco', name: 'Taco Heaven', description: 'Salsas', storeType: 'RESTAURANT', latitude: 30.25, longitude: -97.75 },
-    { id: 'market', name: 'Bouldin Market', description: 'Produce', storeType: 'GROCERY', latitude: 30.24, longitude: -97.76 },
+    { id: 'taco', name: 'Taco Heaven', description: 'Salsas', storeType: 'RESTAURANT', latitude: 30.25, longitude: -97.75, imageUrl: 'https://cdn.example.test/taco.jpg' },
+    { id: 'market', name: 'Bouldin Market', description: 'Produce', storeType: 'GROCERY', latitude: 30.24, longitude: -97.76, imageUrl: 'https://cdn.example.test/market.jpg' },
   ]
   const products = [
     { id: 'coffee', title: 'Iced coffee', price: '4.00', storeId: 'taco', description: 'Cold brew' },
@@ -99,5 +99,24 @@ describe('unified discovery results', () => {
     const result = composeDiscovery({ stores, products, stories, browse: 'outdoors', query: '' })
     expect(result.places).toEqual([])
     expect(result.tiles).toEqual([])
+  })
+
+  it('drops stores that only have stock placeholder photos', () => {
+    const result = composeDiscovery({
+      stores: [
+        { id: 'stock', name: 'Morning Grind', description: 'Coffee', storeType: 'COFFEE', imageUrl: 'https://picsum.photos/seed/grind/800/400.jpg' },
+        { id: 'real', name: 'Roast House', description: 'Coffee', storeType: 'COFFEE', imageUrl: 'https://cdn.example.test/roast.jpg' },
+      ],
+      products: [
+        { id: 'latte', title: 'Latte', price: '4.00', storeId: 'stock' },
+        { id: 'drip', title: 'Drip', price: '3.00', storeId: 'real' },
+      ],
+      stories: [],
+      browse: 'food',
+      query: '',
+    })
+    expect(result.places.map((store) => store.id)).toEqual(['real'])
+    expect(result.storeTiles.every((tile) => tile.image)).toBe(true)
+    expect(result.tiles.filter((tile) => tile.kind === 'product').map((tile) => tile.id)).toEqual(['drip'])
   })
 })
