@@ -12,8 +12,12 @@
  * Needs: the API running (pnpm dev:server), `stripe listen --forward-to localhost:$PORT/webhooks/stripe`
  * for card runs, and the store linked to a test Stripe account (pnpm --filter @packages/db stripe:test-vendor).
  *
- * Signs tokens with the local JWT_SECRET and uses a throwaway shopper (smoke-shopper@example.test),
- * so it only runs against localhost with test Stripe keys.
+ * Signs tokens with JWT_SECRET and uses a throwaway shopper (smoke-shopper@example.test), so it runs
+ * against localhost, or against a deployed TEST environment with --remote and that environment's
+ * secrets, e.g. from the repo root:
+ *   railway run --service server -- env DATABASE_URL=<MySQL public URL> SMOKE_API_URL=https://… \
+ *     pnpm --filter @apps/server smoke:order -- <store> --remote
+ * --remote refuses anything but sk_test_ Stripe keys.
  */
 import { config } from 'dotenv'
 import { resolve, dirname } from 'path'
@@ -29,6 +33,7 @@ const storeArg = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 
 const cod = args.includes('--cod')
 const delivery = args.includes('--delivery')
 const cancel = args.includes('--cancel')
+const remote = args.includes('--remote')
 const cardFlag = args.includes('--card') ? args[args.indexOf('--card') + 1] : undefined
 // Stripe's built-in test PaymentMethods: https://docs.stripe.com/testing#cards
 const card = cardFlag === 'declined' ? 'pm_card_chargeDeclinedInsufficientFunds' : (cardFlag ?? 'pm_card_visa')
@@ -45,7 +50,12 @@ function fail(message: string): never {
 }
 
 if (!storeArg) fail('Usage: smoke:order -- <store id | slug> [--card pm_card_visa | declined] [--cod] [--delivery] [--cancel]')
-if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(api)) fail(`Refusing to run against ${api}; this script is for a local API only.`)
+if (remote) {
+  if (!/^https:\/\//.test(api)) fail('--remote needs SMOKE_API_URL=https://… for the deployed API.')
+  if (!/^sk_test_/.test(process.env.STRIPE_SECRET_KEY ?? '')) fail('--remote runs only against an environment with sk_test_ Stripe keys.')
+} else if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(api)) {
+  fail(`Refusing to run against ${api}; pass --remote for a deployed test environment.`)
+}
 if (!cod && !/^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? '')) fail('Card runs need STRIPE_SECRET_KEY=sk_test_… in .env (or pass --cod).')
 
 process.env.PRISMA_LOG_QUERIES = 'false' // keep the step-by-step output readable
@@ -180,7 +190,25 @@ async function main() {
       if (json.payment?.status === 'requires_action') throw new Error('card asked for 3-D Secure; use a card that does not (pm_card_visa)')
       return `order ${orderId} ${json.order.status}${json.payment ? `, payment ${json.payment.status}` : ''}`
     })
-    if (expectDecline) return
+    if (expectDecline) {
+      await step('Declined order stays inactive: unpaid, not placed, vendor not told', async () => {
+        const order = await prisma.order.findFirst({ where: { cartId: sessionId }, select: { id: true, status: true, paymentStatus: true } })
+        if (!order) return 'no order row created'
+        // Give the payment_intent.payment_failed webhook and any (wrong) vendor broadcast time to arrive.
+        const deadline = Date.now() + 15_000
+        let failureRecorded = false
+        while (Date.now() < deadline && !failureRecorded) {
+          failureRecorded = (await prisma.orderEvent.count({ where: { orderId: order.id, note: { startsWith: 'Payment failed' } } })) > 0
+          if (!failureRecorded) await new Promise((r) => setTimeout(r, 1000))
+        }
+        const now = await prisma.order.findUniqueOrThrow({ where: { id: order.id }, select: { status: true, paymentStatus: true } })
+        if (now.status !== 'PENDING_PAYMENT' || now.paymentStatus === 'PAID') throw new Error(`order ${order.id} is ${now.status}/${now.paymentStatus}`)
+        const told = await vendor.waitFor((ev) => ev.payload?.orderId === order.id, 'vendor event', 1000).then(() => true, () => false)
+        if (told) throw new Error('vendor was sent an event for the declined order')
+        return `order ${order.id.slice(0, 8)} ${now.status}/${now.paymentStatus}; payment_failed webhook ${failureRecorded ? 'recorded' : 'NOT recorded in 15 s'}`
+      })
+      return
+    }
 
     await customer.subscribe(`order:${orderId}`)
 

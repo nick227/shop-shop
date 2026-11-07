@@ -9,7 +9,7 @@
  * With --account, nothing is created: the account must already be able to take charges (its Stripe
  * onboarding finished). Otherwise the script lists what Stripe still needs and changes nothing.
  *
- * Refuses to run unless STRIPE_SECRET_KEY is a test key (sk_test_… / rk_test_…).
+ * Refuses to run unless STRIPE_SECRET_KEY is a test secret key (sk_test_…).
  * Uses Stripe's documented test identity values; nothing here is a real person or bank account.
  */
 import { config } from 'dotenv'
@@ -21,8 +21,8 @@ const here = dirname(fileURLToPath(import.meta.url))
 config({ path: resolve(here, '../../../.env'), override: false })
 
 const key = process.env.STRIPE_SECRET_KEY ?? ''
-if (!/^(sk|rk)_test_[A-Za-z0-9]+$/.test(key)) {
-  console.error('STRIPE_SECRET_KEY must be a Stripe TEST key (sk_test_…). Refusing to create accounts with anything else.')
+if (!/^sk_test_[A-Za-z0-9]+$/.test(key)) {
+  console.error('STRIPE_SECRET_KEY must be a Stripe TEST secret key (sk_test_…). Refusing live keys and anything else.')
   process.exit(1)
 }
 
@@ -35,7 +35,7 @@ const stripe = new Stripe(key, { apiVersion: '2024-11-20.acacia' as Stripe.Lates
 const argv = process.argv.slice(2)
 const accountFlag = argv.indexOf('--account')
 const linkAccountId = accountFlag >= 0 ? argv[accountFlag + 1] : undefined
-const arg = argv.find((a, i) => !a.startsWith('--') && i !== accountFlag + 1) ?? (argv.includes('--list') ? '--list' : undefined)
+const arg = argv.find((a, i) => !a.startsWith('--') && !(accountFlag >= 0 && i === accountFlag + 1)) ?? (argv.includes('--list') ? '--list' : undefined)
 if (accountFlag >= 0 && !/^acct_[A-Za-z0-9]+$/.test(linkAccountId ?? '')) {
   console.error('--account needs a connected account id (acct_…).')
   process.exit(1)
@@ -114,6 +114,14 @@ async function main() {
       console.error(
         '❌ This Stripe account has not enabled Connect in test mode, so it cannot create vendor accounts.\n' +
           '   Turn it on at https://dashboard.stripe.com/test/connect (Get started → platform), then run this again.',
+      )
+      process.exit(1)
+    }
+    if (error instanceof Stripe.errors.StripeError && /losses collector|losses_collector/i.test(error.message)) {
+      console.error(
+        '❌ Stripe refused: this platform has Stripe as the losses collector (Managed Risk). Those accounts must use\n' +
+          '   Stripe-hosted or embedded onboarding, and they cannot take the destination charges this app uses.\n' +
+          '   See docs/payments/stripe-test-mode.md ("Platform loss liability").',
       )
       process.exit(1)
     }
