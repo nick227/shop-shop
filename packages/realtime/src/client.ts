@@ -110,7 +110,7 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
     heartbeatTimer = window.setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'ping' }))
-        
+
         // Set timeout for pong response
         heartbeatTimeoutTimer = window.setTimeout(() => {
           config.logger.warn('Heartbeat timeout - reconnecting')
@@ -142,21 +142,21 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
         state = CONNECTION_STATE.CONNECTED
         reconnectAttempt = 0
         emit('connected', ack)
-        
+
         // Start heartbeat
         startHeartbeat(ack.pingInterval)
-        
+
         // Resubscribe to all topics
         subscriptions.forEach((_, topic) => {
           doSubscribe(topic)
         })
       }
-      
+
       if (message.type === 'subscribed') {
         pendingSubscriptions.delete(message.topic)
         config.logger.debug('Subscribed to topic', message.topic)
       }
-      
+
       if (message.type === 'pong') {
         // Clear timeout
         if (heartbeatTimeoutTimer) {
@@ -164,12 +164,12 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
           heartbeatTimeoutTimer = null
         }
       }
-      
+
       if (message.type === 'error') {
         config.logger.error('Server error', message)
         emit('error', message)
       }
-      
+
       // Handle events
       if (message.type && message.type.includes('.')) {
         const event = message as RealtimeEvent
@@ -208,7 +208,8 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
     config.logger.info(`Reconnecting in ${delay}ms (attempt ${reconnectAttempt})`)
 
     reconnectTimer = window.setTimeout(() => {
-      connect()
+      // connect() reports its own failures; don't leave an unhandled rejection behind.
+      connect().catch(() => {})
     }, delay)
   }
 
@@ -243,11 +244,15 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
       ws.onclose = (event) => {
         config.logger.info('WebSocket closed', { code: event.code, reason: event.reason })
         stopHeartbeat()
-        
+
         const wasConnected = state === CONNECTION_STATE.CONNECTED
+        // A failed attempt during a reconnect cycle must keep the cycle going: the server is often
+        // still restarting when the first retry fires, and stopping there left pages deaf for good.
+        const wasRetrying = state === CONNECTION_STATE.CONNECTING && reconnectAttempt > 0
         state = CONNECTION_STATE.DISCONNECTED
-        
-        if (wasConnected && event.code !== WS_CLOSE_CODES.NORMAL) {
+        const deliberate = event.code === WS_CLOSE_CODES.NORMAL || event.code === WS_CLOSE_CODES.UNAUTHORIZED || event.code === WS_CLOSE_CODES.FORBIDDEN
+
+        if ((wasConnected || wasRetrying) && !deliberate) {
           // Unexpected close - reconnect
           reconnect()
         } else {
@@ -268,15 +273,15 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
       clearTimeout(reconnectTimer)
       reconnectTimer = null
     }
-    
+
     stopHeartbeat()
-    
+
     if (ws) {
       state = CONNECTION_STATE.DISCONNECTING
       ws.close(WS_CLOSE_CODES.NORMAL, 'Client disconnect')
       ws = null
     }
-    
+
     state = CONNECTION_STATE.DISCONNECTED
     subscriptions.clear()
     pendingSubscriptions.clear()
@@ -286,7 +291,7 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
   const subscribe = <T = RealtimeEvent>(topic: TopicType, handler: (event: T) => void): (() => void) => {
     if (!subscriptions.has(topic)) {
       subscriptions.set(topic, new Set())
-      
+
       // If connected, subscribe immediately
       if (state === CONNECTION_STATE.CONNECTED) {
         doSubscribe(topic)
