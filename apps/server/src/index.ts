@@ -294,6 +294,15 @@ if (process.env.NODE_ENV !== 'test') {
 
   app.listen({ port, host: '0.0.0.0' }).then(() => {
     app.log.info(`listening on http://localhost:${port}`)
+    if (/^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? '')) {
+      app.log.info('Stripe is in TEST mode: use test cards such as 4242 4242 4242 4242')
+    }
+    if (/^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY ?? '') && !/^whsec_/.test(env.STRIPE_WEBHOOK_SECRET ?? '')) {
+      app.log.warn(
+        `STRIPE_WEBHOOK_SECRET is not set: card orders will stay PENDING_PAYMENT and vendors are never notified. ` +
+          `Locally run \`stripe listen --forward-to localhost:${port}/webhooks/stripe\` and copy its whsec_ into .env.`,
+      )
+    }
     if (serveApiDocs) {
       app.log.info(`docs at http://localhost:${port}/docs`)
     }

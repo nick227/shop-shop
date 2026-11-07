@@ -12,6 +12,11 @@ export function getStripePublishableKey(): string | undefined {
   return key && /^pk_(test|live)_[A-Za-z0-9]+$/.test(key) ? key : undefined
 }
 
+/** Test keys take Stripe's test cards (4242 4242 4242 4242 …) and never move real money. */
+export function isStripeTestMode(): boolean {
+  return getStripePublishableKey()?.startsWith('pk_test_') ?? false
+}
+
 export function getStripePromise(): Promise<Stripe | null> | null {
   const key = getStripePublishableKey()
   if (!key) return null

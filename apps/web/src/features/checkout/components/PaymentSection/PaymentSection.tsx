@@ -10,7 +10,7 @@ import {
   StripePaymentFields,
   type StripePaymentFieldsHandle,
 } from '@features/checkout/components/StripePaymentFields'
-import { getStripePromise, getStripePublishableKey } from '@features/checkout/lib/stripeClient'
+import { getStripePromise, getStripePublishableKey, isStripeTestMode } from '@features/checkout/lib/stripeClient'
 
 export type CheckoutPaymentPayload =
   | {
@@ -20,6 +20,13 @@ export type CheckoutPaymentPayload =
       readonly finish: (clientSecret: string) => Promise<string | undefined>
     }
   | { readonly rail: 'COD' }
+
+/** Stripe's documented test cards: any future expiry, any CVC, any ZIP. */
+const TEST_CARDS = [
+  { number: '4242 4242 4242 4242', result: 'Succeeds' },
+  { number: '4000 0025 0000 3155', result: 'Asks for 3-D Secure' },
+  { number: '4000 0000 0000 9995', result: 'Declined (insufficient funds)' },
+] as const
 
 export interface PaymentSectionProps {
   readonly amount: number
@@ -184,10 +191,29 @@ export function PaymentSection({
           </label>
         )}
 
+        {hasStripeKey && isStripeTestMode() && paymentMethod === 'stripe' ? (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm" data-testid="stripe-test-mode">
+            <p className="font-semibold">Test mode: no real charge</p>
+            <p className="mt-1 text-xs text-muted-foreground">Use any future expiry date, any CVC and any ZIP.</p>
+            <ul className="mt-2 space-y-1">
+              {TEST_CARDS.map((card) => (
+                <li key={card.number} className="flex flex-wrap justify-between gap-x-3 text-xs">
+                  <code className="font-mono">{card.number}</code>
+                  <span className="text-muted-foreground">{card.result}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {!hasStripeKey && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-            <p className="text-sm text-warning-foreground">
-              ℹ️ Online card payment requires VITE_STRIPE_PUBLISHABLE_KEY at build time.
+            <p className="text-sm">
+              {import.meta.env.DEV
+                ? 'ℹ️ Card payment is off. Set VITE_STRIPE_PUBLISHABLE_KEY (pk_test_…) and STRIPE_SECRET_KEY (sk_test_…) in .env, then restart the dev server.'
+                : enableCod
+                  ? 'Card payment isn’t available right now. You can pay with cash at pickup or delivery.'
+                  : 'Card payment isn’t available right now.'}
             </p>
           </div>
         )}

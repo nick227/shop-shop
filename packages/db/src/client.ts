@@ -4,7 +4,9 @@ import { orderDeliveryCoordsGuard } from './order-create-guard.extension.js'
 export function createPrismaClient() {
   return new PrismaClient({
     log:
-      process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      process.env.NODE_ENV === 'development'
+        ? [...(process.env.PRISMA_LOG_QUERIES === 'false' ? [] : (['query'] as const)), 'error', 'warn']
+        : ['error'],
   }).$extends(orderDeliveryCoordsGuard)
 }
 

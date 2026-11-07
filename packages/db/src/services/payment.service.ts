@@ -81,7 +81,8 @@ export async function persistStripeAccountSnapshotOnStore(
   await prisma.store.update({
     where: { id: storeId },
     data: {
-      stripeOnboarded: account.details_submitted ?? false,
+      // An account Stripe lets charge is onboarded, whether or not it went through hosted onboarding.
+      stripeOnboarded: Boolean(account.details_submitted || account.charges_enabled),
       stripeChargesEnabled: account.charges_enabled ?? false,
       stripePayoutsEnabled: account.payouts_enabled ?? false,
       stripeRequirementsJson: {

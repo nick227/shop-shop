@@ -15,6 +15,8 @@ export const envSchema = z
 
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    /** Only visible here when web and API share one .env (local dev); used to catch test/live mixups. */
+    VITE_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
 
     ENABLE_COD_PAYMENTS: z.enum(['true', 'false']).optional(),
 
@@ -41,6 +43,8 @@ export const envSchema = z
     DOORDASH_WEBHOOK_SIGNATURE_HEADER: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    const mixup = stripeKeyModeIssue(data.STRIPE_SECRET_KEY, data.VITE_STRIPE_PUBLISHABLE_KEY)
+    if (mixup) ctx.addIssue({ code: z.ZodIssueCode.custom, ...mixup })
     if (data.NODE_ENV === 'production' && !data.STRIPE_SECRET_KEY?.length) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -83,6 +87,23 @@ export const envSchema = z
   })
 
 export type ServerEnv = z.infer<typeof envSchema>
+
+const stripeKeyMode = (key: string | undefined, prefixes: string): 'test' | 'live' | null =>
+  new RegExp(`^(${prefixes})_(test|live)_[A-Za-z0-9]+$`).exec(key ?? '')?.[2] as 'test' | 'live' | undefined ?? null
+
+/**
+ * A test publishable key with a live secret key (or the reverse) makes every card fail inside Stripe
+ * with a confusing "No such PaymentMethod". Refuse to start instead. Placeholders are ignored.
+ */
+export function stripeKeyModeIssue(secretKey: string | undefined, publishableKey: string | undefined): { message: string; path: string[] } | null {
+  const secret = stripeKeyMode(secretKey, 'sk|rk')
+  const publishable = stripeKeyMode(publishableKey, 'pk')
+  if (!secret || !publishable || secret === publishable) return null
+  return {
+    message: `STRIPE_SECRET_KEY is a ${secret} key but VITE_STRIPE_PUBLISHABLE_KEY is a ${publishable} key; use test keys together or live keys together`,
+    path: ['VITE_STRIPE_PUBLISHABLE_KEY'],
+  }
+}
 
 const real = (value: string | undefined) => Boolean(value && !/^your[_-]/i.test(value))
 

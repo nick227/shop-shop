@@ -44,4 +44,11 @@ describe('production launch configuration', () => {
   it('leaves development alone', () => {
     expect(problems(production({ NODE_ENV: 'development', STRIPE_SECRET_KEY: 'your_key', STRIPE_WEBHOOK_SECRET: undefined, MAPBOX_ACCESS_TOKEN: undefined }))).toEqual([])
   })
+
+  it('refuses Stripe keys from different modes, in any environment', () => {
+    expect(problems(production({ VITE_STRIPE_PUBLISHABLE_KEY: 'pk_test_abc123' }))).toContain('VITE_STRIPE_PUBLISHABLE_KEY')
+    expect(problems(production({ NODE_ENV: 'development', STRIPE_SECRET_KEY: 'sk_test_abc', VITE_STRIPE_PUBLISHABLE_KEY: 'pk_live_abc' }))).toContain('VITE_STRIPE_PUBLISHABLE_KEY')
+    expect(problems(production({ VITE_STRIPE_PUBLISHABLE_KEY: 'pk_live_abc123' }))).toEqual([])
+    expect(problems(production({ NODE_ENV: 'development', STRIPE_SECRET_KEY: 'sk_test_abc', VITE_STRIPE_PUBLISHABLE_KEY: 'your_key' }))).toEqual([])
+  })
 })
