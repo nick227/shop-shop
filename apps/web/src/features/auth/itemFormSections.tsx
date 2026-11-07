@@ -16,19 +16,14 @@ import type { ItemFormData } from '@api/types'
 // Common tag suggestions
 const TAG_SUGGESTIONS = [
   // Flavor & Texture
-  'spicy', 'mild', 'sweet', 'savory', 'crispy', 'creamy',
+  'spicy', 'mild', 'sweet', 'savory',
   // Quality & Source
   'fresh', 'homemade', 'signature', 'popular', 'healthy',
-  'organic', 'local', 'seasonal', 'limited-time', 'comfort-food',
+  'organic', 'local', 'seasonal', 'limited-time',
   // Dietary Preferences (now tags instead of separate fields)
-  'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'keto-friendly', 'paleo-friendly',
-  // Nutritional
-  'low-carb', 'high-protein', 'low-calorie', 'low-sugar', 'low-sodium',
-  // Style & Origin
-  'kid-friendly', 'shareable', 'farm-to-table', 'artisan', 'handcrafted',
-  'traditional', 'modern', 'fusion', 'authentic', 'regional', 'imported',
+  'vegan', 'vegetarian', 'gluten-free', 'dairy-free',
   // Price & Value
-  'premium', 'budget-friendly', 'value', 'gourmet'
+  'premium', 'gourmet'
 ]
 
 function normalizeTags(tags: unknown): string[] {
@@ -77,7 +72,6 @@ export function createItemFormSections(
       title: 'Basic Information',
       content: (
         <>
-          <FormRow>
             <div className="space-y-2">
               <Input
                 label="Item Title *"
@@ -86,7 +80,7 @@ export function createItemFormSections(
                 placeholder="Delicious Menu Item"
                 required
               />
-              
+
               <SectionPicker
                 sections={options?.sections ?? []}
                 value={options?.sectionId ?? ''}
@@ -112,7 +106,7 @@ export function createItemFormSections(
                 </select>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <TextArea
                 label="Description"
@@ -124,7 +118,6 @@ export function createItemFormSections(
               />
               <CharCount current={formData.description.length} max={1000} />
             </div>
-          </FormRow>
 
           <FormRow>
             <div className="space-y-2">
@@ -222,7 +215,7 @@ export function createItemFormSections(
               ))}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Custom Tags
