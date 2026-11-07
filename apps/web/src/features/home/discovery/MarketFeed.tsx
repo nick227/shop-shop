@@ -20,7 +20,7 @@ import type { DiscoveryTile, ProductTile, StoreTile, StoryTile } from './tiles'
 const PAGE_SIZE = 16
 
 function openFrom(event: MouseEvent<HTMLButtonElement>, tile: DiscoveryTile, onOpen: (tile: DiscoveryTile, anchor: DOMRect) => void) {
-  const frame = event.currentTarget.querySelector('img, .product-fallback, .business-monogram')
+  const frame = event.currentTarget.querySelector('img, .product-fallback, .business-monogram, .store-mark, .business-media-box, .story-media-box')
   onOpen(tile, (frame ?? event.currentTarget).getBoundingClientRect())
 }
 
@@ -80,11 +80,13 @@ function StoreFeedCard({ tile, onOpen }: { readonly tile: StoreTile; readonly on
     <div className={`feed-card-wrap is-business-cell${tile.image ? ' has-photo' : ' is-quiet'}`}>
       <button
         type="button"
-        className="feed-business-card is-brand"
+        className={`feed-business-card is-brand${tile.image ? ' has-photo' : ''}`}
         onClick={(event) => openFrom(event, tile, onOpen)}
       >
         {tile.image ? (
-          <img src={tile.image} alt="" className="feed-business-img" />
+          <div className="business-media-box">
+            <img src={tile.image} alt="" className="feed-business-img" />
+          </div>
         ) : (
           <span className="store-mark" aria-hidden="true">{tile.name.slice(0, 1)}</span>
         )}
@@ -125,6 +127,11 @@ function StoryFeedCard({ tile, onOpen }: { readonly tile: StoryTile; readonly on
       className={`feed-story-card${tile.image ? ' has-photo' : ' is-typographic'}`}
       onClick={(event) => openFrom(event, tile, onOpen)}
     >
+      {tile.image ? (
+        <div className="story-media-box">
+          <img src={tile.image} alt="" className="feed-story-img" />
+        </div>
+      ) : null}
       <div className="feed-story-body">
         <span className="story-kicker-pill">{tile.kicker ?? 'Local story'}</span>
         <strong>{tile.title}</strong>
@@ -132,7 +139,6 @@ function StoryFeedCard({ tile, onOpen }: { readonly tile: StoryTile; readonly on
         {tile.credit ? <span className="media-credit">{tile.credit}</span> : null}
         <span className="story-read">Read</span>
       </div>
-      {tile.image ? <img src={tile.image} alt="" className="feed-story-img" /> : null}
     </button>
   )
 }
