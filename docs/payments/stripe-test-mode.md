@@ -36,6 +36,9 @@ platform endpoint. Closing the gap means adding a Connect endpoint and accepting
 
 ## Platform loss liability (blocks card checkout on Railway as of 2026-11-07)
 
+> **Decision (2026-11-07):** move to direct charges with application fees. See [ADR 001](adr-001-direct-charges.md).
+> Card checkout is paused until then. Option 1 below is not being pursued.
+
 Checkout uses **destination charges**: `transfer_data.destination` + `application_fee_amount`
 (`packages/db/src/adapters/payments.adapter.ts`). Stripe supports those only when the **platform** is the losses collector.
 
