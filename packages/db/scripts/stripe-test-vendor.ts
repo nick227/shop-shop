@@ -4,6 +4,10 @@
  *
  *   pnpm --filter @packages/db stripe:test-vendor <store id | slug | part of the name>
  *   pnpm --filter @packages/db stripe:test-vendor --list
+ *   pnpm --filter @packages/db stripe:test-vendor <store> --account acct_…   # link an account you onboarded
+ *
+ * With --account, nothing is created: the account must already be able to take charges (its Stripe
+ * onboarding finished). Otherwise the script lists what Stripe still needs and changes nothing.
  *
  * Refuses to run unless STRIPE_SECRET_KEY is a test key (sk_test_… / rk_test_…).
  * Uses Stripe's documented test identity values; nothing here is a real person or bank account.
@@ -28,7 +32,14 @@ const { prisma } = await import('../src/client.js')
 const { persistStripeAccountSnapshotOnStore: saveSnapshot } = await import('../src/services/payment.service.js')
 const stripe = new Stripe(key, { apiVersion: '2024-11-20.acacia' as Stripe.LatestApiVersion })
 
-const arg = process.argv[2]
+const argv = process.argv.slice(2)
+const accountFlag = argv.indexOf('--account')
+const linkAccountId = accountFlag >= 0 ? argv[accountFlag + 1] : undefined
+const arg = argv.find((a, i) => !a.startsWith('--') && i !== accountFlag + 1) ?? (argv.includes('--list') ? '--list' : undefined)
+if (accountFlag >= 0 && !/^acct_[A-Za-z0-9]+$/.test(linkAccountId ?? '')) {
+  console.error('--account needs a connected account id (acct_…).')
+  process.exit(1)
+}
 
 async function listStores() {
   const stores = await prisma.store.findMany({
@@ -59,6 +70,30 @@ async function main() {
     process.exit(1)
   }
   const store = matches[0]!
+
+  if (linkAccountId) {
+    const account = await stripe.accounts.retrieve(linkAccountId).catch((error: unknown) => {
+      console.error(`❌ Stripe can't find ${linkAccountId} in test mode: ${error instanceof Error ? error.message : String(error)}`)
+      process.exit(1)
+    })
+    if (!account.charges_enabled) {
+      console.error(
+        `❌ ${account.id} can't take charges yet, so it was not linked. Finish its Stripe onboarding first.\n` +
+          `   Disabled because: ${account.requirements?.disabled_reason ?? 'unknown'}\n` +
+          `   Still due: ${(account.requirements?.currently_due ?? []).join(', ') || 'nothing listed'}`,
+      )
+      process.exit(1)
+    }
+    const holder = await prisma.store.findFirst({ where: { stripeAccountId: account.id, NOT: { id: store.id } }, select: { slug: true } })
+    if (holder) {
+      console.error(`❌ ${account.id} is already linked to ${holder.slug}. One account per store.`)
+      process.exit(1)
+    }
+    await prisma.store.update({ where: { id: store.id }, data: { stripeAccountId: account.id } })
+    await saveSnapshot(store.id, account)
+    console.log(`✅ ${store.name} is linked to ${account.id} and can take test card payments.`)
+    return
+  }
 
   // Reuse the store's account if it is a working test-mode account already.
   if (store.stripeAccountId) {
