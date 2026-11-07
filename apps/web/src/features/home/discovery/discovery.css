@@ -1636,7 +1636,8 @@ a.hero-tag:hover {
 .story-media-box {
   position: relative;
   width: 100%;
-  min-height: 14rem;
+  aspect-ratio: 16 / 9;
+  max-height: 11rem;
   overflow: hidden;
   background: #ebe4d6;
 }
@@ -1644,7 +1645,6 @@ a.hero-tag:hover {
 .feed-story-img {
   width: 100%;
   height: 100%;
-  max-height: none;
   border-radius: 0;
   object-fit: cover;
   transition: transform 480ms ease;
@@ -2225,17 +2225,26 @@ a.hero-tag:hover {
   }
 
   .feed-story-card.has-photo {
-    grid-template-columns: minmax(16rem, 1.35fr) minmax(14rem, 0.85fr);
+    grid-template-columns: minmax(14rem, 1.25fr) minmax(12rem, 0.9fr);
     align-items: stretch;
-    min-height: 16.5rem;
+    max-height: 12.5rem;
   }
 
   .feed-story-card.has-photo .story-media-box {
-    min-height: 100%;
+    aspect-ratio: auto;
+    max-height: none;
+    height: 100%;
+    min-height: 0;
   }
 
   .feed-story-card.has-photo .feed-story-body {
-    padding: 1.5rem 1.6rem 1.6rem 1.35rem;
+    padding: 1.1rem 1.35rem 1.15rem 1.2rem;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .feed-story-card.has-photo .feed-story-body p {
+    -webkit-line-clamp: 2;
   }
 
   .business-media-box {
